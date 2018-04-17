@@ -1,35 +1,35 @@
-{:app-name                              "lambda-service"
- :env                                   [:dev :keyword]
- :nrepl-server                          {:port [7011 :int]}
- :stream-config                         {:application-id       "lambda-service-test-02"
-                                         :bootstrap-servers    "localhost:6667"
-                                         :stream-threads-count [1 :int]
-                                         :origin-topic         ".*-booking-log"}
- :proto-class                           "com.gojek.esb.booking.BookingLogMessage"
- :datadog                               {:host    "localhost"
-                                         :port    [8125 :int]
-                                         :enabled [false :bool]}
- :sentry                                {:enabled                   [false :bool]
-                                         :dsn                       "dummy"
-                                         :worker-count              [10 :int]
-                                         :queue-size                [10 :int]
-                                         :thread-termination-wait-s [1 :int]}
- :rabbit-mq-connection                  {:host            "rabbitmq"
-                                         :port            [5672 :int]
-                                         :prefetch-count  [3 :int]
-                                         :username        "guest"
-                                         :password        "guest"
-                                         :channel-timeout [5000 :int]}
- :rabbit-mq                             {:delay       {:queue-name           "%s_delay_queue"
-                                                       :exchange-name        "%s_delay_exchange"
-                                                       :dead-letter-exchange "%s_instant_exchange"
-                                                       :queue-timeout-ms     [5000 :int]}
-                                         :instant     {:queue-name    "%s_instant_queue"
-                                                       :exchange-name "%s_instant_exchange"}
-                                         :dead-letter {:queue-name    "%s_dead_letter_queue"
-                                                       :exchange-name "%s_dead_letter_exchange"}}
- :jobs                                  {:instant {:worker-count   [4 :int]
-                                                   :prefetch-count [4 :int]}}
- :retry-count                           [5 :int]
- :http-server                           {:port         [8010 :int]
-                                         :thread-count [100 :int]}}
+{:ziggurat {:app-name             "lambda-service"
+            :env                  [:dev :keyword]
+            :nrepl-server         {:port [7011 :int]}
+            :stream-config        {:application-id       "lambda-service-test-02"
+                                   :bootstrap-servers    "localhost:6667"
+                                   :stream-threads-count [1 :int]
+                                   :origin-topic         ".*-booking-log"}
+            :proto-class          "com.gojek.esb.booking.BookingLogMessage"
+            :datadog              {:host    "localhost"
+                                   :port    [8125 :int]
+                                   :enabled [false :bool]}
+            :sentry               {:enabled                   [false :bool]
+                                   :dsn                       "dummy"
+                                   :worker-count              [10 :int]
+                                   :queue-size                [10 :int]
+                                   :thread-termination-wait-s [1 :int]}
+            :rabbit-mq-connection {:host            "rabbitmq"
+                                   :port            [5672 :int]
+                                   :prefetch-count  [3 :int]
+                                   :username        "guest"
+                                   :password        "guest"
+                                   :channel-timeout [5000 :int]}
+            :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"
+                                                 :exchange-name        "%s_delay_exchange"
+                                                 :dead-letter-exchange "%s_instant_exchange"
+                                                 :queue-timeout-ms     [5000 :int]}
+                                   :instant     {:queue-name    "%s_instant_queue"
+                                                 :exchange-name "%s_instant_exchange"}
+                                   :dead-letter {:queue-name    "%s_dead_letter_queue"
+                                                 :exchange-name "%s_dead_letter_exchange"}}
+            :jobs                 {:instant {:worker-count   [4 :int]
+                                             :prefetch-count [4 :int]}}
+            :retry-count          [5 :int]
+            :http-server          {:port         [8010 :int]
+                                   :thread-count [100 :int]}}}

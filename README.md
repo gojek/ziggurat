@@ -1,14 +1,10 @@
 # ziggurat
 
-A Clojure library designed to ... well, that part is up to you.
+The actor framework for Project Lambda
 
 ## Usage
+`[com.gojek.lambda/ziggurat "1.0.0"]`
 
-FIXME
+## Configuration
 
-## License
-
-Copyright © 2018 FIXME
-
-Distributed under the Apache License, Version 2.0 either version 1.0 or (at
-your option) any later version.
+All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.

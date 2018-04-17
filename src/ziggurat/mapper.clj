@@ -1,6 +1,5 @@
 (ns ziggurat.mapper
   (:require [lambda-common.metrics :as metrics]
-            [ziggurat.config :refer [config]]
             [ziggurat.new-relic :as nr]
             [ziggurat.messsaging.producer :as producer]
             [ziggurat.sentry :refer [sentry-reporter]]

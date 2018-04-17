@@ -1,6 +1,6 @@
 (ns ziggurat.messsaging.producer
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [config]]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messsaging.connection :refer [connection]]
             [ziggurat.messsaging.name :refer [get-with-prepended-app-name]]
@@ -15,6 +15,9 @@
             [executor.core :as executor])
   (:import [com.rabbitmq.client AlreadyClosedException ShutdownListener]
            (java.util.concurrent ExecutorService TimeUnit)))
+
+(defn- rabbitmq-config []
+  (:rabbit-mq (ziggurat-config)))
 
 (defn delay-queue-name [queue-name queue-timeout-ms]
   (format "%s_%s" queue-name queue-timeout-ms))
@@ -58,25 +61,25 @@
                                                                              :persistent   true})))))
 
 (defn publish-to-delay-queue [message]
-  (let [{:keys [exchange-name]} (:delay (:rabbit-mq config))]
+  (let [{:keys [exchange-name]} (:delay (rabbitmq-config))]
     (publish (get-with-prepended-app-name exchange-name) message)))
 
 (defn publish-to-dead-queue [message]
-  (let [{:keys [exchange-name]} (:dead-letter (:rabbit-mq config))]
+  (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))]
     (publish (get-with-prepended-app-name exchange-name) message)))
 
 (defn publish-to-instant-queue [message]
-  (let [{:keys [exchange-name]} (:instant (:rabbit-mq config))]
+  (let [{:keys [exchange-name]} (:instant (rabbitmq-config))]
     (publish (get-with-prepended-app-name exchange-name) message)))
 
 (defn retry [{:keys [retry-count] :as message}]
   (cond
-    (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (:retry-count config)))
+    (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (:retry-count (ziggurat-config))))
     (< 0 retry-count) (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
     (= 0 retry-count) (publish-to-dead-queue (dissoc message :retry-count))))
 
 (defn- make-delay-queue []
-  (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (:rabbit-mq config))
+  (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
         queue-name (delay-queue-name (get-with-prepended-app-name queue-name) queue-timeout-ms)]
     (create-and-bind-queue queue-name
                            (get-with-prepended-app-name exchange-name)
@@ -84,12 +87,12 @@
                            queue-timeout-ms)))
 
 (defn- make-instant-queue []
-  (let [{:keys [queue-name exchange-name]} (:instant (:rabbit-mq config))]
+  (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))]
     (create-and-bind-queue (get-with-prepended-app-name queue-name)
                            (get-with-prepended-app-name exchange-name))))
 
 (defn- make-dead-letter-queue []
-  (let [{:keys [queue-name exchange-name]} (:dead-letter (:rabbit-mq config))]
+  (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))]
     (create-and-bind-queue (get-with-prepended-app-name queue-name)
                            (get-with-prepended-app-name exchange-name))))
 

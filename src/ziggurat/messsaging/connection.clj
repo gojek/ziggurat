@@ -1,6 +1,6 @@
 (ns ziggurat.messsaging.connection
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [config]]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [langohr.core :as rmq]
             [mount.core :refer [defstate]]
@@ -12,7 +12,7 @@
 (defn- start-connection []
   (log/info "Connecting to RabbitMQ")
   (try
-    (let [connection (rmq/connect (:rabbit-mq-connection config))]
+    (let [connection (rmq/connect (:rabbit-mq-connection (ziggurat-config)))]
       (doto connection
         (.addShutdownListener
           (reify ShutdownListener

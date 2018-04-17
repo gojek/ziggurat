@@ -1,6 +1,6 @@
 (ns ziggurat.messsaging.consumer
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [config]]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
             [ziggurat.messsaging.connection :refer [connection]]
             [ziggurat.messsaging.name :refer [get-with-prepended-app-name]]
@@ -33,7 +33,7 @@
   (remove nil? (for [_ (range count)]
                  (try
                    (with-open [ch (lch/open connection)]
-                     (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq config))
+                     (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
                            [meta payload] (lb/get ch (get-with-prepended-app-name queue-name) false)]
                        (convert-and-ack-message ch meta payload)))
                    (catch Exception e
@@ -47,9 +47,9 @@
 
 (defn- start-subscriber* []
   (let [ch (lch/open connection)
-        _ (lb/qos ch (:prefetch-count (:instant (:jobs config))))
+        _ (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
         consumer-tag (lcons/subscribe ch
-                                      (get-with-prepended-app-name (:queue-name (:instant (:rabbit-mq config))))
+                                      (get-with-prepended-app-name (:queue-name (:instant (:rabbit-mq (ziggurat-config)))))
                                       message-handler
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
@@ -57,6 +57,6 @@
     (log/info "starting consumer for instant-queue with cosumer tag - " consumer-tag)))
 
 (defn start-subscribers []
-  (let [workers (:worker-count (:instant (:jobs config)))]
+  (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
     (doseq [worker (range workers)]
       (start-subscriber*))))

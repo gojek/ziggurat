@@ -1,5 +1,4 @@
 (ns ziggurat.config
-  (:refer-clojure :exclude [delay])
   (:require [camel-snake-kebab.core :as csk]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
@@ -18,3 +17,6 @@
 
 (defstate config
   :start (make-config config-file))
+
+(defn ziggurat-config []
+  (get config :ziggurat))

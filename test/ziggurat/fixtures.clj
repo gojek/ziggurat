@@ -11,11 +11,6 @@
       (mount/swap {#'config/config (config/make-config "config.test.edn")})
       (mount/start)))
 
-(defn mount-test-config [f]
-  (mount-config)
-  (f)
-  (mount/stop))
-
 (defn init-rabbit-mq [f]
   (mount-config)
   (mount/start (mount/only [#'connection]))

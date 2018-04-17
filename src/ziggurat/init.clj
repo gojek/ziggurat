@@ -1,5 +1,5 @@
 (ns ziggurat.init
-  (:require [ziggurat.config :refer [config]]
+  (:require [ziggurat.config :refer [ziggurat-config] :as config]
             [lambda-common.metrics :as metrics]
             [mount.core :refer [defstate]]
             [ziggurat.messsaging.connection :as messaging-connection]
@@ -12,11 +12,13 @@
             [clojure.tools.logging :as log]))
 
 (defstate lambda-statsd-reporter
-  :start (metrics/start-statsd-reporter (:datadog config) (:env config) (:app-name config))
+  :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
+                                        (:env (ziggurat-config))
+                                        (:app-name (ziggurat-config)))
   :stop (metrics/stop-statsd-reporter lambda-statsd-reporter))
 
 (defn start [actor-start-fn mapper-fn]
-  (-> (mount/only #{#'config
+  (-> (mount/only #{#'config/config
                     #'lambda-statsd-reporter
                     #'messaging-connection/connection
                     #'server/server
@@ -31,7 +33,7 @@
 
 (defn stop [actor-stop-fn]
   (actor-stop-fn)
-  (mount/stop #'config
+  (mount/stop #'config/config
               #'lambda-statsd-reporter
               #'messaging-connection/connection
               #'server/server

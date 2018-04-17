@@ -3,7 +3,7 @@
             [flatland.protobuf.core :as proto]
             [mount.core :refer [defstate]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.config :refer [config]]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
             [sentry.core :as sentry]
             [ziggurat.kafka-delay :as kafka-delay]
@@ -16,7 +16,7 @@
            (java.util.regex Pattern)))
 
 (defn properties []
-  (let [stream-config (:stream-config config)]
+  (let [stream-config (:stream-config (ziggurat-config))]
     {StreamsConfig/APPLICATION_ID_CONFIG     (:application-id stream-config)
      StreamsConfig/BOOTSTRAP_SERVERS_CONFIG  (:bootstrap-servers stream-config)
      StreamsConfig/NUM_STREAM_THREADS_CONFIG (int (:stream-threads-count stream-config))
@@ -48,9 +48,9 @@
 
 (defn topology [mapper-fn]
   (let [builder (KStreamBuilder.)
-        topic-pattern (Pattern/compile (-> config :stream-config :origin-topic))]
+        topic-pattern (Pattern/compile (-> (ziggurat-config) :stream-config :origin-topic))]
     (->> (.stream builder topic-pattern)
-         (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName (:proto-class config))) %))
+         (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName (:proto-class (ziggurat-config)))) %))
          (map-values log-and-report-metrics)
          (map-values (mpr/mapper-func mapper-fn)))
     builder))

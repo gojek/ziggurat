@@ -1,5 +1,5 @@
 (ns ziggurat.server
-  (:require [ziggurat.config :refer [config]]
+  (:require [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.server.routes :as routes]
             [cheshire.generate :refer [add-encoder encode-str]]
             [clojure.tools.logging :as log]
@@ -11,7 +11,7 @@
 (add-encoder Instant encode-str)
 
 (defn- start [handler]
-  (let [conf (:http-server config)
+  (let [conf (:http-server (ziggurat-config))
         port (:port conf)
         thread-count (:thread-count conf)]
     (log/info "Starting server on port:" port)

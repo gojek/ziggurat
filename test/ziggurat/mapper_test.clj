@@ -3,7 +3,7 @@
   (:require [ziggurat.mapper :refer [mapper-func]]
             [lambda-common.metrics :as metrics]
             [sentry.core :refer [sentry-report]]
-            [ziggurat.config :refer [config]]
+            [ziggurat.config :refer [ziggurat-config]]
             [langohr.basic :as lb]
             [ziggurat.messsaging.producer :as producer]
             [ziggurat.messsaging.name :as name]
@@ -46,7 +46,7 @@
   (testing "message with a retry count of greater than 0 will publish to delay queue"
     (let [message {:foo "bar" :retry-count 5}
           expected-message {:foo "bar" :retry-count 4}
-          expected-exchange (name/get-with-prepended-app-name (:exchange-name (:delay (:rabbit-mq config))))
+          expected-exchange (name/get-with-prepended-app-name (:exchange-name (:delay (:rabbit-mq (ziggurat-config)))))
           publish-to-delay-queue-called? (atom false)]
       (with-redefs [lb/publish (fn [_ exchange _ actual-message _]
                                  (reset! publish-to-delay-queue-called? true)
@@ -58,7 +58,7 @@
   (testing "message with a retry count of 0 will publish to dead queue"
     (let [message {:foo "bar" :retry-count 0}
           expected-message (dissoc message :retry-count)
-          expected-exchange (name/get-with-prepended-app-name (:exchange-name (:dead-letter (:rabbit-mq config))))
+          expected-exchange (name/get-with-prepended-app-name (:exchange-name (:dead-letter (:rabbit-mq (ziggurat-config)))))
           publish-to-dead-queue-called? (atom false)]
       (with-redefs [lb/publish (fn [_ exchange _ actual-message _]
                                  (reset! publish-to-dead-queue-called? true)
@@ -70,7 +70,7 @@
   (testing "message with no retry count will publish to delay queue"
     (let [message {:foo "bar"}
           expected-message {:foo "bar" :retry-count 5}
-          expected-exchange (name/get-with-prepended-app-name (:exchange-name (:delay (:rabbit-mq config))))
+          expected-exchange (name/get-with-prepended-app-name (:exchange-name (:delay (:rabbit-mq (ziggurat-config)))))
           publish-to-delay-queue-called? (atom false)]
       (with-redefs [lb/publish (fn [_ exchange _ actual-message _]
                                  (reset! publish-to-delay-queue-called? true)
