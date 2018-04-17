@@ -10,7 +10,8 @@
             [langohr.consumers :as lcons]
             [mount.core :refer [defstate]]
             [taoensso.nippy :as nippy]
-            [sentry.core :as sentry]))
+            [sentry.core :as sentry])
+  (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
 (defn- convert-and-ack-message [ch {:keys [delivery-tag] :as meta} ^bytes payload]
   (try
@@ -38,6 +39,12 @@
                    (catch Exception e
                      (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))
 
+(defn- close [^Channel channel]
+  (try
+    (.close channel)
+    (catch AlreadyClosedException _
+      nil)))
+
 (defn- start-subscriber* []
   (let [ch (lch/open connection)
         _ (lb/qos ch (:prefetch-count (:instant (:jobs config))))
@@ -46,7 +53,7 @@
                                       message-handler
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
-                                                                    (.close ch))})]
+                                                                    (close ch))})]
     (log/info "starting consumer for instant-queue with cosumer tag - " consumer-tag)))
 
 (defn start-subscribers []
