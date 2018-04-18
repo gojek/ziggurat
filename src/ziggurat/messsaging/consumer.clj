@@ -57,6 +57,7 @@
     (log/info "starting consumer for instant-queue with cosumer tag - " consumer-tag)))
 
 (defn start-subscribers []
-  (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
-    (doseq [worker (range workers)]
-      (start-subscriber*))))
+  (when (-> (ziggurat-config) :retry :enabled)
+    (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
+      (doseq [worker (range workers)]
+        (start-subscriber*)))))

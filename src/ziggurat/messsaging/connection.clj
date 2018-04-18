@@ -11,21 +11,23 @@
 
 (defn- start-connection []
   (log/info "Connecting to RabbitMQ")
-  (try
-    (let [connection (rmq/connect (:rabbit-mq-connection (ziggurat-config)))]
-      (doto connection
-        (.addShutdownListener
-          (reify ShutdownListener
-            (shutdownCompleted [_ cause]
-              (when-not (.isInitiatedByApplication cause)
-                (log/error cause "RabbitMQ connection shut down due to error")))))))
-    (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while starting RabbitMQ connection")
-      (throw e))))
+  (when (-> (ziggurat-config) :retry :enabled)
+    (try
+      (let [connection (rmq/connect (:rabbit-mq-connection (ziggurat-config)))]
+        (doto connection
+          (.addShutdownListener
+           (reify ShutdownListener
+             (shutdownCompleted [_ cause]
+               (when-not (.isInitiatedByApplication cause)
+                 (log/error cause "RabbitMQ connection shut down due to error")))))))
+      (catch Exception e
+        (sentry/report-error sentry-reporter e "Error while starting RabbitMQ connection")
+        (throw e)))))
 
 (defn- stop-connection [conn]
-  (rmq/close conn)
-  (log/info "Disconnected from RabbitMQ"))
+  (when conn
+    (rmq/close conn)
+    (log/info "Disconnected from RabbitMQ")))
 
 (defstate connection
   :start (start-connection)
