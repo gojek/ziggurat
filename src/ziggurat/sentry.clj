@@ -19,3 +19,7 @@
   :stop (when (and (-> (ziggurat-config) :sentry :enabled) sentry-reporter)
           (log/info "Shutting down sentry reporter")
           (sentry/shutdown-reporter sentry-reporter)))
+
+(defmacro report-error
+  [^Throwable error & msgs]
+  `(sentry/report-error sentry-reporter ~error ~@msgs))
