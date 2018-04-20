@@ -5,8 +5,8 @@
             [sentry.core :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [langohr.basic :as lb]
-            [ziggurat.messsaging.producer :as producer]
-            [ziggurat.messsaging.name :as name]
+            [ziggurat.messaging.producer :as producer]
+            [ziggurat.messaging.name :as name]
             [ziggurat.fixtures :as fix]
             [taoensso.nippy :as nippy])
   (:import (java.util Arrays)))

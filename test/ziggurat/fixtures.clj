@@ -2,9 +2,9 @@
   (:require [clojure.test :refer :all]
             [mount.core :as mount]
             [ziggurat.config :as config]
-            [ziggurat.messsaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.server :refer [server]]
-            [ziggurat.messsaging.producer :as pr]))
+            [ziggurat.messaging.producer :as pr]))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])

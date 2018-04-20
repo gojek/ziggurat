@@ -1,6 +1,6 @@
 (ns ziggurat.resource.dead-set
   (:require [clojure.spec.alpha :as s]
-            [ziggurat.messsaging.replay :as r]))
+            [ziggurat.messaging.replay :as r]))
 
 (defn- validate-count [count]
   (and (s/valid? int? count) (s/int-in-range? 0 Integer/MAX_VALUE count)))

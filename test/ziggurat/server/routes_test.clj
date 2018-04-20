@@ -1,7 +1,7 @@
 (ns ziggurat.server.routes-test
   (:require [clojure.test :refer :all]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.messsaging.replay :as r]
+            [ziggurat.messaging.replay :as r]
             [ziggurat.fixtures :as fix]
             [ziggurat.server.test-utils :as tu]))
 

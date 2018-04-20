@@ -2,19 +2,19 @@
   (:require [ziggurat.sentry :refer [sentry-reporter]]
             [sentry.core :as sentry]))
 
-(defn with-retry* [retry-count wait fn-to-retry]
+(defn with-retry* [retry-count wait fn-to-retry fn-on-failure]
   (let [res (try
               (fn-to-retry)
-              (catch Exception e
-                (sentry/report-error sentry-reporter e "Pushing message to rabbitmq failed")
+              (catch Throwable e
+                (fn-on-failure e)
                 (if-not (zero? retry-count)
                   ::try-again
                   (throw e))))]
     (if (= res ::try-again)
       (do
         (Thread/sleep (or wait 10))
-        (recur (dec retry-count) wait fn-to-retry))
+        (recur (dec retry-count) wait fn-to-retry fn-on-failure))
       res)))
 
-(defmacro with-retry [{:keys [count wait]} & body]
-  `(with-retry* ~count ~wait (fn [] ~@body)))
+(defmacro with-retry [{:keys [count wait on-failure]} & body]
+  `(with-retry* ~count ~wait (fn [] ~@body) ~on-failure))

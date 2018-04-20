@@ -1,9 +1,9 @@
-(ns ziggurat.messsaging.consumer
+(ns ziggurat.messaging.consumer
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
-            [ziggurat.messsaging.connection :refer [connection]]
-            [ziggurat.messsaging.name :refer [get-with-prepended-app-name]]
+            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.name :refer [get-with-prepended-app-name]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]

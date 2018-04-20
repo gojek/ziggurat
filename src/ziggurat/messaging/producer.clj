@@ -1,9 +1,9 @@
-(ns ziggurat.messsaging.producer
+(ns ziggurat.messaging.producer
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messsaging.connection :refer [connection]]
-            [ziggurat.messsaging.name :refer [get-with-prepended-app-name]]
+            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.name :refer [get-with-prepended-app-name]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
@@ -19,7 +19,7 @@
 (defn- rabbitmq-config []
   (:rabbit-mq (ziggurat-config)))
 
-(defn delay-queue-name [queue-name queue-timeout-ms]
+(defn- delay-queue-name [queue-name queue-timeout-ms]
   (format "%s_%s" queue-name queue-timeout-ms))
 
 (defn- create-queue [queue props ch]
@@ -51,20 +51,23 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
-(defn publish
+(defn- publish
   ([exchange message]
    (publish exchange "" message))
   ([exchange routing-key message]
-   (with-retry {:count 3 :wait 50}
-               (with-open [ch (lch/open connection)]
-                 (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
-                                                                             :persistent   true})))))
+   (with-retry {:count      3
+                :wait       50
+                :on-failure #(sentry/report-error sentry-reporter %
+                                                  "Pushing message to rabbitmq failed")}
+     (with-open [ch (lch/open connection)]
+       (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
+                                                                   :persistent   true})))))
 
-(defn publish-to-delay-queue [message]
+(defn- publish-to-delay-queue [message]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))]
     (publish (get-with-prepended-app-name exchange-name) message)))
 
-(defn publish-to-dead-queue [message]
+(defn- publish-to-dead-queue [message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))]
     (publish (get-with-prepended-app-name exchange-name) message)))
 
@@ -74,10 +77,10 @@
 
 (defn retry [{:keys [retry-count] :as message}]
   (when (-> (ziggurat-config) :retry :enabled)
-   (cond
-     (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-     (< 0 retry-count)  (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
-     (= 0 retry-count)  (publish-to-dead-queue (dissoc message :retry-count)))))
+    (cond
+      (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
+      (< 0 retry-count) (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
+      (= 0 retry-count) (publish-to-dead-queue (dissoc message :retry-count)))))
 
 (defn- make-delay-queue []
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
@@ -99,6 +102,6 @@
 
 (defn make-queues []
   (when (-> (ziggurat-config) :retry :enabled)
-   (make-delay-queue)
-   (make-instant-queue)
-   (make-dead-letter-queue)))
+    (make-delay-queue)
+    (make-instant-queue)
+    (make-dead-letter-queue)))

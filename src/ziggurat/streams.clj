@@ -24,14 +24,6 @@
      StreamsConfig/VALUE_SERDE_CLASS_CONFIG  (.getName (.getClass (Serdes/ByteArray)))
      ConsumerConfig/AUTO_OFFSET_RESET_CONFIG "latest"}))
 
-(defn wrap-try
-  [mapper-fn]
-  (fn [booking]
-    (try (mapper-fn booking)
-         (catch Throwable e
-           (log/error e "Unhandled exception")
-           (sentry/report-error sentry-reporter e "Lambda Framework failed")))))
-
 (defn log-and-report-metrics
   [message]
   (kafka-delay/calculate-and-report-kafka-delay message)
@@ -44,7 +36,7 @@
 
 (defn map-values
   [mapper-fn ^KStream stream-builder]
-  (.mapValues stream-builder (value-mapper (wrap-try mapper-fn))))
+  (.mapValues stream-builder (value-mapper mapper-fn)))
 
 (defn topology [mapper-fn]
   (let [builder (KStreamBuilder.)

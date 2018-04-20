@@ -1,7 +1,7 @@
 (ns ziggurat.mapper
   (:require [lambda-common.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.messsaging.producer :as producer]
+            [ziggurat.messaging.producer :as producer]
             [ziggurat.sentry :refer [sentry-reporter]]
             [sentry.core :as sentry]
             [clojure.tools.logging :as log]))
@@ -18,6 +18,6 @@
             :skip 'TODO
             :block 'TODO
             (throw (ex-info "Invalid mapper return code" {:code return-code}))))
-        (catch Exception e
+        (catch Throwable e
           (sentry/report-error sentry-reporter e "Actor execution failed")
           (metrics/message-unsuccessfully-processed!))))))
