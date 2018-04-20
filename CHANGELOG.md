@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.0.3 - 2018-04-20
+### Chnaged
+- Upgrade esb-log-client version to latest (1.103.0).
+
 ## 1.0.2 - 2018-04-20
 ### Changed
 - Various internal refactorings: removed dead code, fixed some spelling mistakes, made some functions private.
