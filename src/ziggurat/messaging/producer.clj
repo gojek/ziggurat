@@ -1,6 +1,6 @@
 (ns ziggurat.messaging.producer
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.connection :refer [connection]]
             [langohr.basic :as lb]
@@ -15,10 +15,8 @@
   (:import [com.rabbitmq.client AlreadyClosedException ShutdownListener]
            (java.util.concurrent ExecutorService TimeUnit)))
 
-(defn- rabbitmq-config []
-  (:rabbit-mq (ziggurat-config)))
 
-(defn- delay-queue-name [queue-name queue-timeout-ms]
+(defn delay-queue-name [queue-name queue-timeout-ms]
   (format "%s_%s" queue-name queue-timeout-ms))
 
 (defn- create-queue [queue props ch]

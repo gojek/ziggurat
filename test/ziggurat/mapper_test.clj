@@ -3,14 +3,25 @@
   (:require [ziggurat.mapper :refer [mapper-func]]
             [lambda-common.metrics :as metrics]
             [sentry.core :refer [sentry-report]]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [rabbitmq-config ziggurat-config]]
+            [ziggurat.messaging.connection :refer [connection]]
             [langohr.basic :as lb]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.fixtures :as fix]
-            [taoensso.nippy :as nippy])
+            [taoensso.nippy :as nippy]
+            [langohr.channel :as lch]
+            [ziggurat.messaging.consumer :as consumer])
   (:import (java.util Arrays)))
 
 (use-fixtures :once fix/init-rabbit-mq)
+
+(defn get-msg-from-rabbitmq []
+  (with-open [ch (lch/open connection)]
+    (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
+          queue-name-with-timeout (producer/delay-queue-name queue-name queue-timeout-ms)
+          [meta payload] (lb/get ch queue-name-with-timeout false)]
+
+      (consumer/convert-and-ack-message ch meta payload))))
 
 (deftest mapper-func-test
   (let [message {:foo "bar"}]
@@ -22,14 +33,15 @@
           (is (= true @successfully-processed?)))))
 
     (testing "message process should be unsuccessful and retry"
-      (let [unsuccessfully-processed? (atom false)
+      (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
+            unsuccessfully-processed? (atom false)
             retry-fn-called? (atom false)]
         (with-redefs [metrics/message-unsuccessfully-processed! (fn []
-                                                                  (reset! unsuccessfully-processed? true))
-                      producer/retry (fn [_] (reset! retry-fn-called? true))]
+                                                                  (reset! unsuccessfully-processed? true))]
           ((mapper-func (constantly :retry)) message)
-          (is (= true @unsuccessfully-processed?))
-          (is (= true @retry-fn-called?)))))
+          (let [message-from-mq (get-msg-from-rabbitmq)]
+            (is (= message-from-mq expected-message)))
+          (is (= true @unsuccessfully-processed?)))))
 
     (testing "message should raise exception"
       (let [sentry-report-fn-called? (atom false)

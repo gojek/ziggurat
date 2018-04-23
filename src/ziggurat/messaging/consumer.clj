@@ -12,7 +12,7 @@
             [sentry.core :as sentry])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
-(defn- convert-and-ack-message [ch {:keys [delivery-tag] :as meta} ^bytes payload]
+(defn convert-and-ack-message [ch {:keys [delivery-tag] :as meta} ^bytes payload]
   (try
     (let [message (nippy/thaw payload)]
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))

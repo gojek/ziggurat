@@ -20,3 +20,6 @@
 
 (defn ziggurat-config []
   (get config :ziggurat))
+
+(defn rabbitmq-config []
+  (:rabbit-mq (ziggurat-config)))
