@@ -3,7 +3,6 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.name :refer [get-with-prepended-app-name]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
@@ -34,7 +33,7 @@
                  (try
                    (with-open [ch (lch/open connection)]
                      (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
-                           [meta payload] (lb/get ch (get-with-prepended-app-name queue-name) false)]
+                           [meta payload] (lb/get ch queue-name false)]
                        (convert-and-ack-message ch meta payload)))
                    (catch Exception e
                      (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))
@@ -49,7 +48,7 @@
   (let [ch (lch/open connection)
         _ (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
         consumer-tag (lcons/subscribe ch
-                                      (get-with-prepended-app-name (:queue-name (:instant (:rabbit-mq (ziggurat-config)))))
+                                      (:queue-name (:instant (:rabbit-mq (ziggurat-config))))
                                       message-handler
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)

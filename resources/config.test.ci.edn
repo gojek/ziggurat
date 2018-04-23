@@ -20,14 +20,14 @@
                                    :username        "guest"
                                    :password        "guest"
                                    :channel-timeout [5000 :int]}
-            :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"
-                                                 :exchange-name        "%s_delay_exchange"
-                                                 :dead-letter-exchange "%s_instant_exchange"
+            :rabbit-mq            {:delay       {:queue-name           "lambda_service_delay_queue"
+                                                 :exchange-name        "lambda_service_delay_exchange"
+                                                 :dead-letter-exchange "lambda_service_instant_exchange"
                                                  :queue-timeout-ms     [5000 :int]}
-                                   :instant     {:queue-name    "%s_instant_queue"
-                                                 :exchange-name "%s_instant_exchange"}
-                                   :dead-letter {:queue-name    "%s_dead_letter_queue"
-                                                 :exchange-name "%s_dead_letter_exchange"}}
+                                   :instant     {:queue-name    "lambda_service_instant_queue"
+                                                 :exchange-name "lambda_service_instant_exchange"}
+                                   :dead-letter {:queue-name    "lambda_service_dead_letter_queue"
+                                                 :exchange-name "lambda_service_dead_letter_exchange"}}
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
             :retry                {:count   [5 :int]

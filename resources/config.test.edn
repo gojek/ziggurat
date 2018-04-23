@@ -1,4 +1,4 @@
-{:ziggurat {:app-name             "lambda-service"
+{:ziggurat {:app-name             "lambda_service"
             :env                  [:dev :keyword]
             :nrepl-server         {:port [7011 :int]}
             :stream-config        {:application-id       "lambda-service-test-02"
@@ -22,14 +22,14 @@
                                    :channel-timeout [2000 :int]}
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
-            :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue_test"
-                                                 :exchange-name        "%s_delay_exchange_test"
-                                                 :dead-letter-exchange "%s_instant_exchange_test"
+            :rabbit-mq            {:delay       {:queue-name           "lambda_service_delay_queue_test"
+                                                 :exchange-name        "lambda_service_delay_exchange_test"
+                                                 :dead-letter-exchange "lambda_service_instant_exchange_test"
                                                  :queue-timeout-ms     [100 :int]}
-                                   :instant     {:queue-name    "%s_instant_queue_test"
-                                                 :exchange-name "%s_instant_exchange_test"}
-                                   :dead-letter {:queue-name    "%s_dead_letter_queue_test"
-                                                 :exchange-name "%s_dead_letter_exchange_test"}}
+                                   :instant     {:queue-name    "lambda_service_instant_queue_test"
+                                                 :exchange-name "lambda_service_instant_exchange_test"}
+                                   :dead-letter {:queue-name    "lambda_service_dead_letter_queue_test"
+                                                 :exchange-name "lambda_service_dead_letter_exchange_test"}}
             :retry                {:count   [5 :int]
                                    :enabled [true :bool]}
             :http-server          {:port         [8010 :int]

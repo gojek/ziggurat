@@ -3,7 +3,6 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.name :refer [get-with-prepended-app-name]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
@@ -59,21 +58,21 @@
                 :wait       50
                 :on-failure #(sentry/report-error sentry-reporter %
                                                   "Pushing message to rabbitmq failed")}
-     (with-open [ch (lch/open connection)]
-       (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
-                                                                   :persistent   true})))))
+               (with-open [ch (lch/open connection)]
+                 (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
+                                                                             :persistent   true})))))
 
 (defn- publish-to-delay-queue [message]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))]
-    (publish (get-with-prepended-app-name exchange-name) message)))
+    (publish exchange-name message)))
 
 (defn- publish-to-dead-queue [message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))]
-    (publish (get-with-prepended-app-name exchange-name) message)))
+    (publish exchange-name message)))
 
 (defn publish-to-instant-queue [message]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))]
-    (publish (get-with-prepended-app-name exchange-name) message)))
+    (publish exchange-name message)))
 
 (defn retry [{:keys [retry-count] :as message}]
   (when (-> (ziggurat-config) :retry :enabled)
@@ -84,21 +83,16 @@
 
 (defn- make-delay-queue []
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-        queue-name (delay-queue-name (get-with-prepended-app-name queue-name) queue-timeout-ms)]
-    (create-and-bind-queue queue-name
-                           (get-with-prepended-app-name exchange-name)
-                           (get-with-prepended-app-name dead-letter-exchange)
-                           queue-timeout-ms)))
+        queue-name (delay-queue-name queue-name queue-timeout-ms)]
+    (create-and-bind-queue queue-name exchange-name dead-letter-exchange queue-timeout-ms)))
 
 (defn- make-instant-queue []
   (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))]
-    (create-and-bind-queue (get-with-prepended-app-name queue-name)
-                           (get-with-prepended-app-name exchange-name))))
+    (create-and-bind-queue queue-name exchange-name)))
 
 (defn- make-dead-letter-queue []
   (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))]
-    (create-and-bind-queue (get-with-prepended-app-name queue-name)
-                           (get-with-prepended-app-name exchange-name))))
+    (create-and-bind-queue queue-name exchange-name)))
 
 (defn make-queues []
   (when (-> (ziggurat-config) :retry :enabled)
