@@ -15,13 +15,23 @@
 
 (use-fixtures :once fix/init-rabbit-mq)
 
-(defn get-msg-from-rabbitmq []
+(defn get-msg-from-rabbitmq [queue-name]
   (with-open [ch (lch/open connection)]
-    (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-          queue-name-with-timeout (producer/delay-queue-name queue-name queue-timeout-ms)
-          [meta payload] (lb/get ch queue-name-with-timeout false)]
-
+    (let [[meta payload] (lb/get ch queue-name false)]
       (consumer/convert-and-ack-message ch meta payload))))
+
+(defn- get-msg-from-delay-queue []
+  (let [{:keys [queue-name queue-timeout-ms]} (:delay (rabbitmq-config))
+        queue-name (producer/delay-queue-name queue-name queue-timeout-ms)]
+    (get-msg-from-rabbitmq queue-name)))
+
+(defn- get-msg-from-dead-queue []
+  (let [{:keys [queue-name]} (:dead-letter (rabbitmq-config))]
+    (get-msg-from-rabbitmq queue-name)))
+
+(defn- get-msg-from-instant-queue []
+  (let [{:keys [queue-name]} (:instant (rabbitmq-config))]
+    (get-msg-from-rabbitmq queue-name)))
 
 (deftest mapper-func-test
   (let [message {:foo "bar"}]
@@ -39,7 +49,7 @@
         (with-redefs [metrics/message-unsuccessfully-processed! (fn []
                                                                   (reset! unsuccessfully-processed? true))]
           ((mapper-func (constantly :retry)) message)
-          (let [message-from-mq (get-msg-from-rabbitmq)]
+          (let [message-from-mq (get-msg-from-delay-queue)]
             (is (= message-from-mq expected-message)))
           (is (= true @unsuccessfully-processed?)))))
 
@@ -56,27 +66,19 @@
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
     (let [message {:foo "bar" :retry-count 5}
-          expected-message {:foo "bar" :retry-count 4}
-          expected-exchange (:exchange-name (:delay (:rabbit-mq (ziggurat-config))))
-          publish-to-delay-queue-called? (atom false)]
-      (with-redefs [lb/publish (fn [_ exchange _ actual-message _]
-                                 (reset! publish-to-delay-queue-called? true)
-                                 (is (= exchange expected-exchange))
-                                 (is (Arrays/equals (nippy/freeze expected-message) actual-message)))]
-        (producer/retry message)
-        (is (= true @publish-to-delay-queue-called?)))))
+          expected-message {:foo "bar" :retry-count 4}]
+      (producer/retry message)
+      (let [message-from-mq (get-msg-from-delay-queue)]
+        (is (= expected-message message-from-mq)))))
 
   (testing "message with a retry count of 0 will publish to dead queue"
     (let [message {:foo "bar" :retry-count 0}
           expected-message (dissoc message :retry-count)
           expected-exchange (:exchange-name (:dead-letter (:rabbit-mq (ziggurat-config))))
           publish-to-dead-queue-called? (atom false)]
-      (with-redefs [lb/publish (fn [_ exchange _ actual-message _]
-                                 (reset! publish-to-dead-queue-called? true)
-                                 (is (= exchange expected-exchange))
-                                 (is (Arrays/equals (nippy/freeze expected-message) actual-message)))]
-        (producer/retry message)
-        (is (= true @publish-to-dead-queue-called?)))))
+      (producer/retry message)
+      (let [message-from-mq (get-msg-from-dead-queue)]
+        (is (= expected-message message-from-mq)))))
 
   (testing "message with no retry count will publish to delay queue"
     (let [message {:foo "bar"}
