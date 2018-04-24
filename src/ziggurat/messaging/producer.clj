@@ -60,11 +60,11 @@
                  (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
                                                                              :persistent   true})))))
 
-(defn- publish-to-delay-queue [message]
+(defn publish-to-delay-queue [message]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))]
     (publish exchange-name message)))
 
-(defn- publish-to-dead-queue [message]
+(defn publish-to-dead-queue [message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))]
     (publish exchange-name message)))
 
