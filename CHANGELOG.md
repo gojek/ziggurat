@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.0.5 - 2018-04-24
+- Fixed a bug in application shutdown: the actor's start-fn was being called instead of the stop-fn.
+- Made some functions private.
+- Added some docstrings.
+- Added Gotchas section to the README.
+
 ## 1.0.4 - 2018-04-20
 ### Added
 - Added ziggurat.sentry/report-error to be used by actors.

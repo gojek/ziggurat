@@ -15,7 +15,7 @@
            [org.apache.kafka.streams.kstream KStreamBuilder Predicate Reducer ValueMapper KStream]
            (java.util.regex Pattern)))
 
-(defn properties []
+(defn- properties []
   (let [stream-config (:stream-config (ziggurat-config))]
     {StreamsConfig/APPLICATION_ID_CONFIG     (:application-id stream-config)
      StreamsConfig/BOOTSTRAP_SERVERS_CONFIG  (:bootstrap-servers stream-config)
@@ -24,21 +24,21 @@
      StreamsConfig/VALUE_SERDE_CLASS_CONFIG  (.getName (.getClass (Serdes/ByteArray)))
      ConsumerConfig/AUTO_OFFSET_RESET_CONFIG "latest"}))
 
-(defn log-and-report-metrics
+(defn- log-and-report-metrics
   [message]
   (kafka-delay/calculate-and-report-kafka-delay message)
   message)
 
-(defn value-mapper
+(defn- value-mapper
   [f]
   (reify ValueMapper
     (apply [_ v] (f v))))
 
-(defn map-values
+(defn- map-values
   [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn topology [mapper-fn]
+(defn- topology [mapper-fn]
   (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile (-> (ziggurat-config) :stream-config :origin-topic))]
     (->> (.stream builder topic-pattern)

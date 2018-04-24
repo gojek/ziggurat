@@ -1,4 +1,5 @@
 (ns ziggurat.init
+  "Contains the entry point for your lambda actor."
   (:require [ziggurat.config :refer [ziggurat-config] :as config]
             [lambda-common.metrics :as metrics]
             [mount.core :refer [defstate]]
@@ -17,7 +18,9 @@
                                         (:app-name (ziggurat-config)))
   :stop (metrics/stop-statsd-reporter lambda-statsd-reporter))
 
-(defn start [actor-start-fn mapper-fn]
+(defn start
+  "Starts up Ziggurat's state, and then calls the actor-start-fn."
+  [actor-start-fn mapper-fn]
   (-> (mount/only #{#'config/config
                     #'lambda-statsd-reporter
                     #'messaging-connection/connection
@@ -31,7 +34,9 @@
   (messaging-consumer/start-subscribers)
   (actor-start-fn))
 
-(defn stop [actor-stop-fn]
+(defn stop
+  "Calls the actor-stop-fn, and then stops Ziggurat's state."
+  [actor-stop-fn]
   (actor-stop-fn)
   (mount/stop #'config/config
               #'lambda-statsd-reporter
@@ -40,16 +45,21 @@
               #'nrepl-server/server
               #'streams/stream))
 
-(defn add-shutdown-hook [actor-stop-fn]
+(defn- add-shutdown-hook [actor-stop-fn]
   (.addShutdownHook
     (Runtime/getRuntime)
     (Thread. ^Runnable  #(do (stop actor-stop-fn)
                              (shutdown-agents))
              "Shutdown-handler")))
 
-(defn main [start-fn stop-fn main-fn]
+(defn main
+  "The entry point for your lambda actor.
+  main-fn must be a fn which accepts one parameter: the message from Kafka. It must return :success, :retry or :skip.
+  start-fn takes no parameters, and will be run on application startup.
+  stop-fn takes no parameters, and will be run on application shutdown."
+  [start-fn stop-fn main-fn]
   (try
-    (add-shutdown-hook start-fn)
+    (add-shutdown-hook stop-fn)
     (start start-fn main-fn)
     (catch Exception e
       (log/error e)
