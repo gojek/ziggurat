@@ -17,8 +17,7 @@
     (let [message (nippy/thaw payload)]
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
       (if ack?
-        (lb/ack ch delivery-tag)
-        (lb/nack ch delivery-tag true true))
+        (lb/ack ch delivery-tag))
       message)
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while decoding message")
@@ -31,14 +30,15 @@
     (mpr/mapper-func message)))
 
 (defn get-dead-set-messages [count ack?]
-  (remove nil? (for [_ (range count)]
-                 (try
-                   (with-open [ch (lch/open connection)]
-                     (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
-                           [meta payload] (lb/get ch queue-name false)]
-                       (if (some? payload) (convert-and-ack-message ch meta payload ack?))))
-                   (catch Exception e
-                     (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))
+  (remove nil?
+          (with-open [ch (lch/open connection)]
+            (doall (for [_ (range count)]
+                     (try
+                       (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
+                             [meta payload] (lb/get ch queue-name false)]
+                         (if (some? payload) (convert-and-ack-message ch meta payload ack?)))
+                       (catch Exception e
+                         (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))))
 
 (defn- close [^Channel channel]
   (try
