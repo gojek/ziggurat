@@ -18,7 +18,7 @@
 (def routes
   ["/" [["ping" {:get ping}]
         ["v1/dead_set/replay" {:post ds/replay}]
-        ["v1/dead_set/replay" {:get ds/view}]
+        ["v1/dead_set" {:get ds/view}]
         [true (fn [_req] (ring-resp/not-found ""))]]])
 
 (defn handler []

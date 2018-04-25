@@ -24,22 +24,22 @@
             {:keys [status body] :as response} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" {:count count})]
         (is (= 400 status)))))
 
-  (testing "should return 400 when get /v1/dead_set/replay is called with invalid count val"
+  (testing "should return 400 when get /v1/dead_set is called with invalid count val"
     (with-redefs [ds/view (fn [_] nil)]
       (let [count "avasdas"
             {:keys [status body] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
-                                                       "/v1/dead_set/replay"
+                                                       "/v1/dead_set"
                                                        true
                                                        true
                                                        {}
                                                        {:count count})]
         (is (= 400 status)))))
 
-  (testing "should return 400 when get /v1/dead_set/replay is called with invalid count val"
+  (testing "should return 400 when get /v1/dead_set is called with invalid count val"
     (with-redefs [ds/view (fn [_] {:foo "bar"})]
       (let [count 10
             {:keys [status body] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
-                                                       "/v1/dead_set/replay"
+                                                       "/v1/dead_set"
                                                        true
                                                        true
                                                        {}
