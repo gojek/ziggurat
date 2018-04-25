@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.0.6 - 2018-04-25
+- Bump version of `com.gojek/sentry`
+
 ## 1.0.5 - 2018-04-24
 - Fixed a bug in application shutdown: the actor's start-fn was being called instead of the stop-fn.
 - Made some functions private.
