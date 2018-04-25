@@ -12,11 +12,13 @@
             [sentry.core :as sentry])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
-(defn convert-and-ack-message [ch {:keys [delivery-tag] :as meta} ^bytes payload]
+(defn convert-and-ack-message [ch {:keys [delivery-tag] :as meta} ^bytes payload ack?]
   (try
     (let [message (nippy/thaw payload)]
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
-      (lb/ack ch delivery-tag)
+      (if ack?
+        (lb/ack ch delivery-tag)
+        (lb/nack ch delivery-tag true true))
       message)
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while decoding message")
@@ -25,16 +27,16 @@
 
 (defn- message-handler
   [ch meta ^bytes payload]
-  (if-let [message (convert-and-ack-message ch meta payload)]
+  (if-let [message (convert-and-ack-message ch meta payload true)]
     (mpr/mapper-func message)))
 
-(defn get-dead-set-messages [count]
+(defn get-dead-set-messages [count ack?]
   (remove nil? (for [_ (range count)]
                  (try
                    (with-open [ch (lch/open connection)]
                      (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
                            [meta payload] (lb/get ch queue-name false)]
-                       (convert-and-ack-message ch meta payload)))
+                       (if (some? payload) (convert-and-ack-message ch meta payload ack?))))
                    (catch Exception e
                      (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))
 

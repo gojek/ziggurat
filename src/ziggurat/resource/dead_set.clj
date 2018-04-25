@@ -1,6 +1,6 @@
 (ns ziggurat.resource.dead-set
   (:require [clojure.spec.alpha :as s]
-            [ziggurat.messaging.replay :as r]))
+            [ziggurat.messaging.dead-set :as r]))
 
 (defn- validate-count [count]
   (and (s/valid? int? count) (s/int-in-range? 0 Integer/MAX_VALUE count)))
@@ -12,3 +12,7 @@
          :body   {:message "Requeued messages on the queue for retrying"}})
     {:status 400
      :body   {:error "Count should be the positive integer"}}))
+
+(defn view [{:keys [params]}]
+  (if (validate-count (:count params))
+    (do (r/view (:count params)))))
