@@ -14,3 +14,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 If a message field is set to the default value, it is omitted from the serialised message and will not 
 be visible in the message passed to the mapper function. For example, if an integer value is set to `0`, which 
 is the default, it will not be available at all in the message passed to the mapper function. Refer [here](https://developers.google.com/protocol-buffers/docs/proto3#default).
+
+## Contribution
+
+- For dev setup and contributions please refer to CONTRIBUTING.md
