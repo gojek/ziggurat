@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.0.8 - 2018-04-25
+- Adds metrics to count throughput
+- Changes the job name getting pushed to NR
+
 ## 1.0.7 - 2018-04-25
 - Adds an `v1/dead_set` to view the dead set messages
 

@@ -2,6 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [flatland.protobuf.core :as proto]
             [mount.core :refer [defstate]]
+            [lambda-common.metrics :as metrics]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
@@ -27,6 +28,7 @@
 (defn- log-and-report-metrics
   [message]
   (kafka-delay/calculate-and-report-kafka-delay message)
+  (metrics/increment-count "message" "read")
   message)
 
 (defn- value-mapper

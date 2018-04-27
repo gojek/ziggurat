@@ -8,7 +8,7 @@
 
 (defn mapper-func [mapper-fn]
   (fn [message]
-    (nr/with-tracing "job" "Publish metrics"
+    (nr/with-tracing "job" "mapper-func"
       (try
         (let [return-code (mapper-fn message)]
           (case return-code
