@@ -12,7 +12,9 @@
             [sentry.core :as sentry])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
-(defn convert-and-ack-message [ch {:keys [delivery-tag] :as meta} ^bytes payload ack?]
+(defn convert-and-ack-message
+  "Take the ch metadata payload and ack? as parameter. Decodes the payload the ack it if ack is enabled and returns the message"
+  [ch {:keys [delivery-tag] :as meta} ^bytes payload ack?]
   (try
     (let [message (nippy/thaw payload)]
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
@@ -29,7 +31,10 @@
   (if-let [message (convert-and-ack-message ch meta payload true)]
     (mpr/mapper-func message)))
 
-(defn get-dead-set-messages [count ack?]
+(defn get-dead-set-messages
+  "Get the n(count) messages from the rabbitmq and if ack is set to true then
+  ack all the messages in while consuming so that it's not available for other subscriber else does not ack the message"
+  [count ack?]
   (remove nil?
           (with-open [ch (lch/open connection)]
             (doall (for [_ (range count)]
@@ -57,7 +62,9 @@
                                                                     (close ch))})]
     (log/info "starting consumer for instant-queue with cosumer tag - " consumer-tag)))
 
-(defn start-subscribers []
+(defn start-subscribers
+  "Starts the subscriber to the instant queue of the rabbitmq"
+  []
   (when (-> (ziggurat-config) :retry :enabled)
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
       (doseq [worker (range workers)]

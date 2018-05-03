@@ -19,3 +19,8 @@ rabbitmqctl set_permissions -p / gojek ".*" ".*" ".*"
 - Run tests: ```lein test```
 
 Write code and raise PR :)
+
+Please add all your configs into ziggurat namespace in config.edn(test) file
+
+If you PR is accepted then whatever configs you have added,
+Please add them to deafult actor configs or ask Lambda team to do so and In actor template also

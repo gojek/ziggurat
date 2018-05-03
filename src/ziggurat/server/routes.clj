@@ -16,6 +16,7 @@
    :body    "pong"})
 
 (def routes
+
   ["/" [["ping" {:get ping}]
         ["v1/dead_set/replay" {:post ds/replay}]
         ["v1/dead_set" {:get ds/view}]
