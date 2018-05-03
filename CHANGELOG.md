@@ -1,7 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## 1.0.89 - 2018-05-02
+## 1.1.0 - 2018-05-03
+- Adds ability to pass actor specific routes
+
+## 1.0.9 - 2018-05-02
 - Changes dependency from esb-log-client to esb-log-entities
 
 ## 1.0.8 - 2018-04-27

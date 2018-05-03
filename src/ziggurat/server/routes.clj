@@ -15,15 +15,17 @@
    :headers {"Content-Type" "text/plain"}
    :body    "pong"})
 
+(def routes-prefix ["/"])
+
 (def routes
+  [["ping" {:get ping}]
+   ["v1/dead_set/replay" {:post ziggurat.resource.dead-set/replay}]
+   ["v1/dead_set" {:get ziggurat.resource.dead-set/view}]
+   [true (fn [_req] (ring.util.response/not-found ""))]])
 
-  ["/" [["ping" {:get ping}]
-        ["v1/dead_set/replay" {:post ds/replay}]
-        ["v1/dead_set" {:get ds/view}]
-        [true (fn [_req] (ring-resp/not-found ""))]]])
-
-(defn handler []
-  (-> routes
+(defn handler [actor-routes]
+  (-> routes-prefix
+      (conj (into [] (concat actor-routes routes)))
       (bidi/make-handler)
       (m/wrap-hyphenate)
       (ring-defaults/wrap-defaults ring-defaults/api-defaults)
