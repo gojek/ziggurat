@@ -2,7 +2,7 @@
   (:require [cemerick.url :refer [url]]
             [clj-http.client :as http]
             [clojure.data.json :as json])
-  (:import (java.net ConnectException)))
+  (:import (java.net ConnectException SocketTimeoutException)))
 
 (defn- get-url [host port app-name]
   (str (url (str host ":" port) "/v1/configurations" app-name "latest")))
@@ -21,4 +21,5 @@
                                        keyword) v)) {} (json/read-str (:body response)))
           :data)
       nil))
-       (catch ConnectException e nil)))
+       (catch ConnectException e nil)
+       (catch SocketTimeoutException e nil)))
