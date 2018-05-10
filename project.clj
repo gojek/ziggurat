@@ -26,6 +26,7 @@
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
                  [org.clojure/clojure "1.9.0"]
+                 [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
                  [org.clojure/tools.nrepl "0.2.12"]
                  [org.flatland/protobuf "0.8.1"]
@@ -44,4 +45,4 @@
   :jvm-opts ["-server" "-XX:-OmitStackTraceInFastThrow"]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
-             :test {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}})
+             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}})
