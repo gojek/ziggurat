@@ -3,7 +3,7 @@
 The actor framework for Project Lambda
 
 ## Usage
-`[com.gojek.lambda/ziggurat "1.0.4"]`
+`[com.gojek.lambda/ziggurat "1.2.0"]`
 
 ## Configuration
 
