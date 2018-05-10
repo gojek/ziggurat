@@ -21,7 +21,7 @@
   (let [edn-conf (edn-config config-file)
         env-config (config-from-env config-file)
         ziggurat-config (:ziggurat env-config)
-        {:keys [host port connection-timeout-in-ms]} (:yggdrasil ziggurat-configg)
+        {:keys [host port connection-timeout-in-ms]} (:yggdrasil ziggurat-config)
         env (:env ziggurat-config)
         app-name (:app-name ziggurat-config)
         yggdrasil-raw-config (yggdrasil/get-config app-name host port env connection-timeout-in-ms)]
