@@ -20,9 +20,10 @@
 (defn make-config [config-file]
   (let [edn-conf (edn-config config-file)
         env-config (config-from-env config-file)
-        {:keys [host port connection-timeout-in-ms]} (:yggdrasil (:ziggurat env-config))
-        env (:env env-config)
-        app-name (:app-name env-config)
+        ziggurat-config (:ziggurat env-config)
+        {:keys [host port connection-timeout-in-ms]} (:yggdrasil ziggurat-configg)
+        env (:env ziggurat-config)
+        app-name (:app-name ziggurat-config)
         yggdrasil-raw-config (yggdrasil/get-config app-name host port env connection-timeout-in-ms)]
     (if (nil? yggdrasil-raw-config)
       env-config
