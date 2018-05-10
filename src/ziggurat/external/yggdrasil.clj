@@ -3,12 +3,12 @@
             [clj-http.client :as http]
             [clojure.data.json :as json]))
 
-(defn- get-url [host port app-name env]
+(defn- get-url [host port app-name]
   (str (url (str host ":" port) "/v1/configurations" app-name "latest")))
 
 (defn get-config
   [app-name host port env connection-timeout-in-ms]
-  (let [call-url (get-url host port app-name env)
+  (let [call-url (get-url host port app-name)
         response (http/get call-url {:socket-timeout   connection-timeout-in-ms
                                      :conn-timeout     connection-timeout-in-ms
                                      :query-params     {"q" env}
