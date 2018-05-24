@@ -14,6 +14,7 @@
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig]
            [org.apache.kafka.streams.kstream KStreamBuilder Predicate Reducer ValueMapper KStream]
+           [org.apache.kafka.streams.processor StreamPartitioner WallclockTimestampExtractor]
            (java.util.regex Pattern)))
 
 (defn- properties []
@@ -23,6 +24,7 @@
      StreamsConfig/NUM_STREAM_THREADS_CONFIG (int (:stream-threads-count stream-config))
      StreamsConfig/KEY_SERDE_CLASS_CONFIG    (.getName (.getClass (Serdes/ByteArray)))
      StreamsConfig/VALUE_SERDE_CLASS_CONFIG  (.getName (.getClass (Serdes/ByteArray)))
+     StreamsConfig/TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
      ConsumerConfig/AUTO_OFFSET_RESET_CONFIG "latest"}))
 
 (defn- log-and-report-metrics
