@@ -1,8 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## 1.2.2 - 2018-05-24
+## 1.2.3 - 2018-05-28
 - Uses WallclockTimestampExtractor as timestamp extractor for the streams
+
+## 1.2.2 - 2018-05-24
+- Empty release
 
 ## 1.2.1 - 2018-05-11
 - Always fetches the esb-log-entites version greater than or equal 3.17.11
