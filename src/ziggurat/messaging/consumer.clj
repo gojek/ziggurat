@@ -26,10 +26,10 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
-(defn- message-handler
-  [ch meta ^bytes payload]
-  (if-let [message (convert-and-ack-message ch meta payload true)]
-    (mpr/mapper-func message)))
+(defn- message-handler [mapper-fn]
+  (fn [ch meta ^bytes payload]
+    (if-let [message (convert-and-ack-message ch meta payload true)]
+      ((mpr/mapper-func mapper-fn) message))))
 
 (defn get-dead-set-messages
   "Get the n(count) messages from the rabbitmq and if ack is set to true then
@@ -51,12 +51,12 @@
     (catch AlreadyClosedException _
       nil)))
 
-(defn- start-subscriber* []
+(defn- start-subscriber* [mapper-fn]
   (let [ch (lch/open connection)
         _ (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
         consumer-tag (lcons/subscribe ch
                                       (:queue-name (:instant (:rabbit-mq (ziggurat-config))))
-                                      message-handler
+                                      (message-handler mapper-fn)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
@@ -64,8 +64,8 @@
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
-  []
+  [mapper-fn]
   (when (-> (ziggurat-config) :retry :enabled)
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
       (doseq [worker (range workers)]
-        (start-subscriber*)))))
+        (start-subscriber* mapper-fn)))))

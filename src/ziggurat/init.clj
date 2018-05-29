@@ -32,7 +32,7 @@
        (mount/start))
    (messaging-producer/make-queues)
   ;; We want subscribers to start after creating queues on RabbitMQ.
-   (messaging-consumer/start-subscribers)
+   (messaging-consumer/start-subscribers mapper-fn)
    (actor-start-fn))
 
 (defn stop
