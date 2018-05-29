@@ -45,21 +45,21 @@
                        (catch Exception e
                          (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))))
 
-(defn- close [^Channel channel]
+(defn close [^Channel channel]
   (try
     (.close channel)
     (catch AlreadyClosedException _
       nil)))
 
-(defn- start-subscriber* [mapper-fn]
-  (let [ch (lch/open connection)
-        _ (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
-        consumer-tag (lcons/subscribe ch
+(defn start-subscriber* [ch mapper-fn]
+  (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
+  (let [consumer-tag (lcons/subscribe ch
                                       (:queue-name (:instant (:rabbit-mq (ziggurat-config))))
                                       (message-handler mapper-fn)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
+
     (log/info "starting consumer for instant-queue with cosumer tag - " consumer-tag)))
 
 (defn start-subscribers
@@ -68,4 +68,4 @@
   (when (-> (ziggurat-config) :retry :enabled)
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
       (doseq [worker (range workers)]
-        (start-subscriber* mapper-fn)))))
+        (start-subscriber* (lch/open connection) mapper-fn)))))
