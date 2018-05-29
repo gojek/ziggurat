@@ -35,15 +35,15 @@
   "Retry for the specified limit times.
    Limit of -1 would mean we never retry."
   (fn [message]
-    (cond (< @retry-counter limit)
-          (do (swap! retry-counter inc)
+    (cond (< @retry-counter-atom limit)
+          (do (swap! retry-counter-atom inc)
               :retry)
 
           (= (:msg message) "skip")
           :skip
 
           :else
-          (do (swap! success-tracker (constantly true))
+          (do (swap! success-tracker-atom (constantly true))
               :success))))
 
 (defn gen-msg [len]
