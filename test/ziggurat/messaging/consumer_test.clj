@@ -30,21 +30,40 @@
 
 (def mapper-retries (atom 0))
 
-(defn mock-mapper-fn [message]
-  (if (< @mapper-retries 2)
-    (do
-      (swap! mapper-retries inc)
-      :retry)
-    :success))
+(defn mock-mapper-with-limit-fn [limit]
+  (fn [message]
+    (if (< @mapper-retries limit)
+      (do
+        (swap! mapper-retries inc)
+        :retry)
+      :success)))
+
+(defn mock-mapper-without-limit-fn [message]
+  (swap! mapper-retries inc))
 
 (deftest test-retries
-  (testing "when retry is enabled the mapper-fn should be retried"
+  (testing "when retry is enabled the mapper-fn should be retried until return success"
     (let [original-zig-config (ziggurat-config)]
       (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                (update-in [:retry :enabled] (constantly true))
                                                (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-        (start-subscribers mock-mapper-fn)
+        (start-subscribers (mock-mapper-with-limit-fn 2))
         (producer/publish-to-delay-queue {:foo "bar"})
         (Thread/sleep 2000)
-        (is (= 2 @mapper-retries))))))
+        (is (= 2 @mapper-retries))
+        (reset! mapper-retries 0))))
+
+  (testing "when retry is enabled the mapper-fn should be retried with maximum 5 times"
+    (let [original-zig-config (ziggurat-config)]
+      (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                               (update-in [:retry :enabled] (constantly true))
+                                               (update-in [:retry :count] (constantly 5))
+                                               (update-in [:jobs :instant :worker-count] (constantly 1))))]
+
+        (start-subscribers mock-mapper-without-limit-fn)
+        (producer/publish-to-delay-queue {:foo "bar"})
+        (Thread/sleep 2000)
+        (is (= 5 @mapper-retries))
+        (reset! mapper-retries 0)))))
+
