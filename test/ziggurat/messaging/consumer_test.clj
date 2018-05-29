@@ -31,11 +31,11 @@
         (is (= (replicate count-of-messages message) dead-set-messages))
         (is (= (replicate count-of-messages message) (get-dead-set-messages count-of-messages false)))))))
 
-(defn mock-mapper-with-limit-fn [retry-counter-atom success-tracker-atom limit]
+(defn mock-mapper-with-retry-fn [retry-counter-atom success-tracker-atom retry-limit]
   "Retry for the specified limit times.
    Limit of -1 would mean we never retry."
   (fn [message]
-    (cond (< @retry-counter-atom limit)
+    (cond (< @retry-counter-atom retry-limit)
           (do (swap! retry-counter-atom inc)
               :retry)
 
