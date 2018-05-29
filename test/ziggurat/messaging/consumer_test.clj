@@ -1,8 +1,9 @@
 (ns ziggurat.messaging.consumer-test
   (:require [clojure.test :refer :all])
-  (:require [ziggurat.messaging.consumer :refer [get-dead-set-messages]]
-            [ziggurat.messaging.producer :as producer]
-            [ziggurat.fixtures :as fix]))
+  (:require [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.fixtures :as fix]
+            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-subscribers]]
+            [ziggurat.messaging.producer :as producer]))
 
 (use-fixtures :once fix/init-rabbit-mq)
 
@@ -26,3 +27,24 @@
             dead-set-messages (get-dead-set-messages count-of-messages false)]
         (is (= (replicate count-of-messages message) dead-set-messages))
         (is (= (replicate count-of-messages message) (get-dead-set-messages count-of-messages false)))))))
+
+(def mapper-retries (atom 0))
+
+(defn mock-mapper-fn [message]
+  (if (< @mapper-retries 2)
+    (do
+      (swap! mapper-retries inc)
+      :retry)
+    :success))
+
+(deftest test-retries
+  (testing "when retry is enabled the mapper-fn should be retried"
+    (let [original-zig-config (ziggurat-config)]
+      (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                               (update-in [:retry :enabled] (constantly true))
+                                               (update-in [:jobs :instant :worker-count] (constantly 1))))]
+
+        (start-subscribers mock-mapper-fn)
+        (producer/publish-to-delay-queue {:foo "bar"})
+        (Thread/sleep 2000)
+        (is (= 2 @mapper-retries))))))
