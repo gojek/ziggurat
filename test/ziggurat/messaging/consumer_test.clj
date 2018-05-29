@@ -39,7 +39,8 @@
       :success)))
 
 (defn mock-mapper-without-limit-fn [message]
-  (swap! mapper-retries inc))
+  (swap! mapper-retries inc)
+  :retry)
 
 (deftest test-retries
   (testing "when retry is enabled the mapper-fn should be retried until return success"
