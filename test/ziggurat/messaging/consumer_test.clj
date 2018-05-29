@@ -31,7 +31,7 @@
         (is (= (replicate count-of-messages message) dead-set-messages))
         (is (= (replicate count-of-messages message) (get-dead-set-messages count-of-messages false)))))))
 
-(defn mock-mapper-with-retry-fn [retry-counter-atom success-tracker-atom retry-limit]
+(defn- mock-mapper-fn-with-retry [retry-counter-atom success-tracker-atom retry-limit]
   "Retry for the specified limit times.
    Limit of -1 would mean we never retry."
   (fn [message]
@@ -46,10 +46,10 @@
           (do (swap! success-tracker-atom (constantly true))
               :success))))
 
-(defn gen-msg [len]
+(defn- gen-msg [len]
   {:gen-key (apply str (take len (repeatedly #(char (+ (rand 26) 65)))))})
 
-(defn block-until [success-fn]
+(defn- block-until [success-fn]
   (try
     (retry/with-retry {:count 5 :wait 1000 :on-failure (fn [e] (prn "Failed. Retrying... \n"))}
       (when-not (success-fn)
@@ -70,7 +70,7 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* ch (mock-mapper-with-limit-fn retry-counter success-tracker 2))
+          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 2))
 
           (producer/publish-to-delay-queue msg)
 
@@ -94,7 +94,7 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* ch (mock-mapper-with-limit-fn retry-counter success-tracker -1))
+          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker -1))
 
           (producer/publish-to-delay-queue msg)
 
@@ -119,7 +119,7 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* ch (mock-mapper-with-limit-fn retry-counter success-tracker 10))
+          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 10))
 
           (dotimes [_ no-of-msgs]
             (producer/retry (gen-msg 10)))
