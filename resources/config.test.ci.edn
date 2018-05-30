@@ -23,7 +23,7 @@
             :rabbit-mq            {:delay       {:queue-name           "lambda_service_delay_queue"
                                                  :exchange-name        "lambda_service_delay_exchange"
                                                  :dead-letter-exchange "lambda_service_instant_exchange"
-                                                 :queue-timeout-ms     [5000 :int]}
+                                                 :queue-timeout-ms     [100 :int]}
                                    :instant     {:queue-name    "lambda_service_instant_queue"
                                                  :exchange-name "lambda_service_instant_exchange"}
                                    :dead-letter {:queue-name    "lambda_service_dead_letter_queue"
