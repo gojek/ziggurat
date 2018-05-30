@@ -76,8 +76,8 @@
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
       (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-      (< 0 retry-count) (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
-      (= 0 retry-count) (publish-to-dead-queue (dissoc message :retry-count)))))
+      (> retry-count 0)  (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
+      (= retry-count 0)  (publish-to-dead-queue (dissoc message :retry-count)))))
 
 (defn- make-delay-queue []
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
