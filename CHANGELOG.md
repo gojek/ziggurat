@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.3.0 - 2018-05-28
+- Fixes the consumer to retry the mapper-fn
+
 ## 1.2.3 - 2018-05-28
 - Uses WallclockTimestampExtractor as timestamp extractor for the streams
 
@@ -14,13 +17,13 @@ All notable changes to this project will be documented in this file. This change
 - Bumps up the esb log entities version to 3.17.11
 - Fetches config from yggdrasil and if not found fallbacks to env
 ```bash
-Configs added 
+Configs added
 {
 :ziggurat {:yggdrasil {:host "http://localhost"
                        :port [8080 :int]
                        :connection-timeout-in-ms [1000 :int}}
 }
-``` 
+```
 
 ## 1.1.1 - 2018-05-03
 - Bumps up the esb log entities version
