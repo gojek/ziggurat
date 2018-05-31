@@ -11,7 +11,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="error">
+        <Root level="info">
             <AppenderRef ref="STDOUT"/>
         </Root>
         <Logger name="lambda-service" level="info" additivity="false">

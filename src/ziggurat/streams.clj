@@ -9,23 +9,21 @@
             [sentry.core :as sentry]
             [ziggurat.kafka-delay :as kafka-delay]
             [mount.core :as mount])
-  (:import [com.gojek.esb.booking BookingLogMessage]
-           [org.apache.kafka.clients.consumer ConsumerConfig]
+  (:import [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig]
-           [org.apache.kafka.streams.kstream KStreamBuilder Predicate Reducer ValueMapper KStream]
-           [org.apache.kafka.streams.processor StreamPartitioner WallclockTimestampExtractor]
+           [org.apache.kafka.streams.kstream KStreamBuilder ValueMapper KStream]
+           [org.apache.kafka.streams.processor WallclockTimestampExtractor]
            (java.util.regex Pattern)))
 
-(defn- properties []
-  (let [stream-config (:stream-config (ziggurat-config))]
-    {StreamsConfig/APPLICATION_ID_CONFIG     (:application-id stream-config)
-     StreamsConfig/BOOTSTRAP_SERVERS_CONFIG  (:bootstrap-servers stream-config)
-     StreamsConfig/NUM_STREAM_THREADS_CONFIG (int (:stream-threads-count stream-config))
-     StreamsConfig/KEY_SERDE_CLASS_CONFIG    (.getName (.getClass (Serdes/ByteArray)))
-     StreamsConfig/VALUE_SERDE_CLASS_CONFIG  (.getName (.getClass (Serdes/ByteArray)))
-     StreamsConfig/TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
-     ConsumerConfig/AUTO_OFFSET_RESET_CONFIG "latest"}))
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count]}]
+  {StreamsConfig/APPLICATION_ID_CONFIG            application-id
+   StreamsConfig/BOOTSTRAP_SERVERS_CONFIG         bootstrap-servers
+   StreamsConfig/NUM_STREAM_THREADS_CONFIG        (int stream-threads-count)
+   StreamsConfig/KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
+   StreamsConfig/VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
+   StreamsConfig/TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
+   ConsumerConfig/AUTO_OFFSET_RESET_CONFIG        "latest"})
 
 (defn- log-and-report-metrics
   [message]
@@ -42,26 +40,40 @@
   [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- topology [mapper-fn]
+(defn- topology [mapper-fn {:keys [origin-topic proto-class]}]
   (let [builder (KStreamBuilder.)
-        topic-pattern (Pattern/compile (-> (ziggurat-config) :stream-config :origin-topic))]
+        topic-pattern (Pattern/compile origin-topic)]
     (->> (.stream builder topic-pattern)
-         (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName (:proto-class (ziggurat-config)))) %))
+         (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName proto-class)) %))
          (map-values log-and-report-metrics)
          (map-values (mpr/mapper-func mapper-fn)))
     builder))
 
-(defn start-stream [mapper-fn]
-  (let [stream (KafkaStreams. ^KStreamBuilder (topology mapper-fn)
-                              (StreamsConfig. (properties)))]
-    (.start stream)
-    stream))
+(defn start-streams [{:keys [stream-routes mapper-fn]}]
+  (if (nil? stream-routes)
+    (let [stream-config (:stream-config (ziggurat-config))
+          stream-config (assoc stream-config :proto-class (:proto-class (ziggurat-config)))
+          stream (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config)
+                                (StreamsConfig. (properties stream-config)))]
+      (.start stream)
+      [stream])
+    (reduce (fn [streams route]
+              (let [topic-entity (first (keys route))
+                    stream-config (get-in (ziggurat-config) [:stream-router-configs topic-entity])
+                    mapper-fn (get-in route [topic-entity :main-fn])
+                    stream (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config)
+                                          (StreamsConfig. (properties stream-config)))]
+                (.start stream)
+                (conj streams stream)))
+            []
+            stream-routes)))
 
-(defn stop-stream [^KafkaStreams stream]
-  (.close stream))
+(defn stop-streams [streams]
+  (doseq [stream streams]
+    (.close ^KStream stream)))
 
 (defstate stream
   :start (do (log/info "Starting Kafka stream")
-             (start-stream (:ziggurat.init/mapper-fn (mount/args))))
+             (start-streams (:ziggurat.init/stream-args (mount/args))))
   :stop (do (log/info "Stopping Kafka stream")
-            (stop-stream stream)))
+            (stop-streams stream)))

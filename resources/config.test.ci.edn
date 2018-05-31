@@ -1,39 +1,51 @@
-{:ziggurat {:app-name             "lambda-service"
-            :env                  [:dev :keyword]
-            :nrepl-server         {:port [7011 :int]}
-            :stream-config        {:application-id       "lambda-service-test-02"
-                                   :bootstrap-servers    "localhost:6667"
-                                   :stream-threads-count [1 :int]
-                                   :origin-topic         ".*-booking-log"}
-            :proto-class          "com.gojek.esb.booking.BookingLogMessage"
-            :datadog              {:host    "localhost"
-                                   :port    [8125 :int]
-                                   :enabled [false :bool]}
-            :sentry               {:enabled                   [false :bool]
-                                   :dsn                       "dummy"
-                                   :worker-count              [10 :int]
-                                   :queue-size                [10 :int]
-                                   :thread-termination-wait-s [1 :int]}
-            :rabbit-mq-connection {:host            "rabbitmq"
-                                   :port            [5672 :int]
-                                   :prefetch-count  [3 :int]
-                                   :username        "guest"
-                                   :password        "guest"
-                                   :channel-timeout [5000 :int]}
-            :rabbit-mq            {:delay       {:queue-name           "lambda_service_delay_queue"
-                                                 :exchange-name        "lambda_service_delay_exchange"
-                                                 :dead-letter-exchange "lambda_service_instant_exchange"
-                                                 :queue-timeout-ms     [5000 :int]}
-                                   :instant     {:queue-name    "lambda_service_instant_queue"
-                                                 :exchange-name "lambda_service_instant_exchange"}
-                                   :dead-letter {:queue-name    "lambda_service_dead_letter_queue"
-                                                 :exchange-name "lambda_service_dead_letter_exchange"}}
-            :jobs                 {:instant {:worker-count   [4 :int]
-                                             :prefetch-count [4 :int]}}
-            :retry                {:count   [5 :int]
-                                   :enabled [true :bool]}
-            :http-server          {:port         [8010 :int]
-                                   :thread-count [100 :int]}
-            :yggdrasil            {:host                     "http://localhost"
-                                   :port                     [3100 :int]
-                                   :connection-timeout-in-ms [100 :int]}}}
+{:ziggurat                   {:app-name              "lambda-service"
+                              :env                   [:dev :keyword]
+                              :nrepl-server          {:port [7011 :int]}
+                              :stream-config         {:application-id       "lambda-service-test-02"
+                                                      :bootstrap-servers    "localhost:6667"
+                                                      :stream-threads-count [1 :int]
+                                                      :origin-topic         ".*-booking-log"}
+                              :proto-class           "com.gojek.esb.booking.BookingLogMessage"
+                              :datadog               {:host    "localhost"
+                                                      :port    [8125 :int]
+                                                      :enabled [false :bool]}
+                              :sentry                {:enabled                   [false :bool]
+                                                      :dsn                       "dummy"
+                                                      :worker-count              [10 :int]
+                                                      :queue-size                [10 :int]
+                                                      :thread-termination-wait-s [1 :int]}
+                              :rabbit-mq-connection  {:host            "rabbitmq"
+                                                      :port            [5672 :int]
+                                                      :prefetch-count  [3 :int]
+                                                      :username        "guest"
+                                                      :password        "guest"
+                                                      :channel-timeout [5000 :int]}
+                              :rabbit-mq             {:delay       {:queue-name           "lambda_service_delay_queue"
+                                                                    :exchange-name        "lambda_service_delay_exchange"
+                                                                    :dead-letter-exchange "lambda_service_instant_exchange"
+                                                                    :queue-timeout-ms     [5000 :int]}
+                                                      :instant     {:queue-name    "lambda_service_instant_queue"
+                                                                    :exchange-name "lambda_service_instant_exchange"}
+                                                      :dead-letter {:queue-name    "lambda_service_dead_letter_queue"
+                                                                    :exchange-name "lambda_service_dead_letter_exchange"}}
+                              :jobs                  {:instant {:worker-count   [4 :int]
+                                                                :prefetch-count [4 :int]}}
+                              :retry                 {:count   [5 :int]
+                                                      :enabled [true :bool]}
+                              :http-server           {:port         [8010 :int]
+                                                      :thread-count [100 :int]}
+                              :yggdrasil             {:host                     "http://localhost"
+                                                      :port                     [3100 :int]
+                                                      :connection-timeout-in-ms [100 :int]}
+                              :stream-router-configs {:booking {:application-id       "lambda-service-test-02-mutiple"
+                                                                :bootstrap-servers    "localhost:9092"
+                                                                :stream-threads-count [1 :int]
+                                                                :origin-topic         "booking-log*"
+                                                                :proto-class          "com.gojek.esb.booking.BookingLogMessage"}}}
+ :test-kafka-producer-config {:bootstrap-servers                     "localhost:6667"
+                              :destination-topic                     "go-ride-booking-log"
+                              :num-partitions                        [1 :int]
+                              :enable-idempotence                    [false :bool]
+                              :acks                                  "all"
+                              :retries                               [3 :int]
+                              :max-in-flight-requests-per-connection [1 :int]}}
