@@ -49,24 +49,28 @@
          (map-values (mpr/mapper-func mapper-fn)))
     builder))
 
+(defn- start-stream* [mapper-fn stream-config]
+  (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config)
+                 (StreamsConfig. (properties stream-config))))
+
 (defn start-streams [{:keys [stream-routes mapper-fn]}]
-  (if (nil? stream-routes)
-    (let [stream-config (:stream-config (ziggurat-config))
-          stream-config (assoc stream-config :proto-class (:proto-class (ziggurat-config)))
-          stream (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config)
-                                (StreamsConfig. (properties stream-config)))]
-      (.start stream)
-      [stream])
-    (reduce (fn [streams route]
-              (let [topic-entity (first (keys route))
-                    stream-config (get-in (ziggurat-config) [:stream-router-configs topic-entity])
-                    mapper-fn (get-in route [topic-entity :main-fn])
-                    stream (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config)
-                                          (StreamsConfig. (properties stream-config)))]
-                (.start stream)
-                (conj streams stream)))
-            []
-            stream-routes)))
+  (let [zig-conf (ziggurat-config)]
+    (if (nil? stream-routes)
+      (let [stream-config (-> zig-conf
+                              :stream-config
+                              (assoc :proto-class (:proto-class zig-conf)))
+            stream (start-stream* mapper-fn stream-config)]
+        (.start stream)
+        [stream])
+      (reduce (fn [streams route]
+                (let [topic-entity (first (keys route))
+                      stream-config (get-in zig-conf [:stream-router-configs topic-entity])
+                      mapper-fn (get-in route [topic-entity :main-fn])
+                      stream (start-stream* mapper-fn stream-config)]
+                  (.start stream)
+                  (conj streams stream)))
+              []
+              stream-routes))))
 
 (defn stop-streams [streams]
   (doseq [stream streams]
