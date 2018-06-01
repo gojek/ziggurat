@@ -25,10 +25,17 @@
    StreamsConfig/TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
    ConsumerConfig/AUTO_OFFSET_RESET_CONFIG        "latest"})
 
+(defn- get-metric-namespace [default topic]
+  (if (nil? topic)
+    default
+    (str (name topic) "." default)))
+
 (defn- log-and-report-metrics
-  [message]
-  (kafka-delay/calculate-and-report-kafka-delay message)
-  (metrics/increment-count "message" "read")
+  [topic message]
+  (let [message-read-metric-namespace (get-metric-namespace "message" topic)
+        message-delay-metric-namespace (get-metric-namespace "message-received-delay-histogram" topic)]
+    (kafka-delay/calculate-and-report-kafka-delay message-delay-metric-namespace message)
+    (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
 (defn- value-mapper
@@ -40,17 +47,17 @@
   [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- topology [mapper-fn {:keys [origin-topic proto-class]}]
+(defn- topology [mapper-fn {:keys [origin-topic proto-class]} topic-entity]
   (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile origin-topic)]
     (->> (.stream builder topic-pattern)
          (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName proto-class)) %))
-         (map-values log-and-report-metrics)
+         (map-values #(log-and-report-metrics topic-entity %))
          (map-values (mpr/mapper-func mapper-fn)))
     builder))
 
-(defn- start-stream* [mapper-fn stream-config]
-  (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config)
+(defn- start-stream* [mapper-fn stream-config topic-entity]
+  (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config topic-entity)
                  (StreamsConfig. (properties stream-config))))
 
 (defn start-streams [{:keys [stream-routes mapper-fn]}]
@@ -59,14 +66,14 @@
       (let [stream-config (-> zig-conf
                               :stream-config
                               (assoc :proto-class (:proto-class zig-conf)))
-            stream (start-stream* mapper-fn stream-config)]
+            stream (start-stream* mapper-fn stream-config nil)]
         (.start stream)
         [stream])
       (reduce (fn [streams route]
                 (let [topic-entity (first (keys route))
                       stream-config (get-in zig-conf [:stream-router-configs topic-entity])
                       mapper-fn (get-in route [topic-entity :mapper-fn])
-                      stream (start-stream* mapper-fn stream-config)]
+                      stream (start-stream* mapper-fn stream-config topic-entity)]
                   (.start stream)
                   (conj streams stream)))
               []

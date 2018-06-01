@@ -6,7 +6,9 @@
             [ziggurat.fixtures :as fix]
             [flatland.protobuf.core :as proto]
             [clojure.string :as s]
-            [ziggurat.streams :as streams])
+            [ziggurat.streams :as streams]
+            [ziggurat.kafka-delay :as kafka-delay]
+            [lambda-common.metrics :as metrics])
   (:import [com.gojek.esb.booking BookingLogMessage BookingLogKey]
            [java.time Instant]
            [org.apache.kafka.clients.producer ProducerRecord KafkaProducer ProducerConfig]
@@ -87,37 +89,58 @@
     (> timeout 0) (do (Thread/sleep 10000)
                       (recur mapper-fn-called (dec timeout)))
     (= timeout 0) false))
+
 (deftest stream-test
   (testing "single stream"
-    (let [expected-message {:order-number "R-1"
-                            :status       :created}
-          mapper-fn-called (atom false)
-          correct-message-recieved (atom false)
-          mapper-fn (fn [actual-message]
-                      (reset! mapper-fn-called true)
-                      (if (and (= (:order-number expected-message) (:order-number actual-message)) (= (:status expected-message) (:status actual-message)))
-                        (reset! correct-message-recieved true))
-                      :success)
-          streams (streams/start-streams {:mapper-fn mapper-fn})]
-      (publish expected-message "booking-log")
-      (is (is-mapper-fn-called? mapper-fn-called 5))
-      (is @correct-message-recieved)
-      (streams/stop-streams streams))))
+    (let [delay-called-with-correct-namespace (atom false)
+          message-count-called-with-correct-namespace (atom false)]
+      (with-redefs [kafka-delay/calculate-and-report-kafka-delay (fn [metric-ns _]
+                                                                   (if (= metric-ns "message-received-delay-histogram")
+                                                                     (reset! delay-called-with-correct-namespace true)))
+                    metrics/increment-count (fn [metric-ns _]
+                                              (if (= metric-ns "message")
+                                                (reset! message-count-called-with-correct-namespace true)))]
+        (let [expected-message {:order-number "R-1"
+                                :status       :created}
+              mapper-fn-called (atom false)
+              correct-message-recieved (atom false)
+              mapper-fn (fn [actual-message]
+                          (reset! mapper-fn-called true)
+                          (if (and (= (:order-number expected-message) (:order-number actual-message)) (= (:status expected-message) (:status actual-message)))
+                            (reset! correct-message-recieved true))
+                          :success)
+              streams (streams/start-streams {:mapper-fn mapper-fn})]
+          (publish expected-message "booking-log")
+          (is (is-mapper-fn-called? mapper-fn-called 5))
+          (streams/stop-streams streams)
+          (is @correct-message-recieved)
+          (is @delay-called-with-correct-namespace)
+          (is @message-count-called-with-correct-namespace))))))
 
 (deftest stream-router-test
   (testing "multiple stream"
-    (let [expected-message {:order-number "R-1"
-                            :status       :created}
-          booking-mapper-fn-called (atom false)
-          booking-correct-message-recieved (atom false)
-          booking-mapper-fn (fn [actual-message]
-                              (reset! booking-mapper-fn-called true)
-                              (if (and (= (:order-number expected-message) (:order-number actual-message)) (= (:status expected-message) (:status actual-message)))
-                                (reset! booking-correct-message-recieved true))
-                              :success)
-          stream-routes [{:booking {:mapper-fn booking-mapper-fn}}]
-          streams (streams/start-streams {:stream-routes stream-routes})]
-      (publish expected-message "booking-log")
-      (is (is-mapper-fn-called? booking-mapper-fn-called 5))
-      (is @booking-correct-message-recieved)
-      (streams/stop-streams streams))))
+    (let [delay-called-with-correct-namespace (atom false)
+          message-count-called-with-correct-namespace (atom false)]
+      (with-redefs [kafka-delay/calculate-and-report-kafka-delay (fn [metric-ns _]
+                                                                   (if (= metric-ns "booking.message-received-delay-histogram")
+                                                                     (reset! delay-called-with-correct-namespace true)))
+                    metrics/increment-count (fn [metric-ns _]
+                                              (if (= metric-ns "booking.message")
+                                                (reset! message-count-called-with-correct-namespace true)))]
+        (let [expected-message {:order-number "R-1"
+                                :status       :created}
+              booking-mapper-fn-called (atom false)
+              booking-correct-message-recieved (atom false)
+              booking-mapper-fn (fn [actual-message]
+                                  (reset! booking-mapper-fn-called true)
+                                  (if (and (= (:order-number expected-message) (:order-number actual-message)) (= (:status expected-message) (:status actual-message)))
+                                    (reset! booking-correct-message-recieved true))
+                                  :success)
+              stream-routes [{:booking {:mapper-fn booking-mapper-fn}}]
+              streams (streams/start-streams {:stream-routes stream-routes})]
+          (publish expected-message "booking-log")
+          (is (is-mapper-fn-called? booking-mapper-fn-called 5))
+          (is @booking-correct-message-recieved)
+          (is @delay-called-with-correct-namespace)
+          (is @message-count-called-with-correct-namespace)
+          (streams/stop-streams streams))))))
