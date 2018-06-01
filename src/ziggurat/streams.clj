@@ -65,7 +65,7 @@
       (reduce (fn [streams route]
                 (let [topic-entity (first (keys route))
                       stream-config (get-in zig-conf [:stream-router-configs topic-entity])
-                      mapper-fn (get-in route [topic-entity :main-fn])
+                      mapper-fn (get-in route [topic-entity :mapper-fn])
                       stream (start-stream* mapper-fn stream-config)]
                   (.start stream)
                   (conj streams stream)))

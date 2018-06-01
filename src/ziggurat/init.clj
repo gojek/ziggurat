@@ -72,7 +72,8 @@
 
 (defn main-with-stream-router
   "The entry point for your lambda actor.
-  main-fn must be a fn which accepts one parameter: the message from Kafka. It must return :success, :retry or :skip.
+  stream-routes accepts list of map of your topic entity eg: [:booking {:mapper-fn (fn [message] :success)}]
+  mapper-fn must return :success, :retry or :skip
   start-fn takes no parameters, and will be run on application startup.
   stop-fn takes no parameters, and will be run on application shutdown."
   ([start-fn stop-fn stream-router]

@@ -115,7 +115,7 @@
                               (if (and (= (:order-number expected-message) (:order-number actual-message)) (= (:status expected-message) (:status actual-message)))
                                 (reset! booking-correct-message-recieved true))
                               :success)
-          stream-routes [{:booking {:main-fn booking-mapper-fn}}]
+          stream-routes [{:booking {:mapper-fn booking-mapper-fn}}]
           streams (streams/start-streams {:stream-routes stream-routes})]
       (publish expected-message "booking-log")
       (is (is-mapper-fn-called? booking-mapper-fn-called 5))
