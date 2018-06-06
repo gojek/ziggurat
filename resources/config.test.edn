@@ -41,11 +41,4 @@
                                                                     :bootstrap-servers    "localhost:9092"
                                                                     :stream-threads-count [1 :int]
                                                                     :origin-topic         "booking-log*"
-                                                                    :proto-class          "com.gojek.esb.booking.BookingLogMessage"}}}
- :test-kafka-producer-config {:bootstrap-servers                     "localhost:9092"
-                              :destination-topic                     "booking-log"
-                              :num-partitions                        [10 :int]
-                              :enable-idempotence                    [false :bool]
-                              :acks                                  "all"
-                              :retries                               [3 :int]
-                              :max-in-flight-requests-per-connection [1 :int]}}
+                                                                    :proto-class          "com.gojek.esb.booking.BookingLogMessage"}}}}
