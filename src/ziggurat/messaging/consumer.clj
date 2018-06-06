@@ -31,6 +31,13 @@
     (if-let [message (convert-and-ack-message ch meta payload true)]
       ((mpr/mapper-func mapper-fn) message))))
 
+(defn get-queue-name
+  [topic-name]
+  (let [queue-name (:queue-name (:instant (:rabbit-mq (ziggurat-config))))]
+    (if (nil? topic-name)
+      queue-name
+      (str topic-name "_" queue-name))))
+
 (defn get-dead-set-messages
   "Get the n(count) messages from the rabbitmq and if ack is set to true then
   ack all the messages in while consuming so that it's not available for other subscriber else does not ack the message"
@@ -51,21 +58,27 @@
     (catch AlreadyClosedException _
       nil)))
 
-(defn start-subscriber* [ch mapper-fn]
+(defn start-subscriber* [ch mapper-fn queue-name]
   (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
   (let [consumer-tag (lcons/subscribe ch
-                                      (:queue-name (:instant (:rabbit-mq (ziggurat-config))))
+                                      queue-name
                                       (message-handler mapper-fn)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
 
-    (log/info "starting consumer for instant-queue with cosumer tag - " consumer-tag)))
+    (log/info "starting consumer for instant-queue with consumer tag - " consumer-tag)))
+
+
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
-  [mapper-fn]
+  [mapper-fn stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
       (doseq [worker (range workers)]
-        (start-subscriber* (lch/open connection) mapper-fn)))))
+        (if (nil? stream-routes)
+          (start-subscriber* (lch/open connection) mapper-fn (get-queue-name nil))
+          (doseq [[key value] stream-routes]
+            (start-subscriber* (lch/open connection) (:handler-fn value) (get-queue-name (name key)))))))))
+

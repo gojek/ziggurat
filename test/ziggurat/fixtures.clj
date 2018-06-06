@@ -22,7 +22,7 @@
 (defn init-rabbit-mq [f]
   (mount-config)
   (mount/start (mount/only [#'connection]))
-  (pr/make-queues)
+  (pr/make-queues {:booking {:handler-fn #(prn "something")}})
   (f)
   (mount/stop))
 

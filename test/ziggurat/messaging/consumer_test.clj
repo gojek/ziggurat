@@ -5,7 +5,7 @@
             [ziggurat.retry :as retry]
             [langohr.channel :as lch]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-subscriber* close]]
+            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-subscriber* close get-queue-name]]
             [ziggurat.messaging.producer :as producer]))
 
 (use-fixtures :once fix/init-rabbit-mq)
@@ -70,7 +70,7 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 2))
+          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 2) (get-queue-name nil))
 
           (producer/publish-to-delay-queue msg)
 
@@ -94,7 +94,7 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker -1))
+          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker -1) (get-queue-name nil))
 
           (producer/publish-to-delay-queue msg)
 
@@ -119,7 +119,7 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 10))
+          (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 10) (get-queue-name nil))
 
           (dotimes [_ no-of-msgs]
             (producer/retry (gen-msg 10)))

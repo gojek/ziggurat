@@ -76,24 +76,36 @@
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
       (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-      (> retry-count 0)  (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
-      (= retry-count 0)  (publish-to-dead-queue (dissoc message :retry-count)))))
+      (> retry-count 0) (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
+      (= retry-count 0) (publish-to-dead-queue (dissoc message :retry-count)))))
 
-(defn- make-delay-queue []
-  (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-        queue-name (delay-queue-name queue-name queue-timeout-ms)]
-    (create-and-bind-queue queue-name exchange-name dead-letter-exchange queue-timeout-ms)))
+(defn- make-delay-queue
+  ([] (make-delay-queue ""))
+  ([topic-name]
+   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
+         queue-name (delay-queue-name queue-name queue-timeout-ms)]
+     (create-and-bind-queue (str topic-name "_" queue-name) (str topic-name exchange-name) (str topic-name dead-letter-exchange) queue-timeout-ms))))
 
-(defn- make-instant-queue []
-  (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))]
-    (create-and-bind-queue queue-name exchange-name)))
+(defn- make-instant-queue
+  ([] (make-instant-queue ""))
+  ([topic-name]
+   (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))]
+     (create-and-bind-queue (str topic-name "_" queue-name) (str topic-name exchange-name)))))
 
-(defn- make-dead-letter-queue []
-  (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))]
-    (create-and-bind-queue queue-name exchange-name)))
+(defn- make-dead-letter-queue
+  ([] (make-dead-letter-queue ""))
+  ([topic-name]
+   (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))]
+     (create-and-bind-queue (str topic-name "_" queue-name) (str topic-name exchange-name)))))
 
-(defn make-queues []
+(defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
-    (make-delay-queue)
-    (make-instant-queue)
-    (make-dead-letter-queue)))
+    (if (nil? stream-routes)
+      (do (println "############stream-routes is nil")
+          (make-delay-queue)
+          (make-instant-queue)
+          (make-dead-letter-queue))
+      (doseq [[key val] stream-routes] (do (println "########stream-routes is not nil")
+                                           (make-delay-queue (name key))
+                                           (make-instant-queue (name key))
+                                           (make-dead-letter-queue (name key)))))))

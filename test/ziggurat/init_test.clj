@@ -21,7 +21,7 @@
                   streams/stop-streams (constantly nil)
                   config/config-file "config.test.edn"]
       (let [retry-count (promise)]
-        (init/start #() #() [])
+        (init/start #() {:stream-routes {:booking {:handler-fn #((println "something"))}}} [])
         (init/stop #(deliver retry-count (-> (config/ziggurat-config) :retry :count)))
         (is (= 5 (deref retry-count 10000 ::failure)))))))
 
