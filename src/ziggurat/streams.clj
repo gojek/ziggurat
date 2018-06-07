@@ -1,31 +1,28 @@
 (ns ziggurat.streams
   (:require [clojure.tools.logging :as log]
             [flatland.protobuf.core :as proto]
-            [mount.core :refer [defstate]]
+            [mount.core :as mount :refer [defstate]]
             [lambda-common.metrics :as metrics]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
-            [sentry.core :as sentry]
-            [ziggurat.kafka-delay :as kafka-delay]
-            [mount.core :as mount])
-  (:import [com.gojek.esb.booking BookingLogMessage]
-           [org.apache.kafka.clients.consumer ConsumerConfig]
+            [ziggurat.kafka-delay :as kafka-delay])
+  (:import [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig]
-           [org.apache.kafka.streams.kstream KStreamBuilder Predicate Reducer ValueMapper KStream]
-           [org.apache.kafka.streams.processor StreamPartitioner WallclockTimestampExtractor]
+           [org.apache.kafka.streams.kstream KStreamBuilder ValueMapper KStream]
+           [org.apache.kafka.streams.processor WallclockTimestampExtractor]
            (java.util.regex Pattern)))
 
 (defn- properties []
   (let [stream-config (:stream-config (ziggurat-config))]
-    {StreamsConfig/APPLICATION_ID_CONFIG     (:application-id stream-config)
-     StreamsConfig/BOOTSTRAP_SERVERS_CONFIG  (:bootstrap-servers stream-config)
-     StreamsConfig/NUM_STREAM_THREADS_CONFIG (int (:stream-threads-count stream-config))
-     StreamsConfig/KEY_SERDE_CLASS_CONFIG    (.getName (.getClass (Serdes/ByteArray)))
-     StreamsConfig/VALUE_SERDE_CLASS_CONFIG  (.getName (.getClass (Serdes/ByteArray)))
+    {StreamsConfig/APPLICATION_ID_CONFIG            (:application-id stream-config)
+     StreamsConfig/BOOTSTRAP_SERVERS_CONFIG         (:bootstrap-servers stream-config)
+     StreamsConfig/NUM_STREAM_THREADS_CONFIG        (int (:stream-threads-count stream-config))
+     StreamsConfig/KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
+     StreamsConfig/VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
      StreamsConfig/TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
-     ConsumerConfig/AUTO_OFFSET_RESET_CONFIG "latest"}))
+     ConsumerConfig/AUTO_OFFSET_RESET_CONFIG        "latest"}))
 
 (defn- log-and-report-metrics
   [message]
@@ -42,11 +39,24 @@
   [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
+(defn- protobuf->hash [message]
+  (let [proto-klass (-> (ziggurat-config)
+                        :proto-class
+                        java.lang.Class/forName
+                        proto/protodef)
+        loaded-proto (proto/protobuf-load proto-klass message)
+        proto-keys (-> proto-klass
+                       proto/protobuf-schema
+                       :fields
+                       keys
+                       loaded-proto)]
+    (select-keys loaded-proto proto-keys)))
+
 (defn- topology [mapper-fn]
   (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile (-> (ziggurat-config) :stream-config :origin-topic))]
     (->> (.stream builder topic-pattern)
-         (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName (:proto-class (ziggurat-config)))) %))
+         (map-values protobuf->hash)
          (map-values log-and-report-metrics)
          (map-values (mpr/mapper-func mapper-fn)))
     builder))
