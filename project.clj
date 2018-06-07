@@ -13,7 +13,7 @@
                  [clonfig "0.2.0"]
                  [clj-http "3.7.0"]
                  [com.cemerick/url "0.1.1"]
-                 [com.gojek/lambda-common "0.2.0"]
+                 [com.gojek/lambda-common "0.2.1"]
                  [com.gojek/bulwark "0.1.0"]
                  [com.gojek/executor "0.2.0"]
                  [com.gojek/sentry "0.2.4"]
