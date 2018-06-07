@@ -40,17 +40,20 @@
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
 (defn- protobuf->hash [message]
-  (let [proto-klass (-> (ziggurat-config)
-                        :proto-class
-                        java.lang.Class/forName
-                        proto/protodef)
-        loaded-proto (proto/protobuf-load proto-klass message)
-        proto-keys (-> proto-klass
-                       proto/protobuf-schema
-                       :fields
-                       keys
-                       loaded-proto)]
-    (select-keys loaded-proto proto-keys)))
+  (try
+    (let [proto-klass (-> (ziggurat-config)
+                          :proto-class
+                          java.lang.Class/forName
+                          proto/protodef)
+          loaded-proto (proto/protobuf-load proto-klass message)
+          proto-keys (-> proto-klass
+                         proto/protobuf-schema
+                         :fields
+                         keys)]
+      (select-keys loaded-proto proto-keys))
+    (catch Throwable e
+      (metrics/increment-count "message-parsing" "failed")
+      nil)))
 
 (defn- topology [mapper-fn]
   (let [builder (KStreamBuilder.)
