@@ -40,12 +40,13 @@
 (defn get-dead-set-messages
   "Get the n(count) messages from the rabbitmq and if ack is set to true then
   ack all the messages in while consuming so that it's not available for other subscriber else does not ack the message"
-  [count ack?]
+  [ack? topic-name count]
   (remove nil?
           (with-open [ch (lch/open connection)]
             (doall (for [_ (range count)]
                      (try
                        (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
+                             queue-name (get-name-with-prefix-topic topic-name queue-name)
                              [meta payload] (lb/get ch queue-name false)]
                          (if (some? payload) (convert-and-ack-message ch meta payload ack?)))
                        (catch Exception e

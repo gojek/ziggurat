@@ -72,8 +72,9 @@
     (publish exchange-name message)))
 
 (defn publish-to-instant-queue
-  [message]
-  (let [{:keys [exchange-name]} (:instant (rabbitmq-config))]
+  [topic-name message]
+  (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
+        exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
     (publish exchange-name message)))
 
 (defn retry [{:keys [retry-count] :as message} topic-name]

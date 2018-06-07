@@ -10,27 +10,29 @@
 
 (use-fixtures :once fix/init-rabbit-mq)
 
-(comment
-  (deftest get-dead-set-messages-test
-    (testing "when ack is enabled, get the dead set messages and remove from dead set"
-      (fix/with-clear-data
-        (let [count-of-messages 10
-              message           {:foo "bar"}
-              pushed-message    (doseq [counter (range count-of-messages)]
-                                  (producer/publish-to-dead-queue "booking" message))
-              dead-set-messages (get-dead-set-messages count-of-messages true)]
-          (is (= (replicate count-of-messages message) dead-set-messages))
-          (is (empty? (get-dead-set-messages count-of-messages true))))))
 
-    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-      (fix/with-clear-data
-        (let [count-of-messages 10
-              message           {:foo "bar"}
-              pushed-message    (doseq [counter (range count-of-messages)]
-                                  (producer/publish-to-dead-queue "booking" message))
-              dead-set-messages (get-dead-set-messages count-of-messages false)]
-          (is (= (replicate count-of-messages message) dead-set-messages))
-          (is (= (replicate count-of-messages message) (get-dead-set-messages count-of-messages false))))))))
+(deftest get-dead-set-messages-test
+  (testing "when ack is enabled, get the dead set messages and remove from dead set"
+    (fix/with-clear-data
+      (let [count-of-messages 10
+            message           {:foo "bar"}
+            topic-name        "booking"
+            pushed-message    (doseq [counter (range count-of-messages)]
+                                (producer/publish-to-dead-queue topic-name message))
+            dead-set-messages (get-dead-set-messages true topic-name count-of-messages)]
+        (is (= (replicate count-of-messages message) dead-set-messages))
+        (is (empty? (get-dead-set-messages true topic-name count-of-messages))))))
+
+  (testing "when ack is disabled, get the dead set messages and not remove from dead set"
+    (fix/with-clear-data
+      (let [count-of-messages 10
+            message           {:foo "bar"}
+            topic-name             "booking"
+            pushed-message    (doseq [counter (range count-of-messages)]
+                                (producer/publish-to-dead-queue "booking" message))
+            dead-set-messages (get-dead-set-messages false topic-name count-of-messages)]
+        (is (= (replicate count-of-messages message) dead-set-messages))
+        (is (= (replicate count-of-messages message) (get-dead-set-messages false topic-name count-of-messages)))))))
 
 (defn- mock-mapper-fn-with-retry [retry-counter-atom success-tracker-atom retry-limit]
   "Retry for the specified limit times.
@@ -113,6 +115,7 @@
             retries             5
             no-of-msgs          1
             original-zig-config (ziggurat-config)
+            topic-name          "booking"
             ch                  (lch/open connection)]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
@@ -123,9 +126,9 @@
           (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 10) (get-queue-name nil))
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (gen-msg 10)))
+            (producer/retry (gen-msg 10) topic-name))
 
-          (block-until (fn [] (>= (count (get-dead-set-messages no-of-msgs false)) no-of-msgs)))
+          (block-until (fn [] (>= (count (get-dead-set-messages false topic-name no-of-msgs)) no-of-msgs)))
 
           (is (= (* (inc retries) no-of-msgs) @retry-counter))
           (is (= false @success-tracker))
