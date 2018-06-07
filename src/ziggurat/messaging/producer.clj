@@ -3,6 +3,7 @@
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.util :refer [get-name-with-prefix-topic]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
@@ -16,8 +17,8 @@
            (java.util.concurrent ExecutorService TimeUnit)))
 
 
-(defn delay-queue-name [queue-name queue-timeout-ms]
-  (format "%s_%s" queue-name queue-timeout-ms))
+(defn delay-queue-name [topic-name queue-name queue-timeout-ms]
+  (get-name-with-prefix-topic topic-name (format "%s_%s" queue-name queue-timeout-ms)))
 
 (defn- create-queue [queue props ch]
   (lq/declare ch queue {:durable true :arguments props :auto-delete false})
@@ -60,52 +61,59 @@
                  (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
                                                                              :persistent   true})))))
 
-(defn publish-to-delay-queue [message]
-  (let [{:keys [exchange-name]} (:delay (rabbitmq-config))]
+(defn publish-to-delay-queue [topic-name message]
+  (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
+        exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
     (publish exchange-name message)))
 
-(defn publish-to-dead-queue [message]
-  (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))]
+(defn publish-to-dead-queue [topic-name message]
+  (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+        exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
     (publish exchange-name message)))
 
-(defn publish-to-instant-queue [message]
+(defn publish-to-instant-queue
+  [message]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))]
     (publish exchange-name message)))
 
-(defn retry [{:keys [retry-count] :as message}]
+(defn retry [{:keys [retry-count] :as message} topic-name]
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
-      (nil? retry-count) (publish-to-delay-queue (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-      (> retry-count 0) (publish-to-delay-queue (assoc message :retry-count (dec retry-count)))
-      (= retry-count 0) (publish-to-dead-queue (dissoc message :retry-count)))))
+      (nil? retry-count) (publish-to-delay-queue topic-name (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
+      (> retry-count 0) (publish-to-delay-queue topic-name (assoc message :retry-count (dec retry-count)))
+      (= retry-count 0) (publish-to-dead-queue topic-name (dissoc message :retry-count)))))
 
 (defn- make-delay-queue
-  ([] (make-delay-queue ""))
+  ([] (make-delay-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-         queue-name (delay-queue-name queue-name queue-timeout-ms)]
-     (create-and-bind-queue (str topic-name "_" queue-name) (str topic-name exchange-name) (str topic-name dead-letter-exchange) queue-timeout-ms))))
+         queue-name    (delay-queue-name topic-name queue-name queue-timeout-ms)
+         exchange-name (get-name-with-prefix-topic topic-name exchange-name)
+         dead-letter-exchange-name         (get-name-with-prefix-topic topic-name dead-letter-exchange)]
+     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms))))
 
 (defn- make-instant-queue
-  ([] (make-instant-queue ""))
+  ([] (make-instant-queue nil))
   ([topic-name]
-   (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))]
-     (create-and-bind-queue (str topic-name "_" queue-name) (str topic-name exchange-name)))))
+   (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))
+         queue-name (get-name-with-prefix-topic topic-name queue-name)
+         exchange-name      (get-name-with-prefix-topic topic-name exchange-name)]
+     (create-and-bind-queue queue-name exchange-name))))
 
 (defn- make-dead-letter-queue
-  ([] (make-dead-letter-queue ""))
+  ([] (make-dead-letter-queue nil))
   ([topic-name]
-   (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))]
-     (create-and-bind-queue (str topic-name "_" queue-name) (str topic-name exchange-name)))))
+   (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))
+         queue-name (get-name-with-prefix-topic topic-name queue-name)
+         exchange-name      (get-name-with-prefix-topic topic-name exchange-name)]
+     (create-and-bind-queue queue-name exchange-name))))
 
 (defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
     (if (nil? stream-routes)
-      (do (println "############stream-routes is nil")
-          (make-delay-queue)
+      (do (make-delay-queue)
           (make-instant-queue)
           (make-dead-letter-queue))
-      (doseq [[key val] stream-routes] (do (println "########stream-routes is not nil")
-                                           (make-delay-queue (name key))
+      (doseq [[key val] stream-routes] (do (make-delay-queue (name key))
                                            (make-instant-queue (name key))
                                            (make-dead-letter-queue (name key)))))))

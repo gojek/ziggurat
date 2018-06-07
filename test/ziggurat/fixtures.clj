@@ -34,10 +34,10 @@
 
 (defn flush-rabbitmq []
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (config/rabbitmq-config))
-        queue-name (pr/delay-queue-name queue-name queue-timeout-ms)]
+        queue-name (pr/delay-queue-name "booking" queue-name queue-timeout-ms)]
     (with-open [ch (lch/open connection)]
-      (lq/purge ch (:queue-name (:instant (config/rabbitmq-config))))
-      (lq/purge ch (:queue-name (:dead-letter (config/rabbitmq-config))))
+      (lq/purge ch (str "booking" "_" (:queue-name (:instant (config/rabbitmq-config)))))
+      (lq/purge ch (str "booking" "_" (:queue-name (:dead-letter (config/rabbitmq-config)))))
       (lq/purge ch queue-name))))
 
 (defn clear-data []

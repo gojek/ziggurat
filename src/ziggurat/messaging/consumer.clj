@@ -4,6 +4,7 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.messaging.util :refer [get-name-with-prefix-topic]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
@@ -26,17 +27,15 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
-(defn- message-handler [mapper-fn]
+(defn- message-handler [mapper-fn topic-name]
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true)]
-      ((mpr/mapper-func mapper-fn) message))))
+      ((mpr/mapper-func mapper-fn) message topic-name))))
 
 (defn get-queue-name
   [topic-name]
   (let [queue-name (:queue-name (:instant (:rabbit-mq (ziggurat-config))))]
-    (if (nil? topic-name)
-      queue-name
-      (str topic-name "_" queue-name))))
+    (get-name-with-prefix-topic topic-name queue-name)))
 
 (defn get-dead-set-messages
   "Get the n(count) messages from the rabbitmq and if ack is set to true then
@@ -58,11 +57,11 @@
     (catch AlreadyClosedException _
       nil)))
 
-(defn start-subscriber* [ch mapper-fn queue-name]
+(defn start-subscriber* [ch mapper-fn topic-name]
   (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
   (let [consumer-tag (lcons/subscribe ch
-                                      queue-name
-                                      (message-handler mapper-fn)
+                                      (get-queue-name topic-name)
+                                      (message-handler mapper-fn topic-name)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
@@ -78,7 +77,7 @@
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
       (doseq [worker (range workers)]
         (if (nil? stream-routes)
-          (start-subscriber* (lch/open connection) mapper-fn (get-queue-name nil))
+          (start-subscriber* (lch/open connection) mapper-fn nil)
           (doseq [[key value] stream-routes]
-            (start-subscriber* (lch/open connection) (:handler-fn value) (get-queue-name (name key)))))))))
+            (start-subscriber* (lch/open connection) (:handler-fn value) (name key))))))))
 

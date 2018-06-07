@@ -7,14 +7,14 @@
             [clojure.tools.logging :as log]))
 
 (defn mapper-func [mapper-fn]
-  (fn [message]
+  (fn [message topic-name]
     (nr/with-tracing "job" "mapper-func"
       (try
         (let [return-code (mapper-fn message)]
           (case return-code
             :success (metrics/message-successfully-processed!)
             :retry (do (metrics/message-unsuccessfully-processed!)
-                       (producer/retry message))
+                       (producer/retry message topic-name))
             :skip 'TODO
             :block 'TODO
             (throw (ex-info "Invalid mapper return code" {:code return-code}))))

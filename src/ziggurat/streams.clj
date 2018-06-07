@@ -53,7 +53,7 @@
     (->> (.stream builder topic-pattern)
          (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName proto-class)) %))
          (map-values #(log-and-report-metrics topic-entity %))
-         (map-values (mpr/mapper-func mapper-fn)))
+         (map-values #((mpr/mapper-func mapper-fn) % topic-entity)))
     builder))
 
 (defn- start-stream* [mapper-fn stream-config topic-entity]
