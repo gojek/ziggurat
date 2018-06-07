@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.3.2 - 2018-07-07
+- Fixes converting message from kafka to clojure hash
+
 ## 1.3.1 - 2018-07-07
 - Fixes converting message from kafka to clojure hash
 - Instruments time of execution of mapper function
