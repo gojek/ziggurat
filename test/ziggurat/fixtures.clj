@@ -22,7 +22,8 @@
 (defn init-rabbit-mq [f]
   (mount-config)
   (mount/start (mount/only [#'connection]))
-  (pr/make-queues {:booking {:handler-fn #(prn "something")}})
+  (pr/make-queues nil)
+  (pr/make-queues [{:booking {:handler-fn #(constantly nil)}}])
   (f)
   (mount/stop))
 
@@ -34,11 +35,15 @@
 
 (defn flush-rabbitmq []
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (config/rabbitmq-config))
-        queue-name (pr/delay-queue-name "booking" queue-name queue-timeout-ms)]
+        delay-queue-name-with-topic-prefix (pr/delay-queue-name "booking" queue-name queue-timeout-ms)
+        delay-queue-name (pr/delay-queue-name nil queue-name queue-timeout-ms)]
     (with-open [ch (lch/open connection)]
       (lq/purge ch (str "booking" "_" (:queue-name (:instant (config/rabbitmq-config)))))
       (lq/purge ch (str "booking" "_" (:queue-name (:dead-letter (config/rabbitmq-config)))))
-      (lq/purge ch queue-name))))
+      (lq/purge ch delay-queue-name-with-topic-prefix)
+      (lq/purge ch (:queue-name (:instant (config/rabbitmq-config))))
+      (lq/purge ch (:queue-name (:dead-letter (config/rabbitmq-config))))
+      (lq/purge ch delay-queue-name))))
 
 (defn clear-data []
   (flush-rabbitmq))

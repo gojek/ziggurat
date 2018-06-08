@@ -4,7 +4,6 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq]))
 
-(defn topic-handle-mapping [] {:booking {:handler-fn #(prn "something")}})
 (use-fixtures :once fix/init-rabbit-mq)
 
 (deftest retry-test

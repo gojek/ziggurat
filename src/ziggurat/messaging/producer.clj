@@ -88,25 +88,25 @@
   ([] (make-delay-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-         queue-name    (delay-queue-name topic-name queue-name queue-timeout-ms)
-         exchange-name (get-name-with-prefix-topic topic-name exchange-name)
-         dead-letter-exchange-name         (get-name-with-prefix-topic topic-name dead-letter-exchange)]
+         queue-name                (delay-queue-name topic-name queue-name queue-timeout-ms)
+         exchange-name             (get-name-with-prefix-topic topic-name exchange-name)
+         dead-letter-exchange-name (get-name-with-prefix-topic topic-name dead-letter-exchange)]
      (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms))))
 
 (defn- make-instant-queue
   ([] (make-instant-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))
-         queue-name (get-name-with-prefix-topic topic-name queue-name)
-         exchange-name      (get-name-with-prefix-topic topic-name exchange-name)]
+         queue-name    (get-name-with-prefix-topic topic-name queue-name)
+         exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
      (create-and-bind-queue queue-name exchange-name))))
 
 (defn- make-dead-letter-queue
   ([] (make-dead-letter-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))
-         queue-name (get-name-with-prefix-topic topic-name queue-name)
-         exchange-name      (get-name-with-prefix-topic topic-name exchange-name)]
+         queue-name    (get-name-with-prefix-topic topic-name queue-name)
+         exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
      (create-and-bind-queue queue-name exchange-name))))
 
 (defn make-queues [stream-routes]
@@ -115,6 +115,8 @@
       (do (make-delay-queue)
           (make-instant-queue)
           (make-dead-letter-queue))
-      (doseq [[key val] stream-routes] (do (make-delay-queue (name key))
-                                           (make-instant-queue (name key))
-                                           (make-dead-letter-queue (name key)))))))
+      (doall (map #(do
+                     (make-delay-queue (name (first (keys %))))
+                     (make-instant-queue (name (first (keys %))))
+                     (make-dead-letter-queue (name (first (keys %)))))
+                  stream-routes)))))
