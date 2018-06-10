@@ -39,6 +39,7 @@
   (fn [message]
     (cond (< @retry-counter-atom retry-limit)
           (do (swap! retry-counter-atom inc)
+              (println "################retry-counter incremented: " @retry-counter-atom)
               :retry)
 
           (= (:msg message) "skip")
@@ -46,6 +47,7 @@
 
           :else
           (do (swap! success-tracker-atom (constantly true))
+              (println "#############success-tracker-flipped")
               :success))))
 
 (defn- gen-msg [len]
@@ -120,6 +122,7 @@
                                                  (update-in [:retry :count] (constantly retries))
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
+          (println "########ziggurat-config: " ziggurat-config)
 
           (start-subscriber* ch (mock-mapper-fn-with-retry retry-counter success-tracker 10) nil)
 
