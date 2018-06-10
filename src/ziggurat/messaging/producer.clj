@@ -64,13 +64,11 @@
 (defn publish-to-delay-queue [topic-name message]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
         exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
-    (println "published to delay queue")
     (publish exchange-name message)))
 
 (defn publish-to-dead-queue [topic-name message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
         exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
-    (println "published to dead queue")
     (publish exchange-name message)))
 
 (defn publish-to-instant-queue
@@ -81,7 +79,6 @@
 
 (defn retry [{:keys [retry-count] :as message} topic-name]
   (when (-> (ziggurat-config) :retry :enabled)
-    (println "######retrying in retry function")
     (cond
       (nil? retry-count) (publish-to-delay-queue topic-name (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
       (> retry-count 0) (publish-to-delay-queue topic-name (assoc message :retry-count (dec retry-count)))
