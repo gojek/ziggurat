@@ -45,4 +45,5 @@
   :jvm-opts ["-server" "-XX:-OmitStackTraceInFastThrow"]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
-             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}})
+             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}}
+  :plugins [[lein-cloverage "1.0.10"]])
