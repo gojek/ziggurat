@@ -133,14 +133,13 @@
 
           (close ch)))))
 
-  (testing "start subscribers should call start-subscribers according to count of worker"
+  (testing "start subscribers should call start-subscriber* according to count of worker"
     (fix/with-clear-data
       (let [success-tracker     (atom false)
             retries             5
             no-of-msgs          1
             no-of-workers       3
             original-zig-config (ziggurat-config)
-            topic-name          "booking"
             ch                  (lch/open connection)
             counter             (atom 0)]
 
@@ -149,7 +148,26 @@
                                                    (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
                       start-subscriber* (fn [_ _ _] (swap! counter inc))]
 
-          (start-subscribers nil [{:booking {:handler-fn #(constantly nil)}}])
+          (start-subscribers #(constantly nil) nil)
 
           (is (= no-of-workers @counter))
-          (close ch))))))
+          (close ch)))))
+  (testing "start subscribers should call start-subscriber* according to the product of worker and mapper-fns in stream-routes"
+    (let [success-tracker     (atom false)
+          retries             5
+          no-of-msgs          1
+          no-of-workers       3
+          original-zig-config (ziggurat-config)
+          ch                  (lch/open connection)
+          counter             (atom 0)
+          stream-routes       [{:booking {:handler-fn #(constantly nil)}} {:test {:handler-fn #(constantly nil)}}]]
+
+      (with-redefs [ziggurat-config   (fn [] (-> original-zig-config
+                                                 (update-in [:retry :enabled] (constantly true))
+                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
+                    start-subscriber* (fn [_ _ _] (swap! counter inc))]
+
+        (start-subscribers nil stream-routes)
+
+        (is (= (* (count stream-routes) no-of-workers) @counter))
+        (close ch)))))

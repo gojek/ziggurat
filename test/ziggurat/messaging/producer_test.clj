@@ -1,4 +1,4 @@
-(ns ziggurat.messaging.producer_test
+(ns ziggurat.messaging.producer-test
   (:require [clojure.test :refer :all]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.producer :as producer]
@@ -33,3 +33,20 @@
         (producer/retry message topic)
         (let [message-from-mq (rmq/get-msg-from-delay-queue "booking")]
           (is (= message-from-mq expected-message)))))))
+
+(deftest make-queues-test
+  (testing "it calls create-and-bind-queue for each queue creation when a mapper-fn is passed"
+    (let [counter (atom 0)]
+      (with-redefs [producer/create-and-bind-queue (fn
+                                                     ([_ _] (swap! counter inc))
+                                                     ([_ _ _ _] (swap! counter inc)))]
+        (producer/make-queues nil)
+        (is (= 3 @counter)))))
+  (testing "it calls create-and-bind-queue for each queue creation and each stream-route when stream-routes are passed"
+    (let [counter (atom 0)
+          stream-routes [{:test {:handler-fn #(constantly nil)}} {:test2 {:handler-fn #(constantly nil)}}]]
+      (with-redefs [producer/create-and-bind-queue (fn
+                                                     ([_ _] (swap! counter inc))
+                                                     ([_ _ _ _] (swap! counter inc)))]
+        (producer/make-queues stream-routes)
+        (is (= (* (count stream-routes) 3) @counter))))))

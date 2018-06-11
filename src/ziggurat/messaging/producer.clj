@@ -115,8 +115,8 @@
       (do (make-delay-queue)
           (make-instant-queue)
           (make-dead-letter-queue))
-      (doall (map #(do
-                     (make-delay-queue (name (first (keys %))))
-                     (make-instant-queue (name (first (keys %))))
-                     (make-dead-letter-queue (name (first (keys %)))))
-                  stream-routes)))))
+      (doseq [stream-route stream-routes]
+        (let [topic-name (name (first (keys stream-route)))]
+          (make-delay-queue topic-name)
+          (make-instant-queue topic-name)
+          (make-dead-letter-queue topic-name))))))

@@ -79,8 +79,8 @@
       (doseq [worker (range workers)]
         (if (nil? stream-routes)
           (start-subscriber* (lch/open connection) mapper-fn nil)
-          (doall (map #(let [key   (first (keys %))
-                             value (key %)]
-                         (start-subscriber* (lch/open connection) (:handler-fn value) (name key)))
-                      stream-routes)))))))
+          (doseq [stream-route stream-routes]
+            (let [key   (first (keys stream-route))
+                        value (key stream-route)]
+                    (start-subscriber* (lch/open connection) (:handler-fn value) (name key)))))))))
 
