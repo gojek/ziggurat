@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.3.3 - 2018-06-11
+- Bumps up lambda-common version to 0.2.2
+
 ## 1.3.2 - 2018-07-07
 - Fixes converting message from kafka to clojure hash
 
