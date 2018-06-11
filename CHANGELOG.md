@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 1.3.4 - 2018-06-11
+- Fixes replay of messages in dead letter queue.
+
 ## 1.3.3 - 2018-06-11
 - Bumps up lambda-common version to 0.2.2
 
