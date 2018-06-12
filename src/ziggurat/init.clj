@@ -83,4 +83,4 @@
   ([start-fn stop-fn main-fn]
    (main start-fn stop-fn main-fn []))
   ([start-fn stop-fn main-fn actor-routes]
-   (main-with-stream-router start-fn stop-fn [{:default {:handler-fn main-fn}}] actor-routes)))
+   (main-with-stream-router start-fn stop-fn (construct-default-stream-router main-fn) actor-routes)))

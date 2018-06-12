@@ -33,17 +33,17 @@
 
 (deftest main-calls-main-with-stream-router
   (testing "Main function should call main-with-stream-router if only mapper-fn is passed"
-    (let [foo (atom 0)
-          main-fn #(constantly nil)
-          expected-stream-router [{:default {:handler-fn main-fn}}]]
-      (with-redefs [init/main-with-stream-router (fn [_ _ stream-router _]
-                                                   (swap! foo inc)
-                                                   (is (= stream-router expected-stream-router)))
+    (let [main-with-stream-router-was-called (atom false)
+          construct-default-stream-router-was-called (atom false)
+          main-fn #(constantly nil)]
+      (with-redefs [init/main-with-stream-router (fn [_ _ stream-router _] (swap! main-with-stream-router-was-called not))
+                    init/construct-default-stream-router (fn [_] (swap! construct-default-stream-router-was-called not))
                     streams/start-streams (constantly nil)
                     streams/stop-streams (constantly nil)
                     config/config-file "config.test.edn"]
         (init/main #() #() main-fn)
-        (is (= 1 @foo))))))
+        (is @main-with-stream-router-was-called)
+        (is @construct-default-stream-router-was-called)))))
 
 (deftest ziggurat-routes-serve-actor-routes
   (testing "The routes added by actor should be served along with ziggurat-routes"
