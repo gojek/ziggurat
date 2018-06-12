@@ -71,6 +71,10 @@
        (stop stop-fn)
        (System/exit 1)))))
 
+(defn construct-default-stream-router
+  [main-fn]
+  [{:default {:handler-fn main-fn}}])
+
 (defn main
   "The entry point for your lambda actor.
   main-fn must be a fn which accepts one parameter: the message from Kafka. It must return :success, :retry or :skip.

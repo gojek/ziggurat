@@ -25,6 +25,12 @@
         (init/stop #(deliver retry-count (-> (config/ziggurat-config) :retry :count)))
         (is (= 5 (deref retry-count 10000 ::failure)))))))
 
+(deftest construct-default-stream-router
+  (testing "Function should construct default stream router"
+    (let [main-fn #(constantly nil)
+          expected-stream-router [{:default {:handler-fn main-fn}}]]
+      (is (= expected-stream-router (init/construct-default-stream-router main-fn))))))
+
 (deftest main-calls-main-with-stream-router
   (testing "Main function should call main-with-stream-router if only mapper-fn is passed"
     (let [foo (atom 0)
