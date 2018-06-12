@@ -1,14 +1,12 @@
 (ns ziggurat.streams
   (:require [clojure.tools.logging :as log]
             [flatland.protobuf.core :as proto]
-            [mount.core :refer [defstate]]
+            [mount.core :as mount :refer [defstate]]
             [lambda-common.metrics :as metrics]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
-            [sentry.core :as sentry]
-            [ziggurat.kafka-delay :as kafka-delay]
-            [mount.core :as mount])
+            [ziggurat.kafka-delay :as kafka-delay])
   (:import [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig]
@@ -47,11 +45,27 @@
   [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
+(defn- protobuf->hash [message]
+  (try
+    (let [proto-klass (-> (ziggurat-config)
+                          :proto-class
+                          java.lang.Class/forName
+                          proto/protodef)
+          loaded-proto (proto/protobuf-load proto-klass message)
+          proto-keys (-> proto-klass
+                         proto/protobuf-schema
+                         :fields
+                         keys)]
+      (select-keys loaded-proto proto-keys))
+    (catch Throwable e
+      (metrics/increment-count "message-parsing" "failed")
+      nil)))
+
 (defn- topology [mapper-fn {:keys [origin-topic proto-class]} topic-entity]
   (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile origin-topic)]
     (->> (.stream builder topic-pattern)
-         (map-values #(proto/protobuf-load (proto/protodef (java.lang.Class/forName proto-class)) %))
+         (map-values protobuf->hash)
          (map-values #(log-and-report-metrics topic-entity %))
          (map-values #((mpr/mapper-func mapper-fn) % topic-entity)))
     builder))

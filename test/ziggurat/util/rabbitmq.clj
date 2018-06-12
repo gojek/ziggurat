@@ -11,7 +11,8 @@
 (defn- get-msg-from-rabbitmq [queue-name]
   (with-open [ch (lch/open connection)]
     (let [[meta payload] (lb/get ch queue-name false)]
-      (consumer/convert-and-ack-message ch meta payload true))))
+      (when (seq payload)
+        (consumer/convert-and-ack-message ch meta payload true)))))
 
 (defn get-msg-from-delay-queue [topic-name]
   (let [{:keys [queue-name queue-timeout-ms]} (:delay (rabbitmq-config))

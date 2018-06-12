@@ -1,6 +1,6 @@
 (ns ziggurat.messaging.dead-set-test
-  (:require [clojure.test :refer :all])
-  (:require [ziggurat.fixtures :as fix]
+  (:require [clojure.test :refer :all]
+            [ziggurat.fixtures :as fix]
             [ziggurat.messaging.dead-set :as ds]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq]))
@@ -16,7 +16,6 @@
             pushed-message    (doseq [counter (range count-of-messages)]
                                 (producer/publish-to-dead-queue topic-name message))]
         (ds/replay count-of-messages topic-name)
-        (is (= (replicate count-of-messages message) (rmq/get-msg-from-instant-queue topic-name)))))))
-
-(deftest view-test
-  (testing "puts message from dead set to instant queue"))
+        (doseq [n (range count-of-messages)]
+          (is (= message (rmq/get-msg-from-instant-queue topic-name))))
+        (is (not (rmq/get-msg-from-instant-queue topic-name)))))))

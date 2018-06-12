@@ -4,9 +4,8 @@
 
 (defn replay [count-of-message topic-name]
   "Gets the message from the queue and puts them to instant queue"
-  (->> count-of-message
-      (consumer/get-dead-set-messages true topic-name)
-      (producer/publish-to-instant-queue topic-name)))
+  (doseq [msg (consumer/get-dead-set-messages true topic-name count-of-message)]
+    (producer/publish-to-instant-queue topic-name msg)))
 
 (defn view
   "Gets n number of messages from dead queue"
