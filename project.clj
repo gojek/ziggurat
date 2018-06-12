@@ -46,4 +46,5 @@
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}}
-  :plugins [[lein-kibit "0.1.6"]])
+  :plugins [[lein-kibit "0.1.6"]
+            [jonase/eastwood "0.2.6"]])
