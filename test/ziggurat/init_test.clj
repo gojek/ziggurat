@@ -27,12 +27,16 @@
 
 (deftest main-calls-main-with-stream-router
   (testing "Main function should call main-with-stream-router if only mapper-fn is passed"
-    (let [foo (atom 0)]
-      (with-redefs [init/main-with-stream-router (fn [_ _ _ _] (swap! foo inc))
+    (let [foo (atom 0)
+          main-fn #(constantly nil)
+          expected-stream-router [{:default {:handler-fn main-fn}}]]
+      (with-redefs [init/main-with-stream-router (fn [_ _ stream-router _]
+                                                   (swap! foo inc)
+                                                   (is (= stream-router expected-stream-router)))
                     streams/start-streams (constantly nil)
                     streams/stop-streams (constantly nil)
                     config/config-file "config.test.edn"]
-        (init/main #() #() #(constantly nil))
+        (init/main #() #() main-fn)
         (is (= 1 @foo))))))
 
 (deftest ziggurat-routes-serve-actor-routes
