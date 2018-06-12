@@ -54,22 +54,6 @@
                             (shutdown-agents))
              "Shutdown-handler")))
 
-(defn main
-  "The entry point for your lambda actor.
-  main-fn must be a fn which accepts one parameter: the message from Kafka. It must return :success, :retry or :skip.
-  start-fn takes no parameters, and will be run on application startup.
-  stop-fn takes no parameters, and will be run on application shutdown."
-  ([start-fn stop-fn main-fn]
-   (main start-fn stop-fn main-fn []))
-  ([start-fn stop-fn main-fn actor-routes]
-   (try
-     (add-shutdown-hook stop-fn)
-     (start start-fn {:mapper-fn main-fn} actor-routes)
-     (catch Exception e
-       (log/error e)
-       (stop stop-fn)
-       (System/exit 1)))))
-
 (defn main-with-stream-router
   "The entry point for your lambda actor.
   stream-routes accepts list of map of your topic entity eg: [:booking {:mapper-fn (fn [message] :success)}]
@@ -86,3 +70,13 @@
        (log/error e)
        (stop stop-fn)
        (System/exit 1)))))
+
+(defn main
+  "The entry point for your lambda actor.
+  main-fn must be a fn which accepts one parameter: the message from Kafka. It must return :success, :retry or :skip.
+  start-fn takes no parameters, and will be run on application startup.
+  stop-fn takes no parameters, and will be run on application shutdown."
+  ([start-fn stop-fn main-fn]
+   (main start-fn stop-fn main-fn []))
+  ([start-fn stop-fn main-fn actor-routes]
+   (main-with-stream-router start-fn stop-fn [{:default {:handler-fn main-fn}}] actor-routes)))

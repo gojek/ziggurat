@@ -25,6 +25,16 @@
         (init/stop #(deliver retry-count (-> (config/ziggurat-config) :retry :count)))
         (is (= 5 (deref retry-count 10000 ::failure)))))))
 
+(deftest main-calls-main-with-stream-router
+  (testing "Main function should call main-with-stream-router if only mapper-fn is passed"
+    (let [foo (atom 0)]
+      (with-redefs [init/main-with-stream-router (fn [_ _ _ _] (swap! foo inc))
+                    streams/start-streams (constantly nil)
+                    streams/stop-streams (constantly nil)
+                    config/config-file "config.test.edn"]
+        (init/main #() #() #(constantly nil))
+        (is (= 1 @foo))))))
+
 (deftest ziggurat-routes-serve-actor-routes
   (testing "The routes added by actor should be served along with ziggurat-routes"
     (with-redefs [streams/start-streams (constantly nil)
