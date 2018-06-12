@@ -37,10 +37,7 @@
           construct-default-stream-router-was-called (atom false)
           main-fn #(constantly nil)]
       (with-redefs [init/main-with-stream-router (fn [_ _ stream-router _] (swap! main-with-stream-router-was-called not))
-                    init/construct-default-stream-router (fn [_] (swap! construct-default-stream-router-was-called not))
-                    streams/start-streams (constantly nil)
-                    streams/stop-streams (constantly nil)
-                    config/config-file "config.test.edn"]
+                    init/construct-default-stream-router (fn [_] (swap! construct-default-stream-router-was-called not))]
         (init/main #() #() main-fn)
         (is @main-with-stream-router-was-called)
         (is @construct-default-stream-router-was-called)))))
