@@ -31,7 +31,7 @@
                                         :stream-routes (:stream-routes fns-map)}
                         ::actor-routes actor-routes})
       (mount/start))
-  (messaging-producer/make-queues (:stream-routes fns-map))
+  (messaging-producer/make-queues fns-map)
   ;; We want subscribers to start after creating queues on RabbitMQ.
   (messaging-consumer/start-subscribers (:mapper-fn fns-map) (:stream-routes fns-map))
   (actor-start-fn))
@@ -65,7 +65,7 @@
   ([start-fn stop-fn stream-router actor-routes]
    (try
      (add-shutdown-hook stop-fn)
-     (start start-fn {:stream-routes stream-router} actor-routes)
+     (start start-fn stream-router actor-routes)
      (catch Exception e
        (log/error e)
        (stop stop-fn)
