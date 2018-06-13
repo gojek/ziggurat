@@ -1,6 +1,9 @@
 (ns ziggurat.messaging.producer-test
   (:require [clojure.test :refer :all]
+            [langohr.channel :as lch]
+            [langohr.queue :as lq]
             [ziggurat.fixtures :as fix]
+            [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq]))
 
@@ -61,33 +64,27 @@
         (producer/make-queues stream-routes)
         (is (= (* (count stream-routes) 3) @counter)))))
 
-  (testing "creates queues with route identifier from stream routes"
-    (let [counter (atom 0)
-          created-instant-queue (atom 0)
-          created-delay-queue (atom 0)
-          created-dead-queue (atom 0)
-          stream-routes [{:default {:handler-fn #(constantly nil)}}]
-          instant-queue-name "default_lambda_service_instant_queue_test"
-          delay-queue-name "default_lambda_service_delay_queue_test_100"
-          dead-queue-name "default_lambda_service_dead_letter_queue_test"
-          instant-exchange-name "default_lambda_service_instant_exchange_test"
-          delay-exchange-name "default_lambda_service_delay_exchange_test"
-          dead-exchange-name "default_lambda_service_dead_letter_exchange_test"]
-      (with-redefs [producer/create-and-bind-queue (fn
-                                                     ([queue-name exchange-name]
-                                                      (cond
-                                                        (and (= exchange-name instant-exchange-name) (= queue-name instant-queue-name))
-                                                        (swap! created-instant-queue inc)
-                                                        (and (= exchange-name dead-exchange-name) (= queue-name dead-queue-name))
-                                                        (swap! created-dead-queue inc))
-                                                      (swap! counter inc))
-                                                     ([queue-name exchange-name dead-letter-exchange-name queue-timeout]
-                                                      (cond
-                                                        (and (= exchange-name delay-exchange-name) (= queue-name delay-queue-name) (= 100 queue-timeout))
-                                                        (swap! created-delay-queue inc))
-                                                      (swap! counter inc)))]
-        (producer/make-queues stream-routes)
-        (is (= (* (count stream-routes) 3) @counter))
-        (is (= 1 @created-instant-queue))
-        (is (= 1 @created-delay-queue))
-        (is (= 1 @created-dead-queue))))))
+  (testing "it creates queues with route identifier from stream routes"
+    (with-open [ch (lch/open connection)]
+      (let [counter (atom 0)
+            created-instant-queue (atom 0)
+            created-delay-queue (atom 0)
+            created-dead-queue (atom 0)
+            stream-routes [{:default {:handler-fn #(constantly nil)}}]
+            instant-queue-name "default_lambda_service_instant_queue_test"
+            delay-queue-name "default_lambda_service_delay_queue_test_100"
+            dead-queue-name "default_lambda_service_dead_letter_queue_test"
+            instant-exchange-name "default_lambda_service_instant_exchange_test"
+            delay-exchange-name "default_lambda_service_delay_exchange_test"
+            dead-exchange-name "default_lambda_service_dead_letter_exchange_test"
+            expected-queue-status {:message-count 0, :consumer-count 0}]
+          (producer/make-queues stream-routes)
+          (is (= (expected-queue-status (lq/status ch instant-queue-name))))
+          (is (= (expected-queue-status (lq/status ch delay-queue-name))))
+          (is (= (expected-queue-status (lq/status ch dead-queue-name))))
+          (lq/delete ch instant-queue-name)
+          (lq/delete ch delay-queue-name)
+          (lq/delete ch delay-exchange-name)
+          (lq/delete ch instant-exchange-name)
+          (lq/delete ch dead-exchange-name)
+          (lq/delete ch dead-queue-name)))))
