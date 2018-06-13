@@ -44,6 +44,14 @@
         (producer/make-queues [])
         (is (= 0 @counter)))))
 
+  (testing "it does not create queues when stream-routes are empty"
+    (let [counter (atom 0)]
+      (with-redefs [producer/create-and-bind-queue (fn
+                                                     ([_ _] (swap! counter inc))
+                                                     ([_ _ _ _] (swap! counter inc)))]
+        (producer/make-queues [{}])
+        (is (= 0 @counter)))))
+
   (testing "it calls create-and-bind-queue for each queue creation and each stream-route when stream-routes are passed"
     (let [counter (atom 0)
           stream-routes [{:test {:handler-fn #(constantly nil)}} {:test2 {:handler-fn #(constantly nil)}}]]

@@ -111,7 +111,8 @@
 
 (defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
-    (doseq [stream-route stream-routes]
+    (doseq [stream-route stream-routes
+            :when (-> stream-route empty? not)]
       (let [topic-name (name (first (keys stream-route)))]
         (make-delay-queue topic-name)
         (make-instant-queue topic-name)
