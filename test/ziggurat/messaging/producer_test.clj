@@ -69,18 +69,21 @@
           stream-routes [{:default {:handler-fn #(constantly nil)}}]
           instant-queue-name "default_lambda_service_instant_queue_test"
           delay-queue-name "default_lambda_service_delay_queue_test_100"
-          dead-queue-name "default_lambda_service_dead_letter_queue_test"]
+          dead-queue-name "default_lambda_service_dead_letter_queue_test"
+          instant-exchange-name "default_lambda_service_instant_exchange_test"
+          delay-exchange-name "default_lambda_service_delay_exchange_test"
+          dead-exchange-name "default_lambda_service_dead_letter_exchange_test"]
       (with-redefs [producer/create-and-bind-queue (fn
                                                      ([queue-name exchange-name]
                                                       (cond
-                                                        (= queue-name instant-queue-name)
+                                                        (and (= exchange-name instant-exchange-name) (= queue-name instant-queue-name))
                                                         (swap! created-instant-queue inc)
-                                                        (= queue-name dead-queue-name)
+                                                        (and (= exchange-name dead-exchange-name) (= queue-name dead-queue-name))
                                                         (swap! created-dead-queue inc))
                                                       (swap! counter inc))
-                                                     ([queue-name exchange-name dead-letter-exchange-name _]
+                                                     ([queue-name exchange-name dead-letter-exchange-name queue-timeout]
                                                       (cond
-                                                        (= queue-name delay-queue-name)
+                                                        (and (= exchange-name delay-exchange-name) (= queue-name delay-queue-name) (= 100 queue-timeout))
                                                         (swap! created-delay-queue inc))
                                                       (swap! counter inc)))]
         (producer/make-queues stream-routes)
