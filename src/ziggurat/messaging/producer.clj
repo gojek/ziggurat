@@ -92,19 +92,12 @@
          dead-letter-exchange-name (get-name-with-prefix-topic topic-name dead-letter-exchange)]
      (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms))))
 
-(defn- make-instant-queue
-  ([topic-name]
-   (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))
-         queue-name    (get-name-with-prefix-topic topic-name queue-name)
-         exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
-     (create-and-bind-queue queue-name exchange-name))))
-
-(defn- make-dead-letter-queue
-  ([topic-name]
-   (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))
-         queue-name    (get-name-with-prefix-topic topic-name queue-name)
-         exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
-     (create-and-bind-queue queue-name exchange-name))))
+(defn- make-queue
+  [topic-identifier queue-type]
+  (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
+        queue-name    (get-name-with-prefix-topic topic-identifier queue-name)
+        exchange-name (get-name-with-prefix-topic topic-identifier exchange-name)]
+    (create-and-bind-queue queue-name exchange-name)))
 
 (defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
@@ -112,5 +105,5 @@
             :when (-> stream-route empty? not)]
       (let [topic-name (name (first (keys stream-route)))]
         (make-delay-queue topic-name)
-        (make-instant-queue topic-name)
-        (make-dead-letter-queue topic-name)))))
+        (make-queue topic-name :instant)
+        (make-queue topic-name :dead-letter)))))
