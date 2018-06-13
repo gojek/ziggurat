@@ -85,7 +85,6 @@
       (= retry-count 0) (publish-to-dead-queue topic-name (dissoc message :retry-count)))))
 
 (defn- make-delay-queue
-  ([] (make-delay-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
          queue-name                (delay-queue-name topic-name queue-name queue-timeout-ms)
@@ -94,7 +93,6 @@
      (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms))))
 
 (defn- make-instant-queue
-  ([] (make-instant-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name]} (:instant (rabbitmq-config))
          queue-name    (get-name-with-prefix-topic topic-name queue-name)
@@ -102,7 +100,6 @@
      (create-and-bind-queue queue-name exchange-name))))
 
 (defn- make-dead-letter-queue
-  ([] (make-dead-letter-queue nil))
   ([topic-name]
    (let [{:keys [queue-name exchange-name]} (:dead-letter (rabbitmq-config))
          queue-name    (get-name-with-prefix-topic topic-name queue-name)
