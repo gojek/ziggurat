@@ -35,13 +35,14 @@
           (is (= message-from-mq expected-message)))))))
 
 (deftest make-queues-test
-  (testing "it calls create-and-bind-queue for each queue creation when a mapper-fn is passed"
+  (testing "it does not create queues when stream-routes are not passed"
     (let [counter (atom 0)]
       (with-redefs [producer/create-and-bind-queue (fn
                                                      ([_ _] (swap! counter inc))
                                                      ([_ _ _ _] (swap! counter inc)))]
         (producer/make-queues nil)
-        (is (= 3 @counter)))))
+        (producer/make-queues [])
+        (is (= 0 @counter)))))
 
   (testing "it calls create-and-bind-queue for each queue creation and each stream-route when stream-routes are passed"
     (let [counter (atom 0)
