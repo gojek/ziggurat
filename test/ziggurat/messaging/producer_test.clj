@@ -42,6 +42,7 @@
                                                      ([_ _ _ _] (swap! counter inc)))]
         (producer/make-queues nil)
         (is (= 3 @counter)))))
+
   (testing "it calls create-and-bind-queue for each queue creation and each stream-route when stream-routes are passed"
     (let [counter (atom 0)
           stream-routes [{:test {:handler-fn #(constantly nil)}} {:test2 {:handler-fn #(constantly nil)}}]]
@@ -49,4 +50,32 @@
                                                      ([_ _] (swap! counter inc))
                                                      ([_ _ _ _] (swap! counter inc)))]
         (producer/make-queues stream-routes)
-        (is (= (* (count stream-routes) 3) @counter))))))
+        (is (= (* (count stream-routes) 3) @counter)))))
+
+  (testing "creates queues with route identifier from stream routes"
+    (let [counter (atom 0)
+          created-instant-queue (atom 0)
+          created-delay-queue (atom 0)
+          created-dead-queue (atom 0)
+          stream-routes [{:default {:handler-fn #(constantly nil)}}]
+          instant-queue-name "default_lambda_service_instant_queue_test"
+          delay-queue-name "default_lambda_service_delay_queue_test_100"
+          dead-queue-name "default_lambda_service_dead_letter_queue_test"]
+      (with-redefs [producer/create-and-bind-queue (fn
+                                                     ([queue-name exchange-name]
+                                                      (cond
+                                                        (= queue-name instant-queue-name)
+                                                        (swap! created-instant-queue inc)
+                                                        (= queue-name dead-queue-name)
+                                                        (swap! created-dead-queue inc))
+                                                      (swap! counter inc))
+                                                     ([queue-name exchange-name dead-letter-exchange-name _]
+                                                      (cond
+                                                        (= queue-name delay-queue-name)
+                                                        (swap! created-delay-queue inc))
+                                                      (swap! counter inc)))]
+        (producer/make-queues stream-routes)
+        (is (= (* (count stream-routes) 3) @counter))
+        (is (= 1 @created-instant-queue))
+        (is (= 1 @created-delay-queue))
+        (is (= 1 @created-dead-queue))))))
