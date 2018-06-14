@@ -2,9 +2,11 @@
   (:require [clojure.test :refer :all]
             [langohr.channel :as lch]
             [langohr.queue :as lq]
+            [ziggurat.config :refer [rabbitmq-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]))
 
 (use-fixtures :once fix/init-rabbit-mq)
@@ -71,12 +73,13 @@
             created-delay-queue (atom 0)
             created-dead-queue (atom 0)
             stream-routes [{:default {:handler-fn #(constantly nil)}}]
-            instant-queue-name "default_lambda_service_instant_queue_test"
-            delay-queue-name "default_lambda_service_delay_queue_test_100"
-            dead-queue-name "default_lambda_service_dead_letter_queue_test"
-            instant-exchange-name "default_lambda_service_instant_exchange_test"
-            delay-exchange-name "default_lambda_service_delay_exchange_test"
-            dead-exchange-name "default_lambda_service_dead_letter_exchange_test"
+            instant-queue-name (util/get-name-with-prefix-topic "default" (:queue-name (:instant (rabbitmq-config))))
+            delay-queue-timeout (:queue-timeout-ms (:delay (rabbitmq-config)))
+            delay-queue-name (util/get-name-with-prefix-topic "default" (format "%s_%s" (:queue-name (:delay (rabbitmq-config))) delay-queue-timeout))
+            dead-queue-name (util/get-name-with-prefix-topic "default" (:queue-name (:dead-letter (rabbitmq-config))))
+            instant-exchange-name (util/get-name-with-prefix-topic "default" (:exchange-name (:instant (rabbitmq-config))))
+            delay-exchange-name (util/get-name-with-prefix-topic "default" (:exchange-name (:delay (rabbitmq-config))))
+            dead-exchange-name (util/get-name-with-prefix-topic "default" (:exchange-name (:dead-letter (rabbitmq-config))))
             expected-queue-status {:message-count 0, :consumer-count 0}]
           (producer/make-queues stream-routes)
           (is (= (expected-queue-status (lq/status ch instant-queue-name))))
