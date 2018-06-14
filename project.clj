@@ -1,6 +1,6 @@
 (require 'cemerick.pomegranate.aether)
 (cemerick.pomegranate.aether/register-wagon-factory!
-  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
+ "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
 (defproject com.gojek.lambda/ziggurat "1.3.4"
   :description "The actor framework for Project Lambda"
@@ -45,6 +45,10 @@
   :jvm-opts ["-server" "-XX:-OmitStackTraceInFastThrow"]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
-             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}}
+             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}
+             :dev     {:plugins      [[lein-githooks "0.1.0"]]
+                       :githooks     {:auto-install true
+                                      :pre-commit   ["lein test"]
+                                      :pre-push     ["lein eastwood && lein kibit"]}}}
   :plugins [[lein-kibit "0.1.6"]
             [jonase/eastwood "0.2.6"]])
