@@ -33,7 +33,7 @@
       (mount/start))
   (messaging-producer/make-queues fns-map)
   ;; We want subscribers to start after creating queues on RabbitMQ.
-  (messaging-consumer/start-subscribers (:mapper-fn fns-map) (:stream-routes fns-map))
+  (messaging-consumer/start-subscribers fns-map)
   (actor-start-fn))
 
 (defn stop

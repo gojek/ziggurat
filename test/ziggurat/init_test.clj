@@ -4,7 +4,8 @@
             [ziggurat.init :as init]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams]
-            [ziggurat.server.test-utils :as tu]))
+            [ziggurat.server.test-utils :as tu]
+            [ziggurat.messaging.consumer :as messaging-consumer]))
 
 (deftest start-calls-actor-start-fn
   (testing "The actor start fn starts after the lambda internal state and can read config"
@@ -35,10 +36,26 @@
                     messaging-producer/make-queues (fn [stream-routes]
                                                      (swap! make-queues-called not)
                                                      (is (= stream-routes expected-stream-routes)))
+                    messaging-consumer/start-subscribers (constantly nil)
                     config/config-file "config.test.edn"]
-          (init/start #() expected-stream-routes [])
-          (init/stop #())
-          (is @make-queues-called)))))
+        (init/start #() expected-stream-routes [])
+        (init/stop #())
+        (is @make-queues-called)))))
+
+(deftest start-calls-start-subscribers
+  (testing "Start calls start subscribers"
+    (let [start-subscriber-called (atom false)
+          expected-stream-routes [{:default {:handler-fn #()}}]]
+      (with-redefs [streams/start-streams (constantly nil)
+                    streams/stop-streams (constantly nil)
+                    messaging-consumer/start-subscribers (fn [stream-routes]
+                                                           (swap! start-subscriber-called not)
+                                                           (is (= stream-routes expected-stream-routes)))
+                    messaging-producer/make-queues (constantly nil)
+                    config/config-file "config.test.edn"]
+        (init/start #() expected-stream-routes [])
+        (init/stop #())
+        (is @start-subscriber-called)))))
 
 (deftest construct-default-stream-router
   (testing "Function should construct default stream router"
@@ -74,7 +91,7 @@
                   streams/stop-streams (constantly nil)
                   config/config-file "config.test.edn"]
       (init/start #() [] [["test-ping" (fn [_request] {:status 200
-                                                        :body   "pong"})]])
+                                                       :body   "pong"})]])
       (let [{:keys [status body] :as response} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status body] :as response} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]

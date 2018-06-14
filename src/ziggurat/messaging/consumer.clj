@@ -69,18 +69,14 @@
 
     (log/info "starting consumer for instant-queue with consumer tag - " consumer-tag)))
 
-
-
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
-  [mapper-fn stream-routes]
+  [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
-      (doseq [worker (range workers)]
-        (if (nil? stream-routes)
-          (start-subscriber* (lch/open connection) mapper-fn nil)
-          (doseq [stream-route stream-routes]
-            (let [key   (first (keys stream-route))
-                        value (key stream-route)]
-                    (start-subscriber* (lch/open connection) (:handler-fn value) (name key)))))))))
-
+      (doseq [worker (range workers)
+              :when (-> stream-routes empty? not)]
+        (doseq [stream-route stream-routes]
+          (let [topic-identifier (first (keys stream-route))
+                topic-handler (topic-identifier stream-route)]
+            (start-subscriber* (lch/open connection) (:handler-fn topic-handler) (name topic-identifier))))))))
