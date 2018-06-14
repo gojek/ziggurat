@@ -14,8 +14,8 @@
             [taoensso.nippy :as nippy]))
 
 
-(defn delay-queue-name [topic-name queue-name queue-timeout-ms]
-  (get-name-with-prefix-topic topic-name (format "%s_%s" queue-name queue-timeout-ms)))
+(defn delay-queue-name [topic-entity queue-name queue-timeout-ms]
+  (get-name-with-prefix-topic topic-entity (format "%s_%s" queue-name queue-timeout-ms)))
 
 (defn- create-queue [queue props ch]
   (lq/declare ch queue {:durable true :arguments props :auto-delete false})
@@ -58,39 +58,37 @@
                  (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
                                                                              :persistent   true})))))
 
-(defn publish-to-delay-queue [topic-name message]
+(defn publish-to-delay-queue [topic-entity message]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
-        exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
+        exchange-name (get-name-with-prefix-topic topic-entity exchange-name)]
     (publish exchange-name message)))
 
-(defn publish-to-dead-queue [topic-name message]
+(defn publish-to-dead-queue [topic-entity message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
+        exchange-name (get-name-with-prefix-topic topic-entity exchange-name)]
     (publish exchange-name message)))
 
 (defn publish-to-instant-queue
-  [topic-name message]
+  [topic-entity message]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
-        exchange-name (get-name-with-prefix-topic topic-name exchange-name)]
+        exchange-name (get-name-with-prefix-topic topic-entity exchange-name)]
     (publish exchange-name message)))
 
-(defn retry [{:keys [retry-count] :as message} topic-name]
+(defn retry [{:keys [retry-count] :as message} topic-entity]
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
-      (nil? retry-count) (publish-to-delay-queue topic-name (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-      (> retry-count 0) (publish-to-delay-queue topic-name (assoc message :retry-count (dec retry-count)))
-      (= retry-count 0) (publish-to-dead-queue topic-name (dissoc message :retry-count)))))
+      (nil? retry-count) (publish-to-delay-queue topic-entity (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
+      (> retry-count 0) (publish-to-delay-queue topic-entity (assoc message :retry-count (dec retry-count)))
+      (= retry-count 0) (publish-to-dead-queue topic-entity (dissoc message :retry-count)))))
 
-(defn- make-delay-queue
-  ([topic-name]
-   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-         queue-name                (delay-queue-name topic-name queue-name queue-timeout-ms)
-         exchange-name             (get-name-with-prefix-topic topic-name exchange-name)
-         dead-letter-exchange-name (get-name-with-prefix-topic topic-name dead-letter-exchange)]
-     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms))))
+(defn- make-delay-queue [topic-entity]
+  (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
+        queue-name                (delay-queue-name topic-entity queue-name queue-timeout-ms)
+        exchange-name             (get-name-with-prefix-topic topic-entity exchange-name)
+        dead-letter-exchange-name (get-name-with-prefix-topic topic-entity dead-letter-exchange)]
+    (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms)))
 
-(defn- make-queue
-  [topic-identifier queue-type]
+(defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
         queue-name    (get-name-with-prefix-topic topic-identifier queue-name)
         exchange-name (get-name-with-prefix-topic topic-identifier exchange-name)]
@@ -98,9 +96,8 @@
 
 (defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
-    (doseq [stream-route stream-routes
-            :when (-> stream-route empty? not)]
-      (let [topic-name (name (first (keys stream-route)))]
-        (make-delay-queue topic-name)
-        (make-queue topic-name :instant)
-        (make-queue topic-name :dead-letter)))))
+    (doseq [stream-route stream-routes]
+      (let [topic-entity (name (first (keys stream-route)))]
+        (make-delay-queue topic-entity)
+        (make-queue topic-entity :instant)
+        (make-queue topic-entity :dead-letter)))))

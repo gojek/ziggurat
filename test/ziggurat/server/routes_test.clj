@@ -5,7 +5,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.server.test-utils :as tu]))
 
-(use-fixtures :once fix/start-server)
+(use-fixtures :once fix/start-server fix/init-rabbit-mq)
 
 (deftest router-test
   (testing "Should return 200 ok when GET /ping is called"

@@ -37,7 +37,7 @@
                               :yggdrasil             {:host                     "http://localhost"
                                                       :port                     [3100 :int]
                                                       :connection-timeout-in-ms [100 :int]}
-                              :stream-router-configs {:booking {:application-id       "lambda-service-test-02-multiple"
+                              :stream-router {:booking {:application-id       "lambda-service-test-02-multiple"
                                                                 :bootstrap-servers    "localhost:9092"
                                                                 :stream-threads-count [1 :int]
                                                                 :origin-topic         "booking-log*"

@@ -15,7 +15,7 @@
 
 (defn replay [{:keys [params]}]
   (if (validate-count (:count params))
-    (do (r/replay (:count params) (:topic-name params))
+    (do (r/replay (:count params) (:topic-entity params))
         {:status 200
          :body   {:message "Requeued messages on the queue for retrying"}})
     {:status 400
@@ -23,7 +23,7 @@
 
 (defn view [{:keys [params]}]
   (if-let [count (parse-count (:count params))]
-    (if-let [messages (r/view count (:topic-name params))]
+    (if-let [messages (r/view count (:topic-entity params))]
       {:status 200
        :body   {:messages messages}})
     {:status 400

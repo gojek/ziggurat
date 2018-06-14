@@ -28,27 +28,23 @@
     default
     (str (name topic) "." default)))
 
-(defn- log-and-report-metrics
-  [topic message]
-  (let [message-read-metric-namespace (get-metric-namespace "message" topic)
-        message-delay-metric-namespace (get-metric-namespace "message-received-delay-histogram" topic)]
+(defn- log-and-report-metrics [topic-entity message]
+  (let [message-read-metric-namespace (get-metric-namespace "message" topic-entity)
+        message-delay-metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
     (kafka-delay/calculate-and-report-kafka-delay message-delay-metric-namespace message)
     (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
-(defn- value-mapper
-  [f]
+(defn- value-mapper [f]
   (reify ValueMapper
     (apply [_ v] (f v))))
 
-(defn- map-values
-  [mapper-fn ^KStream stream-builder]
+(defn- map-values [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- protobuf->hash [message]
+(defn- protobuf->hash [message proto-class]
   (try
-    (let [proto-klass (-> (ziggurat-config)
-                          :proto-class
+    (let [proto-klass (-> proto-class
                           java.lang.Class/forName
                           proto/protodef)
           loaded-proto (proto/protobuf-load proto-klass message)
@@ -65,7 +61,7 @@
   (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile origin-topic)]
     (->> (.stream builder topic-pattern)
-         (map-values protobuf->hash)
+         (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity %))
          (map-values #((mpr/mapper-func mapper-fn) % topic-entity)))
     builder))
@@ -74,24 +70,17 @@
   (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config topic-entity)
                  (StreamsConfig. (properties stream-config))))
 
-(defn start-streams [{:keys [stream-routes mapper-fn]}]
+(defn start-streams [stream-routes]
   (let [zig-conf (ziggurat-config)]
-    (if (nil? stream-routes)
-      (let [stream-config (-> zig-conf
-                              :stream-config
-                              (assoc :proto-class (:proto-class zig-conf)))
-            stream (start-stream* mapper-fn stream-config nil)]
-        (.start stream)
-        [stream])
-      (reduce (fn [streams route]
-                (let [topic-entity  (first (keys route))
-                      stream-config (get-in zig-conf [:stream-router-configs topic-entity])
-                      mapper-fn (get-in route [topic-entity :handler-fn])
-                      stream (start-stream* mapper-fn stream-config (name topic-entity))]
-                  (.start stream)
-                  (conj streams stream)))
-              []
-              stream-routes))))
+    (reduce (fn [streams route]
+              (let [topic-entity  (first (keys route))
+                    stream-config (get-in zig-conf [:stream-router topic-entity])
+                    mapper-fn     (get-in route [topic-entity :handler-fn])
+                    stream        (start-stream* mapper-fn stream-config (name topic-entity))]
+                (.start stream)
+                (conj streams stream)))
+            []
+            stream-routes)))
 
 (defn stop-streams [streams]
   (doseq [stream streams]
@@ -99,6 +88,6 @@
 
 (defstate stream
   :start (do (log/info "Starting Kafka stream")
-             (start-streams (:ziggurat.init/stream-args (mount/args))))
+             (start-streams (:ziggurat.init/stream-routes (mount/args))))
   :stop (do (log/info "Stopping Kafka stream")
             (stop-streams stream)))

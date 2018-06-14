@@ -27,8 +27,7 @@
                     #'server/server
                     #'nrepl-server/server
                     #'streams/stream})
-      (mount/with-args {::stream-args  {:mapper-fn     (:mapper-fn fns-map)
-                                        :stream-routes (:stream-routes fns-map)}
+      (mount/with-args {::stream-routes  fns-map
                         ::actor-routes actor-routes})
       (mount/start))
   (messaging-producer/make-queues fns-map)
@@ -54,14 +53,14 @@
                             (shutdown-agents))
              "Shutdown-handler")))
 
-(defn main-with-stream-router
+(defn main
   "The entry point for your lambda actor.
   stream-routes accepts list of map of your topic entity eg: [:booking {:mapper-fn (fn [message] :success)}]
   mapper-fn must return :success, :retry or :skip
   start-fn takes no parameters, and will be run on application startup.
   stop-fn takes no parameters, and will be run on application shutdown."
   ([start-fn stop-fn stream-router]
-   (main-with-stream-router start-fn stop-fn stream-router []))
+   (main start-fn stop-fn stream-router []))
   ([start-fn stop-fn stream-router actor-routes]
    (try
      (add-shutdown-hook stop-fn)
@@ -70,17 +69,3 @@
        (log/error e)
        (stop stop-fn)
        (System/exit 1)))))
-
-(defn construct-default-stream-router
-  [main-fn]
-  [{:default {:handler-fn main-fn}}])
-
-(defn main
-  "The entry point for your lambda actor.
-  main-fn must be a fn which accepts one parameter: the message from Kafka. It must return :success, :retry or :skip.
-  start-fn takes no parameters, and will be run on application startup.
-  stop-fn takes no parameters, and will be run on application shutdown."
-  ([start-fn stop-fn main-fn]
-   (main start-fn stop-fn main-fn []))
-  ([start-fn stop-fn main-fn actor-routes]
-   (main-with-stream-router start-fn stop-fn (construct-default-stream-router main-fn) actor-routes)))

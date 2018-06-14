@@ -49,14 +49,6 @@
         (producer/make-queues [])
         (is (= 0 @counter)))))
 
-  (testing "it does not create queues when stream-routes are empty"
-    (let [counter (atom 0)]
-      (with-redefs [producer/create-and-bind-queue (fn
-                                                     ([_ _] (swap! counter inc))
-                                                     ([_ _ _ _] (swap! counter inc)))]
-        (producer/make-queues [{}])
-        (is (= 0 @counter)))))
-
   (testing "it calls create-and-bind-queue for each queue creation and each stream-route when stream-routes are passed"
     (let [counter (atom 0)
           stream-routes [{:test {:handler-fn #(constantly nil)}} {:test2 {:handler-fn #(constantly nil)}}]]
@@ -68,11 +60,7 @@
 
   (testing "it creates queues with route identifier from stream routes"
     (with-open [ch (lch/open connection)]
-      (let [counter (atom 0)
-            created-instant-queue (atom 0)
-            created-delay-queue (atom 0)
-            created-dead-queue (atom 0)
-            stream-routes [{:default {:handler-fn #(constantly nil)}}]
+      (let [stream-routes [{:default {:handler-fn #(constantly :success)}}]
             instant-queue-name (util/get-name-with-prefix-topic "default" (:queue-name (:instant (rabbitmq-config))))
             delay-queue-timeout (:queue-timeout-ms (:delay (rabbitmq-config)))
             delay-queue-name (util/get-name-with-prefix-topic "default" (format "%s_%s" (:queue-name (:delay (rabbitmq-config))) delay-queue-timeout))

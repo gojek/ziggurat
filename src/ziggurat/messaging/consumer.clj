@@ -27,26 +27,26 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
-(defn- message-handler [mapper-fn topic-name]
+(defn- message-handler [mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true)]
-      ((mpr/mapper-func mapper-fn) message topic-name))))
+      ((mpr/mapper-func mapper-fn) message topic-entity))))
 
 (defn get-queue-name
-  [topic-name]
+  [topic-entity]
   (let [queue-name (:queue-name (:instant (:rabbit-mq (ziggurat-config))))]
-    (get-name-with-prefix-topic topic-name queue-name)))
+    (get-name-with-prefix-topic topic-entity queue-name)))
 
 (defn get-dead-set-messages
   "Get the n(count) messages from the rabbitmq and if ack is set to true then
   ack all the messages in while consuming so that it's not available for other subscriber else does not ack the message"
-  [ack? topic-name count]
+  [ack? topic-entity count]
   (remove nil?
           (with-open [ch (lch/open connection)]
             (doall (for [_ (range count)]
                      (try
                        (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
-                             queue-name (get-name-with-prefix-topic topic-name queue-name)
+                             queue-name (get-name-with-prefix-topic topic-entity queue-name)
                              [meta payload] (lb/get ch queue-name false)]
                          (if (some? payload) (convert-and-ack-message ch meta payload ack?)))
                        (catch Exception e
@@ -58,11 +58,11 @@
     (catch AlreadyClosedException _
       nil)))
 
-(defn start-subscriber* [ch mapper-fn topic-name]
+(defn start-subscriber* [ch mapper-fn topic-entity]
   (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
   (let [consumer-tag (lcons/subscribe ch
-                                      (get-queue-name topic-name)
-                                      (message-handler mapper-fn topic-name)
+                                      (get-queue-name topic-entity)
+                                      (message-handler mapper-fn topic-entity)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
@@ -74,8 +74,7 @@
   [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
     (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
-      (doseq [worker (range workers)
-              :when (-> stream-routes empty? not)]
+      (doseq [_ (range workers)]
         (doseq [stream-route stream-routes]
           (let [topic-identifier (first (keys stream-route))
                 topic-handler (topic-identifier stream-route)]
