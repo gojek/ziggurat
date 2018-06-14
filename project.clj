@@ -49,6 +49,6 @@
              :dev     {:plugins      [[lein-githooks "0.1.0"]]
                        :githooks     {:auto-install true
                                       :pre-commit   ["lein test"]
-                                      :pre-push     ["lein eastwood && lein kibit"]}}}
+                                      :pre-push     ["lein kibit"]}}}
   :plugins [[lein-kibit "0.1.6"]
             [jonase/eastwood "0.2.6"]])
