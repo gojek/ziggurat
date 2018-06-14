@@ -11,10 +11,7 @@
             [mount.core :refer [defstate]]
             [sentry.core :as sentry]
             [ziggurat.retry :refer [with-retry]]
-            [taoensso.nippy :as nippy]
-            [executor.core :as executor])
-  (:import [com.rabbitmq.client AlreadyClosedException ShutdownListener]
-           (java.util.concurrent ExecutorService TimeUnit)))
+            [taoensso.nippy :as nippy]))
 
 
 (defn delay-queue-name [topic-name queue-name queue-timeout-ms]
