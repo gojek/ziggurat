@@ -55,8 +55,8 @@
 
 (defn main
   "The entry point for your lambda actor.
-  stream-routes accepts list of map of your topic entity eg: [:booking {:mapper-fn (fn [message] :success)}]
-  mapper-fn must return :success, :retry or :skip
+  Accepts stream-routes as a list of map of your handler functions to topic entities eg: [{:booking {:handler-fn (fn [message] :success)}}]
+  handler-fn must return :success, :retry or :skip
   start-fn takes no parameters, and will be run on application startup.
   stop-fn takes no parameters, and will be run on application shutdown."
   ([start-fn stop-fn stream-router]
