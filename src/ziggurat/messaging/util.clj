@@ -1,6 +1,4 @@
 (ns ziggurat.messaging.util)
 
-(defn get-name-with-prefix-topic [topic-entity name]
-  (if (nil? topic-entity)
-    name
-    (str topic-entity "_" name)))
+(defn get-value-with-prefix-topic [topic-entity value]
+  (str topic-entity "_" value))

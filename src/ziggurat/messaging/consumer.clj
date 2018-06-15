@@ -4,7 +4,7 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer [get-name-with-prefix-topic]]
+            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
@@ -35,7 +35,7 @@
 (defn get-queue-name
   [topic-entity]
   (let [queue-name (:queue-name (:instant (:rabbit-mq (ziggurat-config))))]
-    (get-name-with-prefix-topic topic-entity queue-name)))
+    (get-value-with-prefix-topic topic-entity queue-name)))
 
 (defn get-dead-set-messages
   "Get the n(count) messages from the rabbitmq and if ack is set to true then
@@ -46,7 +46,7 @@
             (doall (for [_ (range count)]
                      (try
                        (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
-                             queue-name (get-name-with-prefix-topic topic-entity queue-name)
+                             queue-name (get-value-with-prefix-topic topic-entity queue-name)
                              [meta payload] (lb/get ch queue-name false)]
                          (if (some? payload) (convert-and-ack-message ch meta payload ack?)))
                        (catch Exception e

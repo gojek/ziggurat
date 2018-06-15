@@ -27,8 +27,8 @@
   (with-open [ch (lch/open connection)]
     (doseq [stream-route stream-routes]
       (let [topic-identifier (name (first (keys stream-route)))]
-        (lq/delete ch (util/get-name-with-prefix-topic topic-identifier (get-queue-name :instant)))
-        (lq/delete ch (util/get-name-with-prefix-topic topic-identifier (get-queue-name :dead-letter)))
+        (lq/delete ch (util/get-value-with-prefix-topic topic-identifier (get-queue-name :instant)))
+        (lq/delete ch (util/get-value-with-prefix-topic topic-identifier (get-queue-name :dead-letter)))
         (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay) (:queue-timeout-ms (:delay (config/rabbitmq-config)))))))))
 
 (defn init-rabbit-mq [f]
@@ -50,8 +50,8 @@
   (let [{:keys [queue-name queue-timeout-ms]} (:delay (config/rabbitmq-config))
         topic-identifier "booking"
         delay-queue-name-with-topic-prefix (pr/delay-queue-name topic-identifier queue-name queue-timeout-ms)
-        instant-queue-name (util/get-name-with-prefix-topic topic-identifier (get-queue-name :instant))
-        dead-letter-queue-name (util/get-name-with-prefix-topic topic-identifier (get-queue-name :dead-letter))]
+        instant-queue-name (util/get-value-with-prefix-topic topic-identifier (get-queue-name :instant))
+        dead-letter-queue-name (util/get-value-with-prefix-topic topic-identifier (get-queue-name :dead-letter))]
     (with-open [ch (lch/open connection)]
       (lq/purge ch instant-queue-name)
       (lq/purge ch dead-letter-queue-name)

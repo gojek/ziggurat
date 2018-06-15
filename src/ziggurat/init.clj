@@ -55,17 +55,15 @@
 
 (defn- validate-stream-route [stream-route]
   (and
-    (not (nil? stream-route))
     (not-empty stream-route)
     (not (nil? (:handler-fn ((first (keys stream-route)) stream-route))))))
 
 (defn validate-stream-routes [stream-routes]
   (if-not (and
-        (not (nil? stream-routes))
-        (not-empty stream-routes)
-        (reduce (fn [value stream-route]
-                  (and (validate-stream-route stream-route) value))
-                true stream-routes))
+            (not-empty stream-routes)
+            (reduce (fn [value stream-route]
+                      (and (validate-stream-route stream-route) value))
+                    true stream-routes))
     (throw (IllegalArgumentException. "Invalid stream routes"))))
 
 (defn main
