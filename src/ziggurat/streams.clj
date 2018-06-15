@@ -24,9 +24,7 @@
    ConsumerConfig/AUTO_OFFSET_RESET_CONFIG        "latest"})
 
 (defn- get-metric-namespace [default topic]
-  (if (nil? topic)
-    default
-    (str (name topic) "." default)))
+  (str (name topic) "." default))
 
 (defn- log-and-report-metrics [topic-entity message]
   (let [message-read-metric-namespace (get-metric-namespace "message" topic-entity)
