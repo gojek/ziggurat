@@ -59,13 +59,14 @@
     (not-empty stream-route)
     (not (nil? (:handler-fn ((first (keys stream-route)) stream-route))))))
 
-(defn- validate-stream-routes [stream-routes]
-  (and
-    (not (nil? stream-routes))
-    (not-empty stream-routes)
-    (reduce (fn [value stream-route]
-              (and (validate-stream-route stream-route) value))
-            true stream-routes)))
+(defn validate-stream-routes [stream-routes]
+  (if-not (and
+        (not (nil? stream-routes))
+        (not-empty stream-routes)
+        (reduce (fn [value stream-route]
+                  (and (validate-stream-route stream-route) value))
+                true stream-routes))
+    (throw (IllegalArgumentException. "Invalid stream routes"))))
 
 (defn main
   "The entry point for your lambda actor.
@@ -76,8 +77,8 @@
   ([start-fn stop-fn stream-routes]
    (main start-fn stop-fn stream-routes []))
   ([start-fn stop-fn stream-routes actor-routes]
-   {:pre [(validate-stream-routes stream-routes)]}
    (try
+     (validate-stream-routes stream-routes)
      (add-shutdown-hook stop-fn)
      (start start-fn stream-routes actor-routes)
      (catch Exception e
