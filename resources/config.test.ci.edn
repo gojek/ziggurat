@@ -1,11 +1,6 @@
 {:ziggurat {:app-name             "lambda-service"
             :env                  [:dev :keyword]
             :nrepl-server         {:port [7011 :int]}
-            :stream-config        {:application-id       "lambda-service-test-02"
-                                   :bootstrap-servers    "localhost:6667"
-                                   :stream-threads-count [1 :int]
-                                   :origin-topic         ".*-booking-log"}
-            :proto-class          "com.gojek.esb.booking.BookingLogMessage"
             :datadog              {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
