@@ -58,15 +58,33 @@
         (is @start-subscriber-called)))))
 
 (deftest main-test
-  (testing "Main function with stream should call start"
+  (testing "Main function should call start"
     (let [start-was-called (atom false)
-          expected-stream-router [{:default {:handler-fn #(constantly nil)}}]]
+          expected-stream-routes [{:default {:handler-fn #(constantly nil)}}]]
       (with-redefs [init/add-shutdown-hook (fn [_] (constantly nil))
                     init/start (fn [_ stream-router _]
                                  (swap! start-was-called not)
-                                 (is (= expected-stream-router stream-router)))]
-        (init/main #() #() expected-stream-router)
-        (is @start-was-called)))))
+                                 (is (= expected-stream-routes stream-router)))]
+        (init/main #() #() expected-stream-routes)
+        (is @start-was-called))))
+
+  (testing "Main function should raise exception if stream routes is nil"
+    (is (thrown? AssertionError (init/main #() #() nil))))
+
+  (testing "Main function should raise exception if stream routes are empty"
+    (is (thrown? AssertionError (init/main #() #() []))))
+
+  (testing "Main function should raise exception if stream routes contain empty stream route"
+    (is (thrown? AssertionError (init/main #() #() [{}]))))
+
+  (testing "Main function should raise exception if stream route does not have handler-fn"
+    (is (thrown? AssertionError (init/main #() #() [{:booking {}}]))))
+
+  (testing "Main function should raise exception if stream route does have nil value"
+    (is (thrown? AssertionError (init/main #() #() [{:booking nil}]))))
+
+  (testing "Main function should raise exception if stream route has nil handler-fn"
+    (is (thrown? AssertionError (init/main #() #() [{:booking {:handler-fn nil}}])))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"

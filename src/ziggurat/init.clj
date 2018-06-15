@@ -27,8 +27,8 @@
                     #'server/server
                     #'nrepl-server/server
                     #'streams/stream})
-      (mount/with-args {::stream-routes  fns-map
-                        ::actor-routes actor-routes})
+      (mount/with-args {::stream-routes fns-map
+                        ::actor-routes  actor-routes})
       (mount/start))
   (messaging-producer/make-queues fns-map)
   ;; We want subscribers to start after creating queues on RabbitMQ.
@@ -53,18 +53,33 @@
                             (shutdown-agents))
              "Shutdown-handler")))
 
+(defn- validate-stream-route [stream-route]
+  (and
+    (not (nil? stream-route))
+    (not-empty stream-route)
+    (not (nil? (:handler-fn ((first (keys stream-route)) stream-route))))))
+
+(defn- validate-stream-routes [stream-routes]
+  (and
+    (not (nil? stream-routes))
+    (not-empty stream-routes)
+    (reduce (fn [value stream-route]
+              (and (validate-stream-route stream-route) value))
+            true stream-routes)))
+
 (defn main
   "The entry point for your lambda actor.
   Accepts stream-routes as a list of map of your handler functions to topic entities eg: [{:booking {:handler-fn (fn [message] :success)}}]
   handler-fn must return :success, :retry or :skip
   start-fn takes no parameters, and will be run on application startup.
   stop-fn takes no parameters, and will be run on application shutdown."
-  ([start-fn stop-fn stream-router]
-   (main start-fn stop-fn stream-router []))
-  ([start-fn stop-fn stream-router actor-routes]
+  ([start-fn stop-fn stream-routes]
+   (main start-fn stop-fn stream-routes []))
+  ([start-fn stop-fn stream-routes actor-routes]
+   {:pre [(validate-stream-routes stream-routes)]}
    (try
      (add-shutdown-hook stop-fn)
-     (start start-fn stream-router actor-routes)
+     (start start-fn stream-routes actor-routes)
      (catch Exception e
        (log/error e)
        (stop stop-fn)
