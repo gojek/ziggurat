@@ -1,16 +1,15 @@
 (ns ziggurat.messaging.consumer
   (:require [clojure.tools.logging :as log]
+            [langohr.basic :as lb]
+            [langohr.channel :as lch]
+            [langohr.consumers :as lcons]
+            [sentry.core :as sentry]
+            [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]]
-            [langohr.basic :as lb]
-            [langohr.channel :as lch]
-            [langohr.consumers :as lcons]
-            [mount.core :refer [defstate]]
-            [taoensso.nippy :as nippy]
-            [sentry.core :as sentry])
+            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
 (defn convert-and-ack-message

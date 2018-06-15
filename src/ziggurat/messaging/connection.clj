@@ -1,12 +1,11 @@
 (ns ziggurat.messaging.connection
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [langohr.core :as rmq]
             [mount.core :refer [defstate]]
-            [sentry.core :as sentry])
-  (:import [com.rabbitmq.client AlreadyClosedException ShutdownListener]
-           (java.util.concurrent ExecutorService TimeUnit)))
+            [sentry.core :as sentry]
+            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.sentry :refer [sentry-reporter]])
+  (:import [com.rabbitmq.client ShutdownListener]))
 
 
 (defn- start-connection []

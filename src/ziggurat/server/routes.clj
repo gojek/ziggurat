@@ -1,14 +1,11 @@
 (ns ziggurat.server.routes
   (:require [bidi.ring :as bidi]
-            [ziggurat.server.middleware :as m]
-            [ziggurat.resource.dead-set :as ds]
             [new-reliquary.ring :refer [wrap-newrelic-transaction]]
             [ring.middleware.defaults :as ring-defaults]
             [ring.middleware.json :refer [wrap-json-params wrap-json-response]]
-            [clojure.tools.logging :as log]
             [ring.logger :refer [wrap-with-logger]]
-            [ring.util.response :as ring-resp]
-            [schema.core :as s]))
+            [ziggurat.resource.dead-set :as ds]
+            [ziggurat.server.middleware :as m]))
 
 (defn ping [_request]
   {:status  200
@@ -19,8 +16,8 @@
 
 (def routes
   [["ping" {:get ping}]
-   ["v1/dead_set/replay" {:post ziggurat.resource.dead-set/replay}]
-   ["v1/dead_set" {:get ziggurat.resource.dead-set/view}]
+   ["v1/dead_set/replay" {:post ds/replay}]
+   ["v1/dead_set" {:get ds/view}]
    [true (fn [_req] (ring.util.response/not-found ""))]])
 
 (defn handler [actor-routes]

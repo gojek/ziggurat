@@ -1,7 +1,7 @@
 (ns ziggurat.resource.dead-set
   (:require [clojure.spec.alpha :as s]
-            [ziggurat.messaging.dead-set :as r]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [ziggurat.messaging.dead-set :as r]))
 
 (defn- validate-count [count]
   (and (s/valid? int? count) (s/int-in-range? 0 Integer/MAX_VALUE count)))

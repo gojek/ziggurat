@@ -1,17 +1,16 @@
 (ns ziggurat.messaging.producer
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
             [langohr.queue :as lq]
-            [mount.core :refer [defstate]]
             [sentry.core :as sentry]
+            [taoensso.nippy :as nippy]
+            [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
+            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]]
             [ziggurat.retry :refer [with-retry]]
-            [taoensso.nippy :as nippy]))
+            [ziggurat.sentry :refer [sentry-reporter]]))
 
 
 (defn delay-queue-name [topic-entity queue-name queue-timeout-ms]
@@ -83,14 +82,14 @@
 
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-        queue-name                (delay-queue-name topic-entity queue-name queue-timeout-ms)
-        exchange-name             (get-value-with-prefix-topic topic-entity exchange-name)
+        queue-name (delay-queue-name topic-entity queue-name queue-timeout-ms)
+        exchange-name (get-value-with-prefix-topic topic-entity exchange-name)
         dead-letter-exchange-name (get-value-with-prefix-topic topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms)))
 
 (defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
-        queue-name    (get-value-with-prefix-topic topic-identifier queue-name)
+        queue-name (get-value-with-prefix-topic topic-identifier queue-name)
         exchange-name (get-value-with-prefix-topic topic-identifier exchange-name)]
     (create-and-bind-queue queue-name exchange-name)))
 

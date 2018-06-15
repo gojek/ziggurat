@@ -1,10 +1,10 @@
 (ns ziggurat.server
-  (:require [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.server.routes :as routes]
+  (:require [clojure.tools.logging :as log]
             [cheshire.generate :refer [add-encoder encode-str]]
-            [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
-            [ring.adapter.jetty :as ring])
+            [ring.adapter.jetty :as ring]
+            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.server.routes :as routes])
   (:import (org.eclipse.jetty.server Server)
            (java.time Instant)))
 

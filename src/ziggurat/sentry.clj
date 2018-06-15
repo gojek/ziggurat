@@ -1,11 +1,9 @@
 (ns ziggurat.sentry
   "Sentry reporting functions used by both Ziggurat and the actor."
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [ziggurat-config]]
             [mount.core :refer [defstate]]
-            [sentry.core :as sentry])
-  (:import (com.google.common.util.concurrent ThreadFactoryBuilder)
-           (java.util.concurrent ThreadFactory)))
+            [sentry.core :as sentry]
+            [ziggurat.config :refer [ziggurat-config]]))
 
 (defn create-sentry-reporter []
   (let [sentry-config (merge (:sentry (ziggurat-config))

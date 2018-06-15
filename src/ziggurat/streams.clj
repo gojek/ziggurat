@@ -3,7 +3,6 @@
             [flatland.protobuf.core :as proto]
             [mount.core :as mount :refer [defstate]]
             [lambda-common.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
             [ziggurat.kafka-delay :as kafka-delay])
