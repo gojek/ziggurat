@@ -13,9 +13,9 @@
       (let [count-of-messages 10
             message           {:foo "bar"}
             topic-name        "booking"
-            pushed-message    (doseq [counter (range count-of-messages)]
+            pushed-message    (doseq [_ (range count-of-messages)]
                                 (producer/publish-to-dead-queue topic-name message))]
         (ds/replay count-of-messages topic-name)
-        (doseq [n (range count-of-messages)]
+        (doseq [_ (range count-of-messages)]
           (is (= message (rmq/get-msg-from-instant-queue topic-name))))
         (is (not (rmq/get-msg-from-instant-queue topic-name)))))))

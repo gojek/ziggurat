@@ -14,17 +14,24 @@
       nil)))
 
 (defn replay [{:keys [params]}]
-  (if (validate-count (:count params))
-    (do (r/replay (:count params) (:topic-entity params))
-        {:status 200
-         :body   {:message "Requeued messages on the queue for retrying"}})
-    {:status 400
-     :body   {:error "Count should be the positive integer"}}))
+  (let [count        (:count params)
+        topic-entity (:topic-entity params)]
+    (if (and (validate-count count) (not (nil? topic-entity)))
+      (do (r/replay count topic-entity)
+          {:status 200
+           :body   {:message "Requeued messages on the queue for retrying"}})
+      {:status 400
+       :body   {:error "Count should be the positive integer and topic entity should be present"}})))
+
+(defn- validate [count topic-entity]
+  (if (and (validate-count count) (not (nil? topic-entity)))
+    count
+    nil))
 
 (defn view [{:keys [params]}]
-  (if-let [count (parse-count (:count params))]
+  (if-let [count (validate (parse-count (:count params)) (:topic-entity params))]
     (if-let [messages (r/view count (:topic-entity params))]
       {:status 200
        :body   {:messages messages}})
     {:status 400
-     :body   {:error "Count should be the positive integer"}}))
+     :body   {:error "Count should be the positive integer and topic entity should be present"}}))
