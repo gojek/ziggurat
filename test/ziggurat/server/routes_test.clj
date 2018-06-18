@@ -15,7 +15,7 @@
 
   (testing "should return 200 when /v1/dead_set/replay is called with valid count val"
     (with-redefs [ds/replay (fn [_ _] nil)]
-      (let [count  10
+      (let [count  "10"
             params {:count count :topic-entity "booking"}
             {:keys [status _] :as response} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" params)]
         (is (= 200 status)))))
@@ -30,7 +30,7 @@
 
   (testing "should return 400 when /v1/dead_set/replay is called with no topic entity"
     (with-redefs [ds/replay (fn [_ _] nil)]
-      (let [count         10
+      (let [count         "10"
             expected-body {:error "Count should be the positive integer and topic entity should be present"}
             {:keys [status body] :as response} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" {:count count})]
         (is (= 400 status))
@@ -51,7 +51,7 @@
 
   (testing "should return 400 when get /v1/dead_set is called with negative count val"
     (with-redefs [ds/view (fn [_ _] nil)]
-      (let [count        -10
+      (let [count        "-10"
             topic-entity "booking"
             params       {:count count :topic-name topic-entity}
             {:keys [status _] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
@@ -78,7 +78,7 @@
 
   (testing "should return 200 when get /v1/dead_set is called with valid count val"
     (with-redefs [ds/view (fn [_ _] {:foo "bar"})]
-      (let [count      10
+      (let [count      "10"
             params     {:count count :topic-entity "booking"}
             {:keys [status body] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
                                                        "/v1/dead_set"

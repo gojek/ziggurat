@@ -166,7 +166,8 @@
           original-zig-config (ziggurat-config)
           ch                  (lch/open connection)
           counter             (atom 0)
-          stream-routes       [{:booking {:handler-fn #(constantly nil)}} {:test {:handler-fn #(constantly nil)}}]]
+          stream-routes       {:booking {:handler-fn #(constantly nil)}
+                               :test {:handler-fn #(constantly nil)}}]
 
       (with-redefs [ziggurat-config   (fn [] (-> original-zig-config
                                                  (update-in [:retry :enabled] (constantly true))

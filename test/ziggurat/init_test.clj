@@ -24,7 +24,7 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
       (let [retry-count (promise)]
-        (init/start #() [{:booking {:handler-fn #(constantly nil)}}] [])
+        (init/start #() {:booking {:handler-fn #(constantly nil)}} [])
         (init/stop #(deliver retry-count (-> (config/ziggurat-config) :retry :count)))
         (is (= 5 (deref retry-count 10000 ::failure)))))))
 
@@ -46,7 +46,7 @@
 (deftest start-calls-start-subscribers-test
   (testing "Start calls start subscribers"
     (let [start-subscriber-called (atom false)
-          expected-stream-routes  [{:default {:handler-fn #()}}]]
+          expected-stream-routes  {:default {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
                     messaging-consumer/start-subscribers (fn [stream-routes]
@@ -91,8 +91,8 @@
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
-      (init/start #() [] [["test-ping" (fn [_request] {:status 200
-                                                       :body   "pong"})]])
+      (init/start #() {:booking {:handler-fn (constantly :success)}} [["test-ping" (fn [_request] {:status 200
+                                                                                                   :body   "pong"})]])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]

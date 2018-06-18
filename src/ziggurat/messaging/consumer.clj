@@ -80,6 +80,6 @@
   (when (get-in-config [:retry :enabled])
     (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
       (doseq [stream-route stream-routes]
-        (let [topic-identifier (first (keys stream-route))
-              topic-handler (topic-identifier stream-route)]
-          (start-subscriber* (lch/open connection) (:handler-fn topic-handler) (name topic-identifier)))))))
+        (let [topic-identifier (-> stream-route first name)
+              topic-handler (-> stream-route second :handler-fn)]
+          (start-subscriber* (lch/open connection) topic-handler topic-identifier))))))

@@ -77,9 +77,9 @@
 
           (producer/make-queues stream-routes)
 
-          (is (= 0 (expected-queue-status (lq/status ch instant-queue-name))))
-          (is (= 0 (expected-queue-status (lq/status ch delay-queue-name))))
-          (is (= 0 (expected-queue-status (lq/status ch dead-queue-name))))
+          (is (= (expected-queue-status (lq/status ch instant-queue-name))))
+          (is (= (expected-queue-status (lq/status ch delay-queue-name))))
+          (is (= (expected-queue-status (lq/status ch dead-queue-name))))
 
           (lq/delete ch instant-queue-name)
           (lq/delete ch delay-queue-name)
