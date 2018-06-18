@@ -46,11 +46,11 @@
   [ack? topic-entity count]
   (remove nil?
           (with-open [ch (lch/open connection)]
-            (dotimes [_ count]
-              (try-consuming-dead-set-messages ch
-                                               ack?
-                                               (prefixed-queue-name topic-entity
-                                                                    (get-in-config [:rabbit-mq :dead-letter :queue-name])))))))
+            (doall (for [_ (range count)]
+                     (try-consuming-dead-set-messages ch
+                                                      ack?
+                                                      (prefixed-queue-name topic-entity
+                                                                           (get-in-config [:rabbit-mq :dead-letter :queue-name]))))))))
 
 (defn- message-handler [mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]

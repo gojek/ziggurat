@@ -69,10 +69,13 @@
             delay-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
             dead-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
             expected-queue-status {:message-count 0, :consumer-count 0}]
+
           (producer/make-queues stream-routes)
+
           (is (= (expected-queue-status (lq/status ch instant-queue-name))))
           (is (= (expected-queue-status (lq/status ch delay-queue-name))))
           (is (= (expected-queue-status (lq/status ch dead-queue-name))))
+
           (lq/delete ch instant-queue-name)
           (lq/delete ch delay-queue-name)
           (lq/delete ch delay-exchange-name)

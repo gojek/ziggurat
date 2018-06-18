@@ -4,7 +4,7 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-subscriber* close get-queue-name start-subscribers]]
+            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-subscriber* close start-subscribers]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]))
 
