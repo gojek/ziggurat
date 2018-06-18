@@ -1,14 +1,16 @@
 (ns ziggurat.init
   "Contains the entry point for your lambda actor."
   (:require [clojure.tools.logging :as log]
-            [schema.core :as s]
             [lambda-common.metrics :as metrics]
             [mount.core :as mount :refer [defstate]]
+            [schema.core :as s]
             [ziggurat.config :refer [ziggurat-config] :as config]
             [ziggurat.messaging.connection :as messaging-connection]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.nrepl-server :as nrepl-server]
+            [sentry.core :as sentry]
+            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]))
 
@@ -54,28 +56,45 @@
              "Shutdown-handler")))
 
 (s/defschema StreamRoute
-  {s/Any {:handler-fn (s/pred #(fn? %1))}})
+  (s/conditional
+   #(and (seq  %)
+         (map? %))
+   {s/Any {:handler-fn (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes]
-  (if (and (map? stream-routes)
-           (not (empty? stream-routes)))
+  (try
     (s/validate StreamRoute stream-routes)
-    (throw (ex-info "Stream Routes must be a map" {:data stream-routes}))))
+    (catch Throwable e
+      (log/error e)
+      (sentry/report-error sentry-reporter
+                           e
+                           (str "Validation of stream-routes failed "
+                                stream-routes))
+      (throw e))))
 
-(defn main
-  "The entry point for your lambda actor.
-  Accepts stream-routes as a list of map of your handler functions to topic entities eg: [{:booking {:handler-fn (fn [message] :success)}}]
-  handler-fn must return :success, :retry or :skip
-  start-fn takes no parameters, and will be run on application startup.
-  stop-fn takes no parameters, and will be run on application shutdown."
-  ([start-fn stop-fn stream-routes]
-   (main start-fn stop-fn stream-routes []))
-  ([start-fn stop-fn stream-routes actor-routes]
+(defn try-actor-start [start-fn stop-fn stream-routes actor-routes]
    (try
-     (validate-stream-routes stream-routes)
      (add-shutdown-hook stop-fn)
      (start start-fn stream-routes actor-routes)
      (catch Exception e
        (log/error e)
        (stop stop-fn)
-       (System/exit 1)))))
+       (System/exit 1))))
+
+(defn main
+  "The entry point for your lambda actor.
+
+   Accepts stream-routes as a nested map keyed by the topic entities.
+   Each topic entity is a map with a handler-fn described. For eg.,
+
+    {:booking {:handler-fn (fn [message] :success)}}
+    :handler-fn must return :success, :retry or :skip
+
+   start-fn takes no parameters, and will be run on application startup.
+   stop-fn takes no parameters, and will be run on application shutdown."
+
+  ([start-fn stop-fn stream-routes]
+   (main start-fn stop-fn stream-routes []))
+  ([start-fn stop-fn stream-routes actor-routes]
+   (validate-stream-routes stream-routes)
+   (try-actor-start start-fn stop-fn stream-routes actor-routes)))
