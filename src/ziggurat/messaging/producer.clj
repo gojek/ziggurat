@@ -12,7 +12,6 @@
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
-
 (defn delay-queue-name [topic-entity queue-name queue-timeout-ms]
   (prefixed-queue-name topic-entity (format "%s_%s" queue-name queue-timeout-ms)))
 
@@ -77,8 +76,8 @@
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
       (nil? retry-count) (publish-to-delay-queue topic-entity (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-      (> retry-count 0) (publish-to-delay-queue topic-entity (assoc message :retry-count (dec retry-count)))
-      (= retry-count 0) (publish-to-dead-queue topic-entity (dissoc message :retry-count)))))
+      (> retry-count 0)  (publish-to-delay-queue topic-entity (assoc message :retry-count (dec retry-count)))
+      (= retry-count 0)  (publish-to-dead-queue topic-entity (dissoc message :retry-count)))))
 
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
@@ -95,8 +94,8 @@
 
 (defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
-    (doseq [stream-route stream-routes]
-      (let [topic-entity (name (first (keys stream-route)))]
-        (make-delay-queue topic-entity)
-        (make-queue topic-entity :instant)
-        (make-queue topic-entity :dead-letter)))))
+    (doseq [topic-entity (keys stream-routes)]
+      (let [topic-name (name topic-entity)]
+        (make-delay-queue topic-name)
+        (make-queue topic-name :instant)
+        (make-queue topic-name :dead-letter)))))

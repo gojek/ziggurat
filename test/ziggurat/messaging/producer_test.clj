@@ -51,7 +51,8 @@
 
   (testing "it calls create-and-bind-queue for each queue creation and each stream-route when stream-routes are passed"
     (let [counter (atom 0)
-          stream-routes [{:test {:handler-fn #(constantly nil)}} {:test2 {:handler-fn #(constantly nil)}}]]
+          stream-routes {:test {:handler-fn #(constantly nil)}
+                         :test2 {:handler-fn #(constantly nil)}}]
       (with-redefs [producer/create-and-bind-queue (fn
                                                      ([_ _] (swap! counter inc))
                                                      ([_ _ _ _] (swap! counter inc)))]
@@ -60,21 +61,25 @@
 
   (testing "it creates queues with route identifier from stream routes"
     (with-open [ch (lch/open connection)]
-      (let [stream-routes [{:default {:handler-fn #(constantly :success)}}]
+      (let [stream-routes {:default {:handler-fn #(constantly :success)}}
+
             instant-queue-name (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
+            instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
+
             delay-queue-timeout (:queue-timeout-ms (:delay (rabbitmq-config)))
             delay-queue-name (util/prefixed-queue-name "default" (format "%s_%s" (:queue-name (:delay (rabbitmq-config))) delay-queue-timeout))
-            dead-queue-name (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
-            instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
             delay-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
+
+            dead-queue-name (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
             dead-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
+
             expected-queue-status {:message-count 0, :consumer-count 0}]
 
           (producer/make-queues stream-routes)
 
-          (is (= (expected-queue-status (lq/status ch instant-queue-name))))
-          (is (= (expected-queue-status (lq/status ch delay-queue-name))))
-          (is (= (expected-queue-status (lq/status ch dead-queue-name))))
+          (is (= 0 (expected-queue-status (lq/status ch instant-queue-name))))
+          (is (= 0 (expected-queue-status (lq/status ch delay-queue-name))))
+          (is (= 0 (expected-queue-status (lq/status ch dead-queue-name))))
 
           (lq/delete ch instant-queue-name)
           (lq/delete ch delay-queue-name)

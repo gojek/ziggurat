@@ -25,14 +25,14 @@
 
 (defn- delete-queues [stream-routes]
   (with-open [ch (lch/open connection)]
-    (doseq [stream-route stream-routes]
-      (let [topic-identifier (name (first (keys stream-route)))]
+    (doseq [topic-entity (keys stream-routes)]
+      (let [topic-identifier (name topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
         (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay) (:queue-timeout-ms (:delay (config/rabbitmq-config)))))))))
 
 (defn init-rabbit-mq [f]
-  (let [stream-routes [{:booking {:handler-fn #(constantly nil)}}]]
+  (let [stream-routes {:booking {:handler-fn #(constantly nil)}}]
     (mount-config)
     (mount/start (mount/only [#'connection]))
     (pr/make-queues stream-routes)
@@ -52,6 +52,7 @@
         delay-queue-name-with-topic-prefix (pr/delay-queue-name topic-identifier queue-name queue-timeout-ms)
         instant-queue-name (util/prefixed-queue-name topic-identifier (get-queue-name :instant))
         dead-letter-queue-name (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter))]
+
     (with-open [ch (lch/open connection)]
       (lq/purge ch instant-queue-name)
       (lq/purge ch dead-letter-queue-name)
