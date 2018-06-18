@@ -5,20 +5,21 @@
             [langohr.consumers :as lcons]
             [sentry.core :as sentry]
             [taoensso.nippy :as nippy]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [get-in-config]]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]])
+            [ziggurat.messaging.util :refer [prefixed-queue-name]])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
 (defn convert-and-ack-message
-  "Take the ch metadata payload and ack? as parameter. Decodes the payload the ack it if ack is enabled and returns the message"
+  "Take the ch metadata payload and ack? as parameter.
+   Decodes the payload the ack it if ack is enabled and returns the message"
   [ch {:keys [delivery-tag] :as meta} ^bytes payload ack?]
   (try
     (let [message (nippy/thaw payload)]
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
-      (if ack?
+      (when ack?
         (lb/ack ch delivery-tag))
       message)
     (catch Exception e
@@ -26,30 +27,35 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
+(defn- try-consuming-dead-set-messages [ch ack? queue-name]
+  (try
+    (let [[meta payload] (lb/get ch queue-name false)]
+      (when (some? payload)
+        (convert-and-ack-message ch meta payload ack?)))
+    (catch Exception e
+      (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
+
+(defn get-dead-set-messages
+  "Get the n(count) messages from the rabbitmq.
+
+   If ack is set to true,
+   then ack all the messages while consuming and make them unavailable to other subscribers.
+
+   If ack is false,
+   it will not ack the message."
+  [ack? topic-entity count]
+  (remove nil?
+          (with-open [ch (lch/open connection)]
+            (dotimes [_ count]
+              (try-consuming-dead-set-messages ch
+                                               ack?
+                                               (prefixed-queue-name topic-entity
+                                                                    (get-in-config [:rabbit-mq :dead-letter :queue-name])))))))
+
 (defn- message-handler [mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true)]
       ((mpr/mapper-func mapper-fn) message topic-entity))))
-
-(defn get-queue-name
-  [topic-entity]
-  (let [queue-name (:queue-name (:instant (:rabbit-mq (ziggurat-config))))]
-    (get-value-with-prefix-topic topic-entity queue-name)))
-
-(defn get-dead-set-messages
-  "Get the n(count) messages from the rabbitmq and if ack is set to true then
-  ack all the messages in while consuming so that it's not available for other subscriber else does not ack the message"
-  [ack? topic-entity count]
-  (remove nil?
-          (with-open [ch (lch/open connection)]
-            (doall (for [_ (range count)]
-                     (try
-                       (let [{:keys [queue-name]} (:dead-letter (:rabbit-mq (ziggurat-config)))
-                             queue-name (get-value-with-prefix-topic topic-entity queue-name)
-                             [meta payload] (lb/get ch queue-name false)]
-                         (if (some? payload) (convert-and-ack-message ch meta payload ack?)))
-                       (catch Exception e
-                         (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))))))
 
 (defn close [^Channel channel]
   (try
@@ -58,9 +64,9 @@
       nil)))
 
 (defn start-subscriber* [ch mapper-fn topic-entity]
-  (lb/qos ch (:prefetch-count (:instant (:jobs (ziggurat-config)))))
+  (lb/qos ch (get-in-config [:jobs :instant :prefetch-count]))
   (let [consumer-tag (lcons/subscribe ch
-                                      (get-queue-name topic-entity)
+                                      (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
                                       (message-handler mapper-fn topic-entity)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
@@ -71,10 +77,9 @@
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes]
-  (when (-> (ziggurat-config) :retry :enabled)
-    (let [workers (:worker-count (:instant (:jobs (ziggurat-config))))]
-      (doseq [_ (range workers)]
-        (doseq [stream-route stream-routes]
-          (let [topic-identifier (first (keys stream-route))
-                topic-handler (topic-identifier stream-route)]
-            (start-subscriber* (lch/open connection) (:handler-fn topic-handler) (name topic-identifier))))))))
+  (when (get-in-config [:retry :enabled])
+    (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
+      (doseq [stream-route stream-routes]
+        (let [topic-identifier (first (keys stream-route))
+              topic-handler (topic-identifier stream-route)]
+          (start-subscriber* (lch/open connection) (:handler-fn topic-handler) (name topic-identifier)))))))

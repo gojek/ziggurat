@@ -1,4 +1,4 @@
 (ns ziggurat.messaging.util)
 
-(defn get-value-with-prefix-topic [topic-entity value]
+(defn prefixed-queue-name [topic-entity value]
   (str (name topic-entity) "_" value))

@@ -8,13 +8,13 @@
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.util :refer [get-value-with-prefix-topic]]
+            [ziggurat.messaging.util :refer [prefixed-queue-name]]
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
 
 (defn delay-queue-name [topic-entity queue-name queue-timeout-ms]
-  (get-value-with-prefix-topic topic-entity (format "%s_%s" queue-name queue-timeout-ms)))
+  (prefixed-queue-name topic-entity (format "%s_%s" queue-name queue-timeout-ms)))
 
 (defn- create-queue [queue props ch]
   (lq/declare ch queue {:durable true :arguments props :auto-delete false})
@@ -59,18 +59,18 @@
 
 (defn publish-to-delay-queue [topic-entity message]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
-        exchange-name (get-value-with-prefix-topic topic-entity exchange-name)]
+        exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message)))
 
 (defn publish-to-dead-queue [topic-entity message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        exchange-name (get-value-with-prefix-topic topic-entity exchange-name)]
+        exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message)))
 
 (defn publish-to-instant-queue
   [topic-entity message]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
-        exchange-name (get-value-with-prefix-topic topic-entity exchange-name)]
+        exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message)))
 
 (defn retry [{:keys [retry-count] :as message} topic-entity]
@@ -83,14 +83,14 @@
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
         queue-name (delay-queue-name topic-entity queue-name queue-timeout-ms)
-        exchange-name (get-value-with-prefix-topic topic-entity exchange-name)
-        dead-letter-exchange-name (get-value-with-prefix-topic topic-entity dead-letter-exchange)]
+        exchange-name (prefixed-queue-name topic-entity exchange-name)
+        dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms)))
 
 (defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
-        queue-name (get-value-with-prefix-topic topic-identifier queue-name)
-        exchange-name (get-value-with-prefix-topic topic-identifier exchange-name)]
+        queue-name (prefixed-queue-name topic-identifier queue-name)
+        exchange-name (prefixed-queue-name topic-identifier exchange-name)]
     (create-and-bind-queue queue-name exchange-name)))
 
 (defn make-queues [stream-routes]

@@ -61,13 +61,13 @@
   (testing "it creates queues with route identifier from stream routes"
     (with-open [ch (lch/open connection)]
       (let [stream-routes [{:default {:handler-fn #(constantly :success)}}]
-            instant-queue-name (util/get-value-with-prefix-topic "default" (:queue-name (:instant (rabbitmq-config))))
+            instant-queue-name (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
             delay-queue-timeout (:queue-timeout-ms (:delay (rabbitmq-config)))
-            delay-queue-name (util/get-value-with-prefix-topic "default" (format "%s_%s" (:queue-name (:delay (rabbitmq-config))) delay-queue-timeout))
-            dead-queue-name (util/get-value-with-prefix-topic "default" (:queue-name (:dead-letter (rabbitmq-config))))
-            instant-exchange-name (util/get-value-with-prefix-topic "default" (:exchange-name (:instant (rabbitmq-config))))
-            delay-exchange-name (util/get-value-with-prefix-topic "default" (:exchange-name (:delay (rabbitmq-config))))
-            dead-exchange-name (util/get-value-with-prefix-topic "default" (:exchange-name (:dead-letter (rabbitmq-config))))
+            delay-queue-name (util/prefixed-queue-name "default" (format "%s_%s" (:queue-name (:delay (rabbitmq-config))) delay-queue-timeout))
+            dead-queue-name (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
+            instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
+            delay-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
+            dead-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
             expected-queue-status {:message-count 0, :consumer-count 0}]
           (producer/make-queues stream-routes)
           (is (= (expected-queue-status (lq/status ch instant-queue-name))))
