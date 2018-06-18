@@ -25,7 +25,7 @@
 
 (defn handler [actor-routes]
   (-> routes-prefix
-      (conj (into [] (concat actor-routes routes)))
+      (conj (vec (concat actor-routes routes)))
       (bidi/make-handler)
       (m/wrap-hyphenate)
       (ring-defaults/wrap-defaults ring-defaults/api-defaults)

@@ -19,9 +19,9 @@
     {StreamsConfig/APPLICATION_ID_CONFIG            (:application-id stream-config)
      StreamsConfig/BOOTSTRAP_SERVERS_CONFIG         (:bootstrap-servers stream-config)
      StreamsConfig/NUM_STREAM_THREADS_CONFIG        (int (:stream-threads-count stream-config))
-     StreamsConfig/KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
-     StreamsConfig/VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
-     StreamsConfig/TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
+     StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
+     StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
+     StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
      ConsumerConfig/AUTO_OFFSET_RESET_CONFIG        "latest"}))
 
 (defn- log-and-report-metrics
