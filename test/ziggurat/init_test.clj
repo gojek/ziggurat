@@ -61,7 +61,7 @@
 (deftest main-test
   (testing "Main function should call start"
     (let [start-was-called       (atom false)
-          expected-stream-routes [{:default {:handler-fn #(constantly nil)}}]]
+          expected-stream-routes {:default {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_] (constantly nil))
                     init/start             (fn [_ stream-router _]
                                              (swap! start-was-called not)
@@ -72,22 +72,19 @@
 (deftest validate-stream-routes-test
   (let [exception-message "Invalid stream routes"]
     (testing "Validate Stream Routes should raise exception if stream routes is nil"
-      (is (thrown? IllegalArgumentException exception-message (init/validate-stream-routes nil))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes nil))))
 
     (testing "Validate Stream Routes should raise exception if stream routes are empty"
-      (is (thrown? IllegalArgumentException exception-message (init/validate-stream-routes []))))
-
-    (testing "Validate Stream Routes should raise exception if stream routes contain empty stream route"
-      (is (thrown? IllegalArgumentException exception-message (init/validate-stream-routes [{}]))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {}))))
 
     (testing "Validate Stream Routes should raise exception if stream route does not have handler-fn"
-      (is (thrown? IllegalArgumentException exception-message (init/validate-stream-routes [{:booking {}}]))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {}}))))
 
     (testing "Validate Stream Routes should raise exception if stream route does have nil value"
-      (is (thrown? IllegalArgumentException exception-message (init/validate-stream-routes [{:booking nil}]))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking nil}))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
-      (is (thrown? IllegalArgumentException exception-message (init/validate-stream-routes [{:booking {:handler-fn nil}}]))))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {:handler-fn nil}}))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"

@@ -1,6 +1,7 @@
 (ns ziggurat.init
   "Contains the entry point for your lambda actor."
   (:require [clojure.tools.logging :as log]
+            [schema.core :as s]
             [lambda-common.metrics :as metrics]
             [mount.core :as mount :refer [defstate]]
             [ziggurat.config :refer [ziggurat-config] :as config]
@@ -52,18 +53,14 @@
                             (shutdown-agents))
              "Shutdown-handler")))
 
-(defn- validate-stream-route [stream-route]
-  (and
-    (not-empty stream-route)
-    (not (nil? (:handler-fn ((first (keys stream-route)) stream-route))))))
+(s/defschema StreamRoute
+  {s/Any {:handler-fn (s/pred #(fn? %1))}})
 
 (defn validate-stream-routes [stream-routes]
-  (if-not (and
-            (not-empty stream-routes)
-            (reduce (fn [value stream-route]
-                      (and (validate-stream-route stream-route) value))
-                    true stream-routes))
-    (throw (IllegalArgumentException. "Invalid stream routes"))))
+  (if (and (map? stream-routes)
+           (not (empty? stream-routes)))
+    (s/validate StreamRoute stream-routes)
+    (throw (ex-info "Stream Routes must be a map" {:data stream-routes}))))
 
 (defn main
   "The entry point for your lambda actor.

@@ -26,6 +26,7 @@
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
                  [org.clojure/clojure "1.9.0"]
+                 [prismatic/schema "1.1.9"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
                  [org.clojure/tools.nrepl "0.2.12"]
