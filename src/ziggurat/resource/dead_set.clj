@@ -19,19 +19,21 @@
 
 (defn- validate-params [count topic-entity]
   (and (some? topic-entity)
-       (validate-count (parse-count count))))
+       (validate-count count)))
 
 (defn replay [{{:keys [count topic-entity]} :params}]
-  (if-let [validated-count (validate-params count topic-entity)]
-    (do (r/replay validated-count topic-entity)
-        {:status 200
-         :body   {:message "Requeued messages on the queue for retrying"}})
-    {:status 400
-     :body   {:error "Count should be the positive integer and topic entity should be present"}}))
+  (let [parsed-count (parse-count count)]
+    (if (validate-params parsed-count topic-entity)
+      (do (r/replay parsed-count topic-entity)
+          {:status 200
+           :body   {:message "Requeued messages on the queue for retrying"}})
+      {:status 400
+       :body   {:error "Count should be the positive integer and topic entity should be present"}})))
 
 (defn view [{{:keys [count topic-entity]} :params}]
-  (if-let [validated-count (validate-params count topic-entity)]
-    {:status 200
-     :body   {:messages (r/view validated-count topic-entity)}}
-    {:status 400
-     :body   {:error "Count should be the positive integer and topic entity should be present"}}))
+  (let [parsed-count (parse-count count)]
+    (if (validate-params parsed-count topic-entity)
+      {:status 200
+       :body   {:messages (r/view parsed-count topic-entity)}}
+      {:status 400
+       :body   {:error "Count should be the positive integer and topic entity should be present"}})))
