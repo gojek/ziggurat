@@ -18,8 +18,8 @@
       nil)))
 
 (defn- validate-params [count topic-entity]
-  (and (validate-count (parse-count count))
-       (some? topic-entity)))
+  (and (some? topic-entity)
+       (validate-count (parse-count count))))
 
 (defn replay [{{:keys [count topic-entity]} :params}]
   (if-let [validated-count (validate-params count topic-entity)]
