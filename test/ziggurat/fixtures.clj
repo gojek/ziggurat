@@ -8,6 +8,7 @@
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
             [langohr.channel :as lch]
+            [langohr.exchange :as le]
             [langohr.queue :as lq]))
 
 (defn mount-config []
@@ -23,6 +24,9 @@
 (defn- get-queue-name [queue-type]
   (:queue-name (queue-type (config/rabbitmq-config))))
 
+(defn- get-exchange-name [exchange-type]
+  (:exchange-name (exchange-type (config/rabbitmq-config))))
+
 (defn delete-queues [stream-routes]
   (with-open [ch (lch/open connection)]
     (doseq [topic-entity (keys stream-routes)]
@@ -30,6 +34,14 @@
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
         (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay) (:queue-timeout-ms (:delay (config/rabbitmq-config)))))))))
+
+(defn delete-exchanges [stream-routes]
+  (with-open [ch (lch/open connection)]
+    (doseq [topic-entity (keys stream-routes)]
+      (let [topic-identifier (name topic-entity)]
+        (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :instant)))
+        (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :dead-letter)))
+        (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :delay)))))))
 
 (defn init-rabbit-mq [f]
   (let [stream-routes {:booking {:handler-fn #(constantly nil)}}]
@@ -66,7 +78,8 @@
      (catch Exception e#
        (st/print-stack-trace e#))
      (finally
-       (delete-queues ~stream-routes))))
+       (delete-queues ~stream-routes)
+       (delete-exchanges ~stream-routes))))
 
 (defmacro with-clear-data [& body]
   `(try

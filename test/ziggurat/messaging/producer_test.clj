@@ -1,6 +1,7 @@
 (ns ziggurat.messaging.producer-test
   (:require [clojure.test :refer :all]
             [langohr.channel :as lch]
+            [langohr.exchange :as le]
             [langohr.queue :as lq]
             [ziggurat.config :refer [rabbitmq-config]]
             [ziggurat.fixtures :as fix]
@@ -83,7 +84,7 @@
 
           (lq/delete ch instant-queue-name)
           (lq/delete ch delay-queue-name)
-          (lq/delete ch delay-exchange-name)
-          (lq/delete ch instant-exchange-name)
-          (lq/delete ch dead-exchange-name)
-          (lq/delete ch dead-queue-name)))))
+          (lq/delete ch dead-queue-name)
+          (le/delete ch delay-exchange-name)
+          (le/delete ch instant-exchange-name)
+          (le/delete ch dead-exchange-name)))))
