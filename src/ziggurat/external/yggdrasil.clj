@@ -14,12 +14,12 @@
                                      :conn-timeout     connection-timeout-in-ms
                                      :query-params     {"q" env}
                                      :throw-exceptions false})]
-    (if (http/success? response)
-      (-> (reduce (fn [acc-map [k v]]
+    (when (http/success? response)
+      (:data (reduce (fn [acc-map [k v]]
                     (assoc acc-map (-> k
                                        (clojure.string/replace #"_" "-")
-                                       keyword) v)) {} (json/read-str (:body response)))
-          :data)
-      nil))
+                                       keyword) v))
+                  {}
+                  (json/read-str (:body response))))))
        (catch ConnectException e nil)
        (catch SocketTimeoutException e nil)))

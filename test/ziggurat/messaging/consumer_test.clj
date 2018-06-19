@@ -22,7 +22,7 @@
             pushed-message    (doseq [_ (range count-of-messages)]
                                 (producer/publish-to-dead-queue topic-identifier message))
             dead-set-messages (get-dead-set-messages true topic-identifier count-of-messages)]
-        (is (= (replicate count-of-messages message) dead-set-messages))
+        (is (= (repeat count-of-messages message) dead-set-messages))
         (is (empty? (get-dead-set-messages true topic-identifier count-of-messages))))))
 
   (testing "when ack is disabled, get the dead set messages and not remove from dead set"
@@ -33,8 +33,8 @@
             pushed-message    (doseq [_ (range count-of-messages)]
                                 (producer/publish-to-dead-queue topic-identifier message))
             dead-set-messages (get-dead-set-messages false topic-identifier count-of-messages)]
-        (is (= (replicate count-of-messages message) dead-set-messages))
-        (is (= (replicate count-of-messages message) (get-dead-set-messages false topic-identifier count-of-messages)))))))
+        (is (= (repeat count-of-messages message) dead-set-messages))
+        (is (= (repeat count-of-messages message) (get-dead-set-messages false topic-identifier count-of-messages)))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                retry-limit
