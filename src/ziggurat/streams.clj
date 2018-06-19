@@ -54,30 +54,29 @@
       (metrics/increment-count "message-parsing" "failed")
       nil)))
 
-(defn- topology [mapper-fn {:keys [origin-topic proto-class]} topic-entity]
+(defn- topology [handler-fn {:keys [origin-topic proto-class]} topic-entity]
   (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile origin-topic)]
     (->> (.stream builder topic-pattern)
          (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity %))
-         (map-values #((mpr/mapper-func mapper-fn) % topic-entity)))
+         (map-values #((mpr/mapper-func handler-fn) % topic-entity)))
     builder))
 
-(defn- start-stream* [mapper-fn stream-config topic-entity]
-  (KafkaStreams. ^KStreamBuilder (topology mapper-fn stream-config topic-entity)
+(defn- start-stream* [handler-fn stream-config topic-entity]
+  (KafkaStreams. ^KStreamBuilder (topology handler-fn stream-config topic-entity)
                  (StreamsConfig. (properties stream-config))))
 
 (defn start-streams [stream-routes]
   (let [zig-conf (ziggurat-config)]
-    (reduce (fn [streams route]
-              (let [topic-entity  (first (keys route))
-                    stream-config (get-in zig-conf [:stream-router topic-entity])
-                    mapper-fn     (get-in route [topic-entity :handler-fn])
-                    stream        (start-stream* mapper-fn stream-config (name topic-entity))]
-                (.start stream)
-                (conj streams stream)))
-            []
-            stream-routes)))
+    (reduce-kv (fn [streams topic-entity topic-handler]
+                 (let [stream-config (get-in zig-conf [:stream-router topic-entity])
+                       handler-fn    (get-in topic-handler [:handler-fn])
+                       stream        (start-stream* handler-fn stream-config (name topic-entity))]
+                   (.start stream)
+                   (conj streams stream)))
+               []
+               stream-routes)))
 
 (defn stop-streams [streams]
   (doseq [stream streams]
