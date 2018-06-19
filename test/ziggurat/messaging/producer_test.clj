@@ -59,7 +59,7 @@
         (producer/make-queues stream-routes)
         (is (= (* (count stream-routes) 3) @counter)))))
 
-  (testing "it creates queues with route identifier from stream routes"
+  (testing "it creates queues with topic entity from stream routes"
     (with-open [ch (lch/open connection)]
       (let [stream-routes {:default {:handler-fn #(constantly :success)}}
 
@@ -77,9 +77,9 @@
 
           (producer/make-queues stream-routes)
 
-          (is (= (expected-queue-status (lq/status ch instant-queue-name))))
-          (is (= (expected-queue-status (lq/status ch delay-queue-name))))
-          (is (= (expected-queue-status (lq/status ch dead-queue-name))))
+          (is (= expected-queue-status (lq/status ch instant-queue-name)))
+          (is (= expected-queue-status (lq/status ch delay-queue-name)))
+          (is (= expected-queue-status (lq/status ch dead-queue-name)))
 
           (lq/delete ch instant-queue-name)
           (lq/delete ch delay-queue-name)
