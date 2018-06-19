@@ -13,7 +13,7 @@
 
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [message          {:foo "bar" :retry-count 5}
             expected-message {:foo "bar" :retry-count 4}
             topic-entity     :booking]
@@ -22,7 +22,7 @@
           (is (= expected-message message-from-mq))))))
 
   (testing "message with a retry count of 0 will publish to dead queue"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [message          {:foo "bar" :retry-count 0}
             expected-message (dissoc message :retry-count)
             topic-entity     :booking]
@@ -31,7 +31,7 @@
           (is (= expected-message message-from-mq))))))
 
   (testing "message with no retry count will publish to delay queue"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [message           {:foo "bar"}
             expected-message  {:foo "bar" :retry-count 5}
             topic-entity      :booking]

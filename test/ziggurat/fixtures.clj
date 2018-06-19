@@ -23,7 +23,7 @@
 (defn- get-queue-name [queue-type]
   (:queue-name (queue-type (config/rabbitmq-config))))
 
-(defn- delete-queues [stream-routes]
+(defn delete-queues [stream-routes]
   (with-open [ch (lch/open connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)]
@@ -35,9 +35,7 @@
   (let [stream-routes {:booking {:handler-fn #(constantly nil)}}]
     (mount-config)
     (mount/start (mount/only [#'connection]))
-    (pr/make-queues stream-routes)
     (f)
-    (delete-queues stream-routes)
     (mount/stop)))
 
 (defn start-server [f]
@@ -60,6 +58,15 @@
 
 (defn clear-data []
   (flush-rabbitmq))
+
+(defmacro with-queues [stream-routes body]
+  `(try
+     (pr/make-queues ~stream-routes)
+     ~body
+     (catch Exception e#
+       (st/print-stack-trace e#))
+     (finally
+       (delete-queues ~stream-routes))))
 
 (defmacro with-clear-data [& body]
   `(try
