@@ -7,10 +7,13 @@
         nanos-in-millis  (/ (or nano-seconds 1000000) 1000000)]
     (+ second-in-millis nanos-in-millis)))
 
-(defn calculate-and-report-kafka-delay [booking]
-  (let [now-millis (.toEpochMilli (Instant/now))
-        seconds    (-> booking :event-timestamp :seconds)
-        nanos      (-> booking :event-timestamp :nanos)
+(defn get-current-time-in-millis []
+  (.toEpochMilli (Instant/now)))
+
+(defn calculate-and-report-kafka-delay [metric-namespace message]
+  (let [now-millis (get-current-time-in-millis)
+        seconds    (-> message :event-timestamp :seconds)
+        nanos      (-> message :event-timestamp :nanos)
         delay      (- now-millis
                       (get-millis seconds nanos))]
-    (metrics/message-received-delay delay)))
+    (metrics/report-time metric-namespace delay)))

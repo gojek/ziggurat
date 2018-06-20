@@ -1,14 +1,12 @@
 (ns ziggurat.server.middleware
-  (:require [sentry.core :as sentry]
-            [medley.core :as m]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.server.map :as umap]
+  (:require [clojure.string :as str]
             [camel-snake-kebab.core :as csk]
             [cheshire.core :as json]
             [clj-stacktrace.repl :as st]
-            [clojure.string :as str]
             [ring.util.response :as ring-resp]
-            [clojure.walk :as w]))
+            [sentry.core :as sentry]
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.server.map :as umap]))
 
 (defn wrap-default-content-type-json [handler]
   (fn [request]

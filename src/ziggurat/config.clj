@@ -38,4 +38,7 @@
   (get config :ziggurat))
 
 (defn rabbitmq-config []
-  (:rabbit-mq (ziggurat-config)))
+  (get (ziggurat-config) :rabbit-mq))
+
+(defn get-in-config [ks]
+  (get-in (ziggurat-config) ks))

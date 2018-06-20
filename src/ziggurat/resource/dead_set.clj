@@ -1,10 +1,14 @@
 (ns ziggurat.resource.dead-set
-  (:require [clojure.spec.alpha :as s]
-            [ziggurat.messaging.dead-set :as r]
-            [clojure.tools.logging :as log]))
+  (:require [schema.core :as s]
+            [clojure.tools.logging :as log]
+            [ziggurat.messaging.dead-set :as r]))
 
 (defn- validate-count [count]
-  (and (s/valid? int? count) (s/int-in-range? 0 Integer/MAX_VALUE count)))
+  (let [schema (s/constrained s/Num #(<= 0 % Integer/MAX_VALUE))]
+    (try
+      (s/validate schema count)
+      (catch Throwable e
+        false))))
 
 (defn- parse-count [count]
   (try
@@ -13,18 +17,23 @@
       (log/errorf "count %s is not an integer" count)
       nil)))
 
-(defn replay [{:keys [params]}]
-  (if (validate-count (:count params))
-    (do (r/replay (:count params))
-        {:status 200
-         :body   {:message "Requeued messages on the queue for retrying"}})
-    {:status 400
-     :body   {:error "Count should be the positive integer"}}))
+(defn- validate-params [count topic-entity]
+  (and (some? topic-entity)
+       (validate-count count)))
 
-(defn view [{:keys [params]}]
-  (if-let [count (parse-count (:count params))]
-    (if-let [messages (r/view count)]
+(defn replay [{{:keys [count topic-entity]} :params}]
+  (let [parsed-count (parse-count count)]
+    (if (validate-params parsed-count topic-entity)
+      (do (r/replay parsed-count topic-entity)
+          {:status 200
+           :body   {:message "Requeued messages on the queue for retrying"}})
+      {:status 400
+       :body   {:error "Count should be the positive integer and topic entity should be present"}})))
+
+(defn view [{{:keys [count topic-entity]} :params}]
+  (let [parsed-count (parse-count count)]
+    (if (validate-params parsed-count topic-entity)
       {:status 200
-       :body   {:messages messages}})
-    {:status 400
-     :body   {:error "Count should be the positive integer"}}))
+       :body   {:messages (r/view parsed-count topic-entity)}}
+      {:status 400
+       :body   {:error "Count should be the positive integer and topic entity should be present"}})))

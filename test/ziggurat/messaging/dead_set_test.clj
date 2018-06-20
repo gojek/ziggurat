@@ -12,9 +12,10 @@
     (fix/with-clear-data
       (let [count-of-messages 10
             message           {:foo "bar"}
-            pushed-message    (doseq [counter (range count-of-messages)]
-                                (producer/publish-to-dead-queue message))]
-        (ds/replay count-of-messages)
-        (doseq [n (range count-of-messages)]
-          (is (= message (rmq/get-msg-from-instant-queue))))
-        (is (not (rmq/get-msg-from-instant-queue)))))))
+            topic-name        "booking"
+            pushed-message    (doseq [_ (range count-of-messages)]
+                                (producer/publish-to-dead-queue topic-name message))]
+        (ds/replay count-of-messages topic-name)
+        (doseq [_ (range count-of-messages)]
+          (is (= message (rmq/get-msg-from-instant-queue topic-name))))
+        (is (not (rmq/get-msg-from-instant-queue topic-name)))))))
