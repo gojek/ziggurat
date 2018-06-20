@@ -29,7 +29,6 @@
       (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
             unsuccessfully-processed? (atom false)
             retry-fn-called? (atom false)
-            topic "booking"
             expected-metric "failure"]
 
         (with-redefs [metrics/increment-count (fn [metric-namespace metric]
@@ -42,14 +41,17 @@
           (is (= true @unsuccessfully-processed?)))))
 
     (testing "message should raise exception"
-      (let [sentry-report-fn-called? (atom false)
-            message-unsuccessfully-processed-fn-called? (atom false)
-            topic "booking"]
+      (let [sentry-report-fn-called?  (atom false)
+            unsuccessfully-processed? (atom false)
+            expected-metric           "failure"]
         (with-redefs [sentry-report (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                      metrics/message-unsuccessfully-processed! (fn [] (reset! message-unsuccessfully-processed-fn-called? true))]
+                      metrics/increment-count (fn [metric-namespace metric]
+                                                (do (is (= metric-namespace expected-metric-namespace))
+                                                    (is (= metric expected-metric))
+                                                    (reset! unsuccessfully-processed? true)))]
           ((mapper-func (fn [_] (throw (Exception. "test exception"))))
             message topic)
-          (is (= true @message-unsuccessfully-processed-fn-called?))
+          (is (= true @unsuccessfully-processed?))
           (is (= true @sentry-report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
