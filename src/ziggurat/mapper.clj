@@ -15,7 +15,7 @@
               end-time    (.toEpochMilli (Instant/now))]
           (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
           (case return-code
-            :success (metrics/message-successfully-processed!)
+            :success (metrics/increment-count (str topic-entity ".message-processing") "success")
             :retry (do (metrics/message-unsuccessfully-processed!)
                        (producer/retry message topic-entity))
             :skip 'TODO

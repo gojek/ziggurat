@@ -15,9 +15,13 @@
   (let [message {:foo "bar"}
         topic "booking"]
     (testing "message process should be successful"
-      (let [successfully-processed? (atom false)]
-        (with-redefs [metrics/message-successfully-processed! (fn []
-                                                                (reset! successfully-processed? true))]
+      (let [successfully-processed?  (atom false)
+            expected-metric-namespace "booking.message-processing"
+            expected-metric          "success"]
+        (with-redefs [metrics/increment-count (fn [metric-namespace metric]
+                                                (do (is (= metric-namespace expected-metric-namespace))
+                                                    (is (= metric expected-metric))
+                                                    (reset! successfully-processed? true)))]
           ((mapper-func (constantly :success)) message topic)
           (is (= true @successfully-processed?)))))
 
