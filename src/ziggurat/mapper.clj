@@ -10,13 +10,14 @@
   (fn [message topic-entity]
     (nr/with-tracing "job" (str topic-entity ".handler-fn")
       (try
-        (let [start-time  (.toEpochMilli (Instant/now))
-              return-code (mapper-fn message)
-              end-time    (.toEpochMilli (Instant/now))]
+        (let [start-time       (.toEpochMilli (Instant/now))
+              return-code      (mapper-fn message)
+              end-time         (.toEpochMilli (Instant/now))
+              metric-namespace (str topic-entity ".message-processing")]
           (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
           (case return-code
-            :success (metrics/increment-count (str topic-entity ".message-processing") "success")
-            :retry (do (metrics/message-unsuccessfully-processed!)
+            :success (metrics/increment-count metric-namespace "success")
+            :retry (do (metrics/increment-count metric-namespace "failure")
                        (producer/retry message topic-entity))
             :skip 'TODO
             :block 'TODO

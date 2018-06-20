@@ -12,11 +12,11 @@
 (use-fixtures :once fix/init-rabbit-mq)
 
 (deftest mapper-func-test
-  (let [message {:foo "bar"}
-        topic "booking"]
+  (let [message                   {:foo "bar"}
+        topic                     "booking"
+        expected-metric-namespace "booking.message-processing"]
     (testing "message process should be successful"
       (let [successfully-processed?  (atom false)
-            expected-metric-namespace "booking.message-processing"
             expected-metric          "success"]
         (with-redefs [metrics/increment-count (fn [metric-namespace metric]
                                                 (do (is (= metric-namespace expected-metric-namespace))
@@ -29,9 +29,13 @@
       (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
             unsuccessfully-processed? (atom false)
             retry-fn-called? (atom false)
-            topic "booking"]
-        (with-redefs [metrics/message-unsuccessfully-processed! (fn []
-                                                                  (reset! unsuccessfully-processed? true))]
+            topic "booking"
+            expected-metric "failure"]
+
+        (with-redefs [metrics/increment-count (fn [metric-namespace metric]
+                                                (do (is (= metric-namespace expected-metric-namespace))
+                                                    (is (= metric expected-metric))
+                                                    (reset! unsuccessfully-processed? true)))]
           ((mapper-func (constantly :retry)) message topic)
           (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
             (is (= message-from-mq expected-message)))
