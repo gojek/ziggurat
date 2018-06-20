@@ -42,4 +42,13 @@
           ((mapper-func (fn [_] (throw (Exception. "test exception"))))
             message topic)
           (is (= true @message-unsuccessfully-processed-fn-called?))
-          (is (= true @sentry-report-fn-called?)))))))
+          (is (= true @sentry-report-fn-called?)))))
+
+    (testing "reports execution time with topic prefix"
+      (let [reported-execution-time? (atom false)
+            expected-metric-namespace "booking.handler-fn-execution-time"]
+        (with-redefs [metrics/report-time (fn [metric-namespace _] (do (is (= metric-namespace expected-metric-namespace))
+                                                                       (reset! reported-execution-time? true)))]
+
+          ((mapper-func (constantly :success)) message topic)
+          (is (= true @reported-execution-time?)))))))
