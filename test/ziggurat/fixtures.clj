@@ -80,12 +80,3 @@
      (finally
        (delete-queues ~stream-routes)
        (delete-exchanges ~stream-routes))))
-
-(defmacro with-clear-data [& body]
-  `(try
-     (clear-data)
-     ~@body
-     (catch Exception e#
-       (st/print-stack-trace e#))
-     (finally
-       (clear-data))))
