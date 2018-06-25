@@ -56,21 +56,6 @@
   (f)
   (mount/stop))
 
-(defn flush-rabbitmq []
-  (let [{:keys [queue-name queue-timeout-ms]} (:delay (config/rabbitmq-config))
-        topic-identifier "booking"
-        delay-queue-name-with-topic-prefix (pr/delay-queue-name topic-identifier queue-name queue-timeout-ms)
-        instant-queue-name (util/prefixed-queue-name topic-identifier (get-queue-name :instant))
-        dead-letter-queue-name (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter))]
-
-    (with-open [ch (lch/open connection)]
-      (lq/purge ch instant-queue-name)
-      (lq/purge ch dead-letter-queue-name)
-      (lq/purge ch delay-queue-name-with-topic-prefix))))
-
-(defn clear-data []
-  (flush-rabbitmq))
-
 (defmacro with-queues [stream-routes body]
   `(try
      (pr/make-queues ~stream-routes)
@@ -80,12 +65,3 @@
      (finally
        (delete-queues ~stream-routes)
        (delete-exchanges ~stream-routes))))
-
-(defmacro with-clear-data [& body]
-  `(try
-     (clear-data)
-     ~@body
-     (catch Exception e#
-       (st/print-stack-trace e#))
-     (finally
-       (clear-data))))

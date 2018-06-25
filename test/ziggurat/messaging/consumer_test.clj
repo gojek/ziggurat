@@ -15,7 +15,7 @@
 
 (deftest get-dead-set-messages-test
   (testing "when ack is enabled, get the dead set messages and remove from dead set"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [count-of-messages 10
             message           (gen-msg)
             topic-identifier  "booking"
@@ -26,7 +26,7 @@
         (is (empty? (get-dead-set-messages true topic-identifier count-of-messages))))))
 
   (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [count-of-messages 10
             message           (gen-msg)
             topic-identifier  "booking"
@@ -61,7 +61,7 @@
 
 (deftest test-retries
   (testing "when retry is enabled the mapper-fn should be retried until return success"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             success-promise     (promise)
             msg                 (gen-msg)
@@ -88,7 +88,7 @@
           (close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should not be retried if it returns skip"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             skip-promise        (promise)
             msg                 (assoc (gen-msg) :msg "skip")
@@ -115,7 +115,7 @@
           (close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should be retried with the maximum specified times"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             retries             5
             no-of-msgs          2
@@ -145,7 +145,7 @@
         (close rmq-ch))))
 
   (testing "start subscribers should not call start-subscriber* when stream router is nil"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
             ch                  (lch/open connection)

@@ -14,9 +14,9 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
       (let [retry-count (promise)]
-        (init/start #(deliver retry-count (-> (config/ziggurat-config) :retry :count)) [] [])
+        (init/start #(deliver retry-count (-> (config/ziggurat-config) :retry :count)) {} [])
         (init/stop #())
-        (is (= 5 (deref retry-count 10000 ::failure)))))))
+        (is (= 5 @retry-count))))))
 
 (deftest stop-calls-actor-stop-fn-test
   (testing "The actor stop fn is called before stopping the lambda internal state"
@@ -24,14 +24,14 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
       (let [retry-count (promise)]
-        (init/start #() {:booking {:handler-fn #(constantly nil)}} [])
+        (init/start #() {} [])
         (init/stop #(deliver retry-count (-> (config/ziggurat-config) :retry :count)))
-        (is (= 5 (deref retry-count 10000 ::failure)))))))
+        (is (= 5 @retry-count))))))
 
 (deftest start-calls-make-queues-test
   (testing "Start calls make queues"
     (let [make-queues-called     (atom false)
-          expected-stream-routes [{:default {:handler-fn #()}}]]
+          expected-stream-routes {:default {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
                     messaging-producer/make-queues       (fn [stream-routes]
@@ -91,7 +91,7 @@
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
-      (init/start #() {:booking {:handler-fn (constantly :success)}} [["test-ping" (fn [_request] {:status 200
+      (init/start #() {} [["test-ping" (fn [_request] {:status 200
                                                                                                    :body   "pong"})]])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
@@ -104,7 +104,7 @@
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
-      (init/start #() [] [])
+      (init/start #() {} [])
       (let [{:keys [status body] :as response} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)]
         (init/stop #())
         (is (= 404 status)))))
@@ -113,7 +113,7 @@
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
-      (init/start #() [] [])
+      (init/start #() {} [])
       (let [{:keys [status body] :as response} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
         (init/stop #())
         (is (= 200 status))))))

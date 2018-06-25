@@ -13,7 +13,8 @@
 
 (deftest mapper-func-test
   (let [message                   {:foo "bar"}
-        topic                     "booking"
+        stream-routes             {:booking {:handler-fn #(constantly nil)}}
+        topic                     (name (first (keys stream-routes)))
         expected-metric-namespace "booking.message-processing"]
     (testing "message process should be successful"
       (let [successfully-processed?  (atom false)
@@ -26,19 +27,20 @@
           (is (= true @successfully-processed?)))))
 
     (testing "message process should be unsuccessful and retry"
-      (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
-            unsuccessfully-processed? (atom false)
-            retry-fn-called? (atom false)
-            expected-metric "failure"]
+      (fix/with-queues stream-routes
+        (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
+              unsuccessfully-processed? (atom false)
+              retry-fn-called? (atom false)
+              expected-metric "failure"]
 
-        (with-redefs [metrics/increment-count (fn [metric-namespace metric]
-                                                (do (is (= metric-namespace expected-metric-namespace))
-                                                    (is (= metric expected-metric))
-                                                    (reset! unsuccessfully-processed? true)))]
-          ((mapper-func (constantly :retry)) message topic)
-          (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
-            (is (= message-from-mq expected-message)))
-          (is (= true @unsuccessfully-processed?)))))
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric]
+                                                  (do (is (= metric-namespace expected-metric-namespace))
+                                                      (is (= metric expected-metric))
+                                                      (reset! unsuccessfully-processed? true)))]
+            ((mapper-func (constantly :retry)) message topic)
+            (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
+              (is (= message-from-mq expected-message)))
+            (is (= true @unsuccessfully-processed?))))))
 
     (testing "message should raise exception"
       (let [sentry-report-fn-called?  (atom false)

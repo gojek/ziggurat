@@ -9,7 +9,7 @@
 
 (deftest replay-test
   (testing "puts message from dead set to instant queue"
-    (fix/with-clear-data
+    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [count-of-messages 10
             message           {:foo "bar"}
             topic-name        "booking"
