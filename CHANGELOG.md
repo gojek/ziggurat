@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.1.0 - 2018-07-02
+- Adds metrics to skipped and retried message
+- Retry message when actor raises an expection
+
 ## 2.0.0 - 2018-06-15
 - Add support for multi stream routes
 
