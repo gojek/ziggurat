@@ -18,11 +18,12 @@
             (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
             (case return-code
               :success (metrics/increment-count metric-namespace "success")
-              :retry (do (metrics/increment-count metric-namespace "failure")
+              :retry (do (metrics/increment-count metric-namespace "retry")
                          (producer/retry message topic-entity))
-              :skip 'TODO
+              :skip (metrics/increment-count metric-namespace "skip")
               :block 'TODO
               (throw (ex-info "Invalid mapper return code" {:code return-code}))))
           (catch Throwable e
+            (producer/retry message topic-entity)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity))
             (metrics/increment-count metric-namespace "failure")))))))

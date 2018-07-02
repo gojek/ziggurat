@@ -31,7 +31,7 @@
         (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
               unsuccessfully-processed? (atom false)
               retry-fn-called? (atom false)
-              expected-metric "failure"]
+              expected-metric "retry"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric]
                                                   (do (is (= metric-namespace expected-metric-namespace))
@@ -43,18 +43,22 @@
             (is (= true @unsuccessfully-processed?))))))
 
     (testing "message should raise exception"
-      (let [sentry-report-fn-called?  (atom false)
-            unsuccessfully-processed? (atom false)
-            expected-metric           "failure"]
-        (with-redefs [sentry-report (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                      metrics/increment-count (fn [metric-namespace metric]
-                                                (do (is (= metric-namespace expected-metric-namespace))
-                                                    (is (= metric expected-metric))
-                                                    (reset! unsuccessfully-processed? true)))]
-          ((mapper-func (fn [_] (throw (Exception. "test exception"))))
-            message topic)
-          (is (= true @unsuccessfully-processed?))
-          (is (= true @sentry-report-fn-called?)))))
+      (fix/with-queues stream-routes
+        (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
+              sentry-report-fn-called? (atom false)
+              unsuccessfully-processed? (atom false)
+              expected-metric "failure"]
+          (with-redefs [sentry-report (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+                        metrics/increment-count (fn [metric-namespace metric]
+                                                  (do (is (= metric-namespace expected-metric-namespace))
+                                                      (is (= metric expected-metric))
+                                                      (reset! unsuccessfully-processed? true)))]
+            ((mapper-func (fn [_] (throw (Exception. "test exception"))))
+              message topic)
+            (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
+              (is (= message-from-mq expected-message)))
+            (is (= true @unsuccessfully-processed?))
+            (is (= true @sentry-report-fn-called?))))))
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time? (atom false)
