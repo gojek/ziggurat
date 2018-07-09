@@ -11,11 +11,10 @@
            [org.apache.kafka.streams KafkaStreams StreamsConfig]
            [org.apache.kafka.streams.state Stores]
            [org.apache.kafka.streams.kstream KStreamBuilder ValueMapper KStream TransformerSupplier]
-           [timestamp TimestampTransformer]
            [org.apache.kafka.streams.processor WallclockTimestampExtractor]
-           (java.util.regex Pattern)
-           (org.apache.kafka.streams.processor Processor StateStoreSupplier)
-           (java.util HashMap)))
+           [java.util.regex Pattern]
+           [org.apache.kafka.streams.processor StateStoreSupplier]
+           [java.util HashMap]))
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count]}]
   {StreamsConfig/APPLICATION_ID_CONFIG                    application-id
@@ -48,12 +47,13 @@
 (defn- map-values [mapper-fn ^KStream stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- transformer-supplier []
+(defn- transformer-supplier [metric-namespace]
   (reify TransformerSupplier
-    (get [_] (TimestampTransformer.))))
+    (get [_] (kafka-delay/create-transformer metric-namespace))))
 
-(defn- transform-values [stream-builder]
-  (.transform stream-builder (transformer-supplier) (into-array [(.name (state-store-supplier))])))
+(defn- transform-values [topic-entity stream-builder]
+  (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
+    (.transform stream-builder (transformer-supplier metric-namespace) (into-array [(.name (state-store-supplier))]))))
 
 (defn- protobuf->hash [message proto-class]
   (try

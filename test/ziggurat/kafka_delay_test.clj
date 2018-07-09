@@ -5,10 +5,7 @@
 
 (deftest calculate-and-report-kafka-delay-test
   (testing ""
-    (let [seconds 1528720767
-          nano-seconds  777000000
-          message {:event-timestamp {:seconds seconds
-                                     :nanos nano-seconds}}
+    (let [record-timestamp 1528720767777
           milli-seconds 1528720768777
           expected-delay 1000
           namespace "test"]
@@ -16,4 +13,4 @@
                     metrics/report-time (fn [metric-namespace delay]
                                           (is (= delay expected-delay))
                                           (is (= metric-namespace namespace)))]
-        (calculate-and-report-kafka-delay namespace message)))))
+        (calculate-and-report-kafka-delay namespace record-timestamp)))))

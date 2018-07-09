@@ -7,8 +7,6 @@
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
-  :source-paths      ["src"]
-  :java-source-paths ["timestamp"]
   :dependencies [[bidi "2.1.3"]
                  [camel-snake-kebab "0.4.0"]
                  [cheshire "5.8.0"]

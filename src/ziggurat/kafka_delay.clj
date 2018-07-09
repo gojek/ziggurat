@@ -5,11 +5,6 @@
            [org.apache.kafka.streams.kstream Transformer]
            [org.apache.kafka.streams.processor ProcessorContext]))
 
-(defn- get-millis [seconds nano-seconds]
-  (let [second-in-millis (* seconds 1000)
-        nanos-in-millis  (/ (or nano-seconds 1000000) 1000000)]
-    (+ second-in-millis nanos-in-millis)))
-
 (defn get-current-time-in-millis []
   (.toEpochMilli (Instant/now)))
 
