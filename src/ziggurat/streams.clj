@@ -30,9 +30,7 @@
   (str (name topic) "." default))
 
 (defn- log-and-report-metrics [topic-entity message]
-  (let [message-read-metric-namespace  (get-metric-namespace "message" topic-entity)
-        message-delay-metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (kafka-delay/calculate-and-report-kafka-delay message-delay-metric-namespace message)
+  (let [message-read-metric-namespace  (get-metric-namespace "message" topic-entity)]
     (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
@@ -77,8 +75,9 @@
         topic-pattern (Pattern/compile origin-topic)]
     (.addStateStore builder (state-store-supplier) nil)
     (->> (.stream builder topic-pattern)
-         (transform-values)
+         (transform-values topic-entity)
          (map-values #(protobuf->hash % proto-class))
+         (map-values #(log-and-report-metrics topic-entity %))
          (map-values #((mpr/mapper-func handler-fn) % topic-entity)))
     builder))
 
