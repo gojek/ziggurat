@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.2.1 - 2018-07-10
+- Upgraded lambda commons library to 0.3.1
+
 ## 2.2.0 - 2018-07-09
 - Upgraded lambda commons library
 
