@@ -2,8 +2,9 @@
   (:require [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.producer :as producer]))
 
-(defn replay [count-of-message topic-entity]
+(defn replay
   "Gets the message from the queue and puts them to instant queue"
+  [count-of-message topic-entity]
   (doseq [msg (consumer/get-dead-set-messages true topic-entity count-of-message)]
     (producer/publish-to-instant-queue topic-entity msg)))
 
