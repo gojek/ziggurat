@@ -20,8 +20,8 @@
   {StreamsConfig/APPLICATION_ID_CONFIG                    application-id
    StreamsConfig/BOOTSTRAP_SERVERS_CONFIG                 bootstrap-servers
    StreamsConfig/NUM_STREAM_THREADS_CONFIG                (int stream-threads-count)
-   StreamsConfig/KEY_SERDE_CLASS_CONFIG                   (.getName (.getClass (Serdes/ByteArray)))
-   StreamsConfig/VALUE_SERDE_CLASS_CONFIG                 (.getName (.getClass (Serdes/ByteArray)))
+   StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
+   StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
    StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
    ConsumerConfig/AUTO_OFFSET_RESET_CONFIG                "latest"})
 
@@ -29,7 +29,7 @@
   (str (name topic) "." default))
 
 (defn- log-and-report-metrics [topic-entity message]
-  (let [message-read-metric-namespace  (get-metric-namespace "message" topic-entity)]
+  (let [message-read-metric-namespace (get-metric-namespace "message" topic-entity)]
     (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
