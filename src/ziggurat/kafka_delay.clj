@@ -5,7 +5,7 @@
            [org.apache.kafka.streams.kstream Transformer]
            [org.apache.kafka.streams.processor ProcessorContext]))
 
-(defn- get-current-time-in-millis []
+(defn get-current-time-in-millis []
   (.toEpochMilli (Instant/now)))
 
 (defn calculate-and-report-kafka-delay [metric-namespace record-timestamp]
