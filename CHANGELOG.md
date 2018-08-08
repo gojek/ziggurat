@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.4.0 - 2018-08-08
+- Starts sending expiration per message instead of setting it on the queue
+
 ## 2.3.0 - 2018-07-16
 - Starts calculating timestamp from kafka metadata
 - removes deprecated config variables in kafka-streams

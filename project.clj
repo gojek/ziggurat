@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject com.gojek.lambda/ziggurat "2.3.0"
+(defproject com.gojek.lambda/ziggurat "2.4.0"
   :description "The actor framework for Project Lambda"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
