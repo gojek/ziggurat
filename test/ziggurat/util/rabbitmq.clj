@@ -15,8 +15,8 @@
         (consumer/convert-and-ack-message ch meta payload true)))))
 
 (defn get-msg-from-delay-queue [topic-name]
-  (let [{:keys [queue-name queue-timeout-ms]} (:delay (rabbitmq-config))
-        queue-name (producer/delay-queue-name topic-name queue-name queue-timeout-ms)]
+  (let [{:keys [queue-name]} (:delay (rabbitmq-config))
+        queue-name (producer/delay-queue-name topic-name queue-name)]
     (get-msg-from-rabbitmq queue-name)))
 
 (defn get-msg-from-dead-queue [topic-name]
