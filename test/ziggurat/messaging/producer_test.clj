@@ -67,8 +67,7 @@
             instant-queue-name (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
             instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
 
-            delay-queue-timeout (:queue-timeout-ms (:delay (rabbitmq-config)))
-            delay-queue-name (util/prefixed-queue-name "default" (format "%s_%s" (:queue-name (:delay (rabbitmq-config))) delay-queue-timeout))
+            delay-queue-name (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
             delay-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
 
             dead-queue-name (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))

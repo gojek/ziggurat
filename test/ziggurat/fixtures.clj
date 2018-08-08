@@ -33,7 +33,7 @@
       (let [topic-identifier (name topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
-        (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay) (:queue-timeout-ms (:delay (config/rabbitmq-config)))))))))
+        (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))))))
 
 (defn delete-exchanges [stream-routes]
   (with-open [ch (lch/open connection)]

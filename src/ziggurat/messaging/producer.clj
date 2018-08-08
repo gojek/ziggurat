@@ -12,8 +12,8 @@
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
-(defn delay-queue-name [topic-entity queue-name queue-timeout-ms]
-  (prefixed-queue-name topic-entity (format "%s_%s" queue-name queue-timeout-ms)))
+(defn delay-queue-name [topic-entity queue-name]
+  (prefixed-queue-name topic-entity queue-name))
 
 (defn- create-queue [queue props ch]
   (lq/declare ch queue {:durable true :arguments props :auto-delete false})
@@ -81,7 +81,7 @@
 
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
-        queue-name (delay-queue-name topic-entity queue-name queue-timeout-ms)
+        queue-name (delay-queue-name topic-entity queue-name)
         exchange-name (prefixed-queue-name topic-entity exchange-name)
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms)))
