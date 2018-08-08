@@ -12,8 +12,8 @@
             :rabbit-mq-connection {:host            "localhost"
                                    :port            [5672 :int]
                                    :prefetch-count  [3 :int]
-                                   :username        "gojek"
-                                   :password        "password"
+                                   :username        "guest"
+                                   :password        "guest"
                                    :channel-timeout [2000 :int]}
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}

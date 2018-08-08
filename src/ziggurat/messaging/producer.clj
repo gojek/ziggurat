@@ -29,12 +29,11 @@
 
 (defn- create-and-bind-queue
   ([queue-name exchange]
-   (create-and-bind-queue queue-name exchange nil nil))
-  ([queue-name exchange-name dead-letter-exchange queue-timeout-ms]
+   (create-and-bind-queue queue-name exchange nil))
+  ([queue-name exchange-name dead-letter-exchange]
    (try
-     (let [props (if (and dead-letter-exchange queue-timeout-ms)
-                   {"x-dead-letter-exchange" dead-letter-exchange
-                    "x-message-ttl"          queue-timeout-ms}
+     (let [props (if (and dead-letter-exchange)
+                   {"x-dead-letter-exchange" dead-letter-exchange}
                    {})]
        (with-open [ch (lch/open connection)]
          (create-queue queue-name props ch)
@@ -44,22 +43,29 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
+(defn- properties-for-publish
+  [expiration]
+  (let [props {:content-type "application/octet-stream"
+               :persistent   true}]
+    (if expiration
+      (assoc props :expiration (str expiration))
+      props)))
+
 (defn- publish
   ([exchange message]
-   (publish exchange "" message))
-  ([exchange routing-key message]
+   (publish exchange message nil))
+  ([exchange message expiration]
    (with-retry {:count      3
                 :wait       50
                 :on-failure #(sentry/report-error sentry-reporter %
                                                   "Pushing message to rabbitmq failed")}
                (with-open [ch (lch/open connection)]
-                 (lb/publish ch exchange routing-key (nippy/freeze message) {:content-type "application/octet-stream"
-                                                                             :persistent   true})))))
+                 (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
 
 (defn publish-to-delay-queue [topic-entity message]
-  (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
+  (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
-    (publish exchange-name message)))
+    (publish exchange-name message queue-timeout-ms)))
 
 (defn publish-to-dead-queue [topic-entity message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
@@ -75,16 +81,16 @@
 (defn retry [{:keys [retry-count] :as message} topic-entity]
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
-      (nil? retry-count)  (publish-to-delay-queue topic-entity (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
-      (pos? retry-count)  (publish-to-delay-queue topic-entity (assoc message :retry-count (dec retry-count)))
+      (nil? retry-count) (publish-to-delay-queue topic-entity (assoc message :retry-count (-> (ziggurat-config) :retry :count)))
+      (pos? retry-count) (publish-to-delay-queue topic-entity (assoc message :retry-count (dec retry-count)))
       (zero? retry-count) (publish-to-dead-queue topic-entity (dissoc message :retry-count)))))
 
 (defn- make-delay-queue [topic-entity]
-  (let [{:keys [queue-name exchange-name dead-letter-exchange queue-timeout-ms]} (:delay (rabbitmq-config))
+  (let [{:keys [queue-name exchange-name dead-letter-exchange]} (:delay (rabbitmq-config))
         queue-name (delay-queue-name topic-entity queue-name)
         exchange-name (prefixed-queue-name topic-entity exchange-name)
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
-    (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name queue-timeout-ms)))
+    (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
 
 (defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
