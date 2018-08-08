@@ -32,7 +32,7 @@
    (create-and-bind-queue queue-name exchange nil))
   ([queue-name exchange-name dead-letter-exchange]
    (try
-     (let [props (if (and dead-letter-exchange)
+     (let [props (if dead-letter-exchange
                    {"x-dead-letter-exchange" dead-letter-exchange}
                    {})]
        (with-open [ch (lch/open connection)]
