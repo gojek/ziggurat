@@ -1,5 +1,4 @@
-(ns ziggurat.messaging.util
-  (:require [camel-snake-kebab.core :as csk]))
+(ns ziggurat.messaging.util)
 
 (defn prefixed-queue-name [topic-entity value]
-  (csk/->snake_case_string (str (name topic-entity) "_" value)))
+  (str (name topic-entity) "_" value))
