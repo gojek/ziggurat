@@ -4,8 +4,10 @@
             [mount.core :as mount :refer [defstate]]
             [lambda-common.metrics :as metrics]
             [ziggurat.config :refer [ziggurat-config]]
+            [sentry.core :as sentry]
             [ziggurat.mapper :as mpr]
-            [ziggurat.kafka-delay :as kafka-delay])
+            [ziggurat.kafka-delay :as kafka-delay]
+            [ziggurat.sentry :refer [sentry-reporter]])
   (:import [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig]
@@ -57,21 +59,22 @@
 
 (defn- protobuf->hash [message proto-class]
   (try
-    (let [proto-klass  (-> proto-class
-                           java.lang.Class/forName
-                           proto/protodef)
+    (let [proto-klass (-> proto-class
+                          java.lang.Class/forName
+                          proto/protodef)
           loaded-proto (proto/protobuf-load proto-klass message)
-          proto-keys   (-> proto-klass
-                           proto/protobuf-schema
-                           :fields
-                           keys)]
+          proto-keys (-> proto-klass
+                         proto/protobuf-schema
+                         :fields
+                         keys)]
       (select-keys loaded-proto proto-keys))
     (catch Throwable e
+      (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
       (metrics/increment-count "message-parsing" "failed")
       nil)))
 
 (defn- topology [handler-fn {:keys [origin-topic proto-class]} topic-entity]
-  (let [builder       (KStreamBuilder.)
+  (let [builder (KStreamBuilder.)
         topic-pattern (Pattern/compile origin-topic)]
     (.addStateStore builder (state-store-supplier) nil)
     (->> (.stream builder topic-pattern)
