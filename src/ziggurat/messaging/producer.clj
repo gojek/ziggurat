@@ -8,7 +8,7 @@
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.util :refer [prefixed-queue-name]]
+            [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
@@ -92,16 +92,30 @@
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
 
+(defn- make-channel-delay-queue [topic-entity channel-name]
+  (make-delay-queue (with-channel-name topic-entity channel-name)))
+
 (defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
         queue-name (prefixed-queue-name topic-identifier queue-name)
         exchange-name (prefixed-queue-name topic-identifier exchange-name)]
     (create-and-bind-queue queue-name exchange-name)))
 
+(defn- make-channel-queue [topic-entity channel-name queue-type]
+  (make-queue (with-channel-name topic-entity channel-name) queue-type))
+
+(defn- make-channel-queues [channels topic-name]
+  (doseq [channel channels]
+    (make-channel-delay-queue topic-name channel)
+    (make-channel-queue topic-name channel :instant)
+    (make-channel-queue topic-name channel :dead-letter)))
+
 (defn make-queues [stream-routes]
   (when (-> (ziggurat-config) :retry :enabled)
     (doseq [topic-entity (keys stream-routes)]
-      (let [topic-name (name topic-entity)]
+      (let [topic-name (name topic-entity)
+            channels (map name (get-channel-names stream-routes topic-entity))]
+        (make-channel-queues channels topic-name)
         (make-delay-queue topic-name)
         (make-queue topic-name :instant)
         (make-queue topic-name :dead-letter)))))
