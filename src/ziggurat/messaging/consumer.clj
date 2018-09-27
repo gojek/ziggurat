@@ -81,6 +81,16 @@
                      (mpr/mapper-func mapper-fn)
                      topic-entity))
 
+(defn start-channels-subscriber* [channels ch topic-entity-name]
+  (doseq [channel channels]
+    (let [channel-key (-> channel first)
+          channel-handler-fn (-> channel second)]
+      (start-subscriber* ch
+                         (get-in-config [:jobs :instant :prefetch-count])
+                         (prefixed-channel-name topic-entity-name channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
+                         (mpr/channel-mapper-func channel-handler-fn channel-key)
+                         topic-entity-name))))
+
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes]
@@ -89,7 +99,7 @@
       (doseq [stream-route stream-routes]
         (let [rmq-channel (lch/open connection)
               topic-entity (-> stream-route first name)
-              topic-entity-name (name topic-entity)
               topic-handler (-> stream-route second :handler-fn)
               channels (-> stream-route second (dissoc :handler-fn))]
+          (start-channels-subscriber* channels rmq-channel topic-entity)
           (start-retry-subscriber* rmq-channel topic-handler topic-entity))))))
