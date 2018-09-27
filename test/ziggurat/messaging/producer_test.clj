@@ -124,7 +124,7 @@
 
   (testing "it creates queues with topic entity from stream routes and channels"
     (with-open [ch (lch/open connection)]
-      (let [stream-routes {:default {:handler-fn #(constantly :success) :channel1 #(constantly :success)}}
+      (let [stream-routes {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
             instant-queue-suffix (:queue-name (:instant (rabbitmq-config)))
             instant-exchange-suffix (:exchange-name (:instant (rabbitmq-config)))
             delay-queue-suffix (:queue-name (:delay (rabbitmq-config)))
@@ -137,7 +137,7 @@
             delay-exchange-name (util/prefixed-queue-name "default" delay-exchange-suffix)
             dead-queue-name (util/prefixed-queue-name "default" dead-letter-queue-suffix)
             dead-exchange-name (util/prefixed-queue-name "default" dead-letter-exchange-suffix)
-            prefix-name "default_channel_channel1"
+            prefix-name "default_channel_channel-1"
             channel1-instant-queue-name (util/prefixed-queue-name prefix-name instant-queue-suffix)
             channel1-instant-exchange-name (util/prefixed-queue-name prefix-name instant-exchange-suffix)
             channel1-delay-queue-name (util/prefixed-queue-name prefix-name delay-queue-suffix)

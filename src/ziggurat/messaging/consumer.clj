@@ -83,8 +83,8 @@
 
 (defn start-channels-subscriber* [channels ch topic-entity-name]
   (doseq [channel channels]
-    (let [channel-key (-> channel first)
-          channel-handler-fn (-> channel second)]
+    (let [channel-key (first channel)
+          channel-handler-fn (second channel)]
       (start-subscriber* ch
                          (get-in-config [:jobs :instant :prefetch-count])
                          (prefixed-channel-name topic-entity-name channel-key (get-in-config [:rabbit-mq :instant :queue-name]))

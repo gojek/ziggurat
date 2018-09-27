@@ -79,7 +79,7 @@
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
           (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                           :call-count-atom    call-counter
+                                                           :call-counter-atom  call-counter
                                                            :retry-limit        2
                                                            :success-promise    success-promise}) topic-identifier)
 
@@ -124,6 +124,7 @@
   (testing "when retry is enabled the mapper-fn should be retried with the maximum specified times"
     (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [retry-counter (atom 0)
+            call-counter (atom 0)
             retries 5
             no-of-msgs 2
             topic-identifier "booking"
@@ -136,6 +137,7 @@
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
           (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                           :call-counter-atom  call-counter
                                                            :retry-limit        (* no-of-msgs 10)}) topic-identifier)
 
           (dotimes [_ no-of-msgs]
