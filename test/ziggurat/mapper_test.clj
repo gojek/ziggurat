@@ -1,10 +1,12 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all])
   (:require [lambda-common.metrics :as metrics]
+            [langohr.channel :as lch]
             [sentry.core :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer [mapper-func]]
+            [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq])
   (:import (java.util Arrays)))
@@ -25,6 +27,31 @@
                                                     (reset! successfully-processed? true)))]
           ((mapper-func (constantly :success) topic []) message)
           (is (= true @successfully-processed?)))))
+
+    (testing "message process should successfully push to channel queue"
+      (fix/with-queues (assoc-in stream-routes [:booking :channel-1] (constantly :success))
+        (let [successfully-processed? (atom false)
+              expected-metric "success"]
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric]
+                                                  (do (is (= metric-namespace expected-metric-namespace))
+                                                      (is (= metric expected-metric))
+                                                      (reset! successfully-processed? true)))]
+            ((mapper-func (constantly :channel-1) topic [:channel-1]) message)
+            (let [message-from-mq (rmq/get-message-from-channel-queue topic :channel-1)]
+              (is (= message message-from-mq)))))))
+
+    (testing "message process should raise exception if channel not in list"
+      (fix/with-queues (assoc-in stream-routes [:booking :channel-1] (constantly :success))
+        (let [successfully-processed? (atom false)
+              expected-metric "success"]
+          (with-redefs [metrics/increment-count (fn [_ _])
+                        sentry-report (fn [_ _ e & _]
+                                        (let [err (Throwable->map e)]
+                                          (is (= (:cause err) "Invalid mapper return code"))
+                                          (is (= (-> err :data :code) :channel-1))))]
+            ((mapper-func (constantly :channel-1) topic [:some-other-channel]) message)
+            (let [message-from-mq (rmq/get-message-from-channel-queue topic :channel-1)]
+              (is (= nil message-from-mq)))))))
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes

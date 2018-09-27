@@ -5,8 +5,8 @@
             [ziggurat.config :refer [rabbitmq-config]]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :as consumer]
+            [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :as producer]))
-
 
 (defn- get-msg-from-rabbitmq [queue-name]
   (with-open [ch (lch/open connection)]
@@ -27,4 +27,9 @@
 (defn get-msg-from-instant-queue [topic-name]
   (let [{:keys [queue-name]} (:instant (rabbitmq-config))
         queue-name (str topic-name "_" queue-name)]
+    (get-msg-from-rabbitmq queue-name)))
+
+(defn get-message-from-channel-queue [topic-name channel-name]
+  (let [{:keys [queue-name]} (:instant (rabbitmq-config))
+        queue-name (prefixed-channel-name topic-name channel-name queue-name)]
     (get-msg-from-rabbitmq queue-name)))

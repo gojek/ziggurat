@@ -28,7 +28,7 @@
                          (producer/retry message topic-entity))
               :skip (metrics/increment-count metric-namespace "skip")
               :block 'TODO
-              (send-msg-to-channel [:TODO] message topic-entity return-code)))
+              (send-msg-to-channel channels message topic-entity return-code)))
           (catch Throwable e
             (producer/retry message topic-entity)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
