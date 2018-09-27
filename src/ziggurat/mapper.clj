@@ -6,7 +6,12 @@
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 
-(defn mapper-func [mapper-fn topic-entity]
+(defn send-msg-to-channel [channels message topic-entity return-code]
+  (when (not-part-of-channels channels return-code)
+    (throw (ex-info "Invalid mapper return code" {:code return-code})))
+  (nil))
+
+(defn mapper-func [mapper-fn topic-entity channels]
   (fn [message]
     (let [topic-entity-name (name topic-entity)
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
@@ -23,20 +28,19 @@
                          (producer/retry message topic-entity))
               :skip (metrics/increment-count metric-namespace "skip")
               :block 'TODO
-
-              (throw (ex-info "Invalid mapper return code" {:code return-code}))))
+              (send-msg-to-channel [:TODO] message topic-entity return-code)))
           (catch Throwable e
             (producer/retry message topic-entity)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
             (metrics/increment-count metric-namespace "failure")))))))
 
-;; TODO: Move topic-entity as arguement for channel-mapper-fn and mapper-fn. The return func should only accept message as arguement
 (defn channel-mapper-func [mapper-fn topic-entity channel]
   (fn [message]
     (let [start-time (.toEpochMilli (Instant/now))
           return-code (mapper-fn message)
           end-time (.toEpochMilli (Instant/now))]
-      (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
+         ;; TODO add metrics
+         (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
       (case return-code
         :success 'TODO
         :retry (producer/retry-for-channel message topic-entity channel)
