@@ -4,9 +4,10 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-subscriber* close start-subscribers]]
+            [ziggurat.messaging.consumer :refer [get-dead-set-messages start-retry-subscriber* close start-subscribers]]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.retry :as retry]))
+            [ziggurat.retry :as retry]
+            [ziggurat.mapper :as mpr]))
 
 (use-fixtures :once fix/init-rabbit-mq)
 
@@ -17,10 +18,10 @@
   (testing "when ack is enabled, get the dead set messages and remove from dead set"
     (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [count-of-messages 10
-            message           (gen-msg)
-            topic-identifier  "booking"
-            pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message))
+            message (gen-msg)
+            topic-identifier "booking"
+            pushed-message (doseq [_ (range count-of-messages)]
+                             (producer/publish-to-dead-queue topic-identifier message))
             dead-set-messages (get-dead-set-messages true topic-identifier count-of-messages)]
         (is (= (repeat count-of-messages message) dead-set-messages))
         (is (empty? (get-dead-set-messages true topic-identifier count-of-messages))))))
@@ -28,10 +29,10 @@
   (testing "when ack is disabled, get the dead set messages and not remove from dead set"
     (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
       (let [count-of-messages 10
-            message           (gen-msg)
-            topic-identifier  "booking"
-            pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message))
+            message (gen-msg)
+            topic-identifier "booking"
+            pushed-message (doseq [_ (range count-of-messages)]
+                             (producer/publish-to-dead-queue topic-identifier message))
             dead-set-messages (get-dead-set-messages false topic-identifier count-of-messages)]
         (is (= (repeat count-of-messages message) dead-set-messages))
         (is (= (repeat count-of-messages message) (get-dead-set-messages false topic-identifier count-of-messages)))))))
@@ -74,9 +75,9 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                     :retry-limit        2
-                                                     :success-promise    success-promise}) topic-identifier)
+          (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                           :retry-limit        2
+                                                           :success-promise    success-promise}) topic-identifier)
 
           (producer/publish-to-delay-queue topic-identifier msg)
 
@@ -101,9 +102,9 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                     :skip-promise       skip-promise
-                                                     :retry-limit        -1}) topic-identifier)
+          (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                           :skip-promise       skip-promise
+                                                           :retry-limit        -1}) topic-identifier)
 
           (producer/publish-to-delay-queue topic-identifier msg)
 
@@ -128,8 +129,8 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (start-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                     :retry-limit        (* no-of-msgs 10)}) topic-identifier)
+          (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                           :retry-limit        (* no-of-msgs 10)}) topic-identifier)
 
           (dotimes [_ no-of-msgs]
             (producer/retry (gen-msg) topic-identifier))
@@ -151,10 +152,10 @@
             ch                  (lch/open connection)
             counter             (atom 0)]
 
-        (with-redefs [ziggurat-config   (fn [] (-> original-zig-config
-                                                   (update-in [:retry :enabled] (constantly true))
-                                                   (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                      start-subscriber* (fn [_ _ _] (swap! counter inc))]
+        (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                                 (update-in [:retry :enabled] (constantly true))
+                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
+                      start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
 
           (start-subscribers nil)
 
@@ -169,10 +170,10 @@
           stream-routes       {:booking {:handler-fn #(constantly nil)}
                                :test {:handler-fn #(constantly nil)}}]
 
-      (with-redefs [ziggurat-config   (fn [] (-> original-zig-config
-                                                 (update-in [:retry :enabled] (constantly true))
-                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                    start-subscriber* (fn [_ _ _] (swap! counter inc))]
+      (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                               (update-in [:retry :enabled] (constantly true))
+                                               (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
+                    start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
 
         (start-subscribers stream-routes)
 

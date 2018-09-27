@@ -9,7 +9,7 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer [prefixed-queue-name]])
+            [ziggurat.messaging.util :refer :all])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
 
 (defn convert-and-ack-message
@@ -52,10 +52,10 @@
                                                       (prefixed-queue-name topic-entity
                                                                            (get-in-config [:rabbit-mq :dead-letter :queue-name]))))))))
 
-(defn- message-handler [mapper-fn topic-entity]
+(defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true)]
-      ((mpr/mapper-func mapper-fn) message topic-entity))))
+      (wrapped-mapper-fn message topic-entity))))
 
 (defn close [^Channel channel]
   (try
@@ -63,16 +63,23 @@
     (catch AlreadyClosedException _
       nil)))
 
-(defn start-subscriber* [ch mapper-fn topic-entity]
-  (lb/qos ch (get-in-config [:jobs :instant :prefetch-count]))
+(defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
+  (lb/qos ch prefetch-count)
   (let [consumer-tag (lcons/subscribe ch
-                                      (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
-                                      (message-handler mapper-fn topic-entity)
+                                      queue-name
+                                      (message-handler wrapped-mapper-fn topic-entity)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
 
     (log/info "starting consumer for instant-queue with consumer tag - " consumer-tag)))
+
+(defn start-retry-subscriber* [ch mapper-fn topic-entity]
+  (start-subscriber* ch
+                     (get-in-config [:jobs :instant :prefetch-count])
+                     (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
+                     (mpr/mapper-func mapper-fn)
+                     topic-entity))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
@@ -80,6 +87,9 @@
   (when (get-in-config [:retry :enabled])
     (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
       (doseq [stream-route stream-routes]
-        (let [topic-identifier (-> stream-route first name)
-              topic-handler (-> stream-route second :handler-fn)]
-          (start-subscriber* (lch/open connection) topic-handler topic-identifier))))))
+        (let [rmq-channel (lch/open connection)
+              topic-entity (-> stream-route first name)
+              topic-entity-name (name topic-entity)
+              topic-handler (-> stream-route second :handler-fn)
+              channels (-> stream-route second (dissoc :handler-fn))]
+          (start-retry-subscriber* rmq-channel topic-handler topic-entity))))))
