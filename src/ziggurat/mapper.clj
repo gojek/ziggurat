@@ -6,10 +6,11 @@
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 
-(defn mapper-func [mapper-fn]
-  (fn [message topic-entity]
-    (let [new-relic-transaction-name (str topic-entity ".handler-fn")
-          metric-namespace           (str topic-entity ".message-processing")]
+(defn mapper-func [mapper-fn topic-entity]
+  (fn [message]
+    (let [topic-entity-name (name topic-entity)
+          new-relic-transaction-name (str topic-entity-name ".handler-fn")
+          metric-namespace (str topic-entity-name ".message-processing")]
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time       (.toEpochMilli (Instant/now))
@@ -26,12 +27,12 @@
               (throw (ex-info "Invalid mapper return code" {:code return-code}))))
           (catch Throwable e
             (producer/retry message topic-entity)
-            (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity))
+            (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
             (metrics/increment-count metric-namespace "failure")))))))
 
 ;; TODO: Move topic-entity as arguement for channel-mapper-fn and mapper-fn. The return func should only accept message as arguement
-(defn channel-mapper-func [mapper-fn channel]
-  (fn [message topic-entity]
+(defn channel-mapper-func [mapper-fn topic-entity channel]
+  (fn [message]
     (let [start-time (.toEpochMilli (Instant/now))
           return-code (mapper-fn message)
           end-time (.toEpochMilli (Instant/now))]

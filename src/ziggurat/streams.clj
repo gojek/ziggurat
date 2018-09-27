@@ -75,13 +75,14 @@
 
 (defn- topology [handler-fn {:keys [origin-topic proto-class]} topic-entity]
   (let [builder (KStreamBuilder.)
+        topic-entity-name (name topic-entity)
         topic-pattern (Pattern/compile origin-topic)]
     (.addStateStore builder (state-store-supplier) nil)
     (->> (.stream builder topic-pattern)
-         (transform-values topic-entity)
+         (transform-values topic-entity-name)
          (map-values #(protobuf->hash % proto-class))
-         (map-values #(log-and-report-metrics topic-entity %))
-         (map-values #((mpr/mapper-func handler-fn) % topic-entity)))
+         (map-values #(log-and-report-metrics % topic-entity-name))
+         (map-values #((mpr/mapper-func handler-fn topic-entity) %)))
     builder))
 
 (defn- start-stream* [handler-fn stream-config topic-entity]
@@ -92,8 +93,8 @@
   (let [zig-conf (ziggurat-config)]
     (reduce-kv (fn [streams topic-entity topic-handler]
                  (let [stream-config (get-in zig-conf [:stream-router topic-entity])
-                       handler-fn    (get-in topic-handler [:handler-fn])
-                       stream        (start-stream* handler-fn stream-config (name topic-entity))]
+                       handler-fn (get-in topic-handler [:handler-fn])
+                       stream (start-stream* handler-fn stream-config topic-entity)]
                    (.start stream)
                    (conj streams stream)))
                []

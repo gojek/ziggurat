@@ -208,7 +208,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :count] (constantly 5))
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly true))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
-          (start-channels-subscriber* {channel channel-fn} rmq-ch topic-entity)
+          (start-channels-subscriber {channel channel-fn} rmq-ch topic-entity)
           (producer/retry-for-channel msg topic-entity channel)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -234,7 +234,7 @@
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
-          (start-channels-subscriber* {channel channel-fn} rmq-ch topic-entity)
+          (start-channels-subscriber {channel channel-fn} rmq-ch topic-entity)
           (producer/publish-to-channel-instant-queue topic-entity channel msg)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))

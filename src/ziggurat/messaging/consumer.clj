@@ -18,7 +18,7 @@
   [ch {:keys [delivery-tag] :as meta} ^bytes payload ack?]
   (try
     (let [message (nippy/thaw payload)]
-      (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
+         (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
       (when ack?
         (lb/ack ch delivery-tag))
       message)
@@ -30,8 +30,8 @@
 (defn- try-consuming-dead-set-messages [ch ack? queue-name]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
-      (when (some? payload)
-        (convert-and-ack-message ch meta payload ack?)))
+         (when (some? payload)
+           (convert-and-ack-message ch meta payload ack?)))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
 
@@ -52,10 +52,10 @@
                                                       (prefixed-queue-name topic-entity
                                                                            (get-in-config [:rabbit-mq :dead-letter :queue-name]))))))))
 
-(defn- message-handler [wrapped-mapper-fn topic-entity]
+(defn- message-handler [wrapped-mapper-fn]
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true)]
-      (wrapped-mapper-fn message topic-entity))))
+      (wrapped-mapper-fn message))))
 
 (defn close [^Channel channel]
   (try
@@ -63,33 +63,31 @@
     (catch AlreadyClosedException _
       nil)))
 
-(defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
+(defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn]
   (lb/qos ch prefetch-count)
   (let [consumer-tag (lcons/subscribe ch
                                       queue-name
-                                      (message-handler wrapped-mapper-fn topic-entity)
+                                      (message-handler wrapped-mapper-fn)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/info "Closing channel with consumer tag - " consumer_tag)
                                                                     (close ch))})]
 
-    (log/info "starting consumer for instant-queue with consumer tag - " consumer-tag)))
+       (log/info "starting consumer for instant-queue with consumer tag - " consumer-tag)))
 
 (defn start-retry-subscriber* [ch mapper-fn topic-entity]
   (start-subscriber* ch
                      (get-in-config [:jobs :instant :prefetch-count])
                      (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
-                     (mpr/mapper-func mapper-fn)
-                     topic-entity))
+                     (mpr/mapper-func mapper-fn topic-entity)))
 
-(defn start-channels-subscriber* [channels ch topic-entity-name]
+(defn start-channels-subscriber [channels ch topic-entity]
   (doseq [channel channels]
     (let [channel-key (first channel)
           channel-handler-fn (second channel)]
-      (start-subscriber* ch
-                         (get-in-config [:jobs :instant :prefetch-count])
-                         (prefixed-channel-name topic-entity-name channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
-                         (mpr/channel-mapper-func channel-handler-fn channel-key)
-                         topic-entity-name))))
+         (start-subscriber* ch
+                            (get-in-config [:jobs :instant :prefetch-count])
+                            (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
+                            (mpr/channel-mapper-func channel-handler-fn topic-entity channel-key)))))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
@@ -98,8 +96,8 @@
     (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
       (doseq [stream-route stream-routes]
         (let [rmq-channel (lch/open connection)
-              topic-entity (-> stream-route first name)
+              topic-entity (first stream-route)
               topic-handler (-> stream-route second :handler-fn)
               channels (-> stream-route second (dissoc :handler-fn))]
-          (start-channels-subscriber* channels rmq-channel topic-entity)
+             (start-channels-subscriber channels rmq-channel topic-entity)
           (start-retry-subscriber* rmq-channel topic-handler topic-entity))))))
