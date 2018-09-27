@@ -6,10 +6,10 @@
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 
-(defn send-msg-to-channel [channels message topic-entity return-code]
-  (when (not-part-of-channels channels return-code)
+(defn- send-msg-to-channel [channels message topic-entity return-code]
+  (when (not (contains? (set channels) return-code))
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
-  (nil))
+  (producer/publish-to-channel-instant-queue topic-entity return-code message))
 
 (defn mapper-func [mapper-fn topic-entity channels]
   (fn [message]
@@ -40,7 +40,7 @@
           return-code (mapper-fn message)
           end-time (.toEpochMilli (Instant/now))]
          ;; TODO add metrics
-         (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
+      (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
       (case return-code
         :success 'TODO
         :retry (producer/retry-for-channel message topic-entity channel)

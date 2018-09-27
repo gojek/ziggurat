@@ -59,8 +59,8 @@
                 :wait       50
                 :on-failure #(sentry/report-error sentry-reporter %
                                                   "Pushing message to rabbitmq failed")}
-               (with-open [ch (lch/open connection)]
-                 (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
+     (with-open [ch (lch/open connection)]
+       (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
 
 (defn publish-to-delay-queue [topic-entity message]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
@@ -78,21 +78,20 @@
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message)))
 
-(defn publish-to-channel-delay-queue [topic-entity channel-name message]
+(defn publish-to-channel-delay-queue [topic-entity channel message]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
-        exchange-name (prefixed-channel-name topic-entity channel-name exchange-name)]
+        exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message queue-timeout-ms)))
 
-
-(defn publish-to-channel-dead-queue [topic-entity channel-name message]
+(defn publish-to-channel-dead-queue [topic-entity channel message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        exchange-name (prefixed-channel-name topic-entity channel-name exchange-name)]
+        exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message)))
 
 (defn publish-to-channel-instant-queue
-  [topic-entity channel-name message]
+  [topic-entity channel message]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
-        exchange-name (prefixed-channel-name topic-entity channel-name exchange-name)]
+        exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message)))
 
 (defn- channel-retries-enabled [topic-entity channel]

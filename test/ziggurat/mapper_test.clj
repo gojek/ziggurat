@@ -23,7 +23,7 @@
                                                 (do (is (= metric-namespace expected-metric-namespace))
                                                     (is (= metric expected-metric))
                                                     (reset! successfully-processed? true)))]
-          ((mapper-func (constantly :success) topic) message)
+          ((mapper-func (constantly :success) topic []) message)
           (is (= true @successfully-processed?)))))
 
     (testing "message process should be unsuccessful and retry"
@@ -37,7 +37,7 @@
                                                   (do (is (= metric-namespace expected-metric-namespace))
                                                       (is (= metric expected-metric))
                                                       (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (constantly :retry) topic) message)
+            ((mapper-func (constantly :retry) topic []) message)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
               (is (= message-from-mq expected-message)))
             (is (= true @unsuccessfully-processed?))))))
@@ -53,7 +53,7 @@
                                                   (do (is (= metric-namespace expected-metric-namespace))
                                                       (is (= metric expected-metric))
                                                       (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (fn [_] (throw (Exception. "test exception"))) topic) message)
+            ((mapper-func (fn [_] (throw (Exception. "test exception"))) topic []) message)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
               (is (= message-from-mq expected-message)))
             (is (= true @unsuccessfully-processed?))
@@ -65,5 +65,5 @@
         (with-redefs [metrics/report-time (fn [metric-namespace _] (do (is (= metric-namespace expected-metric-namespace))
                                                                        (reset! reported-execution-time? true)))]
 
-          ((mapper-func (constantly :success) topic) message)
+          ((mapper-func (constantly :success) topic []) message)
           (is (= true @reported-execution-time?)))))))

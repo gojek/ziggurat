@@ -81,7 +81,7 @@
           (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
                                                            :call-counter-atom  call-counter
                                                            :retry-limit        2
-                                                           :success-promise    success-promise}) topic-identifier)
+                                                           :success-promise    success-promise}) topic-identifier [])
 
           (producer/publish-to-delay-queue topic-identifier msg)
 
@@ -110,7 +110,7 @@
           (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
                                                            :call-counter-atom  call-counter
                                                            :skip-promise       skip-promise
-                                                           :retry-limit        -1}) topic-identifier)
+                                                           :retry-limit        -1}) topic-identifier [])
 
           (producer/publish-to-delay-queue topic-identifier msg)
 
@@ -138,7 +138,7 @@
 
           (start-retry-subscriber* rmq-ch (mock-mapper-fn {:retry-counter-atom retry-counter
                                                            :call-counter-atom  call-counter
-                                                           :retry-limit        (* no-of-msgs 10)}) topic-identifier)
+                                                           :retry-limit        (* no-of-msgs 10)}) topic-identifier [])
 
           (dotimes [_ no-of-msgs]
             (producer/retry (gen-msg) topic-identifier))
@@ -163,7 +163,7 @@
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                      start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
+                      start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
 
           (start-subscribers nil)
 
@@ -181,7 +181,7 @@
       (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                (update-in [:retry :enabled] (constantly true))
                                                (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                    start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
+                    start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
 
         (start-subscribers stream-routes)
 

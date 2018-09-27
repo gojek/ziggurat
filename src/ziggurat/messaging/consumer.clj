@@ -74,11 +74,11 @@
 
        (log/info "starting consumer for instant-queue with consumer tag - " consumer-tag)))
 
-(defn start-retry-subscriber* [ch mapper-fn topic-entity]
+(defn start-retry-subscriber* [ch mapper-fn topic-entity channels]
   (start-subscriber* ch
                      (get-in-config [:jobs :instant :prefetch-count])
                      (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
-                     (mpr/mapper-func mapper-fn topic-entity)))
+                     (mpr/mapper-func mapper-fn topic-entity channels)))
 
 (defn start-channels-subscriber [channels ch topic-entity]
   (doseq [channel channels]
@@ -100,4 +100,4 @@
               topic-handler (-> stream-route second :handler-fn)
               channels (-> stream-route second (dissoc :handler-fn))]
              (start-channels-subscriber channels rmq-channel topic-entity)
-          (start-retry-subscriber* rmq-channel topic-handler topic-entity))))))
+          (start-retry-subscriber* rmq-channel topic-handler topic-entity channels))))))
