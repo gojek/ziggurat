@@ -92,7 +92,7 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
       (init/start #() {} [["test-ping" (fn [_request] {:status 200
-                                                                                                   :body   "pong"})]])
+                                                       :body   "pong"})]])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]

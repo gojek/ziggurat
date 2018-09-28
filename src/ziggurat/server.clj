@@ -26,5 +26,5 @@
   (log/info "Stopped server"))
 
 (defstate server
-  :start (start (routes/handler (:ziggurat.init/actor-routes (mount/args))))
+  :start (start (routes/handler (:actor-routes (mount/args))))
   :stop (stop server))

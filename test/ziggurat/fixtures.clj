@@ -50,11 +50,17 @@
     (f)
     (mount/stop)))
 
-(defn start-server [f]
+(defn with-start-server* [stream-routes f]
   (mount-config)
-  (mount/start (mount/only [#'server]))
+  (->
+    (mount/only [#'server])
+    (mount/with-args {:stream-routes stream-routes})
+    (mount/start))
   (f)
   (mount/stop))
+
+(defmacro with-start-server [stream-routes & body]
+  `(with-start-server* ~stream-routes (fn [] ~@body)))
 
 (defmacro with-queues [stream-routes body]
   `(try

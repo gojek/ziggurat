@@ -109,6 +109,6 @@
 
 (defstate stream
   :start (do (log/info "Starting Kafka stream")
-             (start-streams (:ziggurat.init/stream-routes (mount/args))))
+             (start-streams (:stream-routes (mount/args))))
   :stop (do (log/info "Stopping Kafka stream")
             (stop-streams stream)))
