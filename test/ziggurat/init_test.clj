@@ -84,7 +84,13 @@
       (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking nil}))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {:handler-fn nil}}))))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {:handler-fn nil}}))))
+
+    (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
+      (let [stream-route {:booking {:handler-fn (fn [])
+                                    :channel-1  (fn [])
+                                    :channel-2  (fn [])}}]
+        (is (= stream-route (init/validate-stream-routes stream-route)))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"

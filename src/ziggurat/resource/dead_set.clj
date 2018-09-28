@@ -30,7 +30,7 @@
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (validate-params parsed-count topic-entity stream-routes)
-          (do (r/replay parsed-count topic-entity)
+          (do (r/replay parsed-count topic-entity channel)
               {:status 200
                :body   {:message "Requeued messages on the queue for retrying"}})
           {:status 400
@@ -42,6 +42,6 @@
       (let [parsed-count (parse-count count)]
         (if (validate-params parsed-count topic-entity stream-routes)
           {:status 200
-           :body   {:messages (r/view parsed-count topic-entity)}}
+           :body   {:messages (r/view parsed-count topic-entity channel)}}
           {:status 400
            :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})))))

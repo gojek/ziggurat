@@ -32,7 +32,7 @@
   (str (name topic) "." default))
 
 (defn- log-and-report-metrics [topic-entity message]
-  (let [message-read-metric-namespace (get-metric-namespace "message" topic-entity)]
+  (let [message-read-metric-namespace (get-metric-namespace "message" (name topic-entity))]
     (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
@@ -82,7 +82,7 @@
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name)
          (map-values #(protobuf->hash % proto-class))
-         (map-values #(log-and-report-metrics % topic-entity-name))
+         (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
     builder))
 
@@ -95,7 +95,7 @@
     (reduce (fn [streams stream]
               (let [topic-entity     (first stream)
                     topic-handler-fn (-> stream second :handler-fn)
-                    channels         (chl/get-keys-for-topic stream topic-entity)
+                    channels         (chl/get-keys-for-topic stream-routes topic-entity)
                     stream-config    (get-in zig-conf [:stream-router topic-entity])
                     stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                 (.start stream)

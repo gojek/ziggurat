@@ -59,7 +59,8 @@
   (s/conditional
     #(and (seq %)
           (map? %))
-    {s/Any {:handler-fn (s/pred #(fn? %))}}))
+    {s/Keyword {:handler-fn (s/pred #(fn? %))
+                s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes]
   (s/validate StreamRoute stream-routes))

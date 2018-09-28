@@ -108,4 +108,4 @@
               topic-handler (-> stream-route second :handler-fn)
               channels      (-> stream-route second (dissoc :handler-fn))]
           (start-channels-subscriber channels rmq-channel topic-entity)
-          (start-retry-subscriber* rmq-channel topic-handler topic-entity channels))))))
+          (start-retry-subscriber* rmq-channel topic-handler topic-entity (keys channels)))))))
