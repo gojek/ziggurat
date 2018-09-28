@@ -60,14 +60,14 @@
 
 (defn- protobuf->hash [message proto-class]
   (try
-    (let [proto-klass (-> proto-class
-                          java.lang.Class/forName
-                          proto/protodef)
+    (let [proto-klass  (-> proto-class
+                           java.lang.Class/forName
+                           proto/protodef)
           loaded-proto (proto/protobuf-load proto-klass message)
-          proto-keys (-> proto-klass
-                         proto/protobuf-schema
-                         :fields
-                         keys)]
+          proto-keys   (-> proto-klass
+                           proto/protobuf-schema
+                           :fields
+                           keys)]
       (select-keys loaded-proto proto-keys))
     (catch Throwable e
       (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
@@ -75,9 +75,9 @@
       nil)))
 
 (defn- topology [handler-fn {:keys [origin-topic proto-class]} topic-entity channels]
-  (let [builder (KStreamBuilder.)
+  (let [builder           (KStreamBuilder.)
         topic-entity-name (name topic-entity)
-        topic-pattern (Pattern/compile origin-topic)]
+        topic-pattern     (Pattern/compile origin-topic)]
     (.addStateStore builder (state-store-supplier) nil)
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name)
@@ -93,15 +93,15 @@
 (defn start-streams [stream-routes]
   (let [zig-conf (ziggurat-config)]
     (reduce (fn [streams stream]
-                 (let [topic-entity (first stream)
-                       topic-handler-fn (-> stream second :handler-fn)
-                       channels (chl/get-keys-for-topic stream topic-entity)
-                       stream-config (get-in zig-conf [:stream-router topic-entity])
-                       stream (start-stream* topic-handler-fn stream-config topic-entity channels)]
-                   (.start stream)
-                   (conj streams stream)))
-               []
-               stream-routes)))
+              (let [topic-entity     (first stream)
+                    topic-handler-fn (-> stream second :handler-fn)
+                    channels         (chl/get-keys-for-topic stream topic-entity)
+                    stream-config    (get-in zig-conf [:stream-router topic-entity])
+                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
+                (.start stream)
+                (conj streams stream)))
+            []
+            stream-routes)))
 
 (defn stop-streams [streams]
   (doseq [stream streams]

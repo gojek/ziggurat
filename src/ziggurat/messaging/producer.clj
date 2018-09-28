@@ -121,8 +121,8 @@
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
 
-(defn- make-channel-delay-queue [topic-entity channel-name]
-  (make-delay-queue (with-channel-name topic-entity channel-name)))
+(defn- make-channel-delay-queue [topic-entity channel]
+  (make-delay-queue (with-channel-name topic-entity channel)))
 
 (defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))

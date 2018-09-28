@@ -13,14 +13,14 @@
 
 (defn mapper-func [mapper-fn topic-entity channels]
   (fn [message]
-    (let [topic-entity-name (name topic-entity)
+    (let [topic-entity-name          (name topic-entity)
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
-          metric-namespace (str topic-entity-name ".message-processing")]
+          metric-namespace           (str topic-entity-name ".message-processing")]
       (nr/with-tracing "job" new-relic-transaction-name
         (try
-          (let [start-time       (.toEpochMilli (Instant/now))
-                return-code      (mapper-fn message)
-                end-time         (.toEpochMilli (Instant/now))]
+          (let [start-time  (.toEpochMilli (Instant/now))
+                return-code (mapper-fn message)
+                end-time    (.toEpochMilli (Instant/now))]
             (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
             (case return-code
               :success (metrics/increment-count metric-namespace "success")
@@ -36,14 +36,24 @@
 
 (defn channel-mapper-func [mapper-fn topic-entity channel]
   (fn [message]
-    (let [start-time (.toEpochMilli (Instant/now))
-          return-code (mapper-fn message)
-          end-time (.toEpochMilli (Instant/now))]
-         ;; TODO add metrics
-      (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
-      (case return-code
-        :success 'TODO
-        :retry (producer/retry-for-channel message topic-entity channel)
-        :skip 'TODO
-        :block 'TODO
-        (throw (ex-info "Invalid mapper return code" {:code return-code}))))))
+    (let [topic-entity-name            (name topic-entity)
+          channel-name                 (name channel)
+          metric-namespace             (str topic-entity-name "." channel-name)
+          message-processing-namespace (str metric-namespace ".message-processing")]
+      (nr/with-tracing "job" metric-namespace
+        (try
+          (let [start-time  (.toEpochMilli (Instant/now))
+                return-code (mapper-fn message)
+                end-time    (.toEpochMilli (Instant/now))]
+            (metrics/report-time (str metric-namespace ".execution-time") (- end-time start-time))
+            (case return-code
+              :success (metrics/increment-count message-processing-namespace "success")
+              :retry (do (metrics/increment-count message-processing-namespace "retry")
+                         (producer/retry-for-channel message topic-entity channel))
+              :skip (metrics/increment-count message-processing-namespace "skip")
+              :block 'TODO
+              (throw (ex-info "Invalid mapper return code" {:code return-code}))))
+          (catch Throwable e
+            (producer/retry-for-channel message topic-entity channel)
+            (sentry/report-error sentry-reporter e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
+            (metrics/increment-count message-processing-namespace "failure")))))))

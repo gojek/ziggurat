@@ -28,7 +28,7 @@
                           (cstr/upper-case)
                           (cstr/replace #"-" "_")
                           (cstr/replace #"/" "_"))
-        conf-val (get conf-val sanitized-key)]
+        conf-val      (get conf-val sanitized-key)]
     (if (some? conf-val)
       (if (string? default-conf-val)
         conf-val

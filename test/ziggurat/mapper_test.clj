@@ -5,7 +5,7 @@
             [sentry.core :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.mapper :refer [mapper-func]]
+            [ziggurat.mapper :refer [mapper-func channel-mapper-func]]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq])
@@ -14,13 +14,13 @@
 (use-fixtures :once fix/init-rabbit-mq)
 
 (deftest mapper-func-test
-  (let [message {:foo "bar"}
-        stream-routes {:booking {:handler-fn #(constantly nil)}}
-        topic (name (first (keys stream-routes)))
-        expected-metric-namespace "booking.message-processing"]
+  (let [message                   {:foo "bar"}
+        stream-routes             {:default {:handler-fn #(constantly nil)}}
+        topic                     (name (first (keys stream-routes)))
+        expected-metric-namespace "default.message-processing"]
     (testing "message process should be successful"
       (let [successfully-processed? (atom false)
-            expected-metric "success"]
+            expected-metric         "success"]
         (with-redefs [metrics/increment-count (fn [metric-namespace metric]
                                                 (do (is (= metric-namespace expected-metric-namespace))
                                                     (is (= metric expected-metric))
@@ -29,36 +29,36 @@
           (is (= true @successfully-processed?)))))
 
     (testing "message process should successfully push to channel queue"
-      (fix/with-queues (assoc-in stream-routes [:booking :channel-1] (constantly :success))
+      (fix/with-queues (assoc-in stream-routes [:default :channel-1] (constantly :success))
         (let [successfully-processed? (atom false)
-              expected-metric "success"]
+              expected-metric         "success"]
           (with-redefs [metrics/increment-count (fn [metric-namespace metric]
                                                   (do (is (= metric-namespace expected-metric-namespace))
                                                       (is (= metric expected-metric))
                                                       (reset! successfully-processed? true)))]
             ((mapper-func (constantly :channel-1) topic [:channel-1]) message)
-            (let [message-from-mq (rmq/get-message-from-channel-queue topic :channel-1)]
+            (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic :channel-1)]
               (is (= message message-from-mq)))))))
 
     (testing "message process should raise exception if channel not in list"
-      (fix/with-queues (assoc-in stream-routes [:booking :channel-1] (constantly :success))
+      (fix/with-queues (assoc-in stream-routes [:default :channel-1] (constantly :success))
         (let [successfully-processed? (atom false)
-              expected-metric "success"]
+              expected-metric         "success"]
           (with-redefs [metrics/increment-count (fn [_ _])
-                        sentry-report (fn [_ _ e & _]
-                                        (let [err (Throwable->map e)]
-                                          (is (= (:cause err) "Invalid mapper return code"))
-                                          (is (= (-> err :data :code) :channel-1))))]
+                        sentry-report           (fn [_ _ e & _]
+                                                  (let [err (Throwable->map e)]
+                                                    (is (= (:cause err) "Invalid mapper return code"))
+                                                    (is (= (-> err :data :code) :channel-1))))]
             ((mapper-func (constantly :channel-1) topic [:some-other-channel]) message)
-            (let [message-from-mq (rmq/get-message-from-channel-queue topic :channel-1)]
+            (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic :channel-1)]
               (is (= nil message-from-mq)))))))
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
+        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
               unsuccessfully-processed? (atom false)
-              retry-fn-called? (atom false)
-              expected-metric "retry"]
+              retry-fn-called?          (atom false)
+              expected-metric           "retry"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric]
                                                   (do (is (= metric-namespace expected-metric-namespace))
@@ -71,11 +71,11 @@
 
     (testing "message should raise exception"
       (fix/with-queues stream-routes
-        (let [expected-message (assoc message :retry-count (:count (:retry (ziggurat-config))))
-              sentry-report-fn-called? (atom false)
+        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+              sentry-report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
-              expected-metric "failure"]
-          (with-redefs [sentry-report (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+              expected-metric           "failure"]
+          (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
                         metrics/increment-count (fn [metric-namespace metric]
                                                   (do (is (= metric-namespace expected-metric-namespace))
                                                       (is (= metric expected-metric))
@@ -87,10 +87,69 @@
             (is (= true @sentry-report-fn-called?))))))
 
     (testing "reports execution time with topic prefix"
-      (let [reported-execution-time? (atom false)
-            expected-metric-namespace "booking.handler-fn-execution-time"]
+      (let [reported-execution-time?  (atom false)
+            expected-metric-namespace "default.handler-fn-execution-time"]
         (with-redefs [metrics/report-time (fn [metric-namespace _] (do (is (= metric-namespace expected-metric-namespace))
                                                                        (reset! reported-execution-time? true)))]
 
           ((mapper-func (constantly :success) topic []) message)
+          (is (= true @reported-execution-time?)))))))
+
+(deftest channel-mapper-func-test
+  (let [message                   {:foo "bar"}
+        stream-routes             {:default {:handler-fn #(constantly nil)
+                                             :channel-1  #(constantly nil)}}
+        topic                     (first (keys stream-routes))
+        channel                   :channel-1
+        expected-metric-namespace "default.channel-1.message-processing"]
+    (testing "message process should be successful"
+      (let [successfully-processed? (atom false)
+            expected-metric         "success"]
+        (with-redefs [metrics/increment-count (fn [metric-namespace metric]
+                                                (do (is (= metric-namespace expected-metric-namespace))
+                                                    (is (= metric expected-metric))
+                                                    (reset! successfully-processed? true)))]
+          ((channel-mapper-func (constantly :success) topic channel) message)
+          (is (= true @successfully-processed?)))))
+
+    (testing "message process should be unsuccessful and retry"
+      (fix/with-queues stream-routes
+        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+              unsuccessfully-processed? (atom false)
+              retry-fn-called?          (atom false)
+              expected-metric           "retry"]
+
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric]
+                                                  (do (is (= metric-namespace expected-metric-namespace))
+                                                      (is (= metric expected-metric))
+                                                      (reset! unsuccessfully-processed? true)))]
+            ((channel-mapper-func (constantly :retry) topic channel) message)
+            (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
+              (is (= message-from-mq expected-message)))
+            (is (= true @unsuccessfully-processed?))))))
+
+    (testing "message should raise exception"
+      (fix/with-queues stream-routes
+        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+              sentry-report-fn-called?  (atom false)
+              unsuccessfully-processed? (atom false)
+              expected-metric           "failure"]
+          (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+                        metrics/increment-count (fn [metric-namespace metric]
+                                                  (do (is (= metric-namespace expected-metric-namespace))
+                                                      (is (= metric expected-metric))
+                                                      (reset! unsuccessfully-processed? true)))]
+            ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) topic channel) message)
+            (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
+              (is (= message-from-mq expected-message)))
+            (is (= true @unsuccessfully-processed?))
+            (is (= true @sentry-report-fn-called?))))))
+
+    (testing "reports execution time with topic prefix"
+      (let [reported-execution-time?  (atom false)
+            expected-metric-namespace "default.channel-1.execution-time"]
+        (with-redefs [metrics/report-time (fn [metric-namespace _] (do (is (= metric-namespace expected-metric-namespace))
+                                                                       (reset! reported-execution-time? true)))]
+
+          ((channel-mapper-func (constantly :success) topic channel) message)
           (is (= true @reported-execution-time?)))))))

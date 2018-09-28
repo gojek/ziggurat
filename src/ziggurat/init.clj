@@ -57,9 +57,9 @@
 
 (s/defschema StreamRoute
   (s/conditional
-   #(and (seq  %)
-         (map? %))
-   {s/Any {:handler-fn (s/pred #(fn? %))}}))
+    #(and (seq %)
+          (map? %))
+    {s/Any {:handler-fn (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes]
   (s/validate StreamRoute stream-routes))
