@@ -35,7 +35,7 @@
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
 
-(defn get-dead-set-messages
+(defn- get-dead-set-messages*
   "Get the n(count) messages from the rabbitmq.
 
    If ack is set to true,
@@ -43,14 +43,22 @@
 
    If ack is false,
    it will not ack the message."
-  [ack? topic-entity count]
+  [ack? queue-name count]
   (remove nil?
           (with-open [ch (lch/open connection)]
             (doall (for [_ (range count)]
-                     (try-consuming-dead-set-messages ch
-                                                      ack?
-                                                      (prefixed-queue-name topic-entity
-                                                                           (get-in-config [:rabbit-mq :dead-letter :queue-name]))))))))
+                     (try-consuming-dead-set-messages ch ack? queue-name))))))
+
+(defn get-dead-set-messages-for-topic [ack? topic count]
+  (get-dead-set-messages* ack?
+                          (prefixed-queue-name topic
+                                               (get-in-config [:rabbit-mq :dead-letter :queue-name]))
+                          count))
+
+(defn get-dead-set-messages-for-channel [ack? topic channel count]
+  (get-dead-set-messages* ack?
+                          (prefixed-channel-name topic channel (get-in-config [:rabbit-mq :dead-letter :queue-name]))
+                          count))
 
 (defn- message-handler [wrapped-mapper-fn]
   (fn [ch meta ^bytes payload]
