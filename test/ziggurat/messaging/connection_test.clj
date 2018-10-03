@@ -6,8 +6,6 @@
                     [ziggurat.config :as config]
                     [ziggurat.messaging.connection :refer [connection]]))
 
-(use-fixtures :once fix/mount-only-config)
-
 (deftest start-connection-test
   (testing "should provide the correct number of threads for the thread pool if channels are present"
     (let [thread-count (atom 0)

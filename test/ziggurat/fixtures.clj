@@ -16,11 +16,6 @@
       (mount/swap {#'config/config (config/make-config "config.test.edn")})
       (mount/start)))
 
-(defn mount-only-config [f]
-  (mount-config)
-  (f)
-  (mount/stop))
-
 (defn- get-queue-name [queue-type]
   (:queue-name (queue-type (config/rabbitmq-config))))
 
