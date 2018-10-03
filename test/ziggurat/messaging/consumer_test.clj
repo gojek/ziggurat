@@ -202,15 +202,12 @@
           counter             (atom 0)
           stream-routes       {:booking {:handler-fn #(constantly nil)}
                                :test    {:handler-fn #(constantly nil)}}]
-
       (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
                                                        (update-in [:retry :enabled] (constantly true))
                                                        (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
                     start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
-
         (start-subscribers stream-routes)
-
-        (is (= (* (count stream-routes) no-of-workers) @counter))
+        (is (= (count stream-routes) @counter))
         (close ch)))))
 
 (deftest start-channels-subscriber-test
