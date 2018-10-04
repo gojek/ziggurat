@@ -11,3 +11,7 @@ pom.xml.asc
 .hg/
 *.iml
 .idea/
+.classpath
+.factorypath
+.project
+.settings

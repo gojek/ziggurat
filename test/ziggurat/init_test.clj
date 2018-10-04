@@ -84,7 +84,13 @@
       (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking nil}))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {:handler-fn nil}}))))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {:handler-fn nil}}))))
+
+    (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
+      (let [stream-route {:booking {:handler-fn (fn [])
+                                    :channel-1  (fn [])
+                                    :channel-2  (fn [])}}]
+        (is (= stream-route (init/validate-stream-routes stream-route)))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"
@@ -92,7 +98,7 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
       (init/start #() {} [["test-ping" (fn [_request] {:status 200
-                                                                                                   :body   "pong"})]])
+                                                       :body   "pong"})]])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]

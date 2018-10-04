@@ -83,16 +83,16 @@
           instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
           delay-queue-name (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
           dead-queue-name (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))]
-          (with-redefs [producer/create-queue (fn [queue props _]
-                                                (swap! counter inc)
-                                                (cond
-                                                  (= queue instant-queue-name) (is (empty? (:arguments props)))
-                                                  (= queue delay-queue-name) (is (= {"x-dead-letter-exchange" instant-exchange-name} props))
-                                                  (= queue dead-queue-name) (is (empty? (:arguments props)))))
-                        producer/declare-exchange (fn [_ _] true)
-                        producer/bind-queue-to-exchange (fn [_ _ _] true)]
-            (producer/make-queues stream-routes)
-            (is (= (* (count stream-routes) 3) @counter)))))
+      (with-redefs [producer/create-queue (fn [queue props _]
+                                            (swap! counter inc)
+                                            (cond
+                                              (= queue instant-queue-name) (is (empty? (:arguments props)))
+                                              (= queue delay-queue-name) (is (= {"x-dead-letter-exchange" instant-exchange-name} props))
+                                              (= queue dead-queue-name) (is (empty? (:arguments props)))))
+                    producer/declare-exchange (fn [_ _] true)
+                    producer/bind-queue-to-exchange (fn [_ _ _] true)]
+        (producer/make-queues stream-routes)
+        (is (= (* (count stream-routes) 3) @counter)))))
 
   (testing "it creates queues with topic entity from stream routes"
     (with-open [ch (lch/open connection)]
@@ -120,4 +120,52 @@
         (lq/delete ch dead-queue-name)
         (le/delete ch delay-exchange-name)
         (le/delete ch instant-exchange-name)
-        (le/delete ch dead-exchange-name)))))
+        (le/delete ch dead-exchange-name))))
+
+  (testing "it creates queues with topic entity from stream routes and channels"
+    (with-open [ch (lch/open connection)]
+      (let [stream-routes {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
+            instant-queue-suffix (:queue-name (:instant (rabbitmq-config)))
+            instant-exchange-suffix (:exchange-name (:instant (rabbitmq-config)))
+            delay-queue-suffix (:queue-name (:delay (rabbitmq-config)))
+            delay-exchange-suffix (:exchange-name (:delay (rabbitmq-config)))
+            dead-letter-queue-suffix (:queue-name (:dead-letter (rabbitmq-config)))
+            dead-letter-exchange-suffix (:exchange-name (:dead-letter (rabbitmq-config)))
+            instant-queue-name (util/prefixed-queue-name "default" instant-queue-suffix)
+            instant-exchange-name (util/prefixed-queue-name "default" instant-exchange-suffix)
+            delay-queue-name (util/prefixed-queue-name "default" delay-queue-suffix)
+            delay-exchange-name (util/prefixed-queue-name "default" delay-exchange-suffix)
+            dead-queue-name (util/prefixed-queue-name "default" dead-letter-queue-suffix)
+            dead-exchange-name (util/prefixed-queue-name "default" dead-letter-exchange-suffix)
+            prefix-name "default_channel_channel-1"
+            channel1-instant-queue-name (util/prefixed-queue-name prefix-name instant-queue-suffix)
+            channel1-instant-exchange-name (util/prefixed-queue-name prefix-name instant-exchange-suffix)
+            channel1-delay-queue-name (util/prefixed-queue-name prefix-name delay-queue-suffix)
+            channel1-delay-exchange-name (util/prefixed-queue-name prefix-name delay-exchange-suffix)
+            channel1-dead-queue-name (util/prefixed-queue-name prefix-name dead-letter-queue-suffix)
+            channel1-dead-exchange-name (util/prefixed-queue-name prefix-name dead-letter-exchange-suffix)
+            expected-queue-status {:message-count 0, :consumer-count 0}]
+
+        (producer/make-queues stream-routes)
+
+        (is (= expected-queue-status (lq/status ch instant-queue-name)))
+        (is (= expected-queue-status (lq/status ch delay-queue-name)))
+        (is (= expected-queue-status (lq/status ch dead-queue-name)))
+
+        (is (= expected-queue-status (lq/status ch channel1-instant-queue-name)))
+        (is (= expected-queue-status (lq/status ch channel1-delay-queue-name)))
+        (is (= expected-queue-status (lq/status ch channel1-dead-queue-name)))
+
+        (lq/delete ch instant-queue-name)
+        (lq/delete ch delay-queue-name)
+        (lq/delete ch dead-queue-name)
+        (le/delete ch delay-exchange-name)
+        (le/delete ch instant-exchange-name)
+        (le/delete ch dead-exchange-name)
+
+        (lq/delete ch channel1-instant-queue-name)
+        (lq/delete ch channel1-delay-queue-name)
+        (lq/delete ch channel1-dead-queue-name)
+        (le/delete ch channel1-delay-exchange-name)
+        (le/delete ch channel1-instant-exchange-name)
+        (le/delete ch channel1-dead-exchange-name)))))

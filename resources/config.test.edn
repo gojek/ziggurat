@@ -36,4 +36,7 @@
                                              :bootstrap-servers    "localhost:9092"
                                              :stream-threads-count [1 :int]
                                              :origin-topic         "booking-log*"
-                                             :proto-class          "com.gojek.esb.booking.BookingLogMessage"}}}}
+                                             :proto-class          "com.gojek.esb.booking.BookingLogMessage"
+                                             :channels             {:channel-1 {:worker-count [10 :int]
+                                                                                :retry        {:count   [5 :int]
+                                                                                               :enabled [true :bool]}}}}}}}

@@ -14,15 +14,15 @@
 
 (def routes-prefix ["/"])
 
-(def routes
+(defn get-routes []
   [["ping" {:get ping}]
-   ["v1/dead_set/replay" {:post ds/replay}]
-   ["v1/dead_set" {:get ds/view}]
+   ["v1/dead_set/replay" {:post (ds/get-replay)}]
+   ["v1/dead_set" {:get (ds/get-view)}]
    [true (fn [_req] (ring.util.response/not-found ""))]])
 
 (defn handler [actor-routes]
   (-> routes-prefix
-      (conj (vec (concat actor-routes routes)))
+      (conj (vec (concat actor-routes (get-routes))))
       (bidi/make-handler)
       (m/wrap-hyphenate)
       (ring-defaults/wrap-defaults ring-defaults/api-defaults)

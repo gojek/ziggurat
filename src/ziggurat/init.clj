@@ -29,8 +29,8 @@
                     #'server/server
                     #'nrepl-server/server
                     #'streams/stream})
-      (mount/with-args {::stream-routes stream-routes
-                        ::actor-routes  actor-routes})
+      (mount/with-args {:stream-routes stream-routes
+                        :actor-routes  actor-routes})
       (mount/start))
   (messaging-producer/make-queues stream-routes)
   ;; We want subscribers to start after creating queues on RabbitMQ.
@@ -57,9 +57,10 @@
 
 (s/defschema StreamRoute
   (s/conditional
-   #(and (seq  %)
-         (map? %))
-   {s/Any {:handler-fn (s/pred #(fn? %))}}))
+    #(and (seq %)
+          (map? %))
+    {s/Keyword {:handler-fn (s/pred #(fn? %))
+                s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes]
   (s/validate StreamRoute stream-routes))

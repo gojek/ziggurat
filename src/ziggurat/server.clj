@@ -11,8 +11,8 @@
 (add-encoder Instant encode-str)
 
 (defn- start [handler]
-  (let [conf (:http-server (ziggurat-config))
-        port (:port conf)
+  (let [conf         (:http-server (ziggurat-config))
+        port         (:port conf)
         thread-count (:thread-count conf)]
     (log/info "Starting server on port:" port)
     (ring/run-jetty handler {:port                 port
@@ -26,5 +26,5 @@
   (log/info "Stopped server"))
 
 (defstate server
-  :start (start (routes/handler (:ziggurat.init/actor-routes (mount/args))))
+  :start (start (routes/handler (:actor-routes (mount/args))))
   :stop (stop server))
