@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.5.0 - 2018-09-04
+- Adds arbitrary channels for long running jobs
+- Fix parallelism for retry workers
+
 ## 2.4.0 - 2018-08-08
 - Starts sending expiration per message instead of setting it on the queue
 
