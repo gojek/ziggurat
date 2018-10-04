@@ -11,7 +11,7 @@
 (defn- channel-threads
   [channels]
   (reduce (fn [sum [_ channel-config]]
-            (+ sum (:worker-count channel-config))), 0, channels))
+            (+ sum (:worker-count channel-config))) 0 channels))
 
 (defn- total-thread-count
   []
