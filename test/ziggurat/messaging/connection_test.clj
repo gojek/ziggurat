@@ -7,7 +7,9 @@
                     [ziggurat.messaging.connection :refer [connection]]))
 
 (deftest start-connection-test
+
   (testing "should provide the correct number of threads for the thread pool if channels are present"
+    (fix/mount-config)
     (let [thread-count (atom 0)
           orig-rmq-connect rmq/connect
           ziggurat-config (config/ziggurat-config)]
@@ -23,6 +25,7 @@
         (is (= @thread-count 14)))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple channels"
+    (fix/mount-config)
     (let [thread-count (atom 0)
           orig-rmq-connect rmq/connect
           ziggurat-config (config/ziggurat-config)]
@@ -39,6 +42,7 @@
         (is (= @thread-count 19)))))
 
   (testing "should provide the correct number of threads for the thread pool when channels are not present"
+    (fix/mount-config)
     (let [thread-count (atom 0)
           orig-rmq-connect rmq/connect
           ziggurat-config (config/ziggurat-config)]
@@ -54,6 +58,7 @@
         (is (= @thread-count 4)))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple stream routes"
+    (fix/mount-config)
     (let [thread-count (atom 0)
           orig-rmq-connect rmq/connect
           ziggurat-config (config/ziggurat-config)]
@@ -65,7 +70,6 @@
                                                               :retry                {:enabled [true :bool]}
                                                               :stream-router        {:booking {:channels  {:channel-1 {:worker-count 10}}}
                                                                                      :driver {:channels  {:channel-1 {:worker-count 8}}}}))]
-        (prn "CCCCC" config/ziggurat-config)
         (mount/start (mount/only [#'connection]))
         (mount/stop)
         (is (= @thread-count 26))))))
