@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.5.1 - 2018-09-05
+- Fix deadset view bug
+
 ## 2.5.0 - 2018-09-04
 - Adds arbitrary channels for long running jobs
 - Fix parallelism for retry workers
