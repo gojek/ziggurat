@@ -25,6 +25,11 @@
         queue-name (str topic-name "_" queue-name)]
     (get-msg-from-rabbitmq queue-name)))
 
+(defn get-msg-from-channel-dead-queue [topic-name channel-name]
+  (let [{:keys [queue-name]} (:dead-letter (rabbitmq-config))
+        queue-name (prefixed-channel-name topic-name channel-name queue-name)]
+    (get-msg-from-rabbitmq queue-name)))
+
 (defn get-msg-from-instant-queue [topic-name]
   (let [{:keys [queue-name]} (:instant (rabbitmq-config))
         queue-name (str topic-name "_" queue-name)]

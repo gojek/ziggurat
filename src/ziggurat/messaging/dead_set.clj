@@ -15,5 +15,5 @@
   "Gets n number of messages from dead queue"
   [count-of-message topic-entity channel]
   (if (nil? channel)
-    (consumer/get-dead-set-messages-for-channel false topic-entity channel count-of-message)
-    (consumer/get-dead-set-messages-for-topic false topic-entity count-of-message)))
+    (consumer/get-dead-set-messages-for-topic false topic-entity count-of-message)
+    (consumer/get-dead-set-messages-for-channel false topic-entity channel count-of-message)))

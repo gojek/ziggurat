@@ -13,7 +13,7 @@
       (let [count-of-messages 10
             message           {:foo "bar"}
             topic-name        "default"
-            pushed-message    (doseq [_ (range count-of-messages)]
+            _                 (doseq [_ (range count-of-messages)]
                                 (producer/publish-to-dead-queue topic-name message))]
         (ds/replay count-of-messages topic-name nil)
         (doseq [_ (range count-of-messages)]
@@ -27,9 +27,36 @@
             message           {:foo "bar"}
             topic-name        "default"
             channel           "channel-1"
-            pushed-message    (doseq [_ (range count-of-messages)]
+            _                 (doseq [_ (range count-of-messages)]
                                 (producer/publish-to-channel-dead-queue topic-name channel message))]
         (ds/replay count-of-messages topic-name channel)
         (doseq [_ (range count-of-messages)]
           (is (= message (rmq/get-message-from-channel-instant-queue topic-name channel))))
         (is (not (rmq/get-message-from-channel-instant-queue topic-name channel)))))))
+
+(deftest view-test
+  (testing "gets dead set messages for topic"
+    (fix/with-queues {:default {:handler-fn (constantly nil)}}
+      (let [count-of-messages 10
+            message           {:foo "bar"}
+            topic-name        "default"
+            _                 (doseq [_ (range count-of-messages)]
+                                (producer/publish-to-dead-queue topic-name message))
+            dead-set-messages (ds/view count-of-messages topic-name nil)]
+        (doseq [dead-set-message dead-set-messages]
+          (is (= message dead-set-message)))
+        (is (not (empty? (rmq/get-msg-from-dead-queue topic-name)))))))
+
+  (testing "gets dead set messages for channel"
+    (fix/with-queues {:default {:handler-fn (constantly nil)
+                                :channel-1  (constantly nil)}}
+      (let [count-of-messages 10
+            message           {:foo "bar"}
+            topic-name        "default"
+            channel           "channel-1"
+            _                 (doseq [_ (range count-of-messages)]
+                                (producer/publish-to-channel-dead-queue topic-name channel message))
+            dead-set-messages (ds/view count-of-messages topic-name channel)]
+        (doseq [dead-set-message dead-set-messages]
+          (is (= message dead-set-message)))
+        (is (not (empty? (rmq/get-msg-from-channel-dead-queue topic-name channel))))))))
