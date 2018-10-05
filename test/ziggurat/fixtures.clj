@@ -30,18 +30,28 @@
 (defn delete-queues [stream-routes]
   (with-open [ch (lch/open connection)]
     (doseq [topic-entity (keys stream-routes)]
-      (let [topic-identifier (name topic-entity)]
+      (let [topic-identifier (name topic-entity)
+            channels (util/get-channel-names stream-routes topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
-        (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))))))
+        (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))
+        (doseq [channel channels]
+          (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :instant)))
+          (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :dead-letter)))
+          (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :delay))))))))
 
 (defn delete-exchanges [stream-routes]
   (with-open [ch (lch/open connection)]
     (doseq [topic-entity (keys stream-routes)]
-      (let [topic-identifier (name topic-entity)]
+      (let [topic-identifier (name topic-entity)
+            channels (util/get-channel-names stream-routes topic-entity)]
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :instant)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :dead-letter)))
-        (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :delay)))))))
+        (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :delay)))
+        (doseq [channel channels]
+          (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :instant)))
+          (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :dead-letter)))
+          (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :delay))))))))
 
 (defn init-rabbit-mq [f]
   (let [stream-routes {:booking {:handler-fn #(constantly nil)}}]
