@@ -12,9 +12,9 @@
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
             message           {:foo "bar"}
-            topic-name        "default"
-            _                 (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-name message))]
+            topic-name        "default"]
+        (doseq [_ (range count-of-messages)]
+          (producer/publish-to-dead-queue topic-name message))
         (ds/replay count-of-messages topic-name nil)
         (doseq [_ (range count-of-messages)]
           (is (= message (rmq/get-msg-from-instant-queue topic-name))))
@@ -26,9 +26,9 @@
       (let [count-of-messages 10
             message           {:foo "bar"}
             topic-name        "default"
-            channel           "channel-1"
-            _                 (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-channel-dead-queue topic-name channel message))]
+            channel           "channel-1"]
+        (doseq [_ (range count-of-messages)]
+          (producer/publish-to-channel-dead-queue topic-name channel message))
         (ds/replay count-of-messages topic-name channel)
         (doseq [_ (range count-of-messages)]
           (is (= message (rmq/get-message-from-channel-instant-queue topic-name channel))))
