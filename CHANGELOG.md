@@ -1,8 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.5.3 - 2018-10-09
+- Starts up rabbitmq connection when channels are present or retry is enabled
+
 ## 2.5.2 - 2018-10-09
-- Fix deadset view bug
+- Fixes bug around reporting execution time for handler fn
 
 ## 2.5.1 - 2018-10-05
 - Fix deadset view bug

@@ -16,7 +16,7 @@
                                 all-channel-vec)
                               []
                               stream-routes)]
-    (or (> (count all-channels) 0)
+    (or (pos? (count all-channels))
         (-> (ziggurat-config) :retry :enabled))))
 
 (defn- channel-threads
