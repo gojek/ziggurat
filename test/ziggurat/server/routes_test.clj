@@ -79,6 +79,20 @@
             (is (= 400 status))
             (is (= expected-body body)))))
 
+      (testing "should return 400 when get /v1/dead_set is called with invalid channel"
+        (with-redefs [ds/view (fn [_ _ _] nil)]
+          (let [expected-body {:error "Count should be the positive integer and topic entity/ channel should be present"}
+                count         "10"
+                params        {:count count :topic-entity "booking" :channel "invalid"}
+                {:keys [status body] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
+                                                           "/v1/dead_set"
+                                                           true
+                                                           true
+                                                           {}
+                                                           params)]
+            (is (= 400 status))
+            (is (= expected-body body)))))
+
       (testing "should return 200 when get /v1/dead_set is called with valid count val"
         (with-redefs [ds/view (fn [_ _ _] {:foo "bar"})]
           (let [count  "10"

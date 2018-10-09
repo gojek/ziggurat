@@ -18,18 +18,15 @@
       (log/errorf "count %s is not an integer" count)
       nil)))
 
-(defn- validate-params
-  ([count topic-entity stream-routes]
-   (validate-params count topic-entity stream-routes :handler-fn))
-  ([count topic-entity stream-routes channel]
-   (and (some? (get-in stream-routes [(keyword topic-entity) (keyword channel)]))
-        (validate-count count))))
+(defn- validate-params [count topic-entity stream-routes channel]
+  (and (some? (get-in stream-routes [(keyword topic-entity) (or (keyword channel) :handler-fn)]))
+       (validate-count count)))
 
 (defn get-replay []
   (let [stream-routes (:stream-routes (mount/args))]
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
-        (if (validate-params parsed-count topic-entity stream-routes)
+        (if (validate-params parsed-count topic-entity stream-routes channel)
           (do (r/replay parsed-count topic-entity channel)
               {:status 200
                :body   {:message "Requeued messages on the queue for retrying"}})
@@ -40,7 +37,7 @@
   (let [stream-routes (:stream-routes (mount/args))]
     (fn view [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
-        (if (validate-params parsed-count topic-entity stream-routes)
+        (if (validate-params parsed-count topic-entity stream-routes channel)
           {:status 200
            :body   {:messages (r/view parsed-count topic-entity channel)}}
           {:status 400
