@@ -21,14 +21,16 @@
           (let [start-time  (.toEpochMilli (Instant/now))
                 return-code (mapper-fn message)
                 end-time    (.toEpochMilli (Instant/now))]
-            (metrics/report-time (str topic-entity ".handler-fn-execution-time") (- end-time start-time))
+            (metrics/report-time (str topic-entity-name ".handler-fn-execution-time") (- end-time start-time))
             (case return-code
               :success (metrics/increment-count metric-namespace "success")
               :retry (do (metrics/increment-count metric-namespace "retry")
                          (producer/retry message topic-entity))
               :skip (metrics/increment-count metric-namespace "skip")
               :block 'TODO
-              (send-msg-to-channel channels message topic-entity return-code)))
+              (do
+                (send-msg-to-channel channels message topic-entity return-code)
+                (metrics/increment-count metric-namespace "success"))))
           (catch Throwable e
             (producer/retry message topic-entity)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
