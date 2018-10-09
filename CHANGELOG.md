@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.5.5 - 2018-10-09
+- Fixes rabbitmq intialization when retry is disabled but channels are present
+
 ## 2.5.4 - 2018-10-09
 - Fixes dead set management api to validate the channel names
 

@@ -12,8 +12,7 @@
 (defn- is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
         all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
-                                (conj all-channel-vec (get-keys-for-topic stream-routes topic-entity))
-                                all-channel-vec)
+                                (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
                               []
                               stream-routes)]
     (or (pos? (count all-channels))

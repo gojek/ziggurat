@@ -63,6 +63,25 @@
         (mount/stop #'connection)
         (is (not @rmq-connect-called?)))))
 
+  (testing "if retry is disabled and channels are present it should create connection"
+    (let [rmq-connect-called? (atom false)
+          orig-rmq-connect    rmq/connect
+          ziggurat-config     (config/ziggurat-config)
+          stream-routes       {:default {:handler-fn (constantly :channel-1)
+                                         :channel-1  (constantly :success)}
+                               :booking {:handler-fn (constantly :channel-1)
+                                         :channel-3  (constantly :success)}}]
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! rmq-connect-called? true)
+                                             (orig-rmq-connect provided-config))
+                    config/ziggurat-config (constantly (assoc ziggurat-config
+                                                         :retry {:enabled false}))]
+        (-> (mount/only #{#'connection})
+            (mount/with-args {:stream-routes stream-routes})
+            (mount/start))
+        (mount/stop #'connection)
+        (is @rmq-connect-called?))))
+
   (testing "should provide the correct number of threads for the thread pool for multiple channels"
     (let [thread-count     (atom 0)
           orig-rmq-connect rmq/connect
