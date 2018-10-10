@@ -7,7 +7,7 @@
             [sentry.core :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [connection is-connection-required?]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
@@ -59,8 +59,8 @@
                 :wait       50
                 :on-failure #(sentry/report-error sentry-reporter %
                                                   "Pushing message to rabbitmq failed")}
-     (with-open [ch (lch/open connection)]
-       (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
+               (with-open [ch (lch/open connection)]
+                 (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
 
 (defn publish-to-delay-queue [topic-entity message]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
@@ -116,8 +116,8 @@
 
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange]} (:delay (rabbitmq-config))
-        queue-name (delay-queue-name topic-entity queue-name)
-        exchange-name (prefixed-queue-name topic-entity exchange-name)
+        queue-name                (delay-queue-name topic-entity queue-name)
+        exchange-name             (prefixed-queue-name topic-entity exchange-name)
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
 
@@ -126,7 +126,7 @@
 
 (defn- make-queue [topic-identifier queue-type]
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
-        queue-name (prefixed-queue-name topic-identifier queue-name)
+        queue-name    (prefixed-queue-name topic-identifier queue-name)
         exchange-name (prefixed-queue-name topic-identifier exchange-name)]
     (create-and-bind-queue queue-name exchange-name)))
 
@@ -141,10 +141,11 @@
       (make-channel-queue topic-entity channel :dead-letter))))
 
 (defn make-queues [stream-routes]
-  (when (-> (ziggurat-config) :retry :enabled)
+  (when (is-connection-required?)
     (doseq [topic-entity (keys stream-routes)]
       (let [channels (get-channel-names stream-routes topic-entity)]
         (make-channel-queues channels topic-entity)
-        (make-delay-queue topic-entity)
-        (make-queue topic-entity :instant)
-        (make-queue topic-entity :dead-letter)))))
+        (when (-> (ziggurat-config) :retry :enabled)
+          (make-delay-queue topic-entity)
+          (make-queue topic-entity :instant)
+          (make-queue topic-entity :dead-letter))))))

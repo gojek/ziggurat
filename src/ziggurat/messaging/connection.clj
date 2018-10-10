@@ -9,7 +9,7 @@
   (:import [com.rabbitmq.client ShutdownListener]
            [java.util.concurrent Executors]))
 
-(defn- is-connection-required? []
+(defn is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
         all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
                                 (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
