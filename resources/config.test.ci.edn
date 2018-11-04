@@ -37,6 +37,7 @@
                                              :stream-threads-count [1 :int]
                                              :origin-topic         "booking-log*"
                                              :proto-class          "com.gojek.esb.booking.BookingLogMessage"
+                                             :auto-offset-reset-config "latest"
                                              :channels             {:channel-1 {:worker-count [10 :int]
                                                                                 :retry        {:count   [5 :int]
                                                                                                :enabled [true :bool]}}}}}}}

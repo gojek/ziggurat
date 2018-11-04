@@ -19,14 +19,14 @@
            [org.apache.kafka.streams.processor StateStoreSupplier]
            [java.util HashMap]))
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count]}]
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config]}]
   {StreamsConfig/APPLICATION_ID_CONFIG                    application-id
    StreamsConfig/BOOTSTRAP_SERVERS_CONFIG                 bootstrap-servers
    StreamsConfig/NUM_STREAM_THREADS_CONFIG                (int stream-threads-count)
    StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
    StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
    StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
-   ConsumerConfig/AUTO_OFFSET_RESET_CONFIG                "latest"})
+   ConsumerConfig/AUTO_OFFSET_RESET_CONFIG                auto-offset-reset-config})
 
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
