@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.5.7 - 2018-11-14
+- Add configuration to read data from earliest offset in kafka
+
 ## 2.5.6 - 2018-10-10
 - Fixes rabbitmq queue creation when retries are disabled and channels are present
 
