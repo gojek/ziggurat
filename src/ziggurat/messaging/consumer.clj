@@ -81,7 +81,7 @@
                                                                     (close ch))})]
     (log/infof "starting consumer for %s with consumer tag %s " queue-name consumer-tag)))
 
-(defn start-retry-subscriber* [ch mapper-fn topic-entity channels]
+(defn start-retry-subscriber* [mapper-fn topic-entity channels]
   (when (get-in-config [:retry :enabled])
     (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
       (start-subscriber* (lch/open connection)
@@ -90,7 +90,7 @@
                          (mpr/mapper-func mapper-fn topic-entity channels)))))
 
 
-(defn start-channels-subscriber [channels ch topic-entity]
+(defn start-channels-subscriber [channels topic-entity]
   (doseq [channel channels]
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
@@ -104,9 +104,8 @@
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes]
   (doseq [stream-route stream-routes]
-    (let [rmq-channel   (lch/open connection)
-          topic-entity  (first stream-route)
+    (let [topic-entity  (first stream-route)
           topic-handler (-> stream-route second :handler-fn)
           channels      (-> stream-route second (dissoc :handler-fn))]
-      (start-channels-subscriber channels rmq-channel topic-entity)
-      (start-retry-subscriber* rmq-channel topic-handler topic-entity (keys channels)))))
+      (start-channels-subscriber channels topic-entity)
+      (start-retry-subscriber* topic-handler topic-entity (keys channels)))))
