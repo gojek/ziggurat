@@ -33,7 +33,6 @@
    StreamsConfig/COMMIT_INTERVAL_MS_CONFIG                (int (or commit-interval-ms 15000))
    ConsumerConfig/AUTO_OFFSET_RESET_CONFIG                (or auto-offset-reset-config "latest")})
 
-
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
 
