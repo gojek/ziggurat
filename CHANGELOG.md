@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.5.9 - 2018-11-16
+- Overrides and exposes kafka streams config: buffered.records.per.partitions and commit.inteval.ms
+
 ## 2.5.8 - 2018-11-15
 - Fixes bug where rabbitmq connection is established even when retry is disabled and channels are absent in consumer/start-subscribers
 

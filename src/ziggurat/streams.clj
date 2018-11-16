@@ -19,7 +19,8 @@
            [org.apache.kafka.streams.processor StateStoreSupplier]
            [java.util HashMap]))
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config]}]
+
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
             (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
   {StreamsConfig/APPLICATION_ID_CONFIG                    application-id
@@ -28,6 +29,8 @@
    StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
    StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
    StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
+   StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG    (int (or buffered-records-per-partition 10000))
+   StreamsConfig/COMMIT_INTERVAL_MS_CONFIG                (int (or commit-interval-ms 15000))
    ConsumerConfig/AUTO_OFFSET_RESET_CONFIG                (or auto-offset-reset-config "latest")})
 
 (defn- get-metric-namespace [default topic]
