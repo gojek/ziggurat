@@ -23,8 +23,10 @@
 (defn start
   "Starts up Ziggurat's state, and then calls the actor-start-fn."
   [actor-start-fn stream-routes actor-routes]
-  (-> (mount/only #{#'config/config
-                    #'lambda-statsd-reporter
+  (-> (mount/only #{#'config/config})
+      (mount/start))
+  (actor-start-fn)
+  (-> (mount/only #{#'lambda-statsd-reporter
                     #'messaging-connection/connection
                     #'server/server
                     #'nrepl-server/server
@@ -34,19 +36,19 @@
       (mount/start))
   (messaging-producer/make-queues stream-routes)
   ;; We want subscribers to start after creating queues on RabbitMQ.
-  (messaging-consumer/start-subscribers stream-routes)
-  (actor-start-fn))
+  (messaging-consumer/start-subscribers stream-routes))
 
 (defn stop
   "Calls the actor-stop-fn, and then stops Ziggurat's state."
   [actor-stop-fn]
-  (actor-stop-fn)
   (mount/stop #'config/config
               #'lambda-statsd-reporter
               #'messaging-connection/connection
               #'server/server
               #'nrepl-server/server
-              #'streams/stream))
+              #'streams/stream)
+  (actor-stop-fn)
+  (mount/stop #'config/config))
 
 (defn- add-shutdown-hook [actor-stop-fn]
   (.addShutdownHook

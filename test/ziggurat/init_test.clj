@@ -9,24 +9,24 @@
             [clojure.tools.logging :as log]))
 
 (deftest start-calls-actor-start-fn-test
-  (testing "The actor start fn starts after the lambda internal state and can read config"
-    (with-redefs [streams/start-streams (constantly nil)
-                  streams/stop-streams  (constantly nil)
-                  config/config-file    "config.test.edn"]
-      (let [retry-count (promise)]
-        (init/start #(deliver retry-count (-> (config/ziggurat-config) :retry :count)) {} [])
+  (testing "The actor start fn starts before the lambda ziggurat state and can read config"
+    (let [result (atom 1)]
+      (with-redefs [streams/start-streams (fn [_] (reset! result (* @result 2)))
+                    streams/stop-streams  (constantly nil)
+                    config/config-file    "config.test.edn"]
+        (init/start #(reset! result (+ @result 3)) {} [])
         (init/stop #())
-        (is (= 5 @retry-count))))))
+        (is (= 8 @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
-  (testing "The actor stop fn is called before stopping the lambda internal state"
-    (with-redefs [streams/start-streams (constantly nil)
-                  streams/stop-streams  (constantly nil)
-                  config/config-file    "config.test.edn"]
-      (let [retry-count (promise)]
+  (testing "The actor stop fn stops after the lambda ziggurat state"
+    (let [result (atom 1)]
+      (with-redefs [streams/start-streams (constantly nil)
+                    streams/stop-streams  (fn [_] (reset! result (* @result 2)))
+                    config/config-file    "config.test.edn"]
         (init/start #() {} [])
-        (init/stop #(deliver retry-count (-> (config/ziggurat-config) :retry :count)))
-        (is (= 5 @retry-count))))))
+        (init/stop #(reset! result (+ @result 3)))
+        (is (= 5 @result))))))
 
 (deftest start-calls-make-queues-test
   (testing "Start calls make queues"
