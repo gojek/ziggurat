@@ -1,22 +1,25 @@
 (ns ziggurat.init-test
   (:require [clojure.test :refer :all]
+            [clojure.tools.logging :as log]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
+            [ziggurat.messaging.connection :as rmqc]
+            [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams]
-            [ziggurat.server.test-utils :as tu]
-            [ziggurat.messaging.consumer :as messaging-consumer]
-            [clojure.tools.logging :as log]))
+            [ziggurat.server.test-utils :as tu]))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the lambda ziggurat state and can read config"
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (fn [_] (reset! result (* @result 2)))
                     streams/stop-streams  (constantly nil)
+                    rmqc/start-connection (fn [] (reset! result (* @result 2)))
+                    rmqc/stop-connection  (constantly nil)
                     config/config-file    "config.test.edn"]
         (init/start #(reset! result (+ @result 3)) {} [])
         (init/stop #())
-        (is (= 8 @result))))))
+        (is (= 16 @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
   (testing "The actor stop fn stops after the lambda ziggurat state"
