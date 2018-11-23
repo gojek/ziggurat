@@ -29,9 +29,6 @@
                                    :enabled [true :bool]}
             :http-server          {:port         [8010 :int]
                                    :thread-count [100 :int]}
-            :yggdrasil            {:host                     "http://localhost"
-                                   :port                     [3100 :int]
-                                   :connection-timeout-in-ms [100 :int]}
             :stream-router        {:default {:application-id       "lambda-service-test-02-multiple"
                                              :bootstrap-servers    "localhost:9092"
                                              :stream-threads-count [1 :int]

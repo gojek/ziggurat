@@ -13,7 +13,7 @@
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
-      (mount/swap {#'config/config (config/make-config "config.test.edn")})
+      (mount/swap {#'config/config (config/config-from-env "config.test.edn")})
       (mount/start)))
 
 (defn mount-only-config [f]
