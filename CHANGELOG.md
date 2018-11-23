@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.6.0 - 2018-11-23
+- Removes Yggdrasil, bulwark and ESB log entities dependency
+
 ## 2.5.9 - 2018-11-16
 - Overrides and exposes kafka streams config: buffered.records.per.partitions and commit.inteval.ms
 
