@@ -20,33 +20,40 @@
                                         (:app-name (ziggurat-config)))
   :stop (metrics/stop-statsd-reporter lambda-statsd-reporter))
 
+(defn- start*
+  ([states]
+   (start* states nil))
+  ([states args]
+   (-> (mount/only states)
+       (mount/with-args args)
+       (mount/start))))
+
 (defn start
-  "Starts up Ziggurat's state, and then calls the actor-start-fn."
+  "Starts up Ziggurat's config, actor fn, rabbitmq connection and then streams, server etc"
   [actor-start-fn stream-routes actor-routes]
-  (-> (mount/only #{#'config/config
-                    #'lambda-statsd-reporter
-                    #'messaging-connection/connection
-                    #'server/server
-                    #'nrepl-server/server
-                    #'streams/stream})
-      (mount/with-args {:stream-routes stream-routes
-                        :actor-routes  actor-routes})
-      (mount/start))
+  (start* #{#'config/config})
+  (actor-start-fn)
+  (start* #{#'messaging-connection/connection})
   (messaging-producer/make-queues stream-routes)
-  ;; We want subscribers to start after creating queues on RabbitMQ.
-  (messaging-consumer/start-subscribers stream-routes)
-  (actor-start-fn))
+  (messaging-consumer/start-subscribers stream-routes)      ;; We want subscribers to start after creating queues on RabbitMQ.
+  (start* #{#'lambda-statsd-reporter
+            #'server/server
+            #'nrepl-server/server
+            #'streams/stream}
+          {:stream-routes stream-routes
+           :actor-routes  actor-routes}))
 
 (defn stop
-  "Calls the actor-stop-fn, and then stops Ziggurat's state."
+  "Calls the Ziggurat's state stop fns and then actor-stop-fn."
   [actor-stop-fn]
-  (actor-stop-fn)
   (mount/stop #'config/config
               #'lambda-statsd-reporter
               #'messaging-connection/connection
               #'server/server
               #'nrepl-server/server
-              #'streams/stream))
+              #'streams/stream)
+  (actor-stop-fn)
+  (mount/stop #'config/config))
 
 (defn- add-shutdown-hook [actor-stop-fn]
   (.addShutdownHook
