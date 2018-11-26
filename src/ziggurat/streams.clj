@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [flatland.protobuf.core :as proto]
             [mount.core :as mount :refer [defstate]]
-            [lambda-common.metrics :as metrics]
+            [ziggurat.metrics :as metrics]
             [ziggurat.config :refer [ziggurat-config]]
             [sentry.core :as sentry]
             [ziggurat.mapper :as mpr]
@@ -22,7 +22,7 @@
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
-            (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
+    (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
   {StreamsConfig/APPLICATION_ID_CONFIG                    application-id
    StreamsConfig/BOOTSTRAP_SERVERS_CONFIG                 bootstrap-servers
    StreamsConfig/NUM_STREAM_THREADS_CONFIG                (int stream-threads-count)
