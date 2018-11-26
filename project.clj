@@ -1,20 +1,21 @@
 (require 'cemerick.pomegranate.aether)
 (cemerick.pomegranate.aether/register-wagon-factory!
- "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
+  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
 (defproject com.gojek.lambda/ziggurat "2.6.3"
   :description "The actor framework for Project Lambda"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
-  :dependencies [[bidi "2.1.3"]
+  :dependencies [[bidi "2.1.4"]
                  [camel-snake-kebab "0.4.0"]
-                 [cheshire "5.8.0"]
+                 [cheshire "5.8.1"]
                  [clonfig "0.2.0"]
                  [clj-http "3.7.0"]
                  [com.cemerick/url "0.1.1"]
-                 [com.gojek/lambda-common "0.3.1"]
                  [com.gojek/sentry "0.2.4"]
+                 [com.gojek/metrics-datadog "1.0.0"
+                  :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.novemberain/langohr "5.0.0"]
                  [com.taoensso/carmine "2.17.0"]
                  [medley "0.8.4"]
