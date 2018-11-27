@@ -35,7 +35,7 @@
 
 (defn decrement-count
   ([metric-namespace metric]
-   (increment-count metric-namespace metric 1))
+   (decrement-count metric-namespace metric 1))
   ([metric-namespace metric n]
    (let [meter ^Meter (mk-meter metric-namespace metric)]
      (.mark meter (int (- n))))))
