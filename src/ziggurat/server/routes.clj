@@ -3,6 +3,7 @@
             [new-reliquary.ring :refer [wrap-newrelic-transaction]]
             [ring.middleware.defaults :as ring-defaults]
             [ring.middleware.json :refer [wrap-json-params wrap-json-response]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [ring.logger :refer [wrap-with-logger]]
             [ziggurat.resource.dead-set :as ds]
             [ziggurat.server.middleware :as m]))
@@ -27,6 +28,7 @@
       (m/wrap-hyphenate)
       (ring-defaults/wrap-defaults ring-defaults/api-defaults)
       (wrap-json-params)
+      (wrap-multipart-params)
       (wrap-json-response)
       (m/wrap-default-content-type-json)
       (wrap-newrelic-transaction)

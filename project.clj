@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject com.gojek.lambda/ziggurat "2.6.1"
+(defproject com.gojek.lambda/ziggurat "2.6.2"
   :description "The actor framework for Project Lambda"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -45,9 +45,9 @@
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}
-             :dev     {:plugins      [[lein-githooks "0.1.0"]]
+             :dev     {:plugins      [[lein-githooks "0.1.0"]
+                                      [lein-kibit "0.1.6"]
+                                      [jonase/eastwood "0.2.6"]]
                        :githooks     {:auto-install true
                                       :pre-commit   ["lein test"]
-                                      :pre-push     ["lein kibit"]}}}
-  :plugins [[lein-kibit "0.1.6"]
-            [jonase/eastwood "0.2.6"]])
+                                      :pre-push     ["lein kibit"]}}})
