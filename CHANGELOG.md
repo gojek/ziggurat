@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.6.2 - 2018-11-29
+- Adds support for multipart params over actor routes, moves lein-kibit and eastwood to dev plugins
+
 ## 2.6.1 - 2018-11-26
 - Changed the order of starting up of ziggurat and actor. First config will be initialized, then actor function will start up and ziggurat start function will start up.
 
