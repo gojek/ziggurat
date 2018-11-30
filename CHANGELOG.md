@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.6.3 - 2018-11-30
+- Fixes bug where connection to rabbitmq fails when stream routes is not passed in mount/args
+
 ## 2.6.2 - 2018-11-29
 - Adds support for multipart params over actor routes, moves lein-kibit and eastwood to dev plugins
 
