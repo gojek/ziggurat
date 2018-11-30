@@ -33,7 +33,7 @@
   [actor-start-fn stream-routes actor-routes]
   (start* #{#'config/config})
   (actor-start-fn)
-  (start* #{#'messaging-connection/connection})
+  (start* #{#'messaging-connection/connection} {:stream-routes stream-routes})
   (messaging-producer/make-queues stream-routes)
   (messaging-consumer/start-subscribers stream-routes)      ;; We want subscribers to start after creating queues on RabbitMQ.
   (start* #{#'lambda-statsd-reporter
