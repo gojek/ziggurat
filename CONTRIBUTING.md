@@ -1,26 +1,43 @@
-# Ziggurat contributing 
+# Ziggurat - Contributing
 
+[tech.gojek/ziggurat](https://clojars.org/tech.gojek/ziggurat) is an open-source
+project. It is licensed using the [Apache License 2.0][1]. We appreciate pull 
+requests; here are our guidelines:
 
-## Dev Setup (For mac users only)
+1.  [File an issue][2] 
+    (if there isn't one already). If your patch
+    is going to be large it might be a good idea to get the
+    discussion started early.  We are happy to discuss it in a
+    new issue beforehand, and you can always email
+    <farm@go-jek.com> about future work.
 
-- Install leiningen: ```brew install leiningen```
+2.  Please follow this [Clojure Style Guide][3].
 
-- Install & setup rabbitmq 
-```bash
-brew install rabbitmq
-nohup rabbitmq-server > rabbitmq-server.log & disown
-rabbitmq-plugins enable rabbitmq_management
-rabbitmqctl add_user gojek password
-rabbitmqctl set_user_tags gojek administrator
-rabbitmqctl set_permissions -p / gojek ".*" ".*" ".*"
+3.  We ask that you squash all the commits together before
+    pushing and that your commit message references the bug or issue.
 
-```
+## Issue Reporting
+- Check that the issue has not already been reported.
+- Be clear, concise and precise in your description of the problem.
+- Open an issue with a descriptive title and a summary in grammatically correct,
+  complete sentences.
+- Include any relevant code to the issue summary.
 
-- Run tests: ```lein test```
+## Pull Requests
+- Please read this [how to GitHub][4] blog post.
+- Use a topic branch to easily amend a pull request later, if necessary.
+- Write [good commit messages][5].
+- Use the same coding conventions as the rest of the project.
+- Open a [pull request][6] that relates to *only* one subject with a clear title
+  and description in grammatically correct, complete sentences.
 
-Write code and raise PR :)
+Much Thanks! ❤ ❤ ❤
 
-Please add all your configs into ziggurat namespace in config.edn(test) file
+GO-JEK Tech
 
-If you PR is accepted then whatever configs you have added,
-Please add them to deafult actor configs or ask Lambda team to do so and In actor template also
+[1]: http://www.apache.org/licenses/LICENSE-2.0
+[2]: https://github.com/gojektech/ziggurat/issues
+[3]: https://github.com/bbatsov/clojure-style-guide
+[4]: http://gun.io/blog/how-to-github-fork-branch-and-pull-request
+[5]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+[6]: https://help.github.com/articles/using-pull-requests
