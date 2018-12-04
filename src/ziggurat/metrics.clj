@@ -12,16 +12,12 @@
 
 (defn mk-meter
   ([category metric]
-   (mk-meter category metric {}))
-  ([category metric tags]
    (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
          tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
      (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn mk-histogram
   ([category metric]
-   (mk-histogram category metric {}))
-  ([category metric tags]
    (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
          tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
      (.histogram ^MetricRegistry metrics-registry tagged-metric))))
