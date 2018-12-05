@@ -94,7 +94,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 * stream-router - Configs related to all the kafka streams the application is reading from
     * stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different kafka brokers and have different number of threads (depending on the throughput of the stream).
         * application-id - The kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
-        * bootstrap-servers - The kafka brokers that the application will read from. It accepts a comma seperated value with no spaces between the commas.
+        * bootstrap-servers - The kafka brokers that the application will read from. It accepts a comma seperated value.
         * stream-threads-count - The number of parallel threads that should read messages from kafka. This can scale up to the number of partitions on the topic you wish to read from.
         * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams should be of the same proto-class.
         * proto-class - The proto-class of the message so that it can be decompiled before being passed to the mapper function
