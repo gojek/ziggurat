@@ -1,8 +1,8 @@
 (ns ziggurat.mapper
-  (:require [lambda-common.metrics :as metrics]
-            [sentry.core :as sentry]
-            [ziggurat.new-relic :as nr]
+  (:require [sentry.core :as sentry]
+            [ziggurat.metrics :as metrics]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.new-relic :as nr]
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 

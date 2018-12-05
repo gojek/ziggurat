@@ -1,13 +1,13 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all])
-  (:require [lambda-common.metrics :as metrics]
-            [langohr.channel :as lch]
+  (:require [langohr.channel :as lch]
             [sentry.core :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer [mapper-func channel-mapper-func]]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq])
   (:import (java.util Arrays)))
 

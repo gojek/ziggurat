@@ -1,15 +1,15 @@
 (ns ziggurat.init
   "Contains the entry point for your lambda actor."
   (:require [clojure.tools.logging :as log]
-            [lambda-common.metrics :as metrics]
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
+            [sentry.core :as sentry]
             [ziggurat.config :refer [ziggurat-config] :as config]
+            [ziggurat.metrics :as metrics]
             [ziggurat.messaging.connection :as messaging-connection]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.nrepl-server :as nrepl-server]
-            [sentry.core :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]))

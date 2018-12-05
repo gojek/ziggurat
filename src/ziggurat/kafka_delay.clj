@@ -1,5 +1,5 @@
 (ns ziggurat.kafka-delay
-  (:require [lambda-common.metrics :as metrics])
+  (:require [ziggurat.metrics :as metrics])
   (:import [java.time Instant]
            [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams.kstream Transformer]
