@@ -11,16 +11,16 @@
   (MetricRegistry.))
 
 (defn mk-meter
-  ([category metric]
-   (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
-         tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
-     (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
+  [category metric]
+  (let [metric-name (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
+        tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
+    (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric)))
 
 (defn mk-histogram
-  ([category metric]
-   (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
-         tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
-     (.histogram ^MetricRegistry metrics-registry tagged-metric))))
+  [category metric]
+  (let [metric-name (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
+        tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
+    (.histogram ^MetricRegistry metrics-registry tagged-metric)))
 
 (defn increment-count
   ([metric-namespace metric]
