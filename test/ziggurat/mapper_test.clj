@@ -11,7 +11,8 @@
             [ziggurat.util.rabbitmq :as rmq])
   (:import (java.util Arrays)))
 
-(use-fixtures :once fix/init-rabbit-mq)
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging]))
 
 (deftest mapper-func-test
   (let [message                        {:foo "bar"}
