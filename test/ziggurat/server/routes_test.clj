@@ -8,6 +8,8 @@
             [ziggurat.server :refer [server]]
             [cheshire.core :as json]))
 
+(use-fixtures :each fix/silence-logging)
+
 (deftest router-test
   (let [stream-routes {:booking {:handler-fn (fn [])}}]
     (fix/with-start-server

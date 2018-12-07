@@ -1,5 +1,6 @@
 (ns ziggurat.fixtures
   (:require [clojure.test :refer :all]
+            [clojure.tools.logging :as log]
             [clojure.stacktrace :as st]
             [mount.core :as mount]
             [ziggurat.config :as config]
@@ -20,6 +21,11 @@
   (mount-config)
   (f)
   (mount/stop))
+
+(defn silence-logging
+  [f]
+  (with-redefs [log/log* (constantly nil)]
+    (f)))
 
 (defn- get-queue-name [queue-type]
   (:queue-name (queue-type (config/rabbitmq-config))))
