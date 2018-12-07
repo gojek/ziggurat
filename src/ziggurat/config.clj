@@ -32,14 +32,12 @@
                                 :http-server          {:port         8080
                                                        :thread-count 100}}})
 
-(defn- interpolate-val
-  [val app-name]
+(defn- interpolate-val [val app-name]
   (if (string? val)
     (format val app-name)
     val))
 
-(defn- interpolate-config
-  [config app-name]
+(defn- interpolate-config [config app-name]
   (reduce-kv (fn [m k v]
                (if (map? v)
                  (assoc m k (interpolate-config v app-name))
@@ -52,15 +50,13 @@
                         (last args)))
          maps))
 
-(defn- edn-config
-  [config-file]
+(defn- edn-config [config-file]
   (-> config-file
       (io/resource)
       (slurp)
       (edn/read-string)))
 
-(defn config-from-env
-  [config-file]
+(defn config-from-env [config-file]
   (clonfig/read-config (edn-config config-file)))
 
 (defstate config
@@ -68,14 +64,11 @@
                app-name (-> config-values-from-env :ziggurat :app-name)]
            (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
-(defn ziggurat-config
-  []
+(defn ziggurat-config []
   (get config :ziggurat))
 
-(defn rabbitmq-config
-  []
+(defn rabbitmq-config []
   (get (ziggurat-config) :rabbit-mq))
 
-(defn get-in-config
-  [ks]
+(defn get-in-config [ks]
   (get-in (ziggurat-config) ks))
