@@ -11,7 +11,6 @@
                                    :thread-termination-wait-s [1 :int]}
             :rabbit-mq-connection {:host            "rabbitmq"
                                    :port            [5672 :int]
-                                   :prefetch-count  [3 :int]
                                    :username        "guest"
                                    :password        "guest"
                                    :channel-timeout [5000 :int]}
