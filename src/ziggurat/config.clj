@@ -6,9 +6,7 @@
 
 (def config-file "config.edn")
 
-(def default-config {
-                     :ziggurat {
-                                :nrepl-server         {:port 70171}
+(def default-config {:ziggurat {:nrepl-server         {:port 70171}
                                 :datadog              {:port    8125
                                                        :enabled false}
                                 :sentry               {:enabled                   false
