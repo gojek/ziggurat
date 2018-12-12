@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 2.7.0 - 2018-12-12
+- Merges lambda commons and adds default configs for missing application specified configs
+
 ## 2.6.3 - 2018-11-30
 - Fixes bug where connection to rabbitmq fails when stream routes is not passed in mount/args
 
