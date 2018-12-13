@@ -1,4 +1,4 @@
-{:ziggurat {:app-name             "lambda-service"
+{:ziggurat {:app-name             "application_name"
             :env                  [:dev :keyword]
             :nrepl-server         {:port [7011 :int]}
             :datadog              {:host    "localhost"
@@ -13,26 +13,26 @@
                                    :port            [5672 :int]
                                    :username        "guest"
                                    :password        "guest"
-                                   :channel-timeout [5000 :int]}
-            :rabbit-mq            {:delay       {:queue-name           "lambda_service_delay_queue"
-                                                 :exchange-name        "lambda_service_delay_exchange"
-                                                 :dead-letter-exchange "lambda_service_instant_exchange"
-                                                 :queue-timeout-ms     [100 :int]}
-                                   :instant     {:queue-name    "lambda_service_instant_queue"
-                                                 :exchange-name "lambda_service_instant_exchange"}
-                                   :dead-letter {:queue-name    "lambda_service_dead_letter_queue"
-                                                 :exchange-name "lambda_service_dead_letter_exchange"}}
+                                   :channel-timeout [2000 :int]}
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
+            :rabbit-mq            {:delay       {:queue-name           "application_name_delay_queue_test"
+                                                 :exchange-name        "application_name_delay_exchange_test"
+                                                 :dead-letter-exchange "application_name_instant_exchange_test"
+                                                 :queue-timeout-ms     [100 :int]}
+                                   :instant     {:queue-name    "application_name_instant_queue_test"
+                                                 :exchange-name "application_name_instant_exchange_test"}
+                                   :dead-letter {:queue-name    "application_name_dead_letter_queue_test"
+                                                 :exchange-name "application_name_dead_letter_exchange_test"}}
             :retry                {:count   [5 :int]
                                    :enabled [true :bool]}
             :http-server          {:port         [8010 :int]
                                    :thread-count [100 :int]}
-            :stream-router        {:default {:application-id       "lambda-service-test-02-multiple"
+            :stream-router        {:default {:application-id       "application-name-test-02-multiple"
                                              :bootstrap-servers    "localhost:9092"
                                              :stream-threads-count [1 :int]
-                                             :origin-topic         "booking-log*"
-                                             :proto-class          "com.gojek.esb.booking.BookingLogMessage"
+                                             :origin-topic         "kafka-topic-*"
+                                             :proto-class          "com.company.LogMessage"
                                              :channels             {:channel-1 {:worker-count [10 :int]
                                                                                 :retry        {:count   [5 :int]
                                                                                                :enabled [true :bool]}}}}}}}
