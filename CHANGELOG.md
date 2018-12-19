@@ -2,9 +2,13 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
 ## Unreleased Changes
+
+
+## 2.7.1 - 2018-12-19
 - removes executor dependency as it was not being used
 - updates readme and contribution guidelines
 - refactors config files to remove gojek specific configs
+- Removes sentry dependency and instead uses sentry-clj.async
 
 ## 2.7.0 - 2018-12-12
 - Merges lambda commons and adds default configs for missing application specified configs
