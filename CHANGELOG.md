@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.7.2 - 2018-12-19
+- Starts sentry-reporter in on application initialization
 
 ## 2.7.1 - 2018-12-19
 - removes executor dependency as it was not being used

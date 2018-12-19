@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject com.gojek.lambda/ziggurat "2.7.1"
+(defproject com.gojek.lambda/ziggurat "2.7.2"
   :description "The actor framework for Project Lambda"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -40,7 +40,7 @@
                               :username      :env/artifactory_username
                               :password      :env/artifactory_password
                               :sign-releases false}]
-                 ["Go-jek" "***REMOVED***"]]
+                 ["Go-jek" "http://artifactory-gojek.golabs.io/artifactory/gojek-release-local"]]
   :jvm-opts ["-server" "-XX:-OmitStackTraceInFastThrow"]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
