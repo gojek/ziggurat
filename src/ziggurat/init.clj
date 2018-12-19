@@ -39,7 +39,8 @@
   (start* #{#'lambda-statsd-reporter
             #'server/server
             #'nrepl-server/server
-            #'streams/stream}
+            #'streams/stream
+            #'sentry-reporter}
           {:stream-routes stream-routes
            :actor-routes  actor-routes}))
 
