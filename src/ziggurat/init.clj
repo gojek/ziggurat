@@ -3,7 +3,7 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
-            [sentry.core :as sentry]
+            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config] :as config]
             [ziggurat.metrics :as metrics]
             [ziggurat.messaging.connection :as messaging-connection]

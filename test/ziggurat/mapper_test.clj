@@ -1,7 +1,7 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all])
   (:require [langohr.channel :as lch]
-            [sentry.core :refer [sentry-report]]
+            [sentry-clj.async :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer [mapper-func channel-mapper-func]]

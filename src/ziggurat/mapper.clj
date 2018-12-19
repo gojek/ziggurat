@@ -1,5 +1,5 @@
 (ns ziggurat.mapper
-  (:require [sentry.core :as sentry]
+  (:require [sentry-clj.async :as sentry]
             [ziggurat.metrics :as metrics]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.new-relic :as nr]

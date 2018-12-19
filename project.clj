@@ -13,7 +13,7 @@
                  [clonfig "0.2.0"]
                  [clj-http "3.7.0"]
                  [com.cemerick/url "0.1.1"]
-                 [com.gojek/sentry "0.2.4"]
+                 [tech.gojek/sentry-clj.async "1.0.0"]
                  [com.gojek/metrics-datadog "1.0.0"
                   :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.novemberain/langohr "5.0.0"]

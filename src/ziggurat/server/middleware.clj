@@ -4,7 +4,7 @@
             [cheshire.core :as json]
             [clj-stacktrace.repl :as st]
             [ring.util.response :as ring-resp]
-            [sentry.core :as sentry]
+            [sentry-clj.async :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server.map :as umap]))
 

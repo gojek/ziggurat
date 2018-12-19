@@ -4,7 +4,7 @@
             [mount.core :as mount :refer [defstate]]
             [ziggurat.metrics :as metrics]
             [ziggurat.config :refer [ziggurat-config]]
-            [sentry.core :as sentry]
+            [sentry-clj.async :as sentry]
             [ziggurat.mapper :as mpr]
             [ziggurat.channel :as chl]
             [ziggurat.kafka-delay :as kafka-delay]

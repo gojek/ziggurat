@@ -4,7 +4,7 @@
             [langohr.channel :as lch]
             [langohr.exchange :as le]
             [langohr.queue :as lq]
-            [sentry.core :as sentry]
+            [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.messaging.connection :refer [connection is-connection-required?]]

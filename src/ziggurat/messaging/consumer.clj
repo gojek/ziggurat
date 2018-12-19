@@ -3,7 +3,7 @@
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
-            [sentry.core :as sentry]
+            [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [get-in-config]]
             [ziggurat.mapper :as mpr]

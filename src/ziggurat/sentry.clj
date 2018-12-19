@@ -2,7 +2,7 @@
   "Sentry reporting functions used by both Ziggurat and the actor."
   (:require [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
-            [sentry.core :as sentry]
+            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]))
 
 (defn create-sentry-reporter []
