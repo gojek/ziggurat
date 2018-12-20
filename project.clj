@@ -14,8 +14,6 @@
                  [clj-http "3.7.0"]
                  [com.cemerick/url "0.1.1"]
                  [tech.gojek/sentry-clj.async "1.0.0"]
-                 [com.gojek/metrics-datadog "1.0.0"
-                  :exclusions [com.fasterxml.jackson.core/jackson-databind]]
                  [com.novemberain/langohr "5.0.0"]
                  [com.taoensso/carmine "2.17.0"]
                  [medley "0.8.4"]
@@ -23,7 +21,7 @@
                  [org.apache.kafka/kafka-streams "0.11.0.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
-                 [org.clojure/clojure "1.9.0"]
+                 [org.clojure/clojure "1.10.0"]
                  [prismatic/schema "1.1.9"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
@@ -35,7 +33,14 @@
                  [ring/ring-jetty-adapter "1.6.3"]
                  [ring/ring-json "0.4.0"]
                  [ring-logger "0.7.7"]
-                 [yleisradio/new-reliquary "1.0.0"]]
+                 [yleisradio/new-reliquary "1.0.0"]
+                 [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
+                 [org.mockito/mockito-all "1.10.19" :scope "test"]
+                 [junit/junit "4.12" :scope "test"]
+                 [com.datadoghq/java-dogstatsd-client "2.4"]
+                 [com.fasterxml.jackson.core/jackson-databind "2.9.3"]
+                 [org.apache.httpcomponents/fluent-hc "4.5.4"]]
+  :java-source-paths ["src/com", "test/com"]
   :repositories [["releases" {:url           "***REMOVED***"
                               :username      :env/artifactory_username
                               :password      :env/artifactory_password
