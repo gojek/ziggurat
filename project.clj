@@ -41,11 +41,6 @@
                  [com.fasterxml.jackson.core/jackson-databind "2.9.3"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]]
   :java-source-paths ["src/com", "test/com"]
-  :repositories [["releases" {:url           "***REMOVED***"
-                              :username      :env/artifactory_username
-                              :password      :env/artifactory_password
-                              :sign-releases false}]
-                 ["Go-jek" "***REMOVED***"]]
   :jvm-opts ["-server" "-XX:-OmitStackTraceInFastThrow"]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
