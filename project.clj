@@ -1,7 +1,3 @@
-(require 'cemerick.pomegranate.aether)
-(cemerick.pomegranate.aether/register-wagon-factory!
-  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
-
 (defproject com.gojek.lambda/ziggurat "2.7.2"
   :description "The actor framework for Project Lambda"
   :url "https://github.com/gojektech/ziggurat"
@@ -13,41 +9,43 @@
                  [clonfig "0.2.0"]
                  [clj-http "3.7.0"]
                  [com.cemerick/url "0.1.1"]
-                 [tech.gojek/sentry-clj.async "1.0.0"]
+                 [com.datadoghq/java-dogstatsd-client "2.4"]
+                 [com.fasterxml.jackson.core/jackson-databind "2.9.3"]
                  [com.novemberain/langohr "5.0.0"]
                  [com.taoensso/carmine "2.17.0"]
+                 [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
+                 [junit/junit "4.12" :scope "test"]
                  [medley "0.8.4"]
                  [mount "0.1.10"]
+                 [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "0.11.0.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
                  [org.clojure/clojure "1.10.0"]
-                 [prismatic/schema "1.1.9"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
                  [org.clojure/tools.nrepl "0.2.12"]
                  [org.flatland/protobuf "0.8.1"]
+                 [org.mockito/mockito-all "1.10.19" :scope "test"]
+                 [prismatic/schema "1.1.9"]
                  [ring/ring "1.6.3"]
                  [ring/ring-core "1.6.3"]
                  [ring/ring-defaults "0.3.1"]
                  [ring/ring-jetty-adapter "1.6.3"]
                  [ring/ring-json "0.4.0"]
                  [ring-logger "0.7.7"]
-                 [yleisradio/new-reliquary "1.0.0"]
-                 [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
-                 [org.mockito/mockito-all "1.10.19" :scope "test"]
-                 [junit/junit "4.12" :scope "test"]
-                 [com.datadoghq/java-dogstatsd-client "2.4"]
-                 [com.fasterxml.jackson.core/jackson-databind "2.9.3"]
-                 [org.apache.httpcomponents/fluent-hc "4.5.4"]]
+                 [tech.gojek/sentry-clj.async "1.0.0"]
+                 [yleisradio/new-reliquary "1.0.0"]]
   :java-source-paths ["src/com", "test/com"]
-  :jvm-opts ["-server" "-XX:-OmitStackTraceInFastThrow"]
+  :aliases {"test-all" ["with-profile" "default:+1.8:+1.9" "test"]}
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}
-             :dev     {:plugins      [[lein-githooks "0.1.0"]
-                                      [lein-kibit "0.1.6"]
-                                      [jonase/eastwood "0.2.6"]]
-                       :githooks     {:auto-install true
-                                      :pre-commit   ["lein test"]
-                                      :pre-push     ["lein kibit"]}}})
+             :dev     {:plugins  [[jonase/eastwood "0.2.6"]
+                                  [lein-githooks "0.1.0"]
+                                  [lein-kibit "0.1.6"]]
+                       :githooks {:auto-install true
+                                  :pre-commit   ["lein test"]
+                                  :pre-push     ["lein kibit"]}}
+             :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
+             :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})
