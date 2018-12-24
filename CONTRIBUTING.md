@@ -9,7 +9,7 @@ requests; here are our guidelines:
     is going to be large it might be a good idea to get the
     discussion started early.  We are happy to discuss it in a
     new issue beforehand, and you can always email
-    <farm@go-jek.com> about future work.
+    <tech@go-jek.com> about future work.
 
 2.  Please follow this [Clojure Style Guide][3].
 
