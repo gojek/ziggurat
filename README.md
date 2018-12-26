@@ -1,6 +1,6 @@
 # ZIGGURAT
 
-Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create full-fledged Clojure apps that read and process messages from kafka.
+Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from kafka.
 
 ## Dev Setup (For mac users only)
 
@@ -15,7 +15,7 @@ Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It c
 
 ## Usage
 Add this to your project.clj
-`[com.gojek.lambda/ziggurat "1.2.3"]`
+`[com.gojek.lambda/ziggurat "2.7.2"]`
 
 To start a stream (a thread that reads messages from kafka), add this to your core namespace.
 ```clojure

@@ -14,7 +14,6 @@
                  [com.novemberain/langohr "5.0.0"]
                  [com.taoensso/carmine "2.17.0"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
-                 [junit/junit "4.12" :scope "test"]
                  [medley "0.8.4"]
                  [mount "0.1.10"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
@@ -26,7 +25,6 @@
                  [org.clojure/tools.logging "0.3.1"]
                  [org.clojure/tools.nrepl "0.2.12"]
                  [org.flatland/protobuf "0.8.1"]
-                 [org.mockito/mockito-all "1.10.19" :scope "test"]
                  [prismatic/schema "1.1.9"]
                  [ring/ring "1.6.3"]
                  [ring/ring-core "1.6.3"]
@@ -36,7 +34,7 @@
                  [ring-logger "0.7.7"]
                  [tech.gojek/sentry-clj.async "1.0.0"]
                  [yleisradio/new-reliquary "1.0.0"]]
-  :java-source-paths ["src/com", "test/com"]
+  :java-source-paths ["src/com" "test/com"]
   :aliases {"test-all" ["with-profile" "default:+1.8:+1.9" "test"]}
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
