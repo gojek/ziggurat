@@ -17,39 +17,39 @@
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
     (fix/with-queues
-      {:booking {:handler-fn #(constantly nil)}}
+      {:default {:handler-fn #(constantly nil)}}
       (let [message          {:foo "bar" :retry-count 5}
             expected-message {:foo "bar" :retry-count 4}
-            topic-entity     :booking]
+            topic-entity     :default]
         (producer/retry message topic-entity)
-        (let [message-from-mq (rmq/get-msg-from-delay-queue "booking")]
+        (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
           (is (= expected-message message-from-mq))))))
 
   (testing "message with a retry count of 0 will publish to dead queue"
     (fix/with-queues
-      {:booking {:handler-fn #(constantly nil)}}
+      {:default {:handler-fn #(constantly nil)}}
       (let [message          {:foo "bar" :retry-count 0}
             expected-message (dissoc message :retry-count)
-            topic-entity     :booking]
+            topic-entity     :default]
         (producer/retry message topic-entity)
-        (let [message-from-mq (rmq/get-msg-from-dead-queue "booking")]
+        (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
           (is (= expected-message message-from-mq))))))
 
   (testing "message with no retry count will publish to delay queue"
     (fix/with-queues
-      {:booking {:handler-fn #(constantly nil)}}
+      {:default {:handler-fn #(constantly nil)}}
       (let [message          {:foo "bar"}
             expected-message {:foo "bar" :retry-count 5}
-            topic-entity     :booking]
+            topic-entity     :default]
         (producer/retry message topic-entity)
-        (let [message-from-mq (rmq/get-msg-from-delay-queue "booking")]
+        (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
           (is (= message-from-mq expected-message))))))
 
   (testing "publish to delay queue publishes with expiration from config"
     (fix/with-queues
-      {:booking {:handler-fn #(constantly nil)}}
+      {:default {:handler-fn #(constantly nil)}}
       (let [message        {:foo "bar"}
-            topic-entity   :booking
+            topic-entity   :default
             expected-props {:content-type "application/octet-stream"
                             :persistent   true
                             :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]

@@ -81,16 +81,16 @@
       (is (thrown? RuntimeException exception-message (init/validate-stream-routes {}))))
 
     (testing "Validate Stream Routes should raise exception if stream route does not have handler-fn"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {}}))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default {}}))))
 
     (testing "Validate Stream Routes should raise exception if stream route does have nil value"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking nil}))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default nil}))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:booking {:handler-fn nil}}))))
+      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default {:handler-fn nil}}))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
-      (let [stream-route {:booking {:handler-fn (fn [])
+      (let [stream-route {:default {:handler-fn (fn [])
                                     :channel-1  (fn [])
                                     :channel-2  (fn [])}}]
         (is (= stream-route (init/validate-stream-routes stream-route)))))))

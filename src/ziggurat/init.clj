@@ -79,7 +79,7 @@
   Accepts stream-routes as a nested map keyed by the topic entities.
   Each topic entity is a map with a handler-fn described. For eg.,
 
-  {:booking {:handler-fn (fn [message] :success)}}
+  {:default {:handler-fn (fn [message] :success)}}
   :handler-fn must return :success, :retry or :skip
 
   start-fn takes no parameters, and will be run on application startup.

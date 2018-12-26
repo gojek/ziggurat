@@ -89,12 +89,12 @@
 
 (deftest test-retries
   (testing "when retry is enabled the mapper-fn for stream subscriber should be retried until return success"
-    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
+    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
             success-promise     (promise)
             msg                 (gen-msg)
-            topic-identifier    "booking"
+            topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
@@ -118,12 +118,12 @@
           (close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should not be retried if it returns skip"
-    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
+    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             skip-promise        (promise)
             call-counter        (atom 0)
             msg                 (assoc (gen-msg) :msg "skip")
-            topic-identifier    "booking"
+            topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
@@ -147,12 +147,12 @@
           (close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should be retried with the maximum specified times"
-    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
+    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
             retries             5
             no-of-msgs          2
-            topic-identifier    "booking"
+            topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
@@ -179,7 +179,7 @@
         (close rmq-ch))))
 
   (testing "start subscribers should not call start-subscriber* when stream router is nil"
-    (fix/with-queues {:booking {:handler-fn #(constantly nil)}}
+    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
             ch                  (lch/open connection)
@@ -200,7 +200,7 @@
           original-zig-config (ziggurat-config)
           ch                  (lch/open connection)
           counter             (atom 0)
-          stream-routes       {:booking {:handler-fn #(constantly nil)}
+          stream-routes       {:default {:handler-fn #(constantly nil)}
                                :test    {:handler-fn #(constantly nil)}}]
       (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
                                                        (update-in [:retry :enabled] (constantly true))

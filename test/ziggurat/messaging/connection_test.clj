@@ -23,7 +23,7 @@
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                          :jobs {:instant {:worker-count 4}}
                                                          :retry {:enabled true}
-                                                         :stream-router {:booking {:channels {:channel-1 {:worker-count 10}}}}))]
+                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -67,10 +67,10 @@
     (let [rmq-connect-called? (atom false)
           orig-rmq-connect    rmq/connect
           ziggurat-config     (config/ziggurat-config)
-          stream-routes       {:default {:handler-fn (constantly :channel-1)
-                                         :channel-1  (constantly :success)}
-                               :booking {:handler-fn (constantly :channel-1)
-                                         :channel-3  (constantly :success)}}]
+          stream-routes       {:default   {:handler-fn (constantly :channel-1)
+                                           :channel-1  (constantly :success)}
+                               :default-1 {:handler-fn (constantly :channel-3)
+                                           :channel-3  (constantly :success)}}]
       (with-redefs [rmq/connect            (fn [provided-config]
                                              (reset! rmq-connect-called? true)
                                              (orig-rmq-connect provided-config))
@@ -93,7 +93,7 @@
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                          :jobs {:instant {:worker-count 4}}
                                                          :retry {:enabled true}
-                                                         :stream-router {:booking {:channels {:channel-1 {:worker-count 5}
+                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 5}
                                                                                               :channel-2 {:worker-count 10}}}}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
@@ -111,7 +111,7 @@
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                          :jobs {:instant {:worker-count 4}}
                                                          :retry {:enabled true}
-                                                         :stream-router {:booking {}}))]
+                                                         :stream-router {:default {}}))]
         (mount/start (mount/only [#'connection]))
         (mount/stop #'connection)
         (is (= @thread-count 4)))))
@@ -126,8 +126,8 @@
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                          :jobs {:instant {:worker-count 4}}
                                                          :retry {:enabled true}
-                                                         :stream-router {:booking {:channels {:channel-1 {:worker-count 10}}}
-                                                                         :driver  {:channels {:channel-1 {:worker-count 8}}}}))]
+                                                         :stream-router {:default   {:channels {:channel-1 {:worker-count 10}}}
+                                                                         :default-1 {:channels {:channel-1 {:worker-count 8}}}}))]
         (mount/start (mount/only [#'connection]))
         (mount/stop #'connection)
         (is (= @thread-count 26))))))

@@ -60,7 +60,7 @@
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :delay))))))))
 
 (defn init-rabbit-mq [f]
-  (let [stream-routes {:booking {:handler-fn #(constantly nil)
+  (let [stream-routes {:default {:handler-fn #(constantly nil)
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (->

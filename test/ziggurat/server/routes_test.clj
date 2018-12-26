@@ -11,7 +11,7 @@
 (use-fixtures :each fix/silence-logging)
 
 (deftest router-test
-  (let [stream-routes {:booking {:handler-fn (fn [])}}]
+  (let [stream-routes {:default {:handler-fn (fn [])}}]
     (fix/with-start-server
       stream-routes
       (testing "Should return 200 ok when GET /ping is called"
@@ -21,7 +21,7 @@
       (testing "should return 200 when /v1/dead_set/replay is called with valid count val"
         (with-redefs [ds/replay (fn [_ _ _] nil)]
           (let [count  "10"
-                params {:count count :topic-entity "booking"}
+                params {:count count :topic-entity "default"}
                 {:keys [status _] :as response} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" params)]
             (is (= 200 status)))))
 
@@ -44,7 +44,7 @@
       (testing "should return 400 when get /v1/dead_set is called with invalid count val"
         (with-redefs [ds/view (fn [_ _ _] nil)]
           (let [count        "avasdas"
-                topic-entity "booking"
+                topic-entity "default"
                 params       {:count count :topic-name topic-entity}
                 {:keys [status _] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
                                                         "/v1/dead_set"
@@ -57,7 +57,7 @@
       (testing "should return 400 when get /v1/dead_set is called with negative count val"
         (with-redefs [ds/view (fn [_ _ _] nil)]
           (let [count        "-10"
-                topic-entity "booking"
+                topic-entity "default"
                 params       {:count count :topic-name topic-entity}
                 {:keys [status _] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
                                                         "/v1/dead_set"
@@ -85,7 +85,7 @@
         (with-redefs [ds/view (fn [_ _ _] nil)]
           (let [expected-body {:error "Count should be the positive integer and topic entity/ channel should be present"}
                 count         "10"
-                params        {:count count :topic-entity "booking" :channel "invalid"}
+                params        {:count count :topic-entity "default" :channel "invalid"}
                 {:keys [status body] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
                                                            "/v1/dead_set"
                                                            true
@@ -98,7 +98,7 @@
       (testing "should return 200 when get /v1/dead_set is called with valid count val"
         (with-redefs [ds/view (fn [_ _ _] {:foo "bar"})]
           (let [count  "10"
-                params {:count count :topic-entity "booking"}
+                params {:count count :topic-entity "default"}
                 {:keys [status body] :as response} (tu/get (-> (ziggurat-config) :http-server :port)
                                                            "/v1/dead_set"
                                                            true
