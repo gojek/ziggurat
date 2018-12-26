@@ -19,7 +19,7 @@ Ziggurat is built with the intent to abstract out
 ```
 from a clojure application such that a user only needs to pass a function that will be mapped to every message recieved from kafka.
 
-Refer [concepts](CONCEPTS.md) to understand the concepts referred to in this document.
+Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
 ## Dev Setup 
 (For mac users only)

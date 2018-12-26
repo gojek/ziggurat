@@ -9,12 +9,12 @@ of stream routes acts as a really significant abstraction in the framework.
 
 Retrying Messages
 -
-
+Please refer the [Retries and Queues](retries_and_queues.md) document for this.
 
 Actor Routes
  -
 Ziggurat starts a HTTP server to provide APIs for ping health check and viewing, retrying messages in the deadset queues.
-It also enables the user to pass in their own routes so that they don't have to set up their own server. The [Readme](README.md)
+It also enables the user to pass in their own routes so that they don't have to set up their own server. The [Readme](../README.md)
 has details on how to pass in the actor routes.
 
 Channels
