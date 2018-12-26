@@ -59,8 +59,8 @@
                 :wait       50
                 :on-failure #(sentry/report-error sentry-reporter %
                                                   "Pushing message to rabbitmq failed")}
-               (with-open [ch (lch/open connection)]
-                 (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
+     (with-open [ch (lch/open connection)]
+       (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
 
 (defn publish-to-delay-queue [topic-entity message]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))

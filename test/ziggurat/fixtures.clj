@@ -64,18 +64,18 @@
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (->
-      (mount/only [#'connection])
-      (mount/with-args {:stream-routes stream-routes})
-      (mount/start))
+     (mount/only [#'connection])
+     (mount/with-args {:stream-routes stream-routes})
+     (mount/start))
     (f)
     (mount/stop)))
 
 (defn with-start-server* [stream-routes f]
   (mount-config)
   (->
-    (mount/only [#'server])
-    (mount/with-args {:stream-routes stream-routes})
-    (mount/start))
+   (mount/only [#'server])
+   (mount/with-args {:stream-routes stream-routes})
+   (mount/start))
   (f)
   (mount/stop))
 

@@ -29,14 +29,14 @@
    (get port path success-expected? json-content? headers {}))
   ([port path success-expected? json-content? headers query-params]
    (http/with-additional-middleware [#'wrap-bad-status-logging]
-                                    (let [resp (http/get (mk-url port path) {:success-expected? success-expected?
-                                                                             :throw-exceptions  false
-                                                                             :headers           headers
-                                                                             :query-params      query-params})]
-                                      (cond-> resp
-                                        json-content?
-                                        (update :body #(umap/nested-map-keys (fn [k] (csk/->kebab-case-keyword k :separator \_))
-                                                                             (json/decode %))))))))
+     (let [resp (http/get (mk-url port path) {:success-expected? success-expected?
+                                              :throw-exceptions  false
+                                              :headers           headers
+                                              :query-params      query-params})]
+       (cond-> resp
+         json-content?
+         (update :body #(umap/nested-map-keys (fn [k] (csk/->kebab-case-keyword k :separator \_))
+                                              (json/decode %))))))))
 
 (defn post
   ([port path]
@@ -47,12 +47,12 @@
    (post port path success-expected? obj {}))
   ([port path success-expected? obj headers]
    (http/with-additional-middleware [#'wrap-bad-status-logging]
-                                    (http/post (mk-url port path)
-                                               {:body              (json/encode obj)
-                                                :content-type      :json
-                                                :success-expected? success-expected?
-                                                :throw-exceptions  false
-                                                :headers           headers}))))
+     (http/post (mk-url port path)
+                {:body              (json/encode obj)
+                 :content-type      :json
+                 :success-expected? success-expected?
+                 :throw-exceptions  false
+                 :headers           headers}))))
 
 (defn put
   ([port path obj]
@@ -61,9 +61,9 @@
    (put port path success-expected? obj {}))
   ([port path success-expected? obj headers]
    (http/with-additional-middleware [#'wrap-bad-status-logging]
-                                    (http/put (mk-url port path)
-                                              {:body              (json/encode obj)
-                                               :content-type      :json
-                                               :success-expected? success-expected?
-                                               :throw-exceptions  false
-                                               :headers           headers}))))
+     (http/put (mk-url port path)
+               {:body              (json/encode obj)
+                :content-type      :json
+                :success-expected? success-expected?
+                :throw-exceptions  false
+                :headers           headers}))))

@@ -19,7 +19,6 @@
            [org.apache.kafka.streams.processor StateStoreSupplier]
            [java.util HashMap]))
 
-
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))

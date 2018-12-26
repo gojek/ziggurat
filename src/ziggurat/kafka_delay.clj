@@ -14,17 +14,15 @@
                       record-timestamp)]
     (metrics/report-time metric-namespace delay)))
 
-
-
 (deftype TimestampTransformers [^{:volatile-mutable true} processor-context metric-namespace] Transformer
-  (^void init [this ^ProcessorContext context]
-    (do (set! processor-context context)
-        nil))
-  (transform [this record-key record-value]
-    (do (calculate-and-report-kafka-delay metric-namespace (.timestamp processor-context))
-        (KeyValue/pair record-key record-value)))
-  (punctuate [this ms] nil)
-  (close [this] nil))
+         (^void init [this ^ProcessorContext context]
+           (do (set! processor-context context)
+               nil))
+         (transform [this record-key record-value]
+           (do (calculate-and-report-kafka-delay metric-namespace (.timestamp processor-context))
+               (KeyValue/pair record-key record-value)))
+         (punctuate [this ms] nil)
+         (close [this] nil))
 
 (defn create-transformer [metric-namespace]
   (TimestampTransformers. nil metric-namespace))

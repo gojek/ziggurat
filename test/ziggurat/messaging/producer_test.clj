@@ -61,7 +61,7 @@
   (let [ziggurat-config (config/ziggurat-config)]
     (testing "When retries are enabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled true}))]
+                                                              :retry {:enabled true}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -129,7 +129,7 @@
 
     (testing "when retries are disabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -170,8 +170,8 @@
 
     (testing "when retries are disabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}
-                                                         :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
+                                                              :retry {:enabled false}
+                                                              :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
         (testing "it creates instant queues with topic entity for channels only"
           (with-open [ch (lch/open connection)]

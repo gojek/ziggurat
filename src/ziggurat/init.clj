@@ -58,17 +58,17 @@
 
 (defn- add-shutdown-hook [actor-stop-fn]
   (.addShutdownHook
-    (Runtime/getRuntime)
-    (Thread. ^Runnable #(do (stop actor-stop-fn)
-                            (shutdown-agents))
-             "Shutdown-handler")))
+   (Runtime/getRuntime)
+   (Thread. ^Runnable #(do (stop actor-stop-fn)
+                           (shutdown-agents))
+            "Shutdown-handler")))
 
 (s/defschema StreamRoute
   (s/conditional
-    #(and (seq %)
-          (map? %))
-    {s/Keyword {:handler-fn (s/pred #(fn? %))
-                s/Keyword   (s/pred #(fn? %))}}))
+   #(and (seq %)
+         (map? %))
+   {s/Keyword {:handler-fn (s/pred #(fn? %))
+               s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes]
   (s/validate StreamRoute stream-routes))

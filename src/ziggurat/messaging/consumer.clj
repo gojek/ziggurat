@@ -89,7 +89,6 @@
                          (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
                          (mpr/mapper-func mapper-fn topic-entity channels)))))
 
-
 (defn start-channels-subscriber [channels topic-entity]
   (doseq [channel channels]
     (let [channel-key        (first channel)

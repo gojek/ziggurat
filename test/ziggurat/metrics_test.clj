@@ -6,24 +6,23 @@
 (deftest mk-meter-test
   (testing "returns a meter"
     (let [category "category"
-          metric "metric1"
-          meter (metrics/mk-meter category metric)]
+          metric   "metric1"
+          meter    (metrics/mk-meter category metric)]
       (is (instance? Meter meter)))))
 
 (deftest mk-histogram-test
   (testing "returns a histogram"
     (let [category "category"
-          metric "metric2"
-          meter (metrics/mk-histogram category metric)]
+          metric   "metric2"
+          meter    (metrics/mk-histogram category metric)]
       (is (instance? Histogram meter)))))
-
 
 (deftest increment-count-test
   (testing "increases count on the meter"
-    (let [metric-ns "metric-ns"
-          metric "metric3"
+    (let [metric-ns     "metric-ns"
+          metric        "metric3"
           mk-meter-args (atom nil)
-          meter (Meter.)]
+          meter         (Meter.)]
       (with-redefs [metrics/mk-meter (fn [metric-namespace metric]
                                        (reset! mk-meter-args {:metric-namespace metric-namespace
                                                               :metric           metric})
@@ -35,10 +34,10 @@
 
 (deftest decrement-count-test
   (testing "decreases count on the meter"
-    (let [metric-ns "metric-ns"
-          metric "metric3"
+    (let [metric-ns     "metric-ns"
+          metric        "metric3"
           mk-meter-args (atom nil)
-          meter (Meter.)]
+          meter         (Meter.)]
       (with-redefs [metrics/mk-meter (fn [metric-namespace metric]
                                        (reset! mk-meter-args {:metric-namespace metric-namespace
                                                               :metric           metric})
@@ -52,11 +51,11 @@
 
 (deftest report-time-test
   (testing "updates time-val"
-    (let [metric-ns "metric-ns"
-          time-val 10
+    (let [metric-ns         "metric-ns"
+          time-val          10
           mk-histogram-args (atom nil)
-          reservoir (UniformReservoir.)
-          histogram (Histogram. reservoir)]
+          reservoir         (UniformReservoir.)
+          histogram         (Histogram. reservoir)]
       (with-redefs [metrics/mk-histogram (fn [metric-ns metric]
                                            (reset! mk-histogram-args {:metric-namespace metric-ns
                                                                       :metric           metric})

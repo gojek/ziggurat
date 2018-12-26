@@ -4,7 +4,7 @@
 
 (defn nested-map-keys [f m]
   (w/postwalk
-    #(if (map? %)
-       (m/map-keys f %)
-       %)
-    m))
+   #(if (map? %)
+      (m/map-keys f %)
+      %)
+   m))

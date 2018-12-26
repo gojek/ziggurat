@@ -21,9 +21,9 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -40,7 +40,7 @@
                                              (reset! rmq-connect-called? true)
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled true}))]
+                                                              :retry {:enabled true}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -56,7 +56,7 @@
                                              (reset! rmq-connect-called? true)
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -75,7 +75,7 @@
                                              (reset! rmq-connect-called? true)
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -91,10 +91,10 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 5}
-                                                                                              :channel-2 {:worker-count 10}}}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 5}
+                                                                                                   :channel-2 {:worker-count 10}}}}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -109,9 +109,9 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {}}))]
         (mount/start (mount/only [#'connection]))
         (mount/stop #'connection)
         (is (= @thread-count 4)))))
@@ -124,10 +124,10 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default   {:channels {:channel-1 {:worker-count 10}}}
-                                                                         :default-1 {:channels {:channel-1 {:worker-count 8}}}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default   {:channels {:channel-1 {:worker-count 10}}}
+                                                                              :default-1 {:channels {:channel-1 {:worker-count 8}}}}))]
         (mount/start (mount/only [#'connection]))
         (mount/stop #'connection)
         (is (= @thread-count 26))))))
