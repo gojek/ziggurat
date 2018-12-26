@@ -1,8 +1,28 @@
 # ZIGGURAT
 
-Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from kafka.
 
-## Dev Setup (For mac users only)
+* [Description](#description)
+* [Dev Setup](#dev-setup)
+* [Usage](#usage)
+* [Configuration](#configuration)
+* [Contribution Guidelines](#contribution)
+* [License](#license)
+
+## Description
+
+Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from kafka.
+Ziggurat is built with the intent to abstract out
+```
+- reading messages from kafka
+- retrying failed messages
+- setting up an HTTP server
+```
+from a clojure application such that a user only needs to pass a function that will be mapped to every message recieved from kafka.
+
+Refer [concepts](CONCEPTS.md) to understand the concepts referred to in this document.
+
+## Dev Setup 
+(For mac users only)
 
 - Install leiningen: ```brew install leiningen```
 
@@ -20,17 +40,20 @@ Add this to your project.clj
 To start a stream (a thread that reads messages from kafka), add this to your core namespace.
 ```clojure
 (require '[ziggurat.init :as ziggurat])
+  
 (defn start-fn []
-    ;; your logic that runs at startup goes here)
-
+    ;; your logic that runs at startup goes here
+)
+  
 (defn stop-fn []
-    ;; your logic that runs at shutdown goes here)
-
+    ;; your logic that runs at shutdown goes here
+)
+  
 (defn main-fn
     [message]
     (println message)
     :success)
-
+  
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
 ```
 
@@ -49,10 +72,42 @@ To start a stream (a thread that reads messages from kafka), add this to your co
                                          :stream-id-2 {:handler-fn main-fn-2}})
         ```
 
+```clojure
+(require '[ziggurat.init :as ziggurat])
+
+(defn start-fn []
+    ;; your logic that runs at startup goes here
+)
+  
+(defn stop-fn []
+    ;; your logic that runs at shutdown goes here
+)
+  
+  
+(defn handler-function [_request]
+  {:status  200
+   :headers {"Content-Type" "application/json"}
+   :body    (get-resource)})
+   
+(def routes [["v1/resources" {:get handler-function}]])
+  
+(defn main-fn
+    [message]
+    (println message)
+    :success)
+  
+(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}} routes)
+
+```
+Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
+how you can pass in your own route. 
+
+
+
 ## Configuration
 
 All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.
-```
+```clojure
 {:ziggurat  {:app-name            "application_name"
             :nrepl-server         {:port [7011 :int]}
             :stream-router        {:stream-id            {:application-id       "kafka_consumer_id"
@@ -108,3 +163,20 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 ## Contribution
 - For dev setup and contributions please refer to CONTRIBUTING.md
+
+## License
+```
+Copyright 2018, GO-JEK Tech <http://tech.gojek>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
