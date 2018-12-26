@@ -1,0 +1,10 @@
+language: clojure
+
+script:
+  - lein clean
+  - lein deps
+  - lein test
+
+after_script:
+  - lein cloverage --output coverage --coveralls
+  - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"
