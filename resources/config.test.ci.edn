@@ -9,7 +9,7 @@
                                    :worker-count              [10 :int]
                                    :queue-size                [10 :int]
                                    :thread-termination-wait-s [1 :int]}
-            :rabbit-mq-connection {:host            "rabbitmq"
+            :rabbit-mq-connection {:host            "127.0.0.1"
                                    :port            [5672 :int]
                                    :username        "guest"
                                    :password        "guest"

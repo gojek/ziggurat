@@ -1,8 +1,12 @@
 language: clojure
 
+services:
+  - rabbitmq
+
 script:
   - lein clean
   - lein deps
+  - mv -fv resources/config.test.{ci.edn,edn}
   - lein cljfmt check
   - lein test
 

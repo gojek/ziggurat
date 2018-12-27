@@ -40,9 +40,10 @@
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}
              :dev     {:plugins  [[jonase/eastwood "0.2.6"]
+                                  [lein-cljfmt "0.6.3"]
+                                  [lein-cloverage "1.0.13"]
                                   [lein-githooks "0.1.0"]
-                                  [lein-kibit "0.1.6"]
-                                  [lein-cljfmt "0.6.3"]]
+                                  [lein-kibit "0.1.6"]]
                        :githooks {:auto-install true
                                   :pre-commit   ["lein cljfmt check && lein kibit"]
                                   :pre-push     ["lein test"]}}
