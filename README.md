@@ -1,4 +1,16 @@
-# ZIGGURAT
+# Ziggurat
+
+<p align="center">
+  <a href="https://travis-ci.com/gojektech/ziggurat">
+    <img src="https://travis-ci.com/gojektech/ziggurat.svg?branch=master" alt="Build Status" />
+  </a>
+  <a href='https://coveralls.io/github/gojektech/ziggurat?branch=master'>
+    <img src='https://coveralls.io/repos/github/gojektech/ziggurat/badge.svg?branch=master' alt='Coverage Status' />
+  </a>
+  <a href='https://clojars.org/tech.gojek/ziggurat'>
+    <img src='https://img.shields.io/clojars/v/tech.gojek/ziggurat.svg' alt='Clojars Project' />
+  </a>
+</p>
 
 
 * [Description](#description)
@@ -35,7 +47,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 ## Usage
 Add this to your project.clj
-`[tech.gojek/ziggurat "2.7.2"]`
+`[gojek.tech/ziggurat "2.7.2"]`
 
 To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
 ```clojure
@@ -166,7 +178,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 ## License
 ```
-Copyright 2018, GO-JEK Tech <http://tech.gojek>
+Copyright 2018, GO-JEK Tech <http://gojek.tech>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
