@@ -3,6 +3,7 @@ language: clojure
 script:
   - lein clean
   - lein deps
+  - lein cljfmt check
   - lein test
 
 after_script:
