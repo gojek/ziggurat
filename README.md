@@ -10,14 +10,14 @@
 
 ## Description
 
-Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from kafka.
+Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
 Ziggurat is built with the intent to abstract out
 ```
-- reading messages from kafka
+- reading messages from Kafka
 - retrying failed messages
 - setting up an HTTP server
 ```
-from a clojure application such that a user only needs to pass a function that will be mapped to every message recieved from kafka.
+from a clojure application such that a user only needs to pass a function that will be mapped to every message recieved from Kafka.
 
 Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
@@ -37,7 +37,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 Add this to your project.clj
 `[com.gojek.lambda/ziggurat "2.7.2"]`
 
-To start a stream (a thread that reads messages from kafka), add this to your core namespace.
+To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
 ```clojure
 (require '[ziggurat.init :as ziggurat])
   
@@ -57,7 +57,7 @@ To start a stream (a thread that reads messages from kafka), add this to your co
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
 ```
 
-* The main-fn is the function that will be applied to every message that is read from the kafka stream.
+* The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
     * :success - The message was successfuly processed and the stream should continue to the next message
     * :failure - The message failed to be processed and it should be reported to sentry, it will not be retried.
@@ -111,10 +111,10 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 {:ziggurat  {:app-name            "application_name"
             :nrepl-server         {:port [7011 :int]}
             :stream-router        {:stream-id            {:application-id       "kafka_consumer_id"
-                                                          :bootstrap-servers    "kafka-broker-1:6667,kafka-broker-2:6667"
+                                                          :bootstrap-servers    "kafka-broker-1:6667,Kafka-broker-2:6667"
                                                           :stream-threads-count [1 :int]
                                                           :origin-topic         "kafka-topic-*"
-                                                          :proto-class          "com.company.ProtoMessage"}}
+                                                          :proto-class          "proto-class"}}
             :datadog              {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
@@ -146,11 +146,11 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 ```
 * app-name - Refers to the name of the application. Used to namespace queues and metrics.
 * nrepl-server - Port on which the repl server will be hosted
-* stream-router - Configs related to all the kafka streams the application is reading from
-    * stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different kafka brokers and have different number of threads (depending on the throughput of the stream).
-        * application-id - The kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
-        * bootstrap-servers - The kafka brokers that the application will read from. It accepts a comma seperated value.
-        * stream-threads-count - The number of parallel threads that should read messages from kafka. This can scale up to the number of partitions on the topic you wish to read from.
+* stream-router - Configs related to all the Kafka streams the application is reading from
+    * stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different Kafka brokers and have different number of threads (depending on the throughput of the stream).
+        * application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
+        * bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
+        * stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
         * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams should be of the same proto-class.
         * proto-class - The proto-class of the message so that it can be decompiled before being passed to the mapper function
 * datadog - The statsd host and port that metrics should be sent to, although the key name is datadog, it supports statsd as well to send metrics.

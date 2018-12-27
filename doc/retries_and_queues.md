@@ -10,9 +10,9 @@
 #### Introduction
 
 When processing a stream of events, there are many times where the processing might fail.
-Either because of issue in the function logic or some issue downstream.
+Either because of the issue in the function logic or some issue downstream.
 
-In the first case we don't want to lose the message. In second, we
+In the first case, we don't want to lose the message. In second, we
 possibly want to retry the message and expect that the downstream
 service might be down intermittently.
 
@@ -25,11 +25,11 @@ Let's take a deep dive
 
 #### Topology of Queues
 
-Every application using ziggurat creates 3 dedicated queues in rabbitmq:
+Every application using ziggurat creates 3 dedicated queues in Rabbitmq:
 
 1. **Delayed Queue:**
 When an error occurs for a message in the mapper-function. The message is put in the delay queue with a TTL (can be set in the config).
-They wait in queue till the TTL expires. Then they are put into the instant queue.
+They wait in the queue until the TTL expires. Then they are put into the instant queue.
 
 2. **Instant Queue:**
 The retry logic in ziggurat reads messages from the instant queue and retries them.
@@ -44,8 +44,8 @@ You can retry messages from the dead set queue by making an API call to the acto
 
 #### Peaking and Replaying DeadSet
 
-DeadSet is the last place a message can reach in it's life cycle because of failures.
-Ziggurat does not automatically retry the messages in dead set as it could be due to a bug in the mapper-function and the
+DeadSet is the last place a message can reach in its life cycle because of failures.
+Ziggurat does not automatically retry the messages in the dead set as it could be due to a bug in the mapper-function and the
 user can trigger the retry of messages once the problem has been fixed. 
 
 There are two built-in APIs to view and trigger retry on the DeadSet:
