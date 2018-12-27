@@ -10,7 +10,7 @@
             [ziggurat.server.test-utils :as tu]))
 
 (deftest start-calls-actor-start-fn-test
-  (testing "The actor start fn starts before the lambda ziggurat state and can read config"
+  (testing "The actor start fn starts before the ziggurat state and can read config"
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (fn [_] (reset! result (* @result 2)))
                     streams/stop-streams  (constantly nil)
@@ -22,7 +22,7 @@
         (is (= 16 @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
-  (testing "The actor stop fn stops after the lambda ziggurat state"
+  (testing "The actor stop fn stops after the ziggurat state"
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (fn [_] (reset! result (* @result 2)))

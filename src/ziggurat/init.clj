@@ -1,5 +1,5 @@
 (ns ziggurat.init
-  "Contains the entry point for your lambda actor."
+  "Contains the entry point for your application."
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
@@ -14,11 +14,11 @@
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]))
 
-(defstate lambda-statsd-reporter
+(defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
                                         (:env (ziggurat-config))
                                         (:app-name (ziggurat-config)))
-  :stop (metrics/stop-statsd-reporter lambda-statsd-reporter))
+  :stop (metrics/stop-statsd-reporter statsd-reporter))
 
 (defn- start*
   ([states]
@@ -36,7 +36,7 @@
   (start* #{#'messaging-connection/connection} {:stream-routes stream-routes})
   (messaging-producer/make-queues stream-routes)
   (messaging-consumer/start-subscribers stream-routes)      ;; We want subscribers to start after creating queues on RabbitMQ.
-  (start* #{#'lambda-statsd-reporter
+  (start* #{#'statsd-reporter
             #'server/server
             #'nrepl-server/server
             #'streams/stream
@@ -48,7 +48,7 @@
   "Calls the Ziggurat's state stop fns and then actor-stop-fn."
   [actor-stop-fn]
   (mount/stop #'config/config
-              #'lambda-statsd-reporter
+              #'statsd-reporter
               #'messaging-connection/connection
               #'server/server
               #'nrepl-server/server
@@ -74,7 +74,7 @@
   (s/validate StreamRoute stream-routes))
 
 (defn main
-  "The entry point for your lambda actor.
+  "The entry point for your application.
 
   Accepts stream-routes as a nested map keyed by the topic entities.
   Each topic entity is a map with a handler-fn described. For eg.,

@@ -1,5 +1,5 @@
-(defproject com.gojek.lambda/ziggurat "2.7.2"
-  :description "The actor framework for Project Lambda"
+(defproject tech.gojek/ziggurat "2.7.2"
+  :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
