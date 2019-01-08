@@ -8,7 +8,7 @@ script:
   - lein deps
   - mv -fv resources/config.test.{ci.edn,edn}
   - lein cljfmt check
-  - lein test
+  - lein test-all
 
 after_script:
   - lein cloverage --output coverage --coveralls
