@@ -14,10 +14,10 @@
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder]
-           [org.apache.kafka.streams.state Stores]
            [org.apache.kafka.streams.kstream ValueMapper KStream TransformerSupplier]
-           [org.apache.kafka.streams.processor WallclockTimestampExtractor]
-           [org.apache.kafka.streams.processor StateStoreSupplier]))
+           [org.apache.kafka.streams.processor WallclockTimestampExtractor StateStoreSupplier]
+           [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
+           [org.apache.kafka.common.utils SystemTime]))
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
@@ -42,12 +42,11 @@
     (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
-(defn state-store-supplier []
-  (-> (Stores/create "state-store")
-      (.withKeys (Serdes/ByteArray))
-      (.withValues (Serdes/ByteArray))
-      (.inMemory)
-      (.build)))
+(defn store-supplier-builder []
+  (KeyValueStoreBuilder. (RocksDbKeyValueBytesStoreSupplier. "state-store")
+                         (Serdes/ByteArray)
+                         (Serdes/ByteArray)
+                         (SystemTime.)))
 
 (defn- value-mapper [f]
   (reify ValueMapper
@@ -62,7 +61,7 @@
 
 (defn- transform-values [topic-entity stream-builder]
   (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (.transform stream-builder (transformer-supplier metric-namespace) (into-array [(.name (state-store-supplier))]))))
+    (.transform stream-builder (transformer-supplier metric-namespace) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- protobuf->hash [message proto-class]
   (try
@@ -84,7 +83,7 @@
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
-    (.addStateStore ^StreamsBuilder builder (state-store-supplier) nil)
+    (.addStateStore ^StreamsBuilder builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name)
          (map-values #(protobuf->hash % proto-class))
