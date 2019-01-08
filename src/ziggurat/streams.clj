@@ -9,28 +9,30 @@
             [ziggurat.channel :as chl]
             [ziggurat.kafka-delay :as kafka-delay]
             [ziggurat.sentry :refer [sentry-reporter]])
-  (:import [org.apache.kafka.clients.consumer ConsumerConfig]
+  (:import [java.util.regex Pattern]
+           [java.util HashMap Properties]
+           [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
-           [org.apache.kafka.streams KafkaStreams StreamsConfig]
-           [org.apache.kafka.streams.state Stores]
-           [org.apache.kafka.streams.kstream KStreamBuilder ValueMapper KStream TransformerSupplier]
-           [org.apache.kafka.streams.processor WallclockTimestampExtractor]
-           [java.util.regex Pattern]
-           [org.apache.kafka.streams.processor StateStoreSupplier]
-           [java.util HashMap]))
+           [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder]
+           [org.apache.kafka.streams.kstream ValueMapper KStream TransformerSupplier]
+           [org.apache.kafka.streams.processor WallclockTimestampExtractor StateStoreSupplier]
+           [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
+           [org.apache.kafka.common.utils SystemTime]))
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
-  {StreamsConfig/APPLICATION_ID_CONFIG                    application-id
-   StreamsConfig/BOOTSTRAP_SERVERS_CONFIG                 bootstrap-servers
-   StreamsConfig/NUM_STREAM_THREADS_CONFIG                (int stream-threads-count)
-   StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG           (.getName (.getClass (Serdes/ByteArray)))
-   StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG         (.getName (.getClass (Serdes/ByteArray)))
-   StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor
-   StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG    (int (or buffered-records-per-partition 10000))
-   StreamsConfig/COMMIT_INTERVAL_MS_CONFIG                (int (or commit-interval-ms 15000))
-   ConsumerConfig/AUTO_OFFSET_RESET_CONFIG                (or auto-offset-reset-config "latest")})
+  (let [props (Properties.)]
+    (.put props StreamsConfig/APPLICATION_ID_CONFIG application-id)
+    (.put props StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
+    (.put props StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
+    (.put props StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
+    (.put props StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
+    (.put props StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor)
+    (.put props StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int (or buffered-records-per-partition 10000)))
+    (.put props StreamsConfig/COMMIT_INTERVAL_MS_CONFIG (int (or commit-interval-ms 15000)))
+    (.put props ConsumerConfig/AUTO_OFFSET_RESET_CONFIG (or auto-offset-reset-config "latest"))
+    props))
 
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
@@ -40,12 +42,11 @@
     (metrics/increment-count message-read-metric-namespace "read"))
   message)
 
-(defn state-store-supplier []
-  (-> (Stores/create "state-store")
-      (.withKeys (Serdes/ByteArray))
-      (.withValues (Serdes/ByteArray))
-      (.inMemory)
-      (.build)))
+(defn store-supplier-builder []
+  (KeyValueStoreBuilder. (RocksDbKeyValueBytesStoreSupplier. "state-store")
+                         (Serdes/ByteArray)
+                         (Serdes/ByteArray)
+                         (SystemTime.)))
 
 (defn- value-mapper [f]
   (reify ValueMapper
@@ -60,7 +61,7 @@
 
 (defn- transform-values [topic-entity stream-builder]
   (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (.transform stream-builder (transformer-supplier metric-namespace) (into-array [(.name (state-store-supplier))]))))
+    (.transform stream-builder (transformer-supplier metric-namespace) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- protobuf->hash [message proto-class]
   (try
@@ -79,20 +80,20 @@
       nil)))
 
 (defn- topology [handler-fn {:keys [origin-topic proto-class]} topic-entity channels]
-  (let [builder           (KStreamBuilder.)
+  (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
-    (.addStateStore builder (state-store-supplier) nil)
+    (.addStateStore ^StreamsBuilder builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name)
          (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
-    builder))
+    (.build ^StreamsBuilder builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]
-  (KafkaStreams. ^KStreamBuilder (topology handler-fn stream-config topic-entity channels)
-                 (StreamsConfig. (properties stream-config))))
+  (KafkaStreams. (topology handler-fn stream-config topic-entity channels)
+                 (properties stream-config)))
 
 (defn start-streams [stream-routes]
   (let [zig-conf (ziggurat-config)]

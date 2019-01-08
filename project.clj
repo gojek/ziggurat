@@ -17,7 +17,7 @@
                  [medley "0.8.4"]
                  [mount "0.1.10"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
-                 [org.apache.kafka/kafka-streams "0.11.0.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-streams "1.1.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
                  [org.clojure/clojure "1.10.0"]
