@@ -2,6 +2,7 @@
   (:require [schema.core :as s]
             [clojure.tools.logging :as log]
             [ziggurat.messaging.dead-set :as r]
+            [ziggurat.config :refer [ziggurat-config]]
             [mount.core :as mount]))
 
 (defn- validate-count [count]
@@ -34,11 +35,14 @@
            :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})))))
 
 (defn get-view []
-  (let [stream-routes (:stream-routes (mount/args))]
-    (fn view [{{:keys [count topic-entity channel]} :params}]
-      (let [parsed-count (parse-count count)]
-        (if (validate-params parsed-count topic-entity stream-routes channel)
-          {:status 200
-           :body   {:messages (r/view parsed-count topic-entity channel)}}
-          {:status 400
-           :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})))))
+  (if-not (-> (ziggurat-config) :retry :enabled)
+    {:status 422
+     :body {:error "Retries are not enabled"}}
+    (let [stream-routes (:stream-routes (mount/args))]
+      (fn view [{{:keys [count topic-entity channel]} :params}]
+        (let [parsed-count (parse-count count)]
+          (if (validate-params parsed-count topic-entity stream-routes channel)
+            {:status 200
+             :body   {:messages (r/view parsed-count topic-entity channel)}}
+            {:status 400
+             :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}}))))))
