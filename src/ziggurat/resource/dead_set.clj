@@ -24,15 +24,18 @@
        (validate-count count)))
 
 (defn get-replay []
-  (let [stream-routes (:stream-routes (mount/args))]
-    (fn [{{:keys [count topic-entity channel]} :params}]
-      (let [parsed-count (parse-count count)]
-        (if (validate-params parsed-count topic-entity stream-routes channel)
-          (do (r/replay parsed-count topic-entity channel)
-              {:status 200
-               :body   {:message "Requeued messages on the queue for retrying"}})
-          {:status 400
-           :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})))))
+  (if-not (-> (ziggurat-config) :retry :enabled)
+    {:status 422
+     :body {:error "Retries are not enabled"}}
+    (let [stream-routes (:stream-routes (mount/args))]
+      (fn [{{:keys [count topic-entity channel]} :params}]
+        (let [parsed-count (parse-count count)]
+          (if (validate-params parsed-count topic-entity stream-routes channel)
+            (do (r/replay parsed-count topic-entity channel)
+                {:status 200
+                 :body   {:message "Requeued messages on the queue for retrying"}})
+            {:status 400
+             :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}}))))))
 
 (defn get-view []
   (if-not (-> (ziggurat-config) :retry :enabled)
