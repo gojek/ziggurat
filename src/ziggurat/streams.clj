@@ -94,17 +94,20 @@
   (KafkaStreams. ^Topology (topology handler-fn stream-config topic-entity channels)
                  ^Properties (properties stream-config)))
 
-(defn start-streams [stream-routes stream-configs]
-  (reduce (fn [streams stream]
-            (let [topic-entity     (first stream)
-                  topic-handler-fn (-> stream second :handler-fn)
-                  channels         (chl/get-keys-for-topic stream-routes topic-entity)
-                  stream-config    (get-in stream-configs [:stream-router topic-entity])
-                  stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
-              (.start stream)
-              (conj streams stream)))
-          []
-          stream-routes))
+(defn start-streams
+  ([stream-routes]
+   (start-streams stream-routes (ziggurat-config)))
+  ([stream-routes stream-configs]
+   (reduce (fn [streams stream]
+             (let [topic-entity (first stream)
+                   topic-handler-fn (-> stream second :handler-fn)
+                   channels (chl/get-keys-for-topic stream-routes topic-entity)
+                   stream-config (get-in stream-configs [:stream-router topic-entity])
+                   stream (start-stream* topic-handler-fn stream-config topic-entity channels)]
+               (.start stream)
+               (conj streams stream)))
+           []
+           stream-routes)))
 
 (defn stop-streams [streams]
   (doseq [stream streams]
