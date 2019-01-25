@@ -1,0 +1,19 @@
+(ns ziggurat.main
+  (:require [ziggurat.init :as init]
+            [ziggurat.config :as zc]
+            [clojure.tools.logging :as log])
+  (:gen-class))
+
+(defn start []
+  ;; Write your startup logic here
+  )
+
+(defn stop []
+  ;; Write your shutdown logic here
+  )
+
+(defn -main [& args]
+  (init/main start stop {:booking {:handler-fn (fn [message]
+                                                 (prn message)
+                                                 (log/info "Handler fn called")
+                                                 :success)}}))

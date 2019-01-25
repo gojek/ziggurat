@@ -11,5 +11,5 @@ script:
   - lein test-all
 
 after_script:
-  - lein cloverage --output coverage --coveralls
+  - lein code-coverage
   - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"

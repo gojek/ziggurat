@@ -12,7 +12,7 @@
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
     (let [result (atom 1)]
-      (with-redefs [streams/start-streams (fn [_] (reset! result (* @result 2)))
+      (with-redefs [streams/start-streams (fn [_ _] (reset! result (* @result 2)))
                     streams/stop-streams  (constantly nil)
                     rmqc/start-connection (fn [] (reset! result (* @result 2)))
                     rmqc/stop-connection  (constantly nil)

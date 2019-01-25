@@ -35,10 +35,19 @@
                  [tech.gojek/sentry-clj.async "1.0.0"]
                  [yleisradio/new-reliquary "1.0.0"]]
   :java-source-paths ["src/com"]
-  :aliases {"test-all" ["with-profile" "default:+1.8:+1.9" "test"]}
+  :aliases {"test-all"      ["with-profile" "default:+1.8:+1.9" "test"]
+            "code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
-             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}
+             :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
+                       :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
+                                      [io.confluent/kafka-schema-registry "4.1.1"]
+                                      [junit/junit "4.12"]
+                                      [org.apache.kafka/kafka-streams "1.1.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                      [org.apache.kafka/kafka-clients "1.1.1" :classifier "test"]
+                                      [org.apache.kafka/kafka_2.11 "1.1.1" :classifier "test"]]
+                       :plugins      [[lein-cloverage "1.0.13"]]
+                       :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins  [[jonase/eastwood "0.2.6"]
                                   [lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
@@ -46,6 +55,8 @@
                                   [lein-kibit "0.1.6"]]
                        :githooks {:auto-install true
                                   :pre-commit   ["lein cljfmt check && lein kibit"]
-                                  :pre-push     ["lein test"]}}
+                                  :pre-push     ["lein test"]
+                                  }
+                       }
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})
