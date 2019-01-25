@@ -35,7 +35,8 @@
                  [tech.gojek/sentry-clj.async "1.0.0"]
                  [yleisradio/new-reliquary "1.0.0"]]
   :java-source-paths ["src/com"]
-  :aliases {"test-all" ["with-profile" "default:+1.8:+1.9" "test"]}
+  :aliases {"test-all" ["with-profile" "default:+1.8:+1.9" "test"]
+            "code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
