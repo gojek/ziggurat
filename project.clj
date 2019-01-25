@@ -38,7 +38,14 @@
   :aliases {"test-all" ["with-profile" "default:+1.8:+1.9" "test"]}
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
-             :test    {:jvm-opts ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]}
+             :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
+                       :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
+                                      [io.confluent/kafka-schema-registry "4.1.1"]
+                                      [junit/junit "4.12"]
+                                      [org.apache.kafka/kafka-streams "1.1.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                      [org.apache.kafka/kafka-clients "1.1.1" :classifier "test"]
+                                      [org.apache.kafka/kafka_2.11 "1.1.1" :classifier "test"]]
+                       :plugins      [[lein-cloverage "1.0.13"]]}
              :dev     {:plugins  [[jonase/eastwood "0.2.6"]
                                   [lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]

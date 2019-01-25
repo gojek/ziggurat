@@ -13,7 +13,7 @@
            [java.util HashMap Properties]
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
-           [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder]
+           [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.kstream ValueMapper KStream TransformerSupplier]
            [org.apache.kafka.streams.processor WallclockTimestampExtractor StateStoreSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
@@ -22,17 +22,16 @@
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
-  (let [props (Properties.)]
-    (.put props StreamsConfig/APPLICATION_ID_CONFIG application-id)
-    (.put props StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
-    (.put props StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
-    (.put props StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
-    (.put props StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
-    (.put props StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor)
-    (.put props StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int (or buffered-records-per-partition 10000)))
-    (.put props StreamsConfig/COMMIT_INTERVAL_MS_CONFIG (int (or commit-interval-ms 15000)))
-    (.put props ConsumerConfig/AUTO_OFFSET_RESET_CONFIG (or auto-offset-reset-config "latest"))
-    props))
+  (doto (Properties.)
+    (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
+    (.put StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
+    (.put StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
+    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
+    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
+    (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor)
+    (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int (or buffered-records-per-partition 10000)))
+    (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG (int (or commit-interval-ms 15000)))
+    (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG (or auto-offset-reset-config "latest"))))
 
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
@@ -52,7 +51,7 @@
   (reify ValueMapper
     (apply [_ v] (f v))))
 
-(defn- map-values [mapper-fn ^KStream stream-builder]
+(defn- map-values [mapper-fn stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
 (defn- transformer-supplier [metric-namespace]
@@ -83,37 +82,36 @@
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
-    (.addStateStore ^StreamsBuilder builder (store-supplier-builder))
+    (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name)
          (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
-    (.build ^StreamsBuilder builder)))
+    (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]
-  (KafkaStreams. (topology handler-fn stream-config topic-entity channels)
-                 (properties stream-config)))
+  (KafkaStreams. ^Topology (topology handler-fn stream-config topic-entity channels)
+                 ^Properties (properties stream-config)))
 
-(defn start-streams [stream-routes]
-  (let [zig-conf (ziggurat-config)]
-    (reduce (fn [streams stream]
-              (let [topic-entity     (first stream)
-                    topic-handler-fn (-> stream second :handler-fn)
-                    channels         (chl/get-keys-for-topic stream-routes topic-entity)
-                    stream-config    (get-in zig-conf [:stream-router topic-entity])
-                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
-                (.start stream)
-                (conj streams stream)))
-            []
-            stream-routes)))
+(defn start-streams [stream-routes stream-configs]
+  (reduce (fn [streams stream]
+            (let [topic-entity     (first stream)
+                  topic-handler-fn (-> stream second :handler-fn)
+                  channels         (chl/get-keys-for-topic stream-routes topic-entity)
+                  stream-config    (get-in stream-configs [:stream-router topic-entity])
+                  stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
+              (.start stream)
+              (conj streams stream)))
+          []
+          stream-routes))
 
 (defn stop-streams [streams]
   (doseq [stream streams]
-    (.close ^KStream stream)))
+    (.close stream)))
 
 (defstate stream
   :start (do (log/info "Starting Kafka stream")
-             (start-streams (:stream-routes (mount/args))))
+             (start-streams (:stream-routes (mount/args)) (ziggurat-config)))
   :stop (do (log/info "Stopping Kafka stream")
             (stop-streams stream)))
