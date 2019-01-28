@@ -106,4 +106,17 @@
                                                            {}
                                                            params)]
             (is (= 200 status))
-            (is (= (:messages body) {:foo "bar"}))))))))
+            (is (= (:messages body) {:foo "bar"})))))
+
+      (testing "should return 200 when delete /v1/dead_set is called with valid parameters"
+        (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]
+          (let [count  "10"
+                params {:count count :topic-entity "default"}
+                {:keys [status body] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                              "/v1/dead_set"
+                                                              true
+                                                              true
+                                                              {}
+                                                              params)]
+            (is (= 200 status))
+            (is (= (:message body) "Deleted messages successfully"))))))))

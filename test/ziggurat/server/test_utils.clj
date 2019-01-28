@@ -67,3 +67,23 @@
                 :success-expected? success-expected?
                 :throw-exceptions  false
                 :headers           headers}))))
+
+(defn delete
+  ([port path]
+   (delete port path true))
+  ([port path success-expected?]
+   (delete port path success-expected? true))
+  ([port path success-expected? json-content?]
+   (delete port path success-expected? json-content? {}))
+  ([port path success-expected? json-content? headers]
+   (delete port path success-expected? json-content? headers {}))
+  ([port path success-expected? json-content? headers query-params]
+   (http/with-additional-middleware [#'wrap-bad-status-logging]
+     (let [resp (http/delete (mk-url port path) {:success-expected? success-expected?
+                                                 :throw-exceptions  false
+                                                 :headers           headers
+                                                 :query-params      query-params})]
+       (cond-> resp
+         json-content?
+         (update :body #(umap/nested-map-keys (fn [k] (csk/->kebab-case-keyword k :separator \_))
+                                              (json/decode %))))))))

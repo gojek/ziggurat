@@ -42,3 +42,15 @@
            :body   {:messages (r/view parsed-count topic-entity channel)}}
           {:status 400
            :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})))))
+
+(defn delete-messages []
+  (let [stream-routes (:stream-routes (mount/args))]
+    (fn [{{:keys [count topic-entity channel]} :params}]
+      (let [parsed-count (parse-count count)]
+        (if (validate-params parsed-count topic-entity stream-routes channel)
+          (do
+            (r/delete parsed-count topic-entity channel)
+            {:status 200
+             :body   {:message "Deleted messages successfully"}})
+          {:status 400
+           :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})))))
