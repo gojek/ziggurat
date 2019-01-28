@@ -17,6 +17,7 @@
 
 (defn get-routes []
   [["ping" {:get ping}]
+   ["v1/dead_set" {:delete (ds/delete-messages)}]
    ["v1/dead_set/replay" {:post (ds/get-replay)}]
    ["v1/dead_set" {:get (ds/get-view)}]
    [true (fn [_req] (ring.util.response/not-found ""))]])

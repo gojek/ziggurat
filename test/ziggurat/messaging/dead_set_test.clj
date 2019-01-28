@@ -60,3 +60,42 @@
         (doseq [dead-set-message dead-set-messages]
           (is (= message dead-set-message)))
         (is (not (empty? (rmq/get-msg-from-channel-dead-queue topic-name channel))))))))
+
+(deftest delete-messages-test
+  (testing "deletes messages from the dead set in order for a topic"
+    (fix/with-queues {:default {:handler-fn (constantly nil)}}
+      (let [count-of-messages       10
+            message                 {:foo "bar" :number 0}
+            messages                (map #(assoc message :number %) (range count-of-messages))
+            topic-name              "default"
+            remaining-message-count 2
+            delete-count            (- count-of-messages remaining-message-count)
+            _                       (doseq [message messages]
+                                      (producer/publish-to-dead-queue topic-name message))
+            _                       (ds/delete delete-count topic-name nil)
+            dead-set-messages       (ds/view count-of-messages topic-name nil)]
+
+        (is (= (count dead-set-messages) remaining-message-count))
+        (is (= dead-set-messages (take-last remaining-message-count messages))))))
+
+  (testing "deletes all messages from the dead set for a topic"
+    (fix/with-queues {:default {:handler-fn (constantly nil)}}
+      (let [count-of-messages 10
+            message           {:foo "bar"}
+            topic-name        "default"]
+        (doseq [_ (range count-of-messages)]
+          (producer/publish-to-dead-queue topic-name message))
+        (ds/delete count-of-messages topic-name nil)
+        (is (empty? (rmq/get-msg-from-dead-queue topic-name))))))
+
+  (testing "deletes all messages from the dead set from a channel queue"
+    (fix/with-queues {:default {:handler-fn (constantly nil)
+                                :channel-1  (constantly nil)}}
+      (let [count-of-messages 10
+            message           {:foo "bar"}
+            topic-name        "default"
+            channel-name      "channel-1"]
+        (doseq [_ (range count-of-messages)]
+          (producer/publish-to-channel-dead-queue topic-name channel-name message))
+        (ds/delete count-of-messages topic-name channel-name)
+        (is (empty? (rmq/get-msg-from-channel-dead-queue topic-name channel-name)))))))

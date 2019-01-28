@@ -106,4 +106,71 @@
                                                            {}
                                                            params)]
             (is (= 200 status))
-            (is (= (:messages body) {:foo "bar"}))))))))
+            (is (= (:messages body) {:foo "bar"})))))
+
+      (testing "should return 200 when delete /v1/dead_set is called with valid parameters"
+        (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]
+          (let [count  "10"
+                params {:count count :topic-entity "default"}
+                {:keys [status body] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                              "/v1/dead_set"
+                                                              true
+                                                              true
+                                                              {}
+                                                              params)]
+            (is (= 200 status))
+            (is (= (:message body) "Deleted messages successfully")))))
+
+      (testing "should return 400 when delete /v1/dead_set is called with invalid count val"
+        (with-redefs [ds/delete (fn [_ _ _] nil)]
+          (let [count        "avasdas"
+                topic-entity "default"
+                params       {:count count :topic-name topic-entity}
+                {:keys [status _] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                           "/v1/dead_set"
+                                                           true
+                                                           true
+                                                           {}
+                                                           params)]
+            (is (= 400 status)))))
+
+      (testing "should return 400 when delete /v1/dead_set is called with negative count val"
+        (with-redefs [ds/delete (fn [_ _ _] nil)]
+          (let [count        "-10"
+                topic-entity "default"
+                params       {:count count :topic-name topic-entity}
+                {:keys [status _] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                           "/v1/dead_set"
+                                                           true
+                                                           true
+                                                           {}
+                                                           params)]
+            (is (= 400 status)))))
+
+      (testing "should return 400 when delete /v1/dead_set is called without topic entity"
+        (with-redefs [ds/delete (fn [_ _ _] nil)]
+          (let [expected-body {:error "Count should be the positive integer and topic entity/ channel should be present"}
+                count         "10"
+                params        {:count count}
+                {:keys [status body] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                              "/v1/dead_set"
+                                                              true
+                                                              true
+                                                              {}
+                                                              params)]
+            (is (= 400 status))
+            (is (= expected-body body)))))
+
+      (testing "should return 400 when delete /v1/dead_set is called with invalid channel"
+        (with-redefs [ds/view (fn [_ _ _] nil)]
+          (let [expected-body {:error "Count should be the positive integer and topic entity/ channel should be present"}
+                count         "10"
+                params        {:count count :topic-entity "default" :channel "invalid"}
+                {:keys [status body] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                              "/v1/dead_set"
+                                                              true
+                                                              true
+                                                              {}
+                                                              params)]
+            (is (= 400 status))
+            (is (= expected-body body))))))))

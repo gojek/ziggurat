@@ -55,8 +55,6 @@
                                   [lein-kibit "0.1.6"]]
                        :githooks {:auto-install true
                                   :pre-commit   ["lein cljfmt check && lein kibit"]
-                                  :pre-push     ["lein test"]
-                                  }
-                       }
+                                  :pre-push     ["lein test"]}}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})
