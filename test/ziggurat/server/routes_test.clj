@@ -127,11 +127,11 @@
                 topic-entity "default"
                 params       {:count count :topic-name topic-entity}
                 {:keys [status _] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
-                                                        "/v1/dead_set"
-                                                        true
-                                                        true
-                                                        {}
-                                                        params)]
+                                                           "/v1/dead_set"
+                                                           true
+                                                           true
+                                                           {}
+                                                           params)]
             (is (= 400 status)))))
 
       (testing "should return 400 when delete /v1/dead_set is called with negative count val"
@@ -140,11 +140,11 @@
                 topic-entity "default"
                 params       {:count count :topic-name topic-entity}
                 {:keys [status _] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
-                                                        "/v1/dead_set"
-                                                        true
-                                                        true
-                                                        {}
-                                                        params)]
+                                                           "/v1/dead_set"
+                                                           true
+                                                           true
+                                                           {}
+                                                           params)]
             (is (= 400 status)))))
 
       (testing "should return 400 when delete /v1/dead_set is called without topic entity"
@@ -153,11 +153,11 @@
                 count         "10"
                 params        {:count count}
                 {:keys [status body] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
-                                                           "/v1/dead_set"
-                                                           true
-                                                           true
-                                                           {}
-                                                           params)]
+                                                              "/v1/dead_set"
+                                                              true
+                                                              true
+                                                              {}
+                                                              params)]
             (is (= 400 status))
             (is (= expected-body body)))))
 
@@ -167,10 +167,10 @@
                 count         "10"
                 params        {:count count :topic-entity "default" :channel "invalid"}
                 {:keys [status body] :as response} (tu/delete (-> (ziggurat-config) :http-server :port)
-                                                           "/v1/dead_set"
-                                                           true
-                                                           true
-                                                           {}
-                                                           params)]
+                                                              "/v1/dead_set"
+                                                              true
+                                                              true
+                                                              {}
+                                                              params)]
             (is (= 400 status))
             (is (= expected-body body))))))))

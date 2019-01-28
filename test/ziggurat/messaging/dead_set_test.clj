@@ -64,16 +64,19 @@
 (deftest delete-messages-test
   (testing "deletes messages from the dead set in order for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
-      (let [count-of-messages 10
-            message           {:foo "bar" :number 0}
-            topic-name        "default"
-            _                 (doseq [index (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-name (assoc message :number index)))
-            _                 (ds/delete (- count-of-messages 1) topic-name nil)
-            dead_set_messages (ds/view count-of-messages topic-name nil)]
+      (let [count-of-messages       10
+            message                 {:foo "bar" :number 0}
+            messages                (map #(assoc message :number %) (range count-of-messages))
+            topic-name              "default"
+            remaining-message-count 2
+            delete-count            (- count-of-messages remaining-message-count)
+            _                       (doseq [message messages]
+                                      (producer/publish-to-dead-queue topic-name message))
+            _                       (ds/delete delete-count topic-name nil)
+            dead-set-messages       (ds/view count-of-messages topic-name nil)]
 
-        (is (= (count dead_set_messages) 1))
-        (is (= dead_set_messages [(assoc message :number 9)])))))
+        (is (= (count dead-set-messages) remaining-message-count))
+        (is (= dead-set-messages (take-last remaining-message-count messages))))))
 
   (testing "deletes all messages from the dead set for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
