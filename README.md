@@ -1,6 +1,10 @@
 # Ziggurat
 
 <p align="center">
+  <img src="https://github.com/gojektech/ziggurat/wiki/images/logo-ziggurat.png">
+</p>
+
+<p align="center">
   <a href="https://travis-ci.com/gojektech/ziggurat">
     <img src="https://travis-ci.com/gojektech/ziggurat.svg?branch=master" alt="Build Status" />
   </a>
@@ -11,7 +15,6 @@
     <img src='https://img.shields.io/clojars/v/tech.gojek/ziggurat.svg' alt='Clojars Project' />
   </a>
 </p>
-
 
 * [Description](#description)
 * [Dev Setup](#dev-setup)
