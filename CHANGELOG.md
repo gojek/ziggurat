@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.8.0 - 2019-02-04
+- Upgrades kafka streams to 1.1.1
+- Adds stream integration tests
+- Adds API to flush messages from dead-letter-queue in RabbitMQ
+
 ## 2.7.2 - 2018-12-19
 - Starts sentry-reporter in on application initialization
 
