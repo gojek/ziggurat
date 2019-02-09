@@ -1,13 +1,12 @@
 (ns ziggurat.streams-test
   (:require [clojure.test :refer :all]
             [flatland.protobuf.core :as proto]
-            [ziggurat.streams :refer [start-streams stop-streams]])
-  (:import [com.google.protobuf ByteString]
-           [flatland.protobuf.test Example$Photo]
+            [ziggurat.streams :refer [start-streams stop-streams]]
+            [ziggurat.kafka-delay :as kafka-delay])
+  (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
            [kafka.utils MockTime]
            [org.apache.kafka.clients.producer ProducerConfig]
-           [org.apache.kafka.common.serialization BytesSerializer]
            [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams.integration.utils EmbeddedKafkaCluster IntegrationTestUtils]))
 

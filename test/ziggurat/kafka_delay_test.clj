@@ -2,7 +2,32 @@
   (:require [clojure.test :refer :all]
             [ziggurat.kafka-delay :refer :all]
             [ziggurat.metrics :as metrics])
-  (:import [org.apache.kafka.streams.processor ProcessorContext]))
+  (:import [org.apache.kafka.streams.processor ProcessorContext]
+           [java.time Instant]
+           [org.apache.kafka.clients.consumer ConsumerRecord]
+           [ziggurat.kafka_delay IngestionTimeExtractor]))
+
+(deftest get-current-time-in-millis-test
+  (testing "get current timestamp"
+    (is (= (get-current-time-in-millis) (.toEpochMilli (Instant/now))))))
+
+(deftest ingestion-time-extractor-test
+  (let [ingestion-time-extractor (IngestionTimeExtractor.)
+        topic "some-topic"
+        partition (int 1)
+        offset 1
+        previous-timestamp 1528720768771
+        key "some-key"
+        value "some-value"
+        record (ConsumerRecord. topic partition offset key value)]
+    (testing "extract timestamp of topic when it has valid timestamp"
+      (with-redefs [get-timestamp-from-record (constantly 1528720768777)]
+        (is (= (.extract ingestion-time-extractor record previous-timestamp)
+               1528720768777))))
+    (testing "extract timestamp of topic when it has invalid timestamp"
+      (with-redefs [get-timestamp-from-record (constantly -1)]
+        (is (= (.extract ingestion-time-extractor record previous-timestamp)
+               (get-current-time-in-millis)))))))
 
 (deftest calculate-and-report-kafka-delay-test
   (testing "calculates and reports the timestamp delay"

@@ -10,14 +10,14 @@
             [ziggurat.kafka-delay :as kafka-delay]
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import [java.util.regex Pattern]
-           [java.util HashMap Properties]
+           [java.util Properties]
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
-           [org.apache.kafka.streams.kstream ValueMapper KStream TransformerSupplier]
-           [org.apache.kafka.streams.processor WallclockTimestampExtractor StateStoreSupplier]
+           [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
-           [org.apache.kafka.common.utils SystemTime]))
+           [org.apache.kafka.common.utils SystemTime]
+           [ziggurat.kafka_delay IngestionTimeExtractor]))
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
@@ -28,7 +28,7 @@
     (.put StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
     (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
     (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
-    (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG WallclockTimestampExtractor)
+    (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG IngestionTimeExtractor)
     (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int (or buffered-records-per-partition 10000)))
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG (int (or commit-interval-ms 15000)))
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG (or auto-offset-reset-config "latest"))))
