@@ -1,8 +1,7 @@
 (ns ziggurat.streams-test
   (:require [clojure.test :refer :all]
             [flatland.protobuf.core :as proto]
-            [ziggurat.streams :refer [start-streams stop-streams]]
-            [ziggurat.kafka-delay :as kafka-delay])
+            [ziggurat.streams :refer [start-streams stop-streams]])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
            [kafka.utils MockTime]
@@ -23,7 +22,7 @@
 (defn create-photo []
   (proto/protobuf-dump proto-log-type message))
 
-(defn mapped-fn [message]
+(defn mapped-fn [_]
   :success)
 
 (deftest start-streams-test
