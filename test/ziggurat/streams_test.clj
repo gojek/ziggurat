@@ -2,12 +2,10 @@
   (:require [clojure.test :refer :all]
             [flatland.protobuf.core :as proto]
             [ziggurat.streams :refer [start-streams stop-streams]])
-  (:import [com.google.protobuf ByteString]
-           [flatland.protobuf.test Example$Photo]
+  (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
            [kafka.utils MockTime]
            [org.apache.kafka.clients.producer ProducerConfig]
-           [org.apache.kafka.common.serialization BytesSerializer]
            [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams.integration.utils EmbeddedKafkaCluster IntegrationTestUtils]))
 
@@ -24,7 +22,7 @@
 (defn create-photo []
   (proto/protobuf-dump proto-log-type message))
 
-(defn mapped-fn [message]
+(defn mapped-fn [_]
   :success)
 
 (deftest start-streams-test
