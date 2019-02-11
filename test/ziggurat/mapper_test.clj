@@ -6,10 +6,8 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer [mapper-func channel-mapper-func]]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.rabbitmq :as rmq])
-  (:import (java.util Arrays)))
+            [ziggurat.util.rabbitmq :as rmq]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -49,22 +47,20 @@
               (is @successfully-processed?))))))
 
     (testing "message process should raise exception if channel not in list"
-      (fix/with-queues (assoc-in stream-routes [:default :channel-1] (constantly :success))
-        (let [successfully-processed? (atom false)
-              expected-metric         "success"]
-          (with-redefs [sentry-report (fn [_ _ e & _]
-                                        (let [err (Throwable->map e)]
-                                          (is (= (:cause err) "Invalid mapper return code"))
-                                          (is (= (-> err :data :code) :channel-1))))]
-            ((mapper-func (constantly :channel-1) topic [:some-other-channel]) message)
-            (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic :channel-1)]
-              (is (nil? message-from-mq)))))))
+      (fix/with-queues
+        (assoc-in stream-routes [:default :channel-1] (constantly :success))
+        (with-redefs [sentry-report (fn [_ _ e & _]
+                                      (let [err (Throwable->map e)]
+                                        (is (= (:cause err) "Invalid mapper return code"))
+                                        (is (= (-> err :data :code) :channel-1))))]
+          ((mapper-func (constantly :channel-1) topic [:some-other-channel]) message)
+          (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic :channel-1)]
+            (is (nil? message-from-mq))))))
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
               unsuccessfully-processed? (atom false)
-              retry-fn-called?          (atom false)
               expected-metric           "retry"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric]
@@ -78,7 +74,7 @@
 
     (testing "message should raise exception"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
@@ -122,9 +118,8 @@
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
               unsuccessfully-processed? (atom false)
-              retry-fn-called?          (atom false)
               expected-metric           "retry"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric]
@@ -138,7 +133,7 @@
 
     (testing "message should raise exception"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (:count (:retry (ziggurat-config))))
+        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]

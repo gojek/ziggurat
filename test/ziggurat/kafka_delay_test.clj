@@ -25,7 +25,8 @@
         (is (= (.extract ingestion-time-extractor record previous-timestamp)
                1528720768777))))
     (testing "extract timestamp of topic when it has invalid timestamp"
-      (with-redefs [get-timestamp-from-record (constantly -1)]
+      (with-redefs [get-timestamp-from-record (constantly -1)
+                    get-current-time-in-millis (constantly 1528720768777)]
         (is (= (.extract ingestion-time-extractor record previous-timestamp)
                (get-current-time-in-millis)))))))
 
