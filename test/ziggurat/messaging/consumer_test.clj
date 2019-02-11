@@ -6,8 +6,7 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :refer :all]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.retry :as retry]
-            [ziggurat.mapper :as mpr]))
+            [ziggurat.retry :as retry]))
 
 (use-fixtures :once fix/init-rabbit-mq)
 
@@ -174,7 +173,7 @@
                                        (throw (ex-info "Dead set messages were never populated"
                                                        {:dead-set-msgs dead-set-msgs}))))))
 
-          (is (= (* (inc retries) no-of-msgs) @retry-counter))
+          (is (= (* retries no-of-msgs) @retry-counter))
           (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-identifier no-of-msgs)))))
         (close rmq-ch))))
 
