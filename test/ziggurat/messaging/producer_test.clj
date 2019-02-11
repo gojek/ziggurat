@@ -39,7 +39,7 @@
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
       (let [message          {:foo "bar"}
-            expected-message {:foo "bar" :retry-count 5}
+            expected-message {:foo "bar" :retry-count 4}
             topic-entity     :default]
         (producer/retry message topic-entity)
         (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
@@ -55,7 +55,36 @@
                             :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
-          (producer/publish-to-delay-queue topic-entity message))))))
+          (producer/publish-to-delay-queue topic-entity message)))))
+
+  (testing "message will be retried as defined in ziggurat config retry-count when message doesnt have retry-count"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [retry-count (atom (get-in (config/ziggurat-config) [:retry :count]))
+            message {:foo "bar"}
+            topic-entity :default]
+        (producer/retry message topic-entity)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
+            (producer/retry message-from-mq topic-entity)))
+        (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
+          (is (= message message-from-mq))))))
+
+  (testing "message will be retried as defined in message retry-count when message has retry-count"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [retry-count (atom 2)
+            message {:foo "bar" :retry-count @retry-count}
+            expected-message {:foo "bar"}
+            topic-entity :default]
+        (producer/retry message topic-entity)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
+            (producer/retry message-from-mq topic-entity)))
+        (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
+          (is (= expected-message message-from-mq)))))))
 
 (deftest make-queues-test
   (let [ziggurat-config (config/ziggurat-config)]
