@@ -14,6 +14,40 @@
 
 (use-fixtures :once fix/init-rabbit-mq)
 
+(deftest retry-for-channel-test
+  (testing "message in channel will be retried as defined in ziggurat config channel retry when message doesnt have retry-count"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)
+                 :channel-1 #(constantly nil)}}
+      (let [topic-entity :default
+            channel :channel-1
+            retry-count (atom (-> (config/ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
+            message {:foo "bar"}]
+        (producer/retry-for-channel message topic-entity channel)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+            (producer/retry-for-channel message-from-mq topic-entity channel)))
+        (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
+          (is (= message message-from-mq))))))
+
+  (testing "message in channel will be retried as defined in message retry-count when message has retry-count"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)
+                 :channel-1 #(constantly nil)}}
+      (let [retry-count (atom 2)
+            topic-entity :default
+            channel :channel-1
+            message {:foo "bar" :retry-count @retry-count}
+            expected-message {:foo "bar"}]
+        (producer/retry-for-channel message topic-entity channel)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+            (producer/retry-for-channel message-from-mq topic-entity channel)))
+        (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
+          (is (= expected-message message-from-mq)))))))
+
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
     (fix/with-queues
