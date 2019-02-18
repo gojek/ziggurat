@@ -3,13 +3,8 @@
             [ziggurat.kafka-delay :refer :all]
             [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.streams.processor ProcessorContext]
-           [java.time Instant]
            [org.apache.kafka.clients.consumer ConsumerRecord]
            [ziggurat.kafka_delay IngestionTimeExtractor]))
-
-(deftest get-current-time-in-millis-test
-  (testing "get current timestamp"
-    (is (= (get-current-time-in-millis) (.toEpochMilli (Instant/now))))))
 
 (deftest ingestion-time-extractor-test
   (let [ingestion-time-extractor (IngestionTimeExtractor.)
