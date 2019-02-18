@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.8.1 - 2019-02-18
+- Handle Deadset API when retry is disabled
+- Fixing message being retried n + 1 times
+- Fixing kafka delay calculation
+
 ## 2.8.0 - 2019-02-04
 - Upgrades kafka streams to 1.1.1
 - Adds stream integration tests
