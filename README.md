@@ -50,7 +50,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 ## Usage
 Add this to your project.clj
-`[tech.gojek/ziggurat "2.8.0"]`
+`[tech.gojek/ziggurat "2.8.1"]`
 
 To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
 ```clojure
