@@ -1,7 +1,7 @@
 (ns ziggurat.resource.dead-set
   (:require [schema.core :as s]
             [clojure.tools.logging :as log]
-            [ziggurat.config :refer [get-in-config]]
+            [ziggurat.config :refer [get-in-config retry-config channel-retry-config]]
             [ziggurat.messaging.dead-set :as r]
             [mount.core :as mount]))
 (def not-found-for-retry
@@ -30,21 +30,21 @@
   (some? channel))
 
 (defn retry-enabled? []
-  (get-in-config [:retry :enabled]))
+  (get-in (retry-config) [:enabled]))
 
-(defn channel-retry-enabled? [topic-entity stream-routes channel]
-  (get-in stream-routes [(keyword topic-entity) (keyword channel) :retry :enabled]))
+(defn channel-retry-enabled? [topic-entity channel]
+  (get-in (channel-retry-config (keyword topic-entity) (keyword channel)) [:enabled]))
 
-(defn retry-allowed? [topic-entity stream-routes channel]
+(defn retry-allowed? [topic-entity channel]
   (if (channel-request? channel)
-    (channel-retry-enabled? topic-entity stream-routes channel)
+    (channel-retry-enabled? topic-entity channel)
     (retry-enabled?)))
 
 (defn get-replay []
   (let [stream-routes (:stream-routes (mount/args))]
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
-        (if (retry-allowed? topic-entity stream-routes channel)
+        (if (retry-allowed? topic-entity channel)
           (if (validate-params parsed-count topic-entity stream-routes channel)
             (do (r/replay parsed-count topic-entity channel)
                 {:status 200
@@ -57,7 +57,7 @@
   (let [stream-routes (:stream-routes (mount/args))]
     (fn view [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
-        (if (retry-allowed? topic-entity stream-routes channel)
+        (if (retry-allowed? topic-entity channel)
           (if (validate-params parsed-count topic-entity stream-routes channel)
             {:status 200
              :body   {:messages (r/view parsed-count topic-entity channel)}}
@@ -69,7 +69,7 @@
   (let [stream-routes (:stream-routes (mount/args))]
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
-        (if (retry-allowed? topic-entity stream-routes channel)
+        (if (retry-allowed? topic-entity channel)
           (if (validate-params parsed-count topic-entity stream-routes channel)
             (do
               (r/delete parsed-count topic-entity channel)
