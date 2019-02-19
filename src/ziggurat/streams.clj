@@ -54,13 +54,13 @@
 (defn- map-values [mapper-fn stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- transformer-supplier [metric-namespace]
+(defn- transformer-supplier [metric-namespace process-message-since-in-s]
   (reify TransformerSupplier
-    (get [_] (kafka-delay/create-transformer metric-namespace))))
+    (get [_] (kafka-delay/create-transformer metric-namespace process-message-since-in-s))))
 
-(defn- transform-values [topic-entity stream-builder]
+(defn- transform-values [topic-entity skip-before-time stream-builder]
   (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (.transform stream-builder (transformer-supplier metric-namespace) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (transformer-supplier metric-namespace skip-before-time) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- protobuf->hash [message proto-class]
   (try
@@ -78,13 +78,13 @@
       (metrics/increment-count "message-parsing" "failed")
       nil)))
 
-(defn- topology [handler-fn {:keys [origin-topic proto-class]} topic-entity channels]
+(defn- topology [handler-fn {:keys [origin-topic proto-class process-message-since-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
     (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
-         (transform-values topic-entity-name)
+         (transform-values topic-entity-name (or process-message-since-in-s 3600))
          (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))

@@ -11,6 +11,11 @@
 (defn get-current-time-in-millis []
   (.toEpochMilli (Instant/now)))
 
+(defn- message-to-process? [message-timestamp process-message-since-in-s]
+  (let [current-time (get-current-time-in-millis)
+        allowed-time (- current-time (* 1000 process-message-since-in-s))]
+    (> message-timestamp allowed-time)))
+
 (deftype IngestionTimeExtractor [] TimestampExtractor
          (extract [_ record _]
            (let [ingestion-time (get-timestamp-from-record record)]
@@ -24,15 +29,17 @@
                       record-timestamp)]
     (metrics/report-time metric-namespace delay)))
 
-(deftype TimestampTransformers [^{:volatile-mutable true} processor-context metric-namespace] Transformer
+(deftype TimestampTransformers [^{:volatile-mutable true} processor-context metric-namespace process-message-since-in-s] Transformer
          (^void init [_ ^ProcessorContext context]
            (do (set! processor-context context)
                nil))
          (transform [_ record-key record-value]
-           (do (calculate-and-report-kafka-delay metric-namespace (.timestamp processor-context))
-               (KeyValue/pair record-key record-value)))
+           (let [message-time (.timestamp processor-context)]
+             (when (message-to-process? message-time process-message-since-in-s)
+               (calculate-and-report-kafka-delay metric-namespace message-time)
+               (KeyValue/pair record-key record-value))))
          (punctuate [_ _] nil)
          (close [_] nil))
 
-(defn create-transformer [metric-namespace]
-  (TimestampTransformers. nil metric-namespace))
+(defn create-transformer [metric-namespace process-message-since-in-s]
+  (TimestampTransformers. nil metric-namespace process-message-since-in-s))

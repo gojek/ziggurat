@@ -41,10 +41,10 @@
   (testing "creates a timestamp-transformer object that calculates and reports timestamp delay"
     (let [metric-namespace      "test.message-received-delay-histogram"
           record-timestamp      1528720767777
-          timestamp-transformer (create-transformer metric-namespace)
           context               (reify ProcessorContext
                                   (timestamp [_] record-timestamp))
           current-time          1528720768777
+          timestamp-transformer (create-transformer metric-namespace current-time)
           expected-delay        1000]
       (.init timestamp-transformer context)
       (with-redefs [get-current-time-in-millis (constantly current-time)

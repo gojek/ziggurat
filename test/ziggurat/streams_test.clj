@@ -25,6 +25,35 @@
 (defn mapped-fn [_]
   :success)
 
+(deftest start-streams-with-since-test
+  (let [message-received-count (atom 0)]
+    (with-redefs [mapped-fn (fn [message-from-kafka]
+                              (when (= message message-from-kafka)
+                                (swap! message-received-count inc))
+                              :success)]
+      (let [topic "topic"
+            cluster (doto (EmbeddedKafkaCluster. 1) (.start))
+            bootstrap-serves (.bootstrapServers cluster)
+            times 6
+            process-message-since-in-s 10
+            kvs (repeat times (KeyValue/pair (create-photo) (create-photo)))
+            props (doto (Properties.)
+                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-serves)
+                    (.put ProducerConfig/ACKS_CONFIG "all")
+                    (.put ProducerConfig/RETRIES_CONFIG (int 0))
+                    (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")
+                    (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer"))
+            _ (.createTopic cluster topic)
+            streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
+                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] bootstrap-serves)
+                                                                          (assoc-in [:stream-router :vehicle :process-message-since-in-s] process-message-since-in-s)
+                                                                          (assoc-in [:stream-router :vehicle :origin-topic] topic)))]
+        (Thread/sleep 20000)                                ;;waiting for streams to start
+        (IntegrationTestUtils/produceKeyValuesSynchronously topic kvs props (MockTime. (- (System/currentTimeMillis) (* 1000 process-message-since-in-s)) (System/nanoTime)))
+        (Thread/sleep 10000)                                ;;wating for streams to consume messages
+        (stop-streams streams)
+        (is (= 0 @message-received-count))))))
+
 (deftest start-streams-test
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
