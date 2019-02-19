@@ -24,7 +24,7 @@
   {:buffered-records-per-partition 10000
    :commit-interval-ms             15000
    :auto-offset-reset-config       "latest"
-   :oldest-processed-message-in-s  3600})
+   :oldest-processed-message-in-s  604800})
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
