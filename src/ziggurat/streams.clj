@@ -5,9 +5,10 @@
             [ziggurat.metrics :as metrics]
             [ziggurat.config :refer [ziggurat-config]]
             [sentry-clj.async :as sentry]
-            [ziggurat.mapper :as mpr]
             [ziggurat.channel :as chl]
-            [ziggurat.kafka-delay :as kafka-delay]
+            [ziggurat.map :as zmap]
+            [ziggurat.mapper :as mpr]
+            [ziggurat.transformer :as transformer]
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import [java.util.regex Pattern]
            [java.util Properties]
@@ -17,7 +18,13 @@
            [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
            [org.apache.kafka.common.utils SystemTime]
-           [ziggurat.kafka_delay IngestionTimeExtractor]))
+           [ziggurat.transformer IngestionTimeExtractor]))
+
+(def default-config-for-stream
+  {:buffered-records-per-partition 10000
+   :commit-interval-ms 15000
+   :auto-offset-reset-config "latest"
+   :process-message-since-in-s 3600})
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
@@ -29,9 +36,9 @@
     (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
     (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
     (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG IngestionTimeExtractor)
-    (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int (or buffered-records-per-partition 10000)))
-    (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG (int (or commit-interval-ms 15000)))
-    (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG (or auto-offset-reset-config "latest"))))
+    (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int buffered-records-per-partition))
+    (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
+    (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)))
 
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
@@ -56,7 +63,7 @@
 
 (defn- transformer-supplier [metric-namespace process-message-since-in-s]
   (reify TransformerSupplier
-    (get [_] (kafka-delay/create-transformer metric-namespace process-message-since-in-s))))
+    (get [_] (transformer/create metric-namespace process-message-since-in-s))))
 
 (defn- transform-values [topic-entity skip-before-time stream-builder]
   (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
@@ -84,7 +91,7 @@
         topic-pattern     (Pattern/compile origin-topic)]
     (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
-         (transform-values topic-entity-name (or process-message-since-in-s 3600))
+         (transform-values topic-entity-name process-message-since-in-s)
          (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
@@ -102,7 +109,9 @@
              (let [topic-entity (first stream)
                    topic-handler-fn (-> stream second :handler-fn)
                    channels (chl/get-keys-for-topic stream-routes topic-entity)
-                   stream-config (get-in stream-configs [:stream-router topic-entity])
+                   stream-config (-> stream-configs
+                                     (get-in [:stream-router topic-entity])
+                                     (zmap/deep-merge default-config-for-stream))
                    stream (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (.start stream)
                (conj streams stream)))

@@ -4,7 +4,7 @@
             [cheshire.core :as json]
             [clj-http.client :as http]
             [clojure.tools.logging :as log]
-            [ziggurat.server.map :as umap]))
+            [ziggurat.map :as umap]))
 
 (defn- mk-url [port path]
   (str "http://localhost:" port path))
