@@ -68,10 +68,3 @@
         (mount/start #'config)
         (is (= (-> config-values-from-env :ziggurat :stream-router topic-entity :channels channel :retry)
                (channel-retry-config topic-entity channel)))))))
-
-(deftest retry-config-test
-  (testing "returns retry config"
-    (let [config-values-from-env (config-from-env "config.test.edn")]
-      (with-redefs [config-from-env (fn [_] config-values-from-env)]
-        (mount/start #'config)
-        (is (= (-> config-values-from-env :ziggurat :retry) (retry-config)))))))

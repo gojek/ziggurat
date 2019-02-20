@@ -1,7 +1,7 @@
 (ns ziggurat.resource.dead-set
   (:require [schema.core :as s]
             [clojure.tools.logging :as log]
-            [ziggurat.config :refer [get-in-config retry-config channel-retry-config]]
+            [ziggurat.config :refer [get-in-config channel-retry-config]]
             [ziggurat.messaging.dead-set :as r]
             [mount.core :as mount]))
 (def not-found-for-retry
@@ -30,7 +30,7 @@
   (some? channel))
 
 (defn retry-enabled? []
-  (get-in (retry-config) [:enabled]))
+  (get-in-config [:config :enabled]))
 
 (defn channel-retry-enabled? [topic-entity channel]
   (get-in (channel-retry-config (keyword topic-entity) (keyword channel)) [:enabled]))

@@ -76,5 +76,3 @@
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
 
-(defn retry-config []
-  (get-in (ziggurat-config) [:retry]))
