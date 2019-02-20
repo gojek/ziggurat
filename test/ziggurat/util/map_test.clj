@@ -1,6 +1,6 @@
-(ns ziggurat.map-test
+(ns ziggurat.util.map-test
   (:require [clojure.test :refer :all])
-  (:require [ziggurat.map :refer [deep-merge nested-map-keys]]))
+  (:require [ziggurat.util.map :refer [deep-merge nested-map-keys]]))
 
 (deftest deep-merge-test
   (testing "when there is a value in map 'a' it returns value from 'a' "

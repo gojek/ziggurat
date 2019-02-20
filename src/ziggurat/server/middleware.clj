@@ -6,7 +6,7 @@
             [ring.util.response :as ring-resp]
             [sentry-clj.async :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.map :as umap]))
+            [ziggurat.util.map :as umap]))
 
 (defn wrap-default-content-type-json [handler]
   (fn [request]

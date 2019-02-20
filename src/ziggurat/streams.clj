@@ -6,9 +6,9 @@
             [ziggurat.config :refer [ziggurat-config]]
             [sentry-clj.async :as sentry]
             [ziggurat.channel :as chl]
-            [ziggurat.map :as zmap]
+            [ziggurat.util.map :as umap]
             [ziggurat.mapper :as mpr]
-            [ziggurat.transformer :as transformer]
+            [ziggurat.timestamp-transformer :as transformer]
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import [java.util.regex Pattern]
            [java.util Properties]
@@ -18,7 +18,7 @@
            [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
            [org.apache.kafka.common.utils SystemTime]
-           [ziggurat.transformer IngestionTimeExtractor]))
+           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
 
 (def default-config-for-stream
   {:buffered-records-per-partition 10000
@@ -65,9 +65,9 @@
   (reify TransformerSupplier
     (get [_] (transformer/create metric-namespace oldest-processed-message-in-s))))
 
-(defn- transform-values [topic-entity skip-before-time stream-builder]
+(defn- transform-values [topic-entity oldest-processed-message-in-s stream-builder]
   (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (.transform stream-builder (transformer-supplier metric-namespace skip-before-time) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (transformer-supplier metric-namespace oldest-processed-message-in-s) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- protobuf->hash [message proto-class]
   (try
@@ -111,7 +111,7 @@
                    channels (chl/get-keys-for-topic stream-routes topic-entity)
                    stream-config (-> stream-configs
                                      (get-in [:stream-router topic-entity])
-                                     (zmap/deep-merge default-config-for-stream))
+                                     (umap/deep-merge default-config-for-stream))
                    stream (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (.start stream)
                (conj streams stream)))

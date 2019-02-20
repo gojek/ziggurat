@@ -1,6 +1,6 @@
-(ns ziggurat.transformer
+(ns ziggurat.timestamp-transformer
   (:require [ziggurat.kafka-delay :refer :all]
-            [ziggurat.time :refer :all])
+            [ziggurat.util.time :refer :all])
   (:import [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams.kstream Transformer]
            [org.apache.kafka.streams.processor TimestampExtractor ProcessorContext]))
@@ -17,7 +17,7 @@
                (get-current-time-in-millis)
                ingestion-time))))
 
-(deftype TimestampTransformers [^{:volatile-mutable true} processor-context metric-namespace oldest-processed-message-in-s] Transformer
+(deftype TimestampTransformer [^{:volatile-mutable true} processor-context metric-namespace oldest-processed-message-in-s] Transformer
          (^void init [_ ^ProcessorContext context]
            (do (set! processor-context context)
                nil))
@@ -30,4 +30,4 @@
          (close [_] nil))
 
 (defn create [metric-namespace process-message-since-in-s]
-  (TimestampTransformers. nil metric-namespace process-message-since-in-s))
+  (TimestampTransformer. nil metric-namespace process-message-since-in-s))

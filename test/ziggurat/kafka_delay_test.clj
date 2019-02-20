@@ -1,7 +1,7 @@
 (ns ziggurat.kafka-delay-test
   (:require [clojure.test :refer :all]
             [ziggurat.kafka-delay :refer :all]
-            [ziggurat.time :refer [get-current-time-in-millis]]
+            [ziggurat.util.time :refer [get-current-time-in-millis]]
             [ziggurat.metrics :as metrics]))
 
 (deftest calculate-and-report-kafka-delay-test

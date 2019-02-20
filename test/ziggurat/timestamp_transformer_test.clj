@@ -1,11 +1,11 @@
-(ns ziggurat.transformer-test
+(ns ziggurat.timestamp-transformer-test
   (:require [clojure.test :refer :all]
-            [ziggurat.transformer :refer :all]
+            [ziggurat.timestamp-transformer :refer :all]
             [ziggurat.metrics :as metrics]
-            [ziggurat.time :refer :all])
+            [ziggurat.util.time :refer :all])
   (:import [org.apache.kafka.streams.processor ProcessorContext]
            [org.apache.kafka.clients.consumer ConsumerRecord]
-           [ziggurat.transformer IngestionTimeExtractor]))
+           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
 
 (deftest ingestion-time-extractor-test
   (let [ingestion-time-extractor (IngestionTimeExtractor.)

@@ -1,4 +1,4 @@
-(ns ziggurat.map
+(ns ziggurat.util.map
   (:require [clojure.walk :as w]
             [medley.core :as m]))
 

@@ -1,4 +1,4 @@
-(ns ziggurat.time
+(ns ziggurat.util.time
   (:import [java.time Instant]))
 
 (defn get-timestamp-from-record [record]
