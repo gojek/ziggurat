@@ -30,7 +30,7 @@
   (some? channel))
 
 (defn retry-enabled? []
-  (get-in-config [:config :enabled]))
+  (get-in-config [:retry :enabled]))
 
 (defn channel-retry-enabled? [topic-entity channel]
   (get-in (channel-retry-config (keyword topic-entity) (keyword channel)) [:enabled]))

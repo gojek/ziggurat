@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.9.0 - 2019-02-21
+- Adds oldest-processed-message-in-s config
+- Adds capabiltiy to filter message based on timestamp
+- Fixes bug in deadset API for channel enabled
+- Changes namespace of `transformer` into `timestamp-transformer`
+
 ## 2.8.1 - 2019-02-18
 - Handle Deadset API when retry is disabled
 - Fixing message being retried n + 1 times
