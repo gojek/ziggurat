@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file. This change
 
 ## 2.7.0 - 2018-12-12
 - Merges lambda commons and adds default configs for missing application specified configs
+- Users using `lambda-commons.metrics` should now start using `ziggurat.metrics` to send custom metrics.
 
 ## 2.6.3 - 2018-11-30
 - Fixes bug where connection to rabbitmq fails when stream routes is not passed in mount/args
@@ -39,9 +40,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## 2.6.1 - 2018-11-26
 - Changed the order of starting up of ziggurat and actor. First config will be initialized, then actor function will start up and ziggurat start function will start up.
+- Apps with (mount/start) in their `start-fn` will no longer work correctly. Users should start using `mount/only` instead.
 
 ## 2.6.0 - 2018-11-23
 - Removes Yggdrasil, bulwark and ESB log entities dependency
+- Removes the `make-config` function from `ziggurat.config` namespace. Users should now use `config-from-env` function instead.
 
 ## 2.5.9 - 2018-11-16
 - Overrides and exposes kafka streams config: buffered.records.per.partitions and commit.inteval.ms
