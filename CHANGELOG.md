@@ -3,7 +3,13 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.9.1 - 2019-02-22
+- Updates changelog for older releases
+- Releases using java 8
+
 ## 2.9.0 - 2019-02-21
+- **This release has been compiled using java 10. It will not work with
+  older versions of java.**
 - Adds oldest-processed-message-in-s config
 - Adds capabiltiy to filter message based on timestamp
 - Fixes bug in deadset API for channel enabled
