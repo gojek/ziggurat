@@ -1,15 +1,22 @@
 language: clojure
-
 services:
-  - rabbitmq
+- rabbitmq
+stages:
+  - test
+  - name: deploy
+    if: (repo == gojektech/ziggurat) AND (tag IS present)
+jobs:
+  include:
+  - stage: test
+    script:
+    - lein clean
+    - lein deps
+    - mv -fv resources/config.test.{ci.edn,edn}
+    - lein cljfmt check
+    - lein test-all
+    after_script:
+      - lein code-coverage
+      - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"
 
-script:
-  - lein clean
-  - lein deps
-  - mv -fv resources/config.test.{ci.edn,edn}
-  - lein cljfmt check
-  - lein test-all
-
-after_script:
-  - lein code-coverage
-  - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"
+  - stage: deploy
+    script: lein deploy clojars

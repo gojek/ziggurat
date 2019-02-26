@@ -1,4 +1,4 @@
-(defproject tech.gojek/ziggurat "2.9.1"
+(defproject tech.gojek/ziggurat "2.9.2-SNAPSHOT"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -34,6 +34,10 @@
                  [ring-logger "0.7.7"]
                  [tech.gojek/sentry-clj.async "1.0.0"]
                  [yleisradio/new-reliquary "1.0.0"]]
+  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
+                                      :username :env/clojars_username
+                                      :password :env/clojars_password
+                                      :sign-releases false}]]
   :java-source-paths ["src/com"]
   :aliases {"test-all"      ["with-profile" "default:+1.8:+1.9" "test"]
             "code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
