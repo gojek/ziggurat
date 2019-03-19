@@ -6,8 +6,7 @@
            [java.util Properties]
            [kafka.utils MockTime]
            [org.apache.kafka.clients.producer ProducerConfig]
-           [org.apache.kafka.streams KeyValue]
-           [org.apache.kafka.streams.integration.utils EmbeddedKafkaCluster IntegrationTestUtils]))
+           [org.apache.kafka.streams KeyValue]))
 
 (def proto-log-type (proto/protodef Example$Photo))
 
@@ -32,20 +31,17 @@
                                 (swap! message-received-count inc))
                               :success)]
       (let [topic "topic"
-            cluster (doto (EmbeddedKafkaCluster. 3) (.start))
-            bootstrap-serves (.bootstrapServers cluster)
             times 6
             oldest-processed-message-in-s 10
             kvs (repeat times (KeyValue/pair (create-photo) (create-photo)))
             props (doto (Properties.)
-                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-serves)
+                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
                     (.put ProducerConfig/ACKS_CONFIG "all")
                     (.put ProducerConfig/RETRIES_CONFIG (int 0))
                     (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")
                     (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer"))
-            _ (.createTopic cluster topic)
             streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
-                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] bootstrap-serves)
+                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
                                                                           (assoc-in [:stream-router :vehicle :oldest-processed-message-in-s] oldest-processed-message-in-s)
                                                                           (assoc-in [:stream-router :vehicle :origin-topic] topic)))]
         (Thread/sleep 20000)                                ;;waiting for streams to start
@@ -54,6 +50,7 @@
         (stop-streams streams)
         (is (= 0 @message-received-count))))))
 
+
 (deftest start-streams-test
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
@@ -61,19 +58,17 @@
                                 (swap! message-received-count inc))
                               :success)]
       (let [topic "topic"
-            cluster (doto (EmbeddedKafkaCluster. 3) (.start))
-            bootstrap-serves (.bootstrapServers cluster)
             times 6
             kvs (repeat times (KeyValue/pair (create-photo) (create-photo)))
+            _ (spit "proto" (create-photo))
             props (doto (Properties.)
-                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-serves)
+                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
                     (.put ProducerConfig/ACKS_CONFIG "all")
                     (.put ProducerConfig/RETRIES_CONFIG (int 0))
                     (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")
                     (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer"))
-            _ (.createTopic cluster topic)
             streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
-                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] bootstrap-serves)
+                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
                                                                           (assoc-in [:stream-router :vehicle :origin-topic] topic)))]
         (Thread/sleep 20000)                                ;;waiting for streams to start
         (IntegrationTestUtils/produceKeyValuesSynchronously topic kvs props (MockTime.))
