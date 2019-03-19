@@ -1,6 +1,7 @@
 language: clojure
 services:
 - rabbitmq
+- docker
 stages:
   - test
   - name: deploy
@@ -13,7 +14,9 @@ jobs:
     - lein deps
     - mv -fv resources/config.test.{ci.edn,edn}
     - lein cljfmt check
+    - docker-compose up
     - lein test-all
+    - docker-compose down
     after_script:
       - lein code-coverage
       - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"

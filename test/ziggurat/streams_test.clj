@@ -50,7 +50,6 @@
         (stop-streams streams)
         (is (= 0 @message-received-count))))))
 
-
 (deftest start-streams-test
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
