@@ -14,7 +14,7 @@ jobs:
     - lein deps
     - mv -fv resources/config.test.{ci.edn,edn}
     - lein cljfmt check
-    - docker-compose up
+    - docker-compose up -d
     - lein test-all
     - docker-compose down
     after_script:
