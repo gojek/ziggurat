@@ -55,10 +55,6 @@
              :dev     {:plugins  [[jonase/eastwood "0.2.6"]
                                   [lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
-                                  [lein-githooks "0.1.0"]
-                                  [lein-kibit "0.1.6"]]
-                       :githooks {:auto-install true
-                                  :pre-commit   ["lein cljfmt check && lein kibit"]
-                                  :pre-push     ["lein test"]}}
+                                  [lein-kibit "0.1.6"]]}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})
