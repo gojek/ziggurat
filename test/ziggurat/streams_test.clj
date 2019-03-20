@@ -15,16 +15,30 @@
                                            :stream-threads-count 1
                                            :proto-class          "flatland.protobuf.test.Example$Photo"}}})
 
+(def props (doto (Properties.)
+             (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
+             (.put ProducerConfig/ACKS_CONFIG "all")
+             (.put ProducerConfig/RETRIES_CONFIG (int 0))
+             (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")
+             (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")))
+
 (def message {:id   7
               :path "/photos/h2k3j4h9h23"})
 
 (defn create-photo []
   (proto/protobuf-dump proto-log-type message))
 
+(def message-key-value (KeyValue/pair (create-photo) (create-photo)))
+
+(defn push-dummy-message-to-create-topic
+  []
+  (IntegrationTestUtils/produceKeyValuesSynchronously "topic" [message-key-value] props (MockTime.)))
+
 (defn mapped-fn [_]
   :success)
 
 (deftest start-streams-with-since-test
+  (push-dummy-message-to-create-topic)
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
                               (when (= message message-from-kafka)
@@ -33,13 +47,7 @@
       (let [topic "topic"
             times 6
             oldest-processed-message-in-s 10
-            kvs (repeat times (KeyValue/pair (create-photo) (create-photo)))
-            props (doto (Properties.)
-                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
-                    (.put ProducerConfig/ACKS_CONFIG "all")
-                    (.put ProducerConfig/RETRIES_CONFIG (int 0))
-                    (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")
-                    (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer"))
+            kvs (repeat times message-key-value)
             streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
                                                                           (assoc-in [:stream-router :vehicle :bootstrap-servers] (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
                                                                           (assoc-in [:stream-router :vehicle :oldest-processed-message-in-s] oldest-processed-message-in-s)
@@ -51,6 +59,7 @@
         (is (= 0 @message-received-count))))))
 
 (deftest start-streams-test
+  (push-dummy-message-to-create-topic)
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
                               (when (= message message-from-kafka)
@@ -58,14 +67,7 @@
                               :success)]
       (let [topic "topic"
             times 6
-            kvs (repeat times (KeyValue/pair (create-photo) (create-photo)))
-            _ (spit "proto" (create-photo))
-            props (doto (Properties.)
-                    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
-                    (.put ProducerConfig/ACKS_CONFIG "all")
-                    (.put ProducerConfig/RETRIES_CONFIG (int 0))
-                    (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer")
-                    (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.ByteArraySerializer"))
+            kvs (repeat times message-key-value)
             streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
                                                                           (assoc-in [:stream-router :vehicle :bootstrap-servers] (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
                                                                           (assoc-in [:stream-router :vehicle :origin-topic] topic)))]
