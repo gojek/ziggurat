@@ -30,15 +30,10 @@
 
 (def message-key-value (KeyValue/pair (create-photo) (create-photo)))
 
-(defn push-dummy-message-to-create-topic
-  []
-  (IntegrationTestUtils/produceKeyValuesSynchronously "topic" [message-key-value] props (MockTime.)))
-
 (defn mapped-fn [_]
   :success)
 
 (deftest start-streams-with-since-test
-  (push-dummy-message-to-create-topic)
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
                               (when (= message message-from-kafka)
@@ -59,7 +54,6 @@
         (is (= 0 @message-received-count))))))
 
 (deftest start-streams-test
-  (push-dummy-message-to-create-topic)
   (let [message-received-count (atom 0)]
     (with-redefs [mapped-fn (fn [message-from-kafka]
                               (when (= message message-from-kafka)

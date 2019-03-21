@@ -1,4 +1,12 @@
 language: clojure
+
+before_install:
+- sudo apt-get install tar
+
+before_script:
+- wget http://mirrors.estointernet.in/apache/kafka/2.1.0/kafka_2.11-2.1.0.tgz
+- tar -xzf kafka_2.11-2.1.0.tgz
+
 services:
 - rabbitmq
 - docker
@@ -9,12 +17,31 @@ stages:
 jobs:
   include:
   - stage: test
+    name: "kafka-1"
+    env:
+      - KAFKA_VERSION=1
     script:
     - lein clean
     - lein deps
     - mv -fv resources/config.test.{ci.edn,edn}
     - lein cljfmt check
     - docker-compose up -d
+    - sleep 15
+    - ./kafka_2.11-2.1.0/bin/kafka-topics.sh --create --topic topic --partitions 3 --replication-factor 1 --zookeeper localhost:2181
+    - lein test-all
+    - docker-compose down
+  - stage: test
+    name: "kafka-2"
+    env:
+      - KAFKA_VERSION=2
+    script:
+    - lein clean
+    - lein deps
+    - mv -fv resources/config.test.{ci.edn,edn}
+    - lein cljfmt check
+    - docker-compose up -d
+    - sleep 15
+    - ./kafka_2.11-2.1.0/bin/kafka-topics.sh --create --topic topic --partitions 3 --replication-factor 1 --zookeeper localhost:2181
     - lein test-all
     - docker-compose down
     after_script:
