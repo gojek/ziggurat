@@ -9,6 +9,7 @@
             [ziggurat.util.map :as umap]
             [ziggurat.mapper :as mpr]
             [ziggurat.timestamp-transformer :as transformer]
+            [ziggurat.config :refer [config]]
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import [java.util.regex Pattern]
            [java.util Properties]
@@ -27,7 +28,15 @@
    :oldest-processed-message-in-s  604800
    :changelog-topic-replication-factor 3})
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms changelog-topic-replication-factor]}]
+(defn- set-upgrade-from-config
+  "Populates the upgrade.from config in kafka streams required for upgrading kafka-streams version from 1 to 2. If the
+  value is non-nil it sets the config (the value validation is done in the kafka streams code), to unset the value the
+  config needs to be set as nil "
+  [properties]
+  (if-let [upgrade-from-config (get-in config [:ziggurat :upgrade-from])]
+    (.put properties StreamsConfig/UPGRADE_FROM_CONFIG upgrade-from-config)))
+
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
   (doto (Properties.)
@@ -40,7 +49,8 @@
     (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int buffered-records-per-partition))
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
     (.put StreamsConfig/REPLICATION_FACTOR_CONFIG (int changelog-topic-replication-factor))
-    (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)))
+    (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)
+    (set-upgrade-from-config)))
 
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
@@ -108,13 +118,13 @@
    (start-streams stream-routes (ziggurat-config)))
   ([stream-routes stream-configs]
    (reduce (fn [streams stream]
-             (let [topic-entity (first stream)
+             (let [topic-entity     (first stream)
                    topic-handler-fn (-> stream second :handler-fn)
-                   channels (chl/get-keys-for-topic stream-routes topic-entity)
-                   stream-config (-> stream-configs
-                                     (get-in [:stream-router topic-entity])
-                                     (umap/deep-merge default-config-for-stream))
-                   stream (start-stream* topic-handler-fn stream-config topic-entity channels)]
+                   channels         (chl/get-keys-for-topic stream-routes topic-entity)
+                   stream-config    (-> stream-configs
+                                        (get-in [:stream-router topic-entity])
+                                        (umap/deep-merge default-config-for-stream))
+                   stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (.start stream)
                (conj streams stream)))
            []
