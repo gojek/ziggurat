@@ -36,9 +36,13 @@
   (if-let [upgrade-from-config (get-in config [:ziggurat :upgrade-from])]
     (.put properties StreamsConfig/UPGRADE_FROM_CONFIG upgrade-from-config)))
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
+(defn- validate-auto-offset-reset-config
+  [auto-offset-reset-config]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
-    (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
+    (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config}))))
+
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
+  (validate-auto-offset-reset-config auto-offset-reset-config)
   (doto (Properties.)
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
     (.put StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
