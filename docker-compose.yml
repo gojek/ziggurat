@@ -1,6 +1,11 @@
 version: '3.3'
 
 services:
+  rabbitmq:
+    image: 'rabbitmq'
+    ports:
+     - '5672:5672'
+    container_name: 'ziggurat_rabbitmq'
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     ports:

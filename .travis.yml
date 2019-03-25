@@ -1,8 +1,8 @@
 language: clojure
 
 services:
-- rabbitmq
 - docker
+
 stages:
   - lint-check
   - test

@@ -43,9 +43,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 - Install Rabbitmq: ```brew install rabbitmq```
 
-- Start Rabbitmq: ```brew services run rabbitmq``` : ensure the default user-id and password for rabbitmq is `guest`
-
-- Run tests: ```lein test```
+- Run tests: ```make test```
 
 
 ## Usage
