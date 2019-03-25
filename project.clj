@@ -52,8 +52,7 @@
                                       [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]]
                        :plugins      [[lein-cloverage "1.0.13"]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
-             :dev     {:plugins  [[jonase/eastwood "0.2.6"]
-                                  [lein-cljfmt "0.6.3"]
+             :dev     {:plugins  [[lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
                                   [lein-kibit "0.1.6"]]}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}

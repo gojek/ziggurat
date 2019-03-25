@@ -4,11 +4,16 @@ services:
 - rabbitmq
 - docker
 stages:
+  - lint-check
   - test
   - name: deploy
     if: (repo == gojek/ziggurat) AND (tag IS present)
 jobs:
   include:
+  - stage: lint-check
+    script:
+    - lein cljfmt check
+    - lein kibit
   - stage: test
     name: "kafka-1"
     env:
