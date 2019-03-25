@@ -13,7 +13,8 @@
 (def config-map {:stream-router {:vehicle {:application-id       "test"
                                            :bootstrap-servers    "localhost:9092"
                                            :stream-threads-count 1
-                                           :proto-class          "flatland.protobuf.test.Example$Photo"}}})
+                                           :proto-class          "flatland.protobuf.test.Example$Photo"
+                                           :upgrade-from         "1.1"}}})
 
 (def props (doto (Properties.)
              (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in config-map [:stream-router :vehicle :bootstrap-servers]))

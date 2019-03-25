@@ -32,8 +32,8 @@
   "Populates the upgrade.from config in kafka streams required for upgrading kafka-streams version from 1 to 2. If the
   value is non-nil it sets the config (the value validation is done in the kafka streams code), to unset the value the
   config needs to be set as nil "
-  [properties]
-  (if-let [upgrade-from-config (get-in config [:ziggurat :upgrade-from])]
+  [properties upgrade-from-config]
+  (if (some? upgrade-from-config)
     (.put properties StreamsConfig/UPGRADE_FROM_CONFIG upgrade-from-config)))
 
 (defn- validate-auto-offset-reset-config
@@ -41,7 +41,7 @@
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config}))))
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms upgrade-from]}]
   (validate-auto-offset-reset-config auto-offset-reset-config)
   (doto (Properties.)
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
@@ -54,7 +54,7 @@
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
     (.put StreamsConfig/REPLICATION_FACTOR_CONFIG (int changelog-topic-replication-factor))
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)
-    (set-upgrade-from-config)))
+    (set-upgrade-from-config upgrade-from)))
 
 (defn- get-metric-namespace [default topic]
   (str (name topic) "." default))
