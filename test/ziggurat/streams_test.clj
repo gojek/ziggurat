@@ -45,7 +45,7 @@
             oldest-processed-message-in-s 10
             kvs (repeat times message-key-value)
             streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
-                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
+                                                                          (assoc-in [:stream-router :vehicle :application-id] (str "test" "-" (rand-int 999999999)))
                                                                           (assoc-in [:stream-router :vehicle :oldest-processed-message-in-s] oldest-processed-message-in-s)
                                                                           (assoc-in [:stream-router :vehicle :origin-topic] topic)))]
         (Thread/sleep 20000)                                ;;waiting for streams to start
@@ -64,7 +64,7 @@
             times 6
             kvs (repeat times message-key-value)
             streams (start-streams {:vehicle {:handler-fn mapped-fn}} (-> config-map
-                                                                          (assoc-in [:stream-router :vehicle :bootstrap-servers] (get-in config-map [:stream-router :vehicle :bootstrap-servers]))
+                                                                          (assoc-in [:stream-router :vehicle :application-id] (str "test" "-" (rand-int 999999999)))
                                                                           (assoc-in [:stream-router :vehicle :origin-topic] topic)))]
         (Thread/sleep 20000)                                ;;waiting for streams to start
         (IntegrationTestUtils/produceKeyValuesSynchronously topic kvs props (MockTime.))
