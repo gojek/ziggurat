@@ -14,29 +14,13 @@ jobs:
     env:
       - KAFKA_VERSION=1
     script:
-    - lein clean
-    - lein deps
-    - mv -fv resources/config.test.{ci.edn,edn}
-    - lein cljfmt check
-    - docker-compose up -d
-    - sleep 15
-    - docker exec -it ziggurat_kafka1_1 /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic topic --partitions 3 --replication-factor 1 --zookeeper ziggurat_zookeeper_1
-    - lein test-all
-    - docker-compose down
+    - ./bin/run_tests_in_ci.sh
   - stage: test
     name: "kafka-2"
     env:
       - KAFKA_VERSION=2
     script:
-    - lein clean
-    - lein deps
-    - mv -fv resources/config.test.{ci.edn,edn}
-    - lein cljfmt check
-    - docker-compose up -d
-    - sleep 15
-    - docker exec -it ziggurat_kafka1_1 /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic topic --partitions 3 --replication-factor 1 --zookeeper ziggurat_zookeeper_1
-    - lein test-all
-    - docker-compose down
+    - ./bin/run_tests_in_ci.sh
     after_script:
       - lein code-coverage
       - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"
