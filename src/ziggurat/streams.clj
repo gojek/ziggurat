@@ -9,7 +9,6 @@
             [ziggurat.util.map :as umap]
             [ziggurat.mapper :as mpr]
             [ziggurat.timestamp-transformer :as transformer]
-            [ziggurat.config :refer [config]]
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import [java.util.regex Pattern]
            [java.util Properties]
