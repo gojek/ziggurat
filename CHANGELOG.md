@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.9.3-SNAPSHOT - 2019-02-26
+- Initialize reporters before running actor start fn
+
 ## 2.9.2-SNAPSHOT - 2019-02-26
 - Adds deployent stage on CI pipeline
 

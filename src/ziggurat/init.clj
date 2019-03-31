@@ -29,18 +29,18 @@
        (mount/start))))
 
 (defn start
-  "Starts up Ziggurat's config, actor fn, rabbitmq connection and then streams, server etc"
+  "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"
   [actor-start-fn stream-routes actor-routes]
-  (start* #{#'config/config})
+  (start* #{#'config/config
+            #'statsd-reporter
+            #'sentry-reporter})
   (actor-start-fn)
   (start* #{#'messaging-connection/connection} {:stream-routes stream-routes})
   (messaging-producer/make-queues stream-routes)
   (messaging-consumer/start-subscribers stream-routes)      ;; We want subscribers to start after creating queues on RabbitMQ.
-  (start* #{#'statsd-reporter
-            #'server/server
+  (start* #{#'server/server
             #'nrepl-server/server
-            #'streams/stream
-            #'sentry-reporter}
+            #'streams/stream}
           {:stream-routes stream-routes
            :actor-routes  actor-routes}))
 
