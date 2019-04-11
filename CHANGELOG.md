@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.10.0 - 2019-04-11
+- Adds macro for setting thread-local context params for logs
+
 ## 2.9.2 - 2019-03-31
 - Adds deployent stage on CI pipeline
 - Initialize reporters before running actor start fn
