@@ -12,7 +12,7 @@
                  [com.datadoghq/java-dogstatsd-client "2.4"]
                  [com.fasterxml.jackson.core/jackson-databind "2.9.3"]
                  [com.novemberain/langohr "5.0.0"]
-                 [com.taoensso/carmine "2.17.0"]
+                 [com.taoensso/nippy "2.14.0"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
                  [medley "0.8.4"]
                  [mount "0.1.10"]
