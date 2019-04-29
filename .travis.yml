@@ -4,7 +4,7 @@ services:
 stages:
   - test
   - name: deploy
-    if: (repo == gojektech/ziggurat) AND (tag IS present)
+    if: (repo == gojek/ziggurat) AND (tag IS present)
 jobs:
   include:
   - stage: test
