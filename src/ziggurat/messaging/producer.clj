@@ -55,10 +55,10 @@
   ([exchange message]
    (publish exchange message nil))
   ([exchange message expiration]
-   (with-retry {:count      3
-                :wait       50
+   (with-retry {:count      5
+                :wait       100
                 :on-failure #(sentry/report-error sentry-reporter %
-                                                  "Pushing message to rabbitmq failed")}
+                                                  "Pushing message to rabbitmq failed, data: " message)}
      (with-open [ch (lch/open connection)]
        (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
 

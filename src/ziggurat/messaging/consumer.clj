@@ -77,9 +77,10 @@
                                       queue-name
                                       (message-handler wrapped-mapper-fn)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
-                                                                    (log/info "Closing channel with consumer tag - " consumer_tag)
-                                                                    (close ch))})]
-    (log/infof "starting consumer for %s with consumer tag %s " queue-name consumer-tag)))
+                                                                    (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
+                                       :handle-consume-ok-fn      (fn [consumer_tag]
+                                                                    (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))
+                                       })]))
 
 (defn start-retry-subscriber* [mapper-fn topic-entity channels]
   (when (get-in-config [:retry :enabled])
