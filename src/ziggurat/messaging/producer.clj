@@ -35,7 +35,7 @@
      (let [props (if dead-letter-exchange
                    {"x-dead-letter-exchange" dead-letter-exchange}
                    {})]
-       (with-open [ch (lch/open connection)]
+       (let [ch (lch/open connection)]
          (create-queue queue-name props ch)
          (declare-exchange ch exchange-name)
          (bind-queue-to-exchange ch queue-name exchange-name)))
@@ -55,12 +55,15 @@
   ([exchange message]
    (publish exchange message nil))
   ([exchange message expiration]
-   (with-retry {:count      5
-                :wait       100
-                :on-failure #(sentry/report-error sentry-reporter %
-                                                  "Pushing message to rabbitmq failed, data: " message)}
-     (with-open [ch (lch/open connection)]
-       (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))))
+   (try
+     (with-retry {:count      5
+                  :wait       100
+                  :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
+       (with-open [ch (lch/open connection)]
+         (lb/publish ch exchange "" (nippy/freeze message) (properties-for-publish expiration))))
+     (catch Throwable e
+       (sentry/report-error sentry-reporter e
+                            "Pushing message to rabbitmq failed, data: " message)))))
 
 (defn publish-to-delay-queue [topic-entity message]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
