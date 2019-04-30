@@ -13,7 +13,7 @@
 (deftype IngestionTimeExtractor [] TimestampExtractor
          (extract [_ record _]
            (let [ingestion-time (get-timestamp-from-record record)]
-             (if (< ingestion-time 0)
+             (if (neg? ingestion-time)
                (get-current-time-in-millis)
                ingestion-time))))
 
