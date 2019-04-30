@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="https://travis-ci.com/gojektech/ziggurat">
-    <img src="https://travis-ci.com/gojektech/ziggurat.svg?branch=master" alt="Build Status" />
+  <a href="https://travis-ci.com/gojek/ziggurat">
+    <img src="https://travis-ci.com/gojek/ziggurat.svg?branch=master" alt="Build Status" />
   </a>
-  <a href='https://coveralls.io/github/gojektech/ziggurat?branch=master'>
-    <img src='https://coveralls.io/repos/github/gojektech/ziggurat/badge.svg?branch=master' alt='Coverage Status' />
+  <a href='https://coveralls.io/github/gojek/ziggurat?branch=master'>
+    <img src='https://coveralls.io/repos/github/gojek/ziggurat/badge.svg?branch=master' alt='Coverage Status' />
   </a>
   <a href='https://clojars.org/tech.gojek/ziggurat'>
     <img src='https://img.shields.io/clojars/v/tech.gojek/ziggurat.svg' alt='Clojars Project' />
