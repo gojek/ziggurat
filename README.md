@@ -130,7 +130,8 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                           :stream-threads-count           [1 :int]
                                                           :origin-topic                   "kafka-topic-*"
                                                           :oldest-processed-message-in-s  [604800 :int]
-                                                          :proto-class          "proto-class"}}
+                                                          :proto-class          "proto-class"
+                                                          :changelog-topic-replication-factor [3 :int]}}
             :datadog              {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
@@ -170,6 +171,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
         * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams should be of the same proto-class.
         * oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
         * proto-class - The proto-class of the message so that it can be decompiled before being passed to the mapper function
+        * changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
 * datadog - The statsd host and port that metrics should be sent to, although the key name is datadog, it supports statsd as well to send metrics.
 * sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
 * rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
