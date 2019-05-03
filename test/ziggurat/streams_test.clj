@@ -32,7 +32,7 @@
                                 (swap! message-received-count inc))
                               :success)]
       (let [topic "topic"
-            cluster (doto (EmbeddedKafkaCluster. 1) (.start))
+            cluster (doto (EmbeddedKafkaCluster. 3) (.start))
             bootstrap-serves (.bootstrapServers cluster)
             times 6
             oldest-processed-message-in-s 10
@@ -61,7 +61,7 @@
                                 (swap! message-received-count inc))
                               :success)]
       (let [topic "topic"
-            cluster (doto (EmbeddedKafkaCluster. 1) (.start))
+            cluster (doto (EmbeddedKafkaCluster. 3) (.start))
             bootstrap-serves (.bootstrapServers cluster)
             times 6
             kvs (repeat times (KeyValue/pair (create-photo) (create-photo)))

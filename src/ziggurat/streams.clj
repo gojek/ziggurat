@@ -24,9 +24,10 @@
   {:buffered-records-per-partition 10000
    :commit-interval-ms             15000
    :auto-offset-reset-config       "latest"
-   :oldest-processed-message-in-s  604800})
+   :oldest-processed-message-in-s  604800
+   :changelog-topic-replication-factor 3})
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms]}]
+(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms changelog-topic-replication-factor]}]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config})))
   (doto (Properties.)
@@ -38,6 +39,7 @@
     (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG IngestionTimeExtractor)
     (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int buffered-records-per-partition))
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
+    (.put StreamsConfig/REPLICATION_FACTOR_CONFIG (int changelog-topic-replication-factor))
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)))
 
 (defn- get-metric-namespace [default topic]
