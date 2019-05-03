@@ -3,7 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
-#2.10.1 - 2019-05-02
+## 2.10.2 - 2019-05-03
+- Adds config to change the changelog topic replication factor
+
+## 2.10.1 - 2019-05-02
 - dont close the channel on shutdown listener. it is already closed when connection is broken. this prevents topology recovery
 - catch message production exception in rabbitmq publisher
 - Adds nippy as dependency instead of carmine
