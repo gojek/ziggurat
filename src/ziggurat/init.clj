@@ -27,32 +27,38 @@
        (mount/with-args args)
        (mount/start))))
 
-(defn start-rabbitmq-connection [stream-routes]
-  (start* #{#'messaging-connection/connection} {:stream-routes stream-routes}))
+(defn- start-rabbitmq-connection [args]
+  (start* #{#'messaging-connection/connection} args))
 
-(defn stop-rabbitmq-connection []
+(defn- start-rabbitmq-consumers [args]
+  (start-rabbitmq-connection args)
+  (messaging-consumer/start-subscribers (get args :stream-routes)))
+
+(defn- start-rabbitmq-producers [args]
+  (start-rabbitmq-connection args)
+  (messaging-producer/make-queues (get args :stream-routes)))
+
+(defn start-stream [args]
+  (start-rabbitmq-producers args)
+  (start* #{#'streams/stream} args))
+
+(defn start-management-apis [args]
+  (start-rabbitmq-connection args)
+  (start* #{#'server/server} (dissoc args :actor-routes)))
+
+(defn start-server [args]
+  (start-rabbitmq-connection args)
+  (start* #{#'server/server} args))
+
+(defn start-workers [{:keys [stream-routes]}]
+  (start-rabbitmq-producers stream-routes)
+  (start-rabbitmq-consumers stream-routes))
+
+(defn- stop-rabbitmq-connection []
   (mount/stop #'messaging-connection/connection))
 
-(defn start-rabbitmq-consumers [stream-routes]
-  (start-rabbitmq-connection stream-routes)
-  (messaging-consumer/start-subscribers stream-routes))
-
-(defn start-rabbitmq-producers [stream-routes]
-  (start-rabbitmq-connection stream-routes)
-  (messaging-producer/make-queues stream-routes))
-
-(defn start-stream [stream-routes]
-  (start-rabbitmq-producers stream-routes)
-  (start* #{#'streams/stream} stream-routes))
-
-(defn start-management-apis [stream-routes]
-  (start-rabbitmq-connection stream-routes)
-  (start* #{#'server/server} {:stream-routes stream-routes}))
-
-(defn start-server [stream-routes actor-routes]
-  (start-rabbitmq-connection stream-routes)
-  (start* #{#'server/server} {:stream-routes stream-routes
-                              :actor-routes  actor-routes}))
+(defn stop-workers []
+  (stop-rabbitmq-connection))
 
 (defn start-common-states []
   (start* #{#'config/config
@@ -64,9 +70,7 @@
   (mount/stop #'config/config
               #'statsd-reporter
               #'messaging-connection/connection
-              #'server/server
-              #'nrepl-server/server
-              #'streams/stream))
+              #'nrepl-server/server))
 
 (defn stop-server []
   (mount/stop #'server/server)
@@ -85,9 +89,11 @@
   [actor-start-fn stream-routes actor-routes]
   (start-common-states)
   (actor-start-fn)
-  (start-stream stream-routes)
-  (start-server stream-routes actor-routes)
-  (start-rabbitmq-consumers stream-routes))     ;; We want subscribers to start after creating queues on RabbitMQ.
+  (let [args {:actor-routes  actor-routes
+              :stream-routes stream-routes}]
+    (start-stream args)
+    (start-server args)
+    (start-rabbitmq-consumers args)))                            ;; We want subscribers to start after creating queues on RabbitMQ.
 
 
 (defn stop
