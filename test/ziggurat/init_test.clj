@@ -155,6 +155,6 @@
 (deftest validate-modes-test
   (let [exception-message "Invalid modes passed"]
     (testing "Validate modes should raise exception if modes have any invalid element"
-      (let [modes ["invalid-modes" "api-server"]]
-        (is (thrown? ExceptionInfo exception-message {:invalid-modes ["invalid-modes"]} (init/validate-modes modes)))))))
+      (let [modes ["invalid-modes" "api-server" "second-invalid"]]
+        (is (thrown-with-msg? IllegalArgumentException #"invalid-modes second-invalid" (init/validate-modes modes)))))))
 

@@ -140,8 +140,8 @@
   (let [invalid-modes (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
         invalid-modes-count (count invalid-modes)]
     (when (pos? invalid-modes-count)
-      (throw (ex-info "Invalid modes passed"
-                      {:invalid-modes invalid-modes})))))
+      (throw (IllegalArgumentException. ^String (reduce (fn [acc mode]
+                                                          (str acc " " mode)) "Invalid modes passed:" invalid-modes))))))
 
 (defn main
   "The entry point for your application.
@@ -165,6 +165,9 @@
      (validate-stream-routes stream-routes)
      (add-shutdown-hook stop-fn modes)
      (start start-fn stream-routes actor-routes modes)
+     (catch IllegalArgumentException e
+       (log/error e)
+       (System/exit 1))
      (catch Exception e
        (log/error e)
        (stop stop-fn modes)
