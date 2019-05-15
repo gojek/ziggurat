@@ -138,7 +138,7 @@
 (defn validate-modes [modes]
   (let [invalid-modes (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
         invalid-modes-count (count invalid-modes)]
-    (when (< 0 invalid-modes-count)
+    (when (pos? invalid-modes-count)
       (throw (ex-info "Invalid modes passed"
                       {:invalid-modes invalid-modes})))))
 
