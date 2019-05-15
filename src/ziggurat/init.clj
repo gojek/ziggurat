@@ -82,11 +82,12 @@
   ([modes fnk]
    (execute-function modes fnk nil))
   ([modes fnk args]
-   (let [modes (or modes (keys valid-modes-fns))]
-     (doseq [mode modes]
-       (if (nil? args)
-         ((fnk (get valid-modes-fns mode)))
-         ((fnk (get valid-modes-fns mode)) args))))))
+   (doseq [mode (-> modes
+                    (or (keys valid-modes-fns))
+                    sort)]
+     (if (nil? args)
+       ((fnk (get valid-modes-fns mode)))
+       ((fnk (get valid-modes-fns mode)) args)))))
 
 (defn start-common-states []
   (start* #{#'config/config
@@ -120,17 +121,17 @@
 
 (defn- add-shutdown-hook [actor-stop-fn modes]
   (.addShutdownHook
-    (Runtime/getRuntime)
-    (Thread. ^Runnable #(do (stop actor-stop-fn modes)
-                            (shutdown-agents))
-             "Shutdown-handler")))
+   (Runtime/getRuntime)
+   (Thread. ^Runnable #(do (stop actor-stop-fn modes)
+                           (shutdown-agents))
+            "Shutdown-handler")))
 
 (s/defschema StreamRoute
   (s/conditional
-    #(and (seq %)
-          (map? %))
-    {s/Keyword {:handler-fn (s/pred #(fn? %))
-                s/Keyword   (s/pred #(fn? %))}}))
+   #(and (seq %)
+         (map? %))
+   {s/Keyword {:handler-fn (s/pred #(fn? %))
+               s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes]
   (s/validate StreamRoute stream-routes))

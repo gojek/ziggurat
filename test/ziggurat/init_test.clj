@@ -121,6 +121,19 @@
         (is (= 200 status-actor))
         (is (= 200 status)))))
 
+  (testing "Deadset management and server api modes should run both actor and deadset management routes"
+    (with-redefs [streams/start-streams (constantly nil)
+                  streams/stop-streams  (constantly nil)
+                  config/config-file    "config.test.edn"]
+      (init/start #() {} [["test-ping" (fn [_request] {:status 200
+                                                       :body   "pong"})]] ["management-api" "api-server"])
+      (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
+            status-actor status
+            {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
+        (init/stop #() nil)
+        (is (= 200 status-actor))
+        (is (= 200 status)))))
+
   (testing "The routes not added by actor should return 404"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
