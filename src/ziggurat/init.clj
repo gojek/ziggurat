@@ -50,27 +50,15 @@
   (start-rabbitmq-connection args)
   (start* #{#'server/server} args))
 
-(defn start-workers [{:keys [stream-routes]}]
-  (start-rabbitmq-producers stream-routes)
-  (start-rabbitmq-consumers stream-routes))
+(defn start-workers [args]
+  (start-rabbitmq-producers args)
+  (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
   (mount/stop #'messaging-connection/connection))
 
 (defn stop-workers []
   (stop-rabbitmq-connection))
-
-(defn start-common-states []
-  (start* #{#'config/config
-            #'statsd-reporter
-            #'sentry-reporter
-            #'nrepl-server/server}))
-
-(defn stop-common-states []
-  (mount/stop #'config/config
-              #'statsd-reporter
-              #'messaging-connection/connection
-              #'nrepl-server/server))
 
 (defn stop-server []
   (mount/stop #'server/server)
@@ -84,31 +72,56 @@
   (mount/stop #'server/server)
   (stop-rabbitmq-connection))
 
+(def valid-modes-fns
+  {"api-server"     [start-server stop-server]
+   "stream-worker"  [start-stream stop-stream]
+   "worker"         [start-workers stop-workers]
+   "management-api" [start-management-apis stop-management-apis]})
+
+(defn- execute-function
+  ([modes fnk]
+   (execute-function modes fnk nil))
+  ([modes fnk args]
+   (let [modes (or modes (keys valid-modes-fns))]
+     (doseq [mode modes]
+       (if (nil? args)
+         ((fnk (get valid-modes-fns mode)))
+         ((fnk (get valid-modes-fns mode)) args))))))
+
+(defn start-common-states []
+  (start* #{#'config/config
+            #'statsd-reporter
+            #'sentry-reporter
+            #'nrepl-server/server}))
+
+(defn stop-common-states []
+  (mount/stop #'config/config
+              #'statsd-reporter
+              #'messaging-connection/connection
+              #'nrepl-server/server))
+
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"
-  [actor-start-fn stream-routes actor-routes]
+  [actor-start-fn stream-routes actor-routes modes]
   (start-common-states)
   (actor-start-fn)
-  (let [args {:actor-routes  actor-routes
-              :stream-routes stream-routes}]
-    (start-stream args)
-    (start-server args)
-    (start-rabbitmq-consumers args)))                            ;; We want subscribers to start after creating queues on RabbitMQ.
-
+  (execute-function modes
+                    first
+                    {:actor-routes  actor-routes
+                     :stream-routes stream-routes}))
 
 (defn stop
   "Calls the Ziggurat's state stop fns and then actor-stop-fn."
-  [actor-stop-fn]
+  [actor-stop-fn modes]
   (stop-common-states)
-  (stop-stream)
-  (stop-server)
+  (execute-function modes second)
   (actor-stop-fn)
   (mount/stop #'config/config))
 
-(defn- add-shutdown-hook [actor-stop-fn]
+(defn- add-shutdown-hook [actor-stop-fn modes]
   (.addShutdownHook
     (Runtime/getRuntime)
-    (Thread. ^Runnable #(do (stop actor-stop-fn)
+    (Thread. ^Runnable #(do (stop actor-stop-fn modes)
                             (shutdown-agents))
              "Shutdown-handler")))
 
@@ -121,6 +134,13 @@
 
 (defn validate-stream-routes [stream-routes]
   (s/validate StreamRoute stream-routes))
+
+(defn validate-modes [modes]
+  (let [invalid-modes (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
+        invalid-modes-count (count invalid-modes)]
+    (when (< 0 invalid-modes-count)
+      (throw (ex-info "Invalid modes passed"
+                      {:invalid-modes invalid-modes})))))
 
 (defn main
   "The entry point for your application.
@@ -137,11 +157,14 @@
   ([start-fn stop-fn stream-routes]
    (main start-fn stop-fn stream-routes []))
   ([start-fn stop-fn stream-routes actor-routes]
+   (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes}))
+  ([{:keys [start-fn stop-fn stream-routes actor-routes modes]}]
    (try
+     (validate-modes modes)
      (validate-stream-routes stream-routes)
-     (add-shutdown-hook stop-fn)
-     (start start-fn stream-routes actor-routes)
+     (add-shutdown-hook stop-fn modes)
+     (start start-fn stream-routes actor-routes modes)
      (catch Exception e
        (log/error e)
-       (stop stop-fn)
+       (stop stop-fn modes)
        (System/exit 1)))))
