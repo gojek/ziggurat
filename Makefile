@@ -17,3 +17,10 @@ test-all: setup
 test: setup
 	ZIGGURAT_STREAM_ROUTER_DEFAULT_ORIGIN_TOPIC=$(topic) lein test
 	docker-compose down
+
+coverage: setup
+	lein code-coverage
+ifdef COVERALLS_URL
+		curl --form 'json_file=@coverage/coveralls.json' "$(COVERALLS_URL)"
+endif
+		docker-compose down
