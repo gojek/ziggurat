@@ -40,7 +40,14 @@
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config}))))
 
-(defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms upgrade-from]}]
+(defn- properties [{:keys [application-id
+                           bootstrap-servers
+                           stream-threads-count
+                           auto-offset-reset-config
+                           buffered-records-per-partition
+                           commit-interval-ms
+                           upgrade-from
+                           changelog-topic-replication-factor]}]
   (validate-auto-offset-reset-config auto-offset-reset-config)
   (doto (Properties.)
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)

@@ -4,6 +4,7 @@ all: test-all test
 topic="topic"
 
 setup:
+	docker-compose down
 	lein deps
 	docker-compose up -d
 	sleep 10

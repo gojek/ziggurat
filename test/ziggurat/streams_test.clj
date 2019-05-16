@@ -8,7 +8,8 @@
            [java.util Properties]
            [kafka.utils MockTime]
            [org.apache.kafka.clients.producer ProducerConfig]
-           [org.apache.kafka.streams KeyValue]))
+           [org.apache.kafka.streams KeyValue]
+           [org.apache.kafka.streams.integration.utils IntegrationTestUtils]))
 
 (use-fixtures :once fix/mount-only-config)
 
@@ -42,11 +43,13 @@
                               :success)]
       (let [times                         6
             oldest-processed-message-in-s 10
+            changelog-topic-replication-factor 1
             kvs                           (repeat times message-key-value)
             streams                       (start-streams {:default {:handler-fn mapped-fn}}
                                                          (-> (ziggurat-config)
                                                              (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                             (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)))]
+                                                             (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
+                                                             (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
         (Thread/sleep 10000)                                ;;waiting for streams to start
         (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                             kvs
@@ -63,10 +66,12 @@
                                 (swap! message-received-count inc))
                               :success)]
       (let [times   6
+            changelog-topic-replication-factor 1
             kvs     (repeat times message-key-value)
             streams (start-streams {:default {:handler-fn mapped-fn}}
                                    (-> (ziggurat-config)
-                                       (assoc-in [:stream-router :default :application-id] (rand-application-id))))]
+                                       (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                       (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
         (Thread/sleep 10000)                                ;;waiting for streams to start
         (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                             kvs
