@@ -116,8 +116,7 @@
   [actor-stop-fn modes]
   (stop-common-states)
   (execute-function modes second)
-  (actor-stop-fn)
-  (mount/stop #'config/config))
+  (actor-stop-fn))
 
 (defn- add-shutdown-hook [actor-stop-fn modes]
   (.addShutdownHook

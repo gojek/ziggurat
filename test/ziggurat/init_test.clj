@@ -1,14 +1,12 @@
 (ns ziggurat.init-test
   (:require [clojure.test :refer :all]
-            [clojure.tools.logging :as log]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
             [ziggurat.messaging.connection :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams]
-            [ziggurat.server.test-utils :as tu])
-  (:import (clojure.lang ExceptionInfo)))
+            [ziggurat.server.test-utils :as tu]))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
