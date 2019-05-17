@@ -17,7 +17,7 @@
                  [medley "0.8.4"]
                  [mount "0.1.10"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
-                 [org.apache.kafka/kafka-streams "1.1.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
                  [org.clojure/clojure "1.10.0"]
@@ -47,18 +47,13 @@
                        :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
                                       [io.confluent/kafka-schema-registry "4.1.1"]
                                       [junit/junit "4.12"]
-                                      [org.apache.kafka/kafka-streams "1.1.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                                      [org.apache.kafka/kafka-clients "1.1.1" :classifier "test"]
-                                      [org.apache.kafka/kafka_2.11 "1.1.1" :classifier "test"]]
+                                      [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                      [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
+                                      [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]]
                        :plugins      [[lein-cloverage "1.0.13"]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
-             :dev     {:plugins  [[jonase/eastwood "0.2.6"]
-                                  [lein-cljfmt "0.6.3"]
+             :dev     {:plugins  [[lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
-                                  [lein-githooks "0.1.0"]
-                                  [lein-kibit "0.1.6"]]
-                       :githooks {:auto-install true
-                                  :pre-commit   ["lein cljfmt check && lein kibit"]
-                                  :pre-push     ["lein test"]}}
+                                  [lein-kibit "0.1.6"]]}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})

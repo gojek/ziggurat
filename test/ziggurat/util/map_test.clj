@@ -25,4 +25,4 @@
   (testing "applies a function on a key"
     (let [a {:something "value"}
           expected-result {"something" "value"}]
-      (is (= (nested-map-keys str expected-result))))))
+      (is (= (nested-map-keys name a) expected-result)))))
