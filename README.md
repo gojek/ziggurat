@@ -39,13 +39,16 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 ## Dev Setup 
 (For mac users only)
 
+- Install Clojure: ```brew install clojure```
+
 - Install leiningen: ```brew install leiningen```
 
-- Install Rabbitmq: ```brew install rabbitmq```
+- Run docker-compose: ```docker-compose up```. This starts
+    - Kafka on localhost:9092
+    - ZooKeeper on localhost:2181
+    - RabbitMQ on localhost:5672
 
-- Start Rabbitmq: ```brew services run rabbitmq``` : ensure the default user-id and password for rabbitmq is `guest`
-
-- Run tests: ```lein test```
+- Run tests: ```make test```
 
 
 ## Usage

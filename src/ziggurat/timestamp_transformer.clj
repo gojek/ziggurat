@@ -26,7 +26,6 @@
              (when (message-to-process? message-time oldest-processed-message-in-s)
                (calculate-and-report-kafka-delay metric-namespace message-time)
                (KeyValue/pair record-key record-value))))
-         (punctuate [_ _] nil)
          (close [_] nil))
 
 (defn create [metric-namespace process-message-since-in-s]

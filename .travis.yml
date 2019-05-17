@@ -1,22 +1,36 @@
 language: clojure
+
 services:
-- rabbitmq
+- docker
+
 stages:
+  - lint-check
   - test
+  - coverage
   - name: deploy
     if: (repo == gojek/ziggurat) AND (tag IS present)
 jobs:
   include:
-  - stage: test
+  - stage: lint-check
     script:
-    - lein clean
-    - lein deps
-    - mv -fv resources/config.test.{ci.edn,edn}
     - lein cljfmt check
-    - lein test-all
-    after_script:
-      - lein code-coverage
-      - curl --form 'json_file=@coverage/coveralls.json' "${COVERALLS_URL}"
+    - lein kibit
+  - stage: test
+    name: "kafka-1"
+    env:
+      - KAFKA_VERSION=1
+    script:
+    - ./bin/run_tests_in_ci.sh
+  - stage: test
+    name: "kafka-2"
+    env:
+      - KAFKA_VERSION=2
+    script:
+    - ./bin/run_tests_in_ci.sh
+
+  - stage: coverage
+    script:
+    - make coverage
 
   - stage: deploy
     script: lein deploy clojars
