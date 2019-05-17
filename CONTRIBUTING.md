@@ -1,6 +1,6 @@
 # Ziggurat - Contributing
 
-Note: All the fixes which are related to version `2.x` will go to branch `2.x` and then will be release from that branch. Master branch is version 3 of ziggurat refer [here](https://github.com/gojek/ziggurat/projects/2)
+Note: All the fixes which are related to version `2.x` will go to branch `2.x` and then will be release from that branch. Master branch is version 3 of ziggurat refer[here](https://github.com/gojek/ziggurat/projects/2)
 
 [tech.gojek/ziggurat](https://clojars.org/tech.gojek/ziggurat) is an open-source
 project. It is licensed using the [Apache License 2.0][1]. We appreciate pull 
