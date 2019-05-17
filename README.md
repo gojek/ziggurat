@@ -52,8 +52,16 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 
 ## Usage
-Add this to your project.clj
-`[tech.gojek/ziggurat "2.9.1"]`
+
+Upgarde Guide to 3.x refer[here](UpgradeGuide.md)
+
+Add this to your project.clj:
+
+`[tech.gojek/ziggurat "3.0.0-rc1"]`
+
+or for latest stable version 
+
+`[tech.gojek/ziggurat "2.10.2"]`
 
 To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
 ```clojure

@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.0.0-rc1 - 2019-05-17
+- Upgrades kafka streams to version 2.1. Please refer [this](UpgradeGuide.md) to upgrade
+
 ## 2.10.2 - 2019-05-03
 - Adds config to change the changelog topic replication factor
 
