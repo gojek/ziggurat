@@ -139,8 +139,7 @@
   (let [invalid-modes (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
         invalid-modes-count (count invalid-modes)]
     (when (pos? invalid-modes-count)
-      (throw (IllegalArgumentException. ^String (reduce (fn [acc mode]
-                                                          (str acc " " mode)) "Invalid modes passed:" invalid-modes))))))
+      (throw (ex-info "Wrong modes arguement passed - " {:invalid-modes invalid-modes})))))
 
 (defn main
   "The entry point for your application.
@@ -164,7 +163,7 @@
      (validate-stream-routes stream-routes)
      (add-shutdown-hook stop-fn modes)
      (start start-fn stream-routes actor-routes modes)
-     (catch IllegalArgumentException e
+     (catch clojure.lang.ExceptionInfo e
        (log/error e)
        (System/exit 1))
      (catch Exception e

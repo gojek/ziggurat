@@ -154,5 +154,5 @@
   (let [exception-message "Invalid modes passed"]
     (testing "Validate modes should raise exception if modes have any invalid element"
       (let [modes ["invalid-modes" "api-server" "second-invalid"]]
-        (is (thrown-with-msg? IllegalArgumentException #"invalid-modes second-invalid" (init/validate-modes modes)))))))
+        (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes)))))))
 
