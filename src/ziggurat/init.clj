@@ -73,10 +73,10 @@
   (stop-rabbitmq-connection))
 
 (def valid-modes-fns
-  {"api-server"     [start-server stop-server]
-   "stream-worker"  [start-stream stop-stream]
-   "worker"         [start-workers stop-workers]
-   "management-api" [start-management-apis stop-management-apis]})
+  {"api-server"     {:start-fn start-server :stop-fn stop-server}
+   "stream-worker"  {:start-fn start-stream :stop-fn stop-stream}
+   "worker"         {:start-fn start-workers :stop-fn stop-workers}
+   "management-api" {:start-fn start-management-apis :stop-fn stop-management-apis}})
 
 (defn- execute-function
   ([modes fnk]
@@ -107,7 +107,7 @@
   (start-common-states)
   (actor-start-fn)
   (execute-function modes
-                    first
+                    :start-fn
                     {:actor-routes  actor-routes
                      :stream-routes stream-routes}))
 
@@ -115,7 +115,7 @@
   "Calls the Ziggurat's state stop fns and then actor-stop-fn."
   [actor-stop-fn modes]
   (stop-common-states)
-  (execute-function modes second)
+  (execute-function modes :stop-fn)
   (actor-stop-fn))
 
 (defn- add-shutdown-hook [actor-stop-fn modes]
