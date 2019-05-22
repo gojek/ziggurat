@@ -73,10 +73,10 @@
   (stop-rabbitmq-connection))
 
 (def valid-modes-fns
-  {"api-server"     {:start-fn start-server :stop-fn stop-server}
-   "stream-worker"  {:start-fn start-stream :stop-fn stop-stream}
-   "worker"         {:start-fn start-workers :stop-fn stop-workers}
-   "management-api" {:start-fn start-management-apis :stop-fn stop-management-apis}})
+  {:api-server     {:start-fn start-server :stop-fn stop-server}
+   :stream-worker  {:start-fn start-stream :stop-fn stop-stream}
+   :worker         {:start-fn start-workers :stop-fn stop-workers}
+   :management-api {:start-fn start-management-apis :stop-fn stop-management-apis}})
 
 (defn- execute-function
   ([modes fnk]

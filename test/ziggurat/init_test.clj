@@ -124,7 +124,7 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"]
       (init/start #() {} [["test-ping" (fn [_request] {:status 200
-                                                       :body   "pong"})]] ["management-api" "api-server"])
+                                                       :body   "pong"})]] [:management-api :api-server])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
@@ -151,8 +151,7 @@
         (is (= 200 status))))))
 
 (deftest validate-modes-test
-  (let [exception-message "Invalid modes passed"]
-    (testing "Validate modes should raise exception if modes have any invalid element"
-      (let [modes ["invalid-modes" "api-server" "second-invalid"]]
-        (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes)))))))
+  (testing "Validate modes should raise exception if modes have any invalid element"
+    (let [modes [:invalid-modes :api-server :second-invalid]]
+      (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes))))))
 
