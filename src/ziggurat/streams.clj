@@ -2,29 +2,29 @@
   (:require [clojure.tools.logging :as log]
             [flatland.protobuf.core :as proto]
             [mount.core :as mount :refer [defstate]]
-            [ziggurat.metrics :as metrics]
-            [ziggurat.config :refer [ziggurat-config]]
             [sentry-clj.async :as sentry]
             [ziggurat.channel :as chl]
-            [ziggurat.util.map :as umap]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
+            [ziggurat.metrics :as metrics]
+            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.timestamp-transformer :as transformer]
-            [ziggurat.sentry :refer [sentry-reporter]])
-  (:import [java.util.regex Pattern]
-           [java.util Properties]
+            [ziggurat.util.map :as umap])
+  (:import [java.util Properties]
+           [java.util.regex Pattern]
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
+           [org.apache.kafka.common.utils SystemTime]
            [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
-           [org.apache.kafka.common.utils SystemTime]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]))
 
 (def default-config-for-stream
-  {:buffered-records-per-partition 10000
-   :commit-interval-ms             15000
-   :auto-offset-reset-config       "latest"
-   :oldest-processed-message-in-s  604800
+  {:buffered-records-per-partition     10000
+   :commit-interval-ms                 15000
+   :auto-offset-reset-config           "latest"
+   :oldest-processed-message-in-s      604800
    :changelog-topic-replication-factor 3})
 
 (defn- properties [{:keys [application-id bootstrap-servers stream-threads-count auto-offset-reset-config buffered-records-per-partition commit-interval-ms changelog-topic-replication-factor]}]
@@ -42,12 +42,15 @@
     (.put StreamsConfig/REPLICATION_FACTOR_CONFIG (int changelog-topic-replication-factor))
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)))
 
-(defn- get-metric-namespace [default topic]
-  (str (name topic) "." default))
-
 (defn- log-and-report-metrics [topic-entity message]
-  (let [message-read-metric-namespace (get-metric-namespace "message" (name topic-entity))]
-    (metrics/increment-count message-read-metric-namespace "read"))
+  (let [topic-entity-name  (name topic-entity)
+        additional-tags    {:topic-name topic-entity-name}
+        default-namespace  "message"
+        metric-namespaces  [topic-entity-name default-namespace]
+        default-namespaces [default-namespace]
+        metric             "read"
+        multi-namespaces   [metric-namespaces default-namespaces]]
+    (metrics/multi-ns-increment-count multi-namespaces metric additional-tags))
   message)
 
 (defn store-supplier-builder []
@@ -63,15 +66,17 @@
 (defn- map-values [mapper-fn stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- transformer-supplier [metric-namespace oldest-processed-message-in-s]
+(defn- transformer-supplier
+  [metric-namespaces oldest-processed-message-in-s additional-tags]
   (reify TransformerSupplier
-    (get [_] (transformer/create metric-namespace oldest-processed-message-in-s))))
+    (get [_] (transformer/create metric-namespaces oldest-processed-message-in-s additional-tags))))
 
-(defn- transform-values [topic-entity oldest-processed-message-in-s stream-builder]
-  (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (.transform stream-builder (transformer-supplier metric-namespace oldest-processed-message-in-s) (into-array [(.name (store-supplier-builder))]))))
+(defn- transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
+  (let [metric-namespaces [topic-entity-name "message-received-delay-histogram"]
+        additional-tags   {:topic-name topic-entity-name}]
+    (.transform stream-builder (transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
 
-(defn- protobuf->hash [message proto-class]
+(defn- protobuf->hash [message proto-class topic-entity-name]
   (try
     (let [proto-klass  (-> proto-class
                            java.lang.Class/forName
@@ -83,9 +88,11 @@
                            keys)]
       (select-keys loaded-proto proto-keys))
     (catch Throwable e
-      (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
-      (metrics/increment-count "message-parsing" "failed")
-      nil)))
+      (let [additional-tags   {:topic-name topic-entity-name}
+            metric-namespaces ["message-parsing"]]
+        (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
+        (metrics/increment-count metric-namespaces "failed" additional-tags)
+        nil))))
 
 (defn- topology [handler-fn {:keys [origin-topic proto-class oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
@@ -94,7 +101,7 @@
     (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
-         (map-values #(protobuf->hash % proto-class))
+         (map-values #(protobuf->hash % proto-class topic-entity-name))
          (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
     (.build builder)))
@@ -108,13 +115,13 @@
    (start-streams stream-routes (ziggurat-config)))
   ([stream-routes stream-configs]
    (reduce (fn [streams stream]
-             (let [topic-entity (first stream)
+             (let [topic-entity     (first stream)
                    topic-handler-fn (-> stream second :handler-fn)
-                   channels (chl/get-keys-for-topic stream-routes topic-entity)
-                   stream-config (-> stream-configs
-                                     (get-in [:stream-router topic-entity])
-                                     (umap/deep-merge default-config-for-stream))
-                   stream (start-stream* topic-handler-fn stream-config topic-entity channels)]
+                   channels         (chl/get-keys-for-topic stream-routes topic-entity)
+                   stream-config    (-> stream-configs
+                                        (get-in [:stream-router topic-entity])
+                                        (umap/deep-merge default-config-for-stream))
+                   stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (.start stream)
                (conj streams stream)))
            []

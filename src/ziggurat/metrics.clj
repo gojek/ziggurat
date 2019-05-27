@@ -1,44 +1,70 @@
 (ns ziggurat.metrics
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.walk :refer [stringify-keys]])
   (:import (com.gojek.metrics.datadog DatadogReporter)
            (com.gojek.metrics.datadog.transport UdpTransport$Builder UdpTransport)
-           (java.util.concurrent TimeUnit)
-           (io.dropwizard.metrics5 MetricRegistry Meter MetricName Histogram)))
+           (io.dropwizard.metrics5 MetricRegistry Meter MetricName Histogram)
+           (java.util.concurrent TimeUnit)))
 
 (defonce ^:private group (atom nil))
 
 (defonce metrics-registry
   (MetricRegistry.))
 
+(defn- merge-tags
+  [additional-tags]
+  (let [default-tags {"actor" @group}]
+    (merge default-tags (when (not (empty? additional-tags))
+                          (stringify-keys additional-tags)))))
+
 (defn mk-meter
-  [category metric]
-  (let [metric-name (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
-        tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
-    (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric)))
+  ([category metric]
+   (mk-meter category metric nil))
+  ([category metric additional-tags]
+   (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
+         tags          (merge-tags additional-tags)
+         tagged-metric (.tagged ^MetricName metric-name tags)]
+     (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn mk-histogram
-  [category metric]
-  (let [metric-name (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
-        tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
-    (.histogram ^MetricRegistry metrics-registry tagged-metric)))
+  ([category metric]
+   (mk-histogram category metric nil))
+  ([category metric additional-tags]
+   (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
+         tags          (merge-tags additional-tags)
+         tagged-metric (.tagged ^MetricName metric-name tags)]
+     (.histogram ^MetricRegistry metrics-registry tagged-metric))))
 
-(defn increment-count
-  ([metric-namespace metric]
-   (increment-count metric-namespace metric 1))
-  ([metric-namespace metric n]
-   (let [meter ^Meter (mk-meter metric-namespace metric)]
-     (.mark meter (int n)))))
+(defn- intercalate-dot
+  [names]
+  (apply str (interpose "." names)))
 
-(defn decrement-count
-  ([metric-namespace metric]
-   (decrement-count metric-namespace metric 1))
-  ([metric-namespace metric n]
-   (let [meter ^Meter (mk-meter metric-namespace metric)]
-     (.mark meter (int (- n))))))
+(defn- inc-or-dec-count
+  [sign metric-namespaces metric additional-tags]
+  (let [metric-namespace (intercalate-dot metric-namespaces)
+        meter            ^Meter (mk-meter metric-namespace metric additional-tags)]
+    (.mark meter (sign 1))))
 
-(defn report-time [metric-namespace time-val]
-  (let [histogram ^Histogram (mk-histogram metric-namespace "all")]
+(def increment-count (partial inc-or-dec-count +))
+
+(def decrement-count (partial inc-or-dec-count -))
+
+(defn multi-ns-increment-count [nss metric additional-tags]
+  (doseq [ns nss]
+    (increment-count ns metric additional-tags)))
+
+(defn report-time
+  [metric-namespaces time-val additional-tags]
+  (let [metric-namespace (intercalate-dot metric-namespaces)
+        histogram        ^Histogram (mk-histogram metric-namespace "all" additional-tags)]
     (.update histogram (int time-val))))
+
+(defn multi-ns-report-time
+  ([nss time-val]
+   (multi-ns-report-time nss time-val nil))
+  ([nss time-val additional-tags]
+   (doseq [ns nss]
+     (report-time ns time-val additional-tags))))
 
 (defn start-statsd-reporter [statsd-config env app-name]
   (let [{:keys [enabled host port]} statsd-config]
@@ -48,10 +74,10 @@
                           (.withPort port)
                           (.build))
 
-            reporter  (-> (DatadogReporter/forRegistry metrics-registry)
-                          (.withTransport transport)
-                          (.withTags [(str env)])
-                          (.build))]
+            reporter (-> (DatadogReporter/forRegistry metrics-registry)
+                         (.withTransport transport)
+                         (.withTags [(str env)])
+                         (.build))]
         (log/info "Starting statsd reporter")
         (.start reporter 1 TimeUnit/SECONDS)
         (reset! group app-name)

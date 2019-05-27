@@ -13,23 +13,29 @@
                                     fix/silence-logging]))
 
 (deftest mapper-func-test
-  (let [message                        {:foo "bar"}
-        stream-routes                  {:default {:handler-fn #(constantly nil)}}
-        topic                          (name (first (keys stream-routes)))
-        expected-metric-namespace      "default.message-processing"
-        expected-report-time-namespace "default.handler-fn-execution-time"]
+  (let [message                         {:foo "bar"}
+        stream-routes                   {:default {:handler-fn #(constantly nil)}}
+        expected-topic-entity-name      (name (first (keys stream-routes)))
+        expected-additional-tags        {:topic-name expected-topic-entity-name}
+        default-namespace               "message-processing"
+        report-time-namespace           "handler-fn-execution-time"
+        expected-metric-namespaces      ["default" default-namespace]
+        expected-report-time-namespaces ["default" report-time-namespace]]
     (testing "message process should be successful"
       (let [successfully-processed?     (atom false)
             successfully-reported-time? (atom false)
             expected-metric             "success"]
-        (with-redefs [metrics/increment-count (fn [metric-namespace metric]
-                                                (when (and (= metric-namespace expected-metric-namespace)
-                                                           (= metric expected-metric))
+        (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                (when (and (or (= metric-namespaces expected-metric-namespaces)
+                                                               (= metric-namespaces [default-namespace]))
+                                                           (= metric expected-metric)
+                                                           (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))
-                      metrics/report-time     (fn [metric-namespace _]
-                                                (when (= metric-namespace expected-report-time-namespace)
+                      metrics/report-time     (fn [metric-namespaces _ _]
+                                                (when (or (= metric-namespaces expected-report-time-namespaces)
+                                                          (= metric-namespaces [report-time-namespace]))
                                                   (reset! successfully-reported-time? true)))]
-          ((mapper-func (constantly :success) topic []) message)
+          ((mapper-func (constantly :success) expected-topic-entity-name []) message)
           (is @successfully-processed?)
           (is @successfully-reported-time?))))
 
@@ -37,12 +43,13 @@
       (fix/with-queues (assoc-in stream-routes [:default :channel-1] (constantly :success))
         (let [successfully-processed? (atom false)
               expected-metric         "success"]
-          (with-redefs [metrics/increment-count (fn [metric-namespace metric]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
-                                                             (= metric expected-metric))
+          (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                  (when (and (= metric-namespaces expected-metric-namespaces)
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
                                                     (reset! successfully-processed? true)))]
-            ((mapper-func (constantly :channel-1) topic [:channel-1]) message)
-            (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic :channel-1)]
+            ((mapper-func (constantly :channel-1) expected-topic-entity-name [:channel-1]) message)
+            (let [message-from-mq (rmq/get-message-from-channel-instant-queue expected-topic-entity-name :channel-1)]
               (is (= message message-from-mq))
               (is @successfully-processed?))))))
 
@@ -53,8 +60,8 @@
                                       (let [err (Throwable->map e)]
                                         (is (= (:cause err) "Invalid mapper return code"))
                                         (is (= (-> err :data :code) :channel-1))))]
-          ((mapper-func (constantly :channel-1) topic [:some-other-channel]) message)
-          (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic :channel-1)]
+          ((mapper-func (constantly :channel-1) expected-topic-entity-name [:some-other-channel]) message)
+          (let [message-from-mq (rmq/get-message-from-channel-instant-queue expected-topic-entity-name :channel-1)]
             (is (nil? message-from-mq))))))
 
     (testing "message process should be unsuccessful and retry"
@@ -63,12 +70,13 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
-          (with-redefs [metrics/increment-count (fn [metric-namespace metric]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
-                                                             (= metric expected-metric))
+          (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                  (when (and (= metric-namespaces expected-metric-namespaces)
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (constantly :retry) topic []) message)
-            (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
+            ((mapper-func (constantly :retry) expected-topic-entity-name []) message)
+            (let [message-from-mq (rmq/get-msg-from-delay-queue expected-topic-entity-name)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
@@ -79,39 +87,52 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        metrics/increment-count (fn [metric-namespace metric]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
-                                                             (= metric expected-metric))
+                        metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                  (is (or (= metric-namespaces expected-metric-namespaces)
+                                                          (= metric-namespaces [default-namespace])))
+                                                  (is (= additional-tags expected-additional-tags))
+                                                  (when (and (or (= metric-namespaces expected-metric-namespaces)
+                                                                 (= metric-namespaces [default-namespace]))
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (fn [_] (throw (Exception. "test exception"))) topic []) message)
-            (let [message-from-mq (rmq/get-msg-from-delay-queue topic)]
+            ((mapper-func (fn [_] (throw (Exception. "test exception"))) expected-topic-entity-name []) message)
+            (let [message-from-mq (rmq/get-msg-from-delay-queue expected-topic-entity-name)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
             (is @sentry-report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
-      (let [reported-execution-time?  (atom false)
-            expected-metric-namespace "default.handler-fn-execution-time"]
-        (with-redefs [metrics/report-time (fn [metric-namespace _]
-                                            (when (= metric-namespace expected-metric-namespace)
+      (let [reported-execution-time?   (atom false)
+            execution-time-namesapce   "handler-fn-execution-time"
+            expected-metric-namespaces ["default" execution-time-namesapce]]
+        (with-redefs [metrics/report-time (fn [metric-namespaces _ _]
+                                            (is (or (= metric-namespaces expected-metric-namespaces)
+                                                    (= metric-namespaces [execution-time-namesapce])))
+                                            (when (or (= metric-namespaces expected-metric-namespaces)
+                                                      (= metric-namespaces [execution-time-namesapce]))
                                               (reset! reported-execution-time? true)))]
 
-          ((mapper-func (constantly :success) topic []) message)
+          ((mapper-func (constantly :success) expected-topic-entity-name []) message)
           (is @reported-execution-time?))))))
 
 (deftest channel-mapper-func-test
-  (let [message                   {:foo "bar"}
-        stream-routes             {:default {:handler-fn #(constantly nil)
-                                             :channel-1  #(constantly nil)}}
-        topic                     (first (keys stream-routes))
-        channel                   :channel-1
-        expected-metric-namespace "default.channel-1.message-processing"]
+  (let [message                    {:foo "bar"}
+        stream-routes              {:default {:handler-fn #(constantly nil)
+                                              :channel-1  #(constantly nil)}}
+        topic                      (first (keys stream-routes))
+        expected-topic-entity-name (name topic)
+        expected-additional-tags   {:topic-name expected-topic-entity-name}
+        channel                    :channel-1
+        default-namespace          "message-processing"
+        expected-metric-namespaces ["default" "channel-1" default-namespace]]
     (testing "message process should be successful"
       (let [successfully-processed? (atom false)
             expected-metric         "success"]
-        (with-redefs [metrics/increment-count (fn [metric-namespace metric]
-                                                (when (and (= metric-namespace expected-metric-namespace)
-                                                           (= metric expected-metric))
+        (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+                                                (when (and (= metric-namespace expected-metric-namespaces)
+                                                           (= metric expected-metric)
+                                                           (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))]
           ((channel-mapper-func (constantly :success) topic channel) message)
           (is @successfully-processed?))))
@@ -122,9 +143,10 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
-          (with-redefs [metrics/increment-count (fn [metric-namespace metric]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
-                                                             (= metric expected-metric))
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+                                                  (when (and (= metric-namespace expected-metric-namespaces)
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
             ((channel-mapper-func (constantly :retry) topic channel) message)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
@@ -138,9 +160,11 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        metrics/increment-count (fn [metric-namespace metric]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
-                                                             (= metric expected-metric))
+                        metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                  (when (and (or (= metric-namespaces expected-metric-namespaces)
+                                                                 (= metric-namespaces [default-namespace]))
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
             ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) topic channel) message)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
@@ -149,10 +173,14 @@
             (is @sentry-report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
-      (let [reported-execution-time?  (atom false)
-            expected-metric-namespace "default.channel-1.execution-time"]
-        (with-redefs [metrics/report-time (fn [metric-namespace _]
-                                            (when (= metric-namespace expected-metric-namespace)
+      (let [reported-execution-time?   (atom false)
+            execution-time-namesapce   "execution-time"
+            expected-metric-namespaces ["default" "channel-1" execution-time-namesapce]]
+        (with-redefs [metrics/report-time (fn [metric-namespaces _ _]
+                                            (is (or (= metric-namespaces expected-metric-namespaces)
+                                                    (= metric-namespaces [execution-time-namesapce])))
+                                            (when (or (= metric-namespaces expected-metric-namespaces)
+                                                      (= metric-namespaces [execution-time-namesapce]))
                                               (reset! reported-execution-time? true)))]
 
           ((channel-mapper-func (constantly :success) topic channel) message)
