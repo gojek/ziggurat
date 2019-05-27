@@ -51,16 +51,18 @@
 
 (deftest report-time-test
   (testing "updates time-val"
-    (let [metric-ns         "metric-ns"
-          time-val          10
-          mk-histogram-args (atom nil)
-          reservoir         (UniformReservoir.)
-          histogram         (Histogram. reservoir)]
-      (with-redefs [metrics/mk-histogram (fn [metric-ns metric]
+    (let [metric-ns                  "metric-ns"
+          time-val                   10
+          mk-histogram-args          (atom nil)
+          reservoir                  (UniformReservoir.)
+          histogram                  (Histogram. reservoir)
+          expected-topic-entity-name "expected-topic-entity-name"]
+      (with-redefs [metrics/mk-histogram (fn [metric-ns metric topic-entity-name]
+                                           (is (= topic-entity-name expected-topic-entity-name))
                                            (reset! mk-histogram-args {:metric-namespace metric-ns
                                                                       :metric           metric})
                                            histogram)]
-        (metrics/report-time metric-ns time-val)
+        (metrics/report-time metric-ns time-val expected-topic-entity-name)
         (is (= 1 (.getCount histogram)))
         (is (= metric-ns (:metric-namespace @mk-histogram-args)))
         (is (= "all" (:metric @mk-histogram-args)))))))

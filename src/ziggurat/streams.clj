@@ -2,22 +2,22 @@
   (:require [clojure.tools.logging :as log]
             [flatland.protobuf.core :as proto]
             [mount.core :as mount :refer [defstate]]
-            [ziggurat.metrics :as metrics]
-            [ziggurat.config :refer [ziggurat-config]]
             [sentry-clj.async :as sentry]
             [ziggurat.channel :as chl]
-            [ziggurat.util.map :as umap]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :as mpr]
+            [ziggurat.metrics :as metrics]
+            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.timestamp-transformer :as transformer]
-            [ziggurat.sentry :refer [sentry-reporter]])
-  (:import [java.util.regex Pattern]
-           [java.util Properties]
+            [ziggurat.util.map :as umap])
+  (:import [java.util Properties]
+           [java.util.regex Pattern]
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
+           [org.apache.kafka.common.utils SystemTime]
            [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
-           [org.apache.kafka.common.utils SystemTime]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]))
 
 (def default-config-for-stream
@@ -83,13 +83,17 @@
 (defn- map-values [mapper-fn stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- transformer-supplier [metric-namespace oldest-processed-message-in-s]
-  (reify TransformerSupplier
-    (get [_] (transformer/create metric-namespace oldest-processed-message-in-s))))
+(defn- transformer-supplier
+  ([metric-namespace oldest-processed-message-in-s]
+   (reify TransformerSupplier
+     (get [_] (transformer/create metric-namespace oldest-processed-message-in-s))))
+  ([metric-namespace oldest-processed-message-in-s topic-entity-name]
+   (reify TransformerSupplier
+     (get [_] (transformer/create metric-namespace oldest-processed-message-in-s topic-entity-name)))))
 
-(defn- transform-values [topic-entity oldest-processed-message-in-s stream-builder]
-  (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity)]
-    (.transform stream-builder (transformer-supplier metric-namespace oldest-processed-message-in-s) (into-array [(.name (store-supplier-builder))]))))
+(defn- transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
+  (let [metric-namespace (get-metric-namespace "message-received-delay-histogram" topic-entity-name)]
+    (.transform stream-builder (transformer-supplier metric-namespace oldest-processed-message-in-s topic-entity-name) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- protobuf->hash [message proto-class]
   (try

@@ -2,8 +2,8 @@
   (:require [clojure.tools.logging :as log])
   (:import (com.gojek.metrics.datadog DatadogReporter)
            (com.gojek.metrics.datadog.transport UdpTransport$Builder UdpTransport)
-           (java.util.concurrent TimeUnit)
-           (io.dropwizard.metrics5 MetricRegistry Meter MetricName Histogram)))
+           (io.dropwizard.metrics5 MetricRegistry Meter MetricName Histogram)
+           (java.util.concurrent TimeUnit)))
 
 (defonce ^:private group (atom nil))
 
@@ -17,10 +17,15 @@
     (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric)))
 
 (defn mk-histogram
-  [category metric]
-  (let [metric-name (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
-        tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String ["actor" @group]))]
-    (.histogram ^MetricRegistry metrics-registry tagged-metric)))
+  ([category metric]
+   (mk-histogram category metric nil))
+  ([category metric topic-entity-name]
+   (let [metric-name   (MetricRegistry/name ^String @group ^"[Ljava.lang.String;" (into-array String [category metric]))
+         tags (if (nil? topic-entity-name)
+                ["actor" @group]
+                ["actor" @group "topic_name" topic-entity-name])
+         tagged-metric (.tagged ^MetricName metric-name ^"[Ljava.lang.String;" (into-array String tags))]
+     (.histogram ^MetricRegistry metrics-registry tagged-metric))))
 
 (defn increment-count
   ([metric-namespace metric]
@@ -36,9 +41,12 @@
    (let [meter ^Meter (mk-meter metric-namespace metric)]
      (.mark meter (int (- n))))))
 
-(defn report-time [metric-namespace time-val]
-  (let [histogram ^Histogram (mk-histogram metric-namespace "all")]
-    (.update histogram (int time-val))))
+(defn report-time
+  ([metric-namespace time-val topic-entity-name]
+   (let [histogram ^Histogram (mk-histogram metric-namespace "all" topic-entity-name)]
+     (.update histogram (int time-val))))
+  ([metric-namespace time-val]
+   (report-time metric-namespace time-val nil)))
 
 (defn start-statsd-reporter [statsd-config env app-name]
   (let [{:keys [enabled host port]} statsd-config]
