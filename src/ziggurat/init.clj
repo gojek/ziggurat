@@ -12,7 +12,8 @@
             [ziggurat.nrepl-server :as nrepl-server]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
-            [ziggurat.streams :as streams]))
+            [ziggurat.streams :as streams]
+            [ziggurat.producer :refer [kafka-producer]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -40,7 +41,8 @@
   (messaging-consumer/start-subscribers stream-routes)      ;; We want subscribers to start after creating queues on RabbitMQ.
   (start* #{#'server/server
             #'nrepl-server/server
-            #'streams/stream}
+            #'streams/stream
+            #'kafka-producer}
           {:stream-routes stream-routes
            :actor-routes  actor-routes}))
 
@@ -52,7 +54,8 @@
               #'messaging-connection/connection
               #'server/server
               #'nrepl-server/server
-              #'streams/stream)
+              #'streams/stream
+              #'kafka-producer)
   (actor-stop-fn)
   (mount/stop #'config/config))
 

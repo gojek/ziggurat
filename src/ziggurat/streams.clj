@@ -113,7 +113,7 @@
         topic-pattern     (Pattern/compile origin-topic)]
     (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
-         (transform-values topic-entity-name oldest-processed-message-in-s)
+         (transform-values topic-entity-name 1)
          (map-values #(protobuf->hash % proto-class))
          (map-values #(log-and-report-metrics topic-entity-name %))
          (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
