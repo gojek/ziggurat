@@ -35,4 +35,11 @@
                                              :proto-class          "com.company.LogMessage"
                                              :channels             {:channel-1 {:worker-count [10 :int]
                                                                                 :retry        {:count   [5 :int]
-                                                                                               :enabled [true :bool]}}}}}}}
+                                                                                               :enabled [true :bool]}}}}}
+            :producer             {:default {:bootstrap-servers       "localhost:9092"
+                                             :acks                    "all"
+                                             :retries-config          5
+                                             :max-in-flight-requests-per-connection 5
+                                             :enable-idempotence false
+                                             :value-serializer  "org.apache.kafka.common.serialization.StringSerializer"
+                                             :key-serializer    "org.apache.kafka.common.serialization.StringSerializer"}}}}
