@@ -11,7 +11,8 @@
             [ziggurat.nrepl-server :as nrepl-server]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
-            [ziggurat.streams :as streams]))
+            [ziggurat.streams :as streams]
+            [ziggurat.producer :refer [kafka-producer]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
