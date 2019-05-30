@@ -8,6 +8,7 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
+            [ziggurat.producer :as producer]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
             [langohr.queue :as lq]))
@@ -91,3 +92,15 @@
      (finally
        (delete-queues ~stream-routes)
        (delete-exchanges ~stream-routes))))
+
+(defn mount-producer []
+  (-> (mount/only [#'producer/kafka-producer])
+      (mount/start)))
+
+(defn mount-only-config-and-producer [f]
+  (do
+    (mount-config)
+    (mount-producer))
+  (f)
+  (do (mount/stop [#'producer/kafka-producer])
+      (mount/stop [#'config/config])))

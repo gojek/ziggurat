@@ -28,16 +28,16 @@
   (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
            (java.util Properties)))
 
-(def producer-config (get-in (ziggurat-config) [:producer :default]))
+(defn producer-config [] (get-in (ziggurat-config) [:producer :default]))
 
-(def producer-config-properties
-  (let [bootstrap-servers (:bootstrap-servers producer-config)
-        acks (:acks producer-config)
-        key-serializer-class (:key-serializer producer-config)
-        value-serializer-class (:value-serializer producer-config)
-        enable-idempotence (:enable-idempotence producer-config)
-        retries-config (int (:retries-config producer-config))
-        max-in-flight-requests-per-connection (int (:max-in-flight-requests-per-connection producer-config))]
+(defn producer-config-properties []
+  (let [bootstrap-servers (:bootstrap-servers (producer-config))
+        acks (:acks (producer-config))
+        key-serializer-class (:key-serializer (producer-config))
+        value-serializer-class (:value-serializer (producer-config))
+        enable-idempotence (:enable-idempotence (producer-config))
+        retries-config (int (:retries-config (producer-config)))
+        max-in-flight-requests-per-connection (int (:max-in-flight-requests-per-connection (producer-config)))]
     (doto (Properties.)
       (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
       (.put ProducerConfig/ACKS_CONFIG acks)
@@ -49,7 +49,7 @@
 
 (defstate kafka-producer
   :start (KafkaProducer. (producer-config-properties))
-  :stop (doto producer)
+  :stop (doto kafka-producer)
   (.flush)
   (.close))
 
@@ -66,11 +66,11 @@
 
   ([topic data]
    (let [producer-record (ProducerRecord. topic data)]
-     (.send producer producer-record)))
+     (.send kafka-producer producer-record)))
 
   ([topic partition key data]
    (let [producer-record (ProducerRecord. topic (int partition) key data)]
-     (.send producer producer-record))))
+     (.send kafka-producer producer-record))))
 
 
 
