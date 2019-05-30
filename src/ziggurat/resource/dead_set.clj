@@ -1,9 +1,9 @@
 (ns ziggurat.resource.dead-set
-  (:require [schema.core :as s]
-            [clojure.tools.logging :as log]
+  (:require [clojure.tools.logging :as log]
+            [mount.core :as mount]
+            [schema.core :as s]
             [ziggurat.config :refer [get-in-config channel-retry-config]]
-            [ziggurat.messaging.dead-set :as r]
-            [mount.core :as mount]))
+            [ziggurat.messaging.dead-set :as r]))
 (def not-found-for-retry
   {:status 404
    :body {:error "Retry is not enabled"}})
