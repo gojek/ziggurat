@@ -117,7 +117,25 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
 how you can pass in your own route. 
 
+or 
+```clojure
+(ziggurat/main {:start-fn start-fn 
+                :stop-fn stop-fn
+                :stream-routes {:stream-id {:handler-fn main-fn}}
+                :actor-routes []
+                :modes [:api-server]})
+```
 
+There are four modes supported by ziggurat
+```
+ :api-server - Mode by which only server will be started with actor routes and management routes(Dead set management)   
+ :stream-worker - Only start the server plus rabbitmq for only producing the messages for retry and channels
+ :worker - Starts the rabbitmq consumer for retry and channel
+ :management-api - Servers only routes which used for deadset management
+```
+
+You can pass in multiple modes and it will start accordingly
+If nothing passed to modes then it will start all the modes.
 
 ## Configuration
 
