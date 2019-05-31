@@ -48,10 +48,12 @@
       (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG value-serializer-class))))
 
 (defstate kafka-producer
-  :start (KafkaProducer. (producer-config-properties))
-  :stop (doto kafka-producer)
-  (.flush)
-  (.close))
+  :start (do (log/info "Starting Kafka producer ...")
+             (KafkaProducer. (producer-config-properties)))
+  :stop (do (log/info "Stopping Kafka producer ...")
+            (doto kafka-producer
+              (.flush)
+              (.close))))
 
 (defn send
   "A wrapper around `org.apache.kafka.clients.producer.KafkaProducer#send` which enables

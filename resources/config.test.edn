@@ -38,7 +38,7 @@
                                                                                 :retry        {:count   [5 :int]
                                                                                                :enabled [true :bool]}}}}}
             :producer             {:default {:bootstrap-servers       "localhost:9092"
-                                             :acks                    "1"
+                                             :acks                    "all"
                                              :retries-config          5
                                              :max-in-flight-requests-per-connection 5
                                              :enable-idempotence false

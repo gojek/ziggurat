@@ -102,5 +102,4 @@
     (mount-config)
     (mount-producer))
   (f)
-  (do (mount/stop [#'producer/kafka-producer])
-      (mount/stop [#'config/config])))
+  (mount/stop))
