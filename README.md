@@ -122,9 +122,11 @@ or
 (ziggurat/main {:start-fn start-fn 
                 :stop-fn stop-fn
                 :stream-routes {:stream-id {:handler-fn main-fn}}
-                :actor-routes []
-                :modes [:api-server]})
+                :actor-routes routes
+                :modes [:api-server :stream-worker]})
 ```
+
+This will start both api-server and stream-worker modes
 
 There are four modes supported by ziggurat
 ```
