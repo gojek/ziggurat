@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.11.0 - 2019-05-31
+- Running ziggurat in different modes (#46)
+
 ## 2.10.2 - 2019-05-03
 - Adds config to change the changelog topic replication factor
 
