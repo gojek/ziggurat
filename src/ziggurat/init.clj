@@ -47,14 +47,13 @@
 (defn stop
   "Calls the Ziggurat's state stop fns and then actor-stop-fn."
   [actor-stop-fn]
+  (actor-stop-fn)
   (mount/stop #'config/config
               #'statsd-reporter
               #'messaging-connection/connection
               #'server/server
               #'nrepl-server/server
-              #'streams/stream)
-  (actor-stop-fn)
-  (mount/stop #'config/config))
+              #'streams/stream))
 
 (defn- add-shutdown-hook [actor-stop-fn]
   (.addShutdownHook
