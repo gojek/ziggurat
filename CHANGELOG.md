@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.11.1 - 2019-06-04
+- Actor stop fn should stop before the Ziggurat state (#53)
+
 ## 2.11.0 - 2019-05-31
 - Running ziggurat in different modes (#46)
 
