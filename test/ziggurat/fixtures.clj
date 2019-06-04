@@ -94,7 +94,7 @@
        (delete-exchanges ~stream-routes))))
 
 (defn mount-producer []
-  (-> (mount/only [#'producer/kafka-producer])
+  (-> (mount/only [#'producer/kafka-producers])
       (mount/start)))
 
 (defn mount-only-config-and-producer [f]

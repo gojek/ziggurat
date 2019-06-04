@@ -12,7 +12,7 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
-            [ziggurat.producer :refer [kafka-producer]]))
+            [ziggurat.producer :as producer :refer [kafka-producers]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -73,11 +73,18 @@
   (mount/stop #'server/server)
   (stop-rabbitmq-connection))
 
+(defn start-kafka-producers [args]
+  (start* #{#'producer/kafka-producers} args))
+
+(defn stop-kafka-producers []
+  (mount/stop #'producer/kafka-producers))
+
 (def valid-modes-fns
   {:api-server     {:start-fn start-server :stop-fn stop-server}
    :stream-worker  {:start-fn start-stream :stop-fn stop-stream}
    :worker         {:start-fn start-workers :stop-fn stop-workers}
-   :management-api {:start-fn start-management-apis :stop-fn stop-management-apis}})
+   :management-api {:start-fn start-management-apis :stop-fn stop-management-apis}
+   :kafka-producers {:start start-kafka-producers :stop-fn stop-kafka-producers}})
 
 (defn- execute-function
   ([modes fnk]
