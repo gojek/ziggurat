@@ -28,18 +28,26 @@
                                    :enabled [true :bool]}
             :http-server          {:port         [8010 :int]
                                    :thread-count [100 :int]}
-            :stream-router        {:default {:application-id       "application-name-test-02-multiple"
-                                             :bootstrap-servers    "localhost:9092"
-                                             :stream-threads-count [1 :int]
-                                             :origin-topic         "kafka-topic-*"
-                                             :proto-class          "com.company.LogMessage"
-                                             :channels             {:channel-1 {:worker-count [10 :int]
-                                                                                :retry        {:count   [5 :int]
-                                                                                               :enabled [true :bool]}}}}}
-            :producer             {:default {:bootstrap-servers       "localhost:9092"
-                                             :acks                    "all"
-                                             :retries-config          5
-                                             :max-in-flight-requests-per-connection 5
-                                             :enable-idempotence false
-                                             :value-serializer  "org.apache.kafka.common.serialization.StringSerializer"
-                                             :key-serializer    "org.apache.kafka.common.serialization.StringSerializer"}}}}
+            :stream-router        {:default          {:application-id       "test"
+                                                                  :bootstrap-servers    "localhost:9092"
+                                                                  :stream-threads-count [1 :int]
+                                                                  :origin-topic         "topic"
+                                                                  :proto-class          "flatland.protobuf.test.Example$Photo"
+                                                                  :channels             {:channel-1 {:worker-count [10 :int]
+                                                                                                     :retry        {:count   [5 :int]
+                                                                                                                    :enabled [true :bool]}}}
+                                                                  :producer             {:bootstrap-servers                     "localhost:9092"
+                                                                                         :acks                                  "all"
+                                                                                         :retries-config                        5
+                                                                                         :max-in-flight-requests-per-connection 5
+                                                                                         :enable-idempotence                    false
+                                                                                         :value-serializer                      "org.apache.kafka.common.serialization.StringSerializer"
+                                                                                         :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}
+                                   :without-producer {:application-id       "test"
+                                                      :bootstrap-servers    "localhost:9092"
+                                                      :stream-threads-count [1 :int]
+                                                      :origin-topic         "topic"
+                                                      :proto-class          "flatland.protobuf.test.Example$Photo"
+                                                      :channels             {:channel-1 {:worker-count [10 :int]
+                                                                                         :retry        {:count   [5 :int]
+                                                                                                        :enabled [true :bool]}}}}}}}

@@ -12,7 +12,7 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
-            [ziggurat.producer :refer [kafka-producer]]))
+            [ziggurat.producer :as producer :refer [kafka-producers]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -39,9 +39,16 @@
   (start-rabbitmq-connection args)
   (messaging-producer/make-queues (get args :stream-routes)))
 
-(defn start-stream [args]
-  (start-rabbitmq-producers args)
+(defn start-kafka-producers []
+  (start* #{#'kafka-producers}))
+
+(defn start-kafka-streams [args]
   (start* #{#'streams/stream} args))
+
+(defn start-stream [args]
+  (start-kafka-producers)
+  (start-rabbitmq-producers args)
+  (start-kafka-streams args))
 
 (defn start-management-apis [args]
   (start-rabbitmq-connection args)
@@ -52,22 +59,31 @@
   (start* #{#'server/server} args))
 
 (defn start-workers [args]
+  (start-kafka-producers)
   (start-rabbitmq-producers args)
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
   (mount/stop #'messaging-connection/connection))
 
+(defn stop-kafka-producers []
+  (mount/stop #'kafka-producers))
+
+(defn stop-kafka-streams []
+  (mount/stop #'streams/stream))
+
 (defn stop-workers []
-  (stop-rabbitmq-connection))
+  (stop-rabbitmq-connection)
+  (stop-kafka-producers))
 
 (defn stop-server []
   (mount/stop #'server/server)
   (stop-rabbitmq-connection))
 
 (defn stop-stream []
-  (mount/stop #'streams/stream)
-  (stop-rabbitmq-connection))
+  (stop-kafka-streams)
+  (stop-rabbitmq-connection)
+  (stop-kafka-producers))
 
 (defn stop-management-apis []
   (mount/stop #'server/server)
