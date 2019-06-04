@@ -22,14 +22,14 @@
         (is (= 16 @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
-  (testing "The actor stop fn stops after the ziggurat state"
+  (testing "The actor stop fn stops before the ziggurat state"
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (fn [_] (reset! result (* @result 2)))
                     config/config-file    "config.test.edn"]
         (init/start #() {} [])
         (init/stop #(reset! result (+ @result 3)))
-        (is (= 5 @result))))))
+        (is (= 8 @result))))))
 
 (deftest start-calls-make-queues-test
   (testing "Start calls make queues"
