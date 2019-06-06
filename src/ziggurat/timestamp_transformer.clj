@@ -17,17 +17,20 @@
                (get-current-time-in-millis)
                ingestion-time))))
 
-(deftype TimestampTransformer [^{:volatile-mutable true} processor-context metric-namespace oldest-processed-message-in-s] Transformer
+(deftype TimestampTransformer [^{:volatile-mutable true} processor-context metric-namespaces oldest-processed-message-in-s additional-tags] Transformer
          (^void init [_ ^ProcessorContext context]
            (do (set! processor-context context)
                nil))
          (transform [_ record-key record-value]
            (let [message-time (.timestamp processor-context)]
              (when (message-to-process? message-time oldest-processed-message-in-s)
-               (calculate-and-report-kafka-delay metric-namespace message-time)
+               (calculate-and-report-kafka-delay metric-namespaces message-time additional-tags)
                (KeyValue/pair record-key record-value))))
          (punctuate [_ _] nil)
          (close [_] nil))
 
-(defn create [metric-namespace process-message-since-in-s]
-  (TimestampTransformer. nil metric-namespace process-message-since-in-s))
+(defn create
+  ([metric-namespace process-message-since-in-s]
+   (create metric-namespace process-message-since-in-s nil))
+  ([metric-namespace process-message-since-in-s additional-tags]
+   (TimestampTransformer. nil metric-namespace process-message-since-in-s additional-tags)))
