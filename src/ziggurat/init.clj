@@ -132,8 +132,9 @@
    {s/Keyword {:handler-fn (s/pred #(fn? %))
                s/Keyword   (s/pred #(fn? %))}}))
 
-(defn validate-stream-routes [stream-routes]
-  (s/validate StreamRoute stream-routes))
+(defn validate-stream-routes [stream-routes modes]
+  (when (or (empty? modes) (contains? (set modes) :stream-worker))
+    (s/validate StreamRoute stream-routes)))
 
 (defn validate-modes [modes]
   (let [invalid-modes (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
@@ -160,7 +161,7 @@
   ([{:keys [start-fn stop-fn stream-routes actor-routes modes]}]
    (try
      (validate-modes modes)
-     (validate-stream-routes stream-routes)
+     (validate-stream-routes stream-routes modes)
      (add-shutdown-hook stop-fn modes)
      (start start-fn stream-routes actor-routes modes)
      (catch clojure.lang.ExceptionInfo e
