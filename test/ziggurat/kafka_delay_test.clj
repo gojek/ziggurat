@@ -10,7 +10,7 @@
         expected-delay      1000
         expected-namespaces ["test"]]
     (testing "calculates and reports the timestamp delay"
-      (let [expected-additional-tags {:topic-name "expected-topic-entity-name"}]
+      (let [expected-additional-tags {:topic_name "expected-topic-entity-name"}]
         (with-redefs [get-current-time-in-millis (constantly current-time)
                       metrics/report-time        (fn [metric-namespaces delay additional-tags]
                                                    (is (= delay expected-delay))

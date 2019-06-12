@@ -18,81 +18,132 @@
       (is (instance? Histogram meter)))))
 
 (deftest increment-count-test
-  (let [metric-ns ["metric-ns"]
-        metric    "metric3"]
+  (let [metric                     "metric3"
+        expected-topic-entity-name "expected-topic-entity-name"
+        input-additional-tags      {:topic_name expected-topic-entity-name}]
     (testing "increases count on the meter"
-      (let [mk-meter-args              (atom nil)
+      (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
+            mk-meter-args              (atom nil)
             meter                      (Meter.)
-            expected-topic-entity-name "expected-topic-entity-name"]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric topic-entity-name]
-                                         (is (= topic-entity-name expected-topic-entity-name))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
-                                                                :metric           metric})
-                                         meter)]
-          (metrics/increment-count metric-ns metric expected-topic-entity-name)
-          (is (= 1 (.getCount meter)))
-          (is (= (apply str (interpose "." metric-ns)) (:metric-namespace @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))
-    (testing "increases count on the meter when topic-entity-name is nil"
-      (let [mk-meter-args            (atom nil)
-            meter                    (Meter.)
-            expected-additional-tags nil]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+            expected-additional-tags   {}]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
-                                                                :metric           metric})
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
                                          meter)]
-          (metrics/increment-count metric-ns metric expected-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
           (is (= 1 (.getCount meter)))
-          (is (= (apply str (interpose "." metric-ns)) (:metric-namespace @mk-meter-args)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "increases count on the meter - without topic name on the namespace"
+      (let [expected-metric-namespaces ["metric-ns"]
+            mk-meter-args              (atom nil)
+            meter                      (Meter.)
+            expected-additional-tags   input-additional-tags]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+                                         (is (= additional-tags expected-additional-tags))
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
+                                         meter)]
+          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
+          (is (= 1 (.getCount meter)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "increases count on the meter when additional-tags is nil"
+      (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
+            mk-meter-args              (atom nil)
+            meter                      (Meter.)
+            expected-additional-tags   nil]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+                                         (is (= additional-tags expected-additional-tags))
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
+                                         meter)]
+          (metrics/increment-count expected-metric-namespaces metric expected-additional-tags)
+          (is (= 1 (.getCount meter)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))))
 
 (deftest decrement-count-test
-  (let [metric-ns     ["metric-ns"]
-        metric        "metric3"
-        mk-meter-args (atom nil)
-        meter         (Meter.)]
+  (let [expected-topic-name   "expected-topic-name"
+        metric                "metric3"
+        mk-meter-args         (atom nil)
+        meter                 (Meter.)
+        input-additional-tags {:topic_name expected-topic-name}]
     (testing "decreases count on the meter"
-      (let [expected-additional-tags {:topic-name "expected-topic-name"}]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+      (let [expected-additional-tags   {}
+            expected-metric-namespaces [expected-topic-name "metric-ns"]]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
-                                                                :metric           metric})
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
                                          meter)]
-          (metrics/increment-count metric-ns metric expected-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
           (is (= 1 (.getCount meter)))
-          (metrics/decrement-count metric-ns metric expected-additional-tags)
+          (metrics/decrement-count expected-metric-namespaces metric input-additional-tags)
           (is (zero? (.getCount meter)))
-          (is (= (apply str (interpose "." metric-ns)) (:metric-namespace @mk-meter-args)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "decreases count on the meter - without topic name on the namespace"
+      (let [expected-additional-tags   input-additional-tags
+            expected-metric-namespaces ["metric-ns"]]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+                                         (is (= additional-tags expected-additional-tags))
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
+                                         meter)]
+          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
+          (is (= 1 (.getCount meter)))
+          (metrics/decrement-count expected-metric-namespaces metric input-additional-tags)
+          (is (zero? (.getCount meter)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter when additional-tags is nil"
-      (let [expected-additional-tags nil]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+      (let [expected-additional-tags   nil
+            expected-metric-namespaces [expected-topic-name "metric-ns"]]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
-                                                                :metric           metric})
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
                                          meter)]
-          (metrics/increment-count metric-ns metric expected-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric expected-additional-tags)
           (is (= 1 (.getCount meter)))
-          (metrics/decrement-count metric-ns metric expected-additional-tags)
+          (metrics/decrement-count expected-metric-namespaces metric expected-additional-tags)
           (is (zero? (.getCount meter)))
-          (is (= (apply str (interpose "." metric-ns)) (:metric-namespace @mk-meter-args)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))))
 
 (deftest report-time-test
-  (testing "updates time-val"
-    (let [metric-ns                  ["message-received-delay-histogram"]
-          time-val                   10
-          mk-histogram-args          (atom nil)
-          reservoir                  (UniformReservoir.)
-          histogram                  (Histogram. reservoir)
-          expected-topic-entity-name "expected-topic-entity-name"]
-      (with-redefs [metrics/mk-histogram (fn [metric-ns metric topic-entity-name]
-                                           (is (= topic-entity-name expected-topic-entity-name))
-                                           (reset! mk-histogram-args {:metric-namespace metric-ns
-                                                                      :metric           metric})
-                                           histogram)]
-        (metrics/report-time metric-ns time-val expected-topic-entity-name)
-        (is (= 1 (.getCount histogram)))
-        (is (= (apply str (interpose "." metric-ns)) (:metric-namespace @mk-histogram-args)))
-        (is (= "all" (:metric @mk-histogram-args)))))))
+  (let [expected-topic-entity-name "expected-topic-entity-name"
+        input-additional-tags      {:topic_name expected-topic-entity-name}
+        time-val                   10]
+    (testing "updates time-val"
+      (let [expected-metric-namespaces [expected-topic-entity-name "message-received-delay-histogram"]
+            mk-histogram-args          (atom nil)
+            reservoir                  (UniformReservoir.)
+            histogram                  (Histogram. reservoir)
+            expected-additional-tags   {}]
+        (with-redefs [metrics/mk-histogram (fn [metric-namespaces metric additional-tags]
+                                             (is (= additional-tags expected-additional-tags))
+                                             (reset! mk-histogram-args {:metric-namespaces metric-namespaces
+                                                                        :metric            metric})
+                                             histogram)]
+          (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (is (= 1 (.getCount histogram)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
+          (is (= "all" (:metric @mk-histogram-args))))))
+    (testing "updates time-val - without topic name on the namespace"
+      (let [expected-metric-namespaces ["message-received-delay-histogram"]
+            mk-histogram-args          (atom nil)
+            reservoir                  (UniformReservoir.)
+            histogram                  (Histogram. reservoir)
+            expected-additional-tags   input-additional-tags]
+        (with-redefs [metrics/mk-histogram (fn [metric-namespaces metric additional-tags]
+                                             (is (= additional-tags expected-additional-tags))
+                                             (reset! mk-histogram-args {:metric-namespaces metric-namespaces
+                                                                        :metric            metric})
+                                             histogram)]
+          (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (is (= 1 (.getCount histogram)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
+          (is (= "all" (:metric @mk-histogram-args))))))))

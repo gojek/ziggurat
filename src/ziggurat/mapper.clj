@@ -1,5 +1,6 @@
 (ns ziggurat.mapper
   (:require [sentry-clj.async :as sentry]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
@@ -13,11 +14,12 @@
 
 (defn mapper-func [mapper-fn topic-entity channels]
   (fn [message]
-    (let [topic-entity-name          (name topic-entity)
+    (let [service-name               (:app-name (ziggurat-config))
+          topic-entity-name          (name topic-entity)
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
           default-namespace          "message-processing"
-          metric-namespaces          [topic-entity-name default-namespace]
-          additional-tags            {:topic-name topic-entity-name}
+          metric-namespaces          [service-name topic-entity-name default-namespace]
+          additional-tags            {:topic_name topic-entity-name}
           default-namespaces         [default-namespace]
           success-metric             "success"
           retry-metric               "retry"
@@ -31,9 +33,9 @@
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
-                multi-execution-time-namespaces [[topic-entity-name execution-time-namespace]
+                multi-execution-time-namespaces [[service-name topic-entity-name execution-time-namespace]
                                                  [execution-time-namespace]]]
-            (metrics/multi-ns-report-time multi-execution-time-namespaces time-val)
+            (metrics/multi-ns-report-time multi-execution-time-namespaces time-val additional-tags)
             (case return-code
               :success (do (metrics/multi-ns-increment-count multi-namespaces success-metric additional-tags))
               :retry   (do (metrics/multi-ns-increment-count multi-namespaces retry-metric additional-tags)
@@ -50,12 +52,13 @@
 
 (defn channel-mapper-func [mapper-fn topic-entity channel]
   (fn [message]
-    (let [topic-entity-name  (name topic-entity)
+    (let [service-name       (:app-name (ziggurat-config))
+          topic-entity-name  (name topic-entity)
           channel-name       (name channel)
           default-namespace  "message-processing"
-          base-namespaces    [topic-entity-name channel-name]
+          base-namespaces    [service-name topic-entity-name channel-name]
           metric-namespaces  (conj base-namespaces default-namespace)
-          additional-tags    {:topic-name topic-entity-name}
+          additional-tags    {:topic_name topic-entity-name}
           default-namespaces [default-namespace]
           metric-namespace   (apply str (interpose "." metric-namespaces))
           success-metric     "success"
@@ -72,7 +75,7 @@
                 execution-time-namespace        "execution-time"
                 multi-execution-time-namespaces [(conj base-namespaces execution-time-namespace)
                                                  [execution-time-namespace]]]
-            (metrics/multi-ns-report-time multi-execution-time-namespaces time-val)
+            (metrics/multi-ns-report-time multi-execution-time-namespaces time-val additional-tags)
             (case return-code
               :success (do (metrics/multi-ns-increment-count multi-namespaces success-metric additional-tags))
               :retry   (do (metrics/multi-ns-increment-count multi-namespaces retry-metric additional-tags)
