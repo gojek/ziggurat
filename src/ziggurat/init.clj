@@ -133,7 +133,7 @@
                s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes modes]
-  (if (or (empty? modes) (contains? (set modes) :stream-worker))
+  (when (or (empty? modes) (contains? (set modes) :stream-worker))
     (s/validate StreamRoute stream-routes)))
 
 (defn validate-modes [modes]
