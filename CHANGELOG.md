@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.0 - 2019-06-17
+- Add support for providing a topic-name label in the metrics
+- Multiple Kafka producers support in ziggurat (#55)
+- Validate stream routes only when modes is not present or it contains stream-server (#59)
+
 ## 2.11.1 - 2019-06-04
 - Actor stop fn should stop before the Ziggurat state (#53)
 
