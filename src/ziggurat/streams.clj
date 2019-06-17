@@ -43,10 +43,11 @@
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)))
 
 (defn- log-and-report-metrics [topic-entity message]
-  (let [topic-entity-name  (name topic-entity)
-        additional-tags    {:topic-name topic-entity-name}
+  (let [service-name       (:app-name (ziggurat-config))
+        topic-entity-name  (name topic-entity)
+        additional-tags    {:topic_name topic-entity-name}
         default-namespace  "message"
-        metric-namespaces  [topic-entity-name default-namespace]
+        metric-namespaces  [service-name topic-entity-name default-namespace]
         default-namespaces [default-namespace]
         metric             "read"
         multi-namespaces   [metric-namespaces default-namespaces]]
@@ -72,8 +73,9 @@
     (get [_] (transformer/create metric-namespaces oldest-processed-message-in-s additional-tags))))
 
 (defn- transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
-  (let [metric-namespaces [topic-entity-name "message-received-delay-histogram"]
-        additional-tags   {:topic-name topic-entity-name}]
+  (let [service-name      (:app-name (ziggurat-config))
+        metric-namespaces [service-name topic-entity-name "message-received-delay-histogram"]
+        additional-tags   {:topic_name topic-entity-name}]
     (.transform stream-builder (transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- protobuf->hash [message proto-class topic-entity-name]
@@ -88,10 +90,13 @@
                            keys)]
       (select-keys loaded-proto proto-keys))
     (catch Throwable e
-      (let [additional-tags   {:topic-name topic-entity-name}
-            metric-namespaces ["message-parsing"]]
+      (let [service-name      (:app-name (ziggurat-config))
+            additional-tags   {:topic_name topic-entity-name}
+            default-namespace "message-parsing"
+            metric-namespaces [service-name "message-parsing"]
+            multi-namespaces  [metric-namespaces [default-namespace]]]
         (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
-        (metrics/increment-count metric-namespaces "failed" additional-tags)
+        (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
         nil))))
 
 (defn- topology [handler-fn {:keys [origin-topic proto-class oldest-processed-message-in-s]} topic-entity channels]
