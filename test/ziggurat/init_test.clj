@@ -5,8 +5,10 @@
             [ziggurat.messaging.connection :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
-            [ziggurat.streams :as streams]
-            [ziggurat.server.test-utils :as tu]))
+            [ziggurat.streams :as streams :refer [stream]]
+            [mount.core :refer [defstate]]
+            [ziggurat.server.test-utils :as tu]
+            [mount.core :as mount]))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
@@ -154,4 +156,35 @@
   (testing "Validate modes should raise exception if modes have any invalid element"
     (let [modes [:invalid-modes :api-server :second-invalid]]
       (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes))))))
+
+(deftest kafka-producers-should-start
+  (let [args {:actor-routes  []
+              :stream-routes []}
+        producer-has-started (atom false)]
+    (with-redefs [init/start-kafka-producers (fn [] (reset! producer-has-started true))
+                  init/start-kafka-streams (constantly nil)]
+      (testing "Starting the streams should start kafka-producers as well"
+        (init/start-stream args)
+        (is (= true @producer-has-started)))
+      (testing "Starting the workers should start kafka-producers as well"
+        (reset! producer-has-started false)
+        (init/start-workers args)
+        (is (= true @producer-has-started))))))
+
+(deftest kafka-producers-should-stop
+  (let [producer-has-stopped (atom false)]
+    (with-redefs [init/stop-kafka-producers (fn [] (reset! producer-has-stopped true))
+                  init/stop-kafka-streams (constantly nil)]
+      (testing "Stopping the streams should stop kafka-producers as well"
+        (init/stop-stream)
+        (is (= true @producer-has-stopped)))
+      (testing "Stopping the workers should stop kafka-producers as well"
+        (reset! producer-has-stopped false)
+        (init/stop-workers)
+        (is (= true @producer-has-stopped)))
+      (mount/stop))))
+
+
+
+
 
