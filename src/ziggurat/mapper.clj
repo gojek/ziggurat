@@ -20,7 +20,7 @@
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
           default-namespace          "message-processing"
           metric-namespaces          [service-name topic-entity-name default-namespace]
-          additional-tags            {:topic_name topic-entity-name}
+          additional-tags            {:actor service-name :topic_name topic-entity-name}
           default-namespaces         [default-namespace]
           success-metric             "success"
           retry-metric               "retry"
@@ -59,7 +59,7 @@
           default-namespace  "message-processing"
           base-namespaces    [service-name topic-entity-name channel-name]
           metric-namespaces  (conj base-namespaces default-namespace)
-          additional-tags    {:topic_name topic-entity-name}
+          additional-tags    {:actor service-name :topic_name topic-entity-name}
           default-namespaces [default-namespace]
           metric-namespace   (str/join "." metric-namespaces)
           success-metric     "success"

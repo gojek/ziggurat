@@ -7,36 +7,28 @@
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
            java.util.concurrent.TimeUnit))
 
-(defonce ^:private group (atom nil))
-
 (defonce metrics-registry
   (MetricRegistry.))
 
-(defn- merge-tags
-  [additional-tags]
-  (let [default-tags {"actor" @group}]
-    (merge default-tags (when-not (seq additional-tags)
-                          (stringify-keys additional-tags)))))
-
 (defn mk-meter
-  ([category metric]
-   (mk-meter category metric nil))
-  ([category metric additional-tags]
-   (let [namespace     (str category "." metric)
-         metric-name   (MetricRegistry/name ^String namespace nil)
-         tags          (merge-tags additional-tags)
-         tagged-metric (.tagged ^MetricName metric-name tags)]
-     (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
+  [category metric additional-tags]
+  {:pre [(contains? additional-tags :actor)
+         (not (empty? (:actor additional-tags)))]}
+  (let [namespace     (str category "." metric)
+        metric-name   (MetricRegistry/name ^String namespace nil)
+        tags          (stringify-keys additional-tags)
+        tagged-metric (.tagged ^MetricName metric-name tags)]
+    (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric)))
 
 (defn mk-histogram
-  ([category metric]
-   (mk-histogram category metric nil))
-  ([category metric additional-tags]
-   (let [namespace     (str category "." metric)
-         metric-name   (MetricRegistry/name ^String namespace nil)
-         tags          (merge-tags additional-tags)
-         tagged-metric (.tagged ^MetricName metric-name tags)]
-     (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
+  [category metric additional-tags]
+  {:pre [(contains? additional-tags :actor)
+         (not (empty? (:actor additional-tags)))]}
+  (let [namespace     (str category "." metric)
+        metric-name   (MetricRegistry/name ^String namespace nil)
+        tags          (stringify-keys additional-tags)
+        tagged-metric (.tagged ^MetricName metric-name tags)]
+    (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric)))
 
 (defn intercalate-dot
   [names]
@@ -71,7 +63,7 @@
   (doseq [ns nss]
     (report-time ns time-val additional-tags)))
 
-(defn start-statsd-reporter [statsd-config env app-name]
+(defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
     (when enabled
       (let [transport (-> (UdpTransport$Builder.)
@@ -85,7 +77,6 @@
                          (.build))]
         (log/info "Starting statsd reporter")
         (.start reporter 1 TimeUnit/SECONDS)
-        (reset! group app-name)
         {:reporter reporter :transport transport}))))
 
 (defn stop-statsd-reporter [datadog-reporter]

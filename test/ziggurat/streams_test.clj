@@ -1,9 +1,9 @@
 (ns ziggurat.streams-test
   (:require [clojure.test :refer :all]
             [flatland.protobuf.core :as proto]
-            [ziggurat.streams :refer [start-streams stop-streams]]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.config :refer [ziggurat-config]])
+            [ziggurat.streams :refer [start-streams stop-streams]])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
            [kafka.utils MockTime]

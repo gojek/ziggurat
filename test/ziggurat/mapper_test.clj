@@ -17,7 +17,7 @@
         message                         {:foo "bar"}
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         expected-topic-entity-name      (name (first (keys stream-routes)))
-        expected-additional-tags        {:topic_name expected-topic-entity-name}
+        expected-additional-tags        {:actor service-name :topic_name expected-topic-entity-name}
         default-namespace               "message-processing"
         report-time-namespace           "handler-fn-execution-time"
         expected-metric-namespaces      [expected-topic-entity-name default-namespace]
@@ -123,7 +123,7 @@
                                               :channel-1  #(constantly nil)}}
         topic                      (first (keys stream-routes))
         expected-topic-entity-name (name topic)
-        expected-additional-tags   {:topic_name expected-topic-entity-name}
+        expected-additional-tags   {:actor service-name :topic_name expected-topic-entity-name}
         channel                    :channel-1
         channel-name               (name channel)
         default-namespace          "message-processing"

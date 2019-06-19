@@ -7,14 +7,14 @@
   (testing "returns a meter"
     (let [category "category"
           metric   "metric1"
-          meter    (metrics/mk-meter category metric)]
+          meter    (metrics/mk-meter category metric {:actor "service"})]
       (is (instance? Meter meter)))))
 
 (deftest mk-histogram-test
   (testing "returns a histogram"
     (let [category "category"
           metric   "metric2"
-          meter    (metrics/mk-histogram category metric)]
+          meter    (metrics/mk-histogram category metric {:actor "service"})]
       (is (instance? Histogram meter)))))
 
 (deftest increment-count-test
