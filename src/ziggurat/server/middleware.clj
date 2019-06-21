@@ -18,7 +18,7 @@
 
 (defn wrap-hyphenate [handler & args]
   (fn [request]
-    (let [{:keys [skip-hyphenation] :as response}
+    (let [response
           (handler (update request
                            :params
                            #(umap/nested-map-keys (fn [k] (apply csk/->kebab-case-keyword k args)) %)))]

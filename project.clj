@@ -1,4 +1,4 @@
-(defproject tech.gojek/ziggurat "3.0.0-rc1"
+(defproject tech.gojek/ziggurat "3.0.0-alpha"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -49,7 +49,8 @@
                                       [junit/junit "4.12"]
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
-                                      [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]]
+                                      [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
+                                      [org.clojure/test.check "0.9.0"]]
                        :plugins      [[lein-cloverage "1.0.13"]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins  [[lein-cljfmt "0.6.3"]

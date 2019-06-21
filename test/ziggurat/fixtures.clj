@@ -8,9 +8,13 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
+            [ziggurat.producer :as producer]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
-            [langohr.queue :as lq]))
+            [langohr.queue :as lq])
+  (:import (java.util Properties)
+           (org.apache.kafka.clients.producer ProducerConfig)
+           (org.apache.kafka.clients.consumer ConsumerConfig)))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
@@ -37,7 +41,7 @@
   (with-open [ch (lch/open connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
-            channels         (util/get-channel-names stream-routes topic-entity)]
+            channels (util/get-channel-names stream-routes topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
         (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))
@@ -50,7 +54,7 @@
   (with-open [ch (lch/open connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
-            channels         (util/get-channel-names stream-routes topic-entity)]
+            channels (util/get-channel-names stream-routes topic-entity)]
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :instant)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :dead-letter)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :delay)))
@@ -91,3 +95,31 @@
      (finally
        (delete-queues ~stream-routes)
        (delete-exchanges ~stream-routes))))
+
+(defn mount-producer []
+  (-> (mount/only [#'producer/kafka-producers])
+      (mount/start)))
+
+(def ^:dynamic *bootstrap-servers* nil)
+(def ^:dynamic *consumer-properties* nil)
+(def ^:dynamic *producer-properties* nil)
+
+(defn mount-only-config-and-producer [f]
+  (do
+    (mount-config)
+    (mount-producer)
+    (binding [*bootstrap-servers* "localhost:9092"]
+      (binding [*consumer-properties* (doto (Properties.)
+                                        (.put ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG, *bootstrap-servers*)
+                                        (.put ConsumerConfig/GROUP_ID_CONFIG, "ziggurat-consumer")
+                                        (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG, "earliest")
+                                        (.put ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
+                                        (.put ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer"))
+                *producer-properties* (doto (Properties.)
+                                        (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG *bootstrap-servers*)
+                                        (.put ProducerConfig/ACKS_CONFIG "all")
+                                        (.put ProducerConfig/RETRIES_CONFIG (int 0))
+                                        (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer")
+                                        (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer"))]
+        (f))))
+  (mount/stop))
