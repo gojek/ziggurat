@@ -35,6 +35,20 @@
           (is (= 1 (.getCount meter)))
           (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
+    (testing "increases count on the meter - w/o additional-tags argument"
+      (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
+            mk-meter-args              (atom nil)
+            meter                      (Meter.)
+            expected-additional-tags   nil]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+                                         (is (= additional-tags expected-additional-tags))
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
+                                                                :metric            metric})
+                                         meter)]
+          (metrics/increment-count expected-metric-namespaces metric)
+          (is (= 1 (.getCount meter)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-meter-args)))
+          (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter - without topic name on the namespace"
       (let [expected-metric-namespaces ["metric-ns"]
             mk-meter-args              (atom nil)
@@ -129,6 +143,21 @@
                                                                         :metric            metric})
                                              histogram)]
           (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (is (= 1 (.getCount histogram)))
+          (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
+          (is (= "all" (:metric @mk-histogram-args))))))
+    (testing "updates time-val - w/o additional-tags argument"
+      (let [expected-metric-namespaces [expected-topic-entity-name "message-received-delay-histogram"]
+            mk-histogram-args          (atom nil)
+            reservoir                  (UniformReservoir.)
+            histogram                  (Histogram. reservoir)
+            expected-additional-tags   nil]
+        (with-redefs [metrics/mk-histogram (fn [metric-namespaces metric additional-tags]
+                                             (is (= additional-tags expected-additional-tags))
+                                             (reset! mk-histogram-args {:metric-namespaces metric-namespaces
+                                                                        :metric            metric})
+                                             histogram)]
+          (metrics/report-time expected-metric-namespaces time-val)
           (is (= 1 (.getCount histogram)))
           (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
