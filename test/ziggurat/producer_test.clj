@@ -1,12 +1,12 @@
 (ns ziggurat.producer-test
   (:require [clojure.test :refer :all]
-            [ziggurat.streams :refer [start-streams stop-streams]]
-            [ziggurat.fixtures :as fix :refer [*producer-properties* *consumer-properties*]]
+            [clojure.test.check.generators :as gen]
             [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.fixtures :as fix :refer [*producer-properties* *consumer-properties*]]
             [ziggurat.producer :refer [producer-properties-map send kafka-producers]]
-            [clojure.test.check.generators :as gen])
-  (:import (org.apache.kafka.streams.integration.utils IntegrationTestUtils)
-           (org.apache.kafka.clients.producer KafkaProducer)))
+            [ziggurat.streams :refer [start-streams stop-streams]])
+  (:import (org.apache.kafka.clients.producer KafkaProducer)
+           (org.apache.kafka.streams.integration.utils IntegrationTestUtils)))
 
 (use-fixtures :once fix/mount-only-config-and-producer)
 
@@ -21,31 +21,30 @@
                                                                              :enabled [true :bool]}}}}})
 
 (deftest send-data-with-topic-and-value-test
-  (with-redefs
-   [kafka-producers (hash-map :default (KafkaProducer. *producer-properties*))]
-    (let [topic (gen/generate gen/string-alphanumeric 10)
-          key "message"
-          value "Hello World!!"]
+  (with-redefs [kafka-producers (hash-map :default (KafkaProducer. *producer-properties*))]
+    (let [alphanum-gen (gen/such-that #(some? %) gen/string-alphanumeric)
+          topic        (gen/generate alphanum-gen 10)
+          key          "message"
+          value        "Hello World!!"]
       (send :default topic key value)
       (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic  1 2000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-data-with-topic-key-partition-and-value-test
-  (with-redefs
-   [kafka-producers (hash-map :default (KafkaProducer. *producer-properties*))]
-    (let [topic (gen/generate gen/string-alphanumeric 10)
-          key "message"
-          value "Hello World!!"
-          partition (int 0)]
+  (with-redefs [kafka-producers (hash-map :default (KafkaProducer. *producer-properties*))]
+    (let [alphanum-gen (gen/such-that #(some? %) gen/string-alphanumeric)
+          topic        (gen/generate alphanum-gen 10)
+          key          "message"
+          value        "Hello World!!"
+          partition    (int 0)]
       (send :default topic partition key value)
       (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic  1 2000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-throws-exception-when-no-producers-are-configured
-  (with-redefs
-   [kafka-producers {}]
+  (with-redefs [kafka-producers {}]
     (let [topic "test-topic"
-          key "message"
+          key   "message"
           value "Hello World!! from non-existant Kafka Producers"]
       (is (not-empty (try (send :default topic key value)
                           (catch Exception e (ex-data e))))))))
@@ -53,14 +52,10 @@
 (deftest producer-properties-map-is-empty-if-no-producers-configured
   ; Here ziggurat-config has been substituted with a custom map which
   ; does not have any valid producer configs.
-  (with-redefs
-   [ziggurat-config stream-router-config-without-producer]
+  (with-redefs [ziggurat-config stream-router-config-without-producer]
     (is (empty? (producer-properties-map)))))
 
 (deftest producer-properties-map-is-not-empty-if-producers-are-configured
   ; Here the config is read from config.test.edn which contains
   ; valid producer configs.
   (is (seq (producer-properties-map))))
-
-
-
