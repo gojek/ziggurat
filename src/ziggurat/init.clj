@@ -4,20 +4,19 @@
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
             [ziggurat.config :refer [ziggurat-config] :as config]
-            [ziggurat.metrics :as metrics]
             [ziggurat.messaging.connection :as messaging-connection]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
+            [ziggurat.metrics :as metrics]
             [ziggurat.nrepl-server :as nrepl-server]
+            [ziggurat.producer :as producer :refer [kafka-producers]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
-            [ziggurat.streams :as streams]
-            [ziggurat.producer :as producer :refer [kafka-producers]]))
+            [ziggurat.streams :as streams]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
-                                        (:env (ziggurat-config))
-                                        (:app-name (ziggurat-config)))
+                                        (:env (ziggurat-config)))
   :stop (metrics/stop-statsd-reporter statsd-reporter))
 
 (defn- start*
@@ -154,7 +153,7 @@
     (s/validate StreamRoute stream-routes)))
 
 (defn validate-modes [modes]
-  (let [invalid-modes (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
+  (let [invalid-modes       (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
         invalid-modes-count (count invalid-modes)]
     (when (pos? invalid-modes-count)
       (throw (ex-info "Wrong modes arguement passed - " {:invalid-modes invalid-modes})))))

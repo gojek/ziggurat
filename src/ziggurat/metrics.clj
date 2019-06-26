@@ -1,20 +1,19 @@
 (ns ziggurat.metrics
   (:require [clojure.tools.logging :as log]
-            [clojure.walk :refer [stringify-keys]])
+            [clojure.walk :refer [stringify-keys]]
+            [ziggurat.config :refer [ziggurat-config]])
   (:import com.gojek.metrics.datadog.DatadogReporter
            [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
            java.util.concurrent.TimeUnit))
-
-(defonce ^:private group (atom nil))
 
 (defonce metrics-registry
   (MetricRegistry.))
 
 (defn- merge-tags
   [additional-tags]
-  (let [default-tags {"actor" @group}]
-    (merge default-tags (when (not (empty? additional-tags))
+  (let [default-tags {"actor" (:app-name (ziggurat-config))}]
+    (merge default-tags (when-not (seq additional-tags)
                           (stringify-keys additional-tags)))))
 
 (defn mk-meter
@@ -47,10 +46,12 @@
     (dissoc additional-tags (when (some #(= % topic-name) ns) :topic_name))))
 
 (defn- inc-or-dec-count
-  [sign metric-namespaces metric additional-tags]
-  (let [metric-namespace (intercalate-dot metric-namespaces)
-        meter            ^Meter (mk-meter metric-namespace metric (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
-    (.mark meter (sign 1))))
+  ([sign metric-namespace metric]
+   (inc-or-dec-count sign metric-namespace metric nil))
+  ([sign metric-namespaces metric additional-tags]
+   (let [metric-namespace (intercalate-dot metric-namespaces)
+         meter            ^Meter (mk-meter metric-namespace metric (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+     (.mark meter (sign 1)))))
 
 (def increment-count (partial inc-or-dec-count +))
 
@@ -61,16 +62,18 @@
     (increment-count ns metric additional-tags)))
 
 (defn report-time
-  [metric-namespaces time-val additional-tags]
-  (let [metric-namespace (intercalate-dot metric-namespaces)
-        histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
-    (.update histogram (int time-val))))
+  ([metric-namespaces time-val]
+   (report-time metric-namespaces time-val nil))
+  ([metric-namespaces time-val additional-tags]
+   (let [metric-namespace (intercalate-dot metric-namespaces)
+         histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+     (.update histogram (int time-val)))))
 
 (defn multi-ns-report-time [nss time-val additional-tags]
   (doseq [ns nss]
     (report-time ns time-val additional-tags)))
 
-(defn start-statsd-reporter [statsd-config env app-name]
+(defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
     (when enabled
       (let [transport (-> (UdpTransport$Builder.)
@@ -84,7 +87,6 @@
                          (.build))]
         (log/info "Starting statsd reporter")
         (.start reporter 1 TimeUnit/SECONDS)
-        (reset! group app-name)
         {:reporter reporter :transport transport}))))
 
 (defn stop-statsd-reporter [datadog-reporter]
