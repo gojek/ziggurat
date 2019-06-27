@@ -53,7 +53,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 ## Usage
 
-Upgarde Guide to 3.x refer[here](UpgradeGuide.md)
+Upgrade Guide to 3.x refer [here](UpgradeGuide.md)
 
 Add this to your project.clj:
 
@@ -88,7 +88,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
     * :success - The message was successfuly processed and the stream should continue to the next message
     * :failure - The message failed to be processed and it should be reported to sentry, it will not be retried.
     * :retry - The message failed to be processed and it should be retried.
-    * :skip - The message should be skipped without reporting it's failure or retrying the message
+    * :skip - The message should be skipped without reporting its failure or retrying the message
 * The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
 * The stop-fn is run at shutdown and facilitates graceful shutdown, for example, releasing db connections, shutting down http servers etc.
 * Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
