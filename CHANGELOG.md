@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.1 - 2019-06-28
+- Fixes a bug where calling inc-or-dec count without passing additional tags raised and exception
+
 ## 2.12.0 - 2019-06-17
 - Add support for providing a topic-name label in the metrics
 - Multiple Kafka producers support in ziggurat (#55)
