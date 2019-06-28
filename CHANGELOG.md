@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file. This change
 ## Unreleased Changes
 
 
+## 3.0.0-alpha.1 - 2019-06-28
+- Fixes a bug where calling inc-or-dec count without passing additional tags raised and exception
+
 ## 3.0.0-alpha - 2019-06-21
 - Upgrades kafka streams to version 2.1. Please refer [this](UpgradeGuide.md) to upgrade
 
