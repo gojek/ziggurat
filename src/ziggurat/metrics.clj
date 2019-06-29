@@ -13,8 +13,11 @@
 (defn- merge-tags
   [additional-tags]
   (let [default-tags {"actor" (:app-name (ziggurat-config))}]
-    (merge default-tags (when-not (seq additional-tags)
-                          (stringify-keys additional-tags)))))
+    (merge default-tags (stringify-keys additional-tags))))
+
+(defn- get-tagged-metric
+  [metric-name tags]
+  (.tagged ^MetricName metric-name tags))
 
 (defn mk-meter
   ([category metric]
@@ -23,7 +26,7 @@
    (let [namespace     (str category "." metric)
          metric-name   (MetricRegistry/name ^String namespace nil)
          tags          (merge-tags additional-tags)
-         tagged-metric (.tagged ^MetricName metric-name tags)]
+         tagged-metric (get-tagged-metric metric-name tags)]
      (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn mk-histogram
