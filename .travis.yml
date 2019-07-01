@@ -14,7 +14,7 @@ jobs:
   - stage: lint-check
     script:
     - lein cljfmt check
-    - lein kibit
+#    - lein kibit
   - stage: test
     name: "kafka-1"
     env:
