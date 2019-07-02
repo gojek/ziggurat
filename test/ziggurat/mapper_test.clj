@@ -14,7 +14,7 @@
 
 (deftest mapper-func-test
   (let [service-name                    (:app-name (ziggurat-config))
-        message                         {:foo "bar"}
+        message-payload                 {:message {:foo "bar"} :retry-count (:count (:retry (ziggurat-config)))}
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         expected-topic-entity-name      (name (first (keys stream-routes)))
         expected-additional-tags        {:topic_name expected-topic-entity-name}
@@ -36,7 +36,7 @@
                                                 (when (or (= metric-namespaces expected-report-time-namespaces)
                                                           (= metric-namespaces [report-time-namespace]))
                                                   (reset! successfully-reported-time? true)))]
-          ((mapper-func (constantly :success) expected-topic-entity-name []) message)
+          ((mapper-func (constantly :success) expected-topic-entity-name []) message-payload)
           (is @successfully-processed?)
           (is @successfully-reported-time?))))
 
@@ -50,9 +50,9 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! successfully-processed? true)))]
-            ((mapper-func (constantly :channel-1) expected-topic-entity-name [:channel-1]) message)
+            ((mapper-func (constantly :channel-1) expected-topic-entity-name [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue expected-topic-entity-name :channel-1)]
-              (is (= message message-from-mq))
+              (is (= message-payload message-from-mq))
               (is @successfully-processed?))))))
 
     (testing "message process should raise exception if channel not in list"
@@ -62,13 +62,13 @@
                                       (let [err (Throwable->map e)]
                                         (is (= (:cause err) "Invalid mapper return code"))
                                         (is (= (-> err :data :code) :channel-1))))]
-          ((mapper-func (constantly :channel-1) expected-topic-entity-name [:some-other-channel]) message)
+          ((mapper-func (constantly :channel-1) expected-topic-entity-name [:some-other-channel]) message-payload)
           (let [message-from-mq (rmq/get-message-from-channel-instant-queue expected-topic-entity-name :channel-1)]
             (is (nil? message-from-mq))))))
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
@@ -78,14 +78,14 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (constantly :retry) expected-topic-entity-name []) message)
+            ((mapper-func (constantly :retry) expected-topic-entity-name []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue expected-topic-entity-name)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
     (testing "message should raise exception"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
@@ -96,7 +96,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (fn [_] (throw (Exception. "test exception"))) expected-topic-entity-name []) message)
+            ((mapper-func (fn [_] (throw (Exception. "test exception"))) expected-topic-entity-name []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue expected-topic-entity-name)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
@@ -113,12 +113,12 @@
                                                       (= metric-namespaces [execution-time-namesapce]))
                                               (reset! reported-execution-time? true)))]
 
-          ((mapper-func (constantly :success) expected-topic-entity-name []) message)
+          ((mapper-func (constantly :success) expected-topic-entity-name []) message-payload)
           (is @reported-execution-time?))))))
 
 (deftest channel-mapper-func-test
   (let [service-name               (:app-name (ziggurat-config))
-        message                    {:foo "bar"}
+        message-payload            {:message {:foo "bar"} :retry-count (:count (:retry (ziggurat-config)))}
         stream-routes              {:default {:handler-fn #(constantly nil)
                                               :channel-1  #(constantly nil)}}
         topic                      (first (keys stream-routes))
@@ -137,12 +137,12 @@
                                                            (= metric expected-metric)
                                                            (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))]
-          ((channel-mapper-func (constantly :success) topic channel) message)
+          ((channel-mapper-func (constantly :success) topic channel) message-payload)
           (is @successfully-processed?))))
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
@@ -152,14 +152,14 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((channel-mapper-func (constantly :retry) topic channel) message)
+            ((channel-mapper-func (constantly :retry) topic channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
     (testing "message should raise exception"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
@@ -170,7 +170,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) topic channel) message)
+            ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) topic channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
@@ -183,5 +183,5 @@
                                             (when (or (= metric-namespaces [service-name expected-topic-entity-name channel-name execution-time-namesapce])
                                                       (= metric-namespaces [execution-time-namesapce]))
                                               (reset! reported-execution-time? true)))]
-          ((channel-mapper-func (constantly :success) topic channel) message)
+          ((channel-mapper-func (constantly :success) topic channel) message-payload)
           (is @reported-execution-time?))))))

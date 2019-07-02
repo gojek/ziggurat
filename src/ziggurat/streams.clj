@@ -77,6 +77,10 @@
                          (Serdes/ByteArray)
                          (Serdes/ByteArray)
                          (SystemTime.)))
+(defn- construct-message
+  [message]
+  {:message     message
+   :retry-count (-> (ziggurat-config) :retry :count)})
 
 (defn- value-mapper [f]
   (reify ValueMapper
@@ -104,7 +108,7 @@
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
+         (map-values #((mpr/mapper-func handler-fn topic-entity channels) (construct-message %))))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]
