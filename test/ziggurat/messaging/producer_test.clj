@@ -138,7 +138,7 @@
   (let [ziggurat-config (ziggurat-config)]
     (testing "When retries are enabled"
       (with-redefs [ziggurat-config (constantly (assoc ziggurat-config
-                                                              :retry {:enabled true}))]
+                                                       :retry {:enabled true}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn

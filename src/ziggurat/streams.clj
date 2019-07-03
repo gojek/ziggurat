@@ -77,6 +77,7 @@
                          (Serdes/ByteArray)
                          (Serdes/ByteArray)
                          (SystemTime.)))
+
 (defn- construct-message
   [message]
   {:message     message
