@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.0.0-alpha.2 - 2019-07-03
+- Fixes a bug that incorrectly checked for additional-tags in ziggurat.metrics/merge-tags
 
 ## 3.0.0-alpha.1 - 2019-06-28
 - Fixes a bug where calling inc-or-dec count without passing additional tags raised and exception
