@@ -10,56 +10,57 @@
 
 (use-fixtures :once fix/init-rabbit-mq)
 
-(defn- gen-msg []
-  {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))})
+(defn- gen-message-payload []
+  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
+   :retry-count (rand-int 5)})
 
 (deftest get-dead-set-messages-for-topic-test
   (testing "when ack is enabled, get the dead set messages and remove from dead set"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message           (gen-msg)
+            message-payload   (gen-message-payload)
             topic-identifier  "default"
             pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message))
+                                (producer/publish-to-dead-queue topic-identifier message-payload))
             dead-set-messages (get-dead-set-messages-for-topic true topic-identifier count-of-messages)]
-        (is (= (repeat count-of-messages message) dead-set-messages))
+        (is (= (repeat count-of-messages message-payload) dead-set-messages))
         (is (empty? (get-dead-set-messages-for-topic true topic-identifier count-of-messages))))))
 
   (testing "when ack is disabled, get the dead set messages and not remove from dead set"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message           (gen-msg)
+            message-payload   (gen-message-payload)
             topic-identifier  "default"
             pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message))
+                                (producer/publish-to-dead-queue topic-identifier message-payload))
             dead-set-messages (get-dead-set-messages-for-topic false topic-identifier count-of-messages)]
-        (is (= (repeat count-of-messages message) dead-set-messages))
-        (is (= (repeat count-of-messages message) (get-dead-set-messages-for-topic false topic-identifier count-of-messages)))))))
+        (is (= (repeat count-of-messages message-payload) dead-set-messages))
+        (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-identifier count-of-messages)))))))
 
 (deftest get-dead-set-messages-from-channel-test
   (testing "when ack is enabled, get the dead set messages and remove from dead set"
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message           (gen-msg)
+            message-payload   (gen-message-payload)
             topic-identifier  "default"
             channel           "channel-1"
             pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-channel-dead-queue topic-identifier channel message))
+                                (producer/publish-to-channel-dead-queue topic-identifier channel message-payload))
             dead-set-messages (get-dead-set-messages-for-channel true topic-identifier channel count-of-messages)]
-        (is (= (repeat count-of-messages message) dead-set-messages))
+        (is (= (repeat count-of-messages message-payload) dead-set-messages))
         (is (empty? (get-dead-set-messages-for-channel true topic-identifier channel count-of-messages))))))
 
   (testing "when ack is disabled, get the dead set messages and not remove from dead set"
     (fix/with-queues {:default {:handler-fn #(constantly nil)}}
       (let [count-of-messages 10
-            message           (gen-msg)
+            message-payload   (gen-message-payload)
             topic-identifier  "default"
             pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message))
+                                (producer/publish-to-dead-queue topic-identifier message-payload))
             dead-set-messages (get-dead-set-messages-for-topic false topic-identifier count-of-messages)]
-        (is (= (repeat count-of-messages message) dead-set-messages))
-        (is (= (repeat count-of-messages message) (get-dead-set-messages-for-topic false topic-identifier count-of-messages)))))))
+        (is (= (repeat count-of-messages message-payload) dead-set-messages))
+        (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-identifier count-of-messages)))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom
@@ -92,13 +93,14 @@
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
             success-promise     (promise)
-            msg                 (gen-msg)
+            retry-count         5
+            message-payload     (assoc (gen-message-payload) :retry-count retry-count)
             topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
-                                                 (update-in [:retry :count] (constantly 5))
+                                                 (update-in [:retry :count] (constantly retry-count))
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
@@ -107,7 +109,7 @@
                                                     :retry-limit        2
                                                     :success-promise    success-promise}) topic-identifier [])
 
-          (producer/publish-to-delay-queue topic-identifier msg)
+          (producer/publish-to-delay-queue topic-identifier message-payload)
 
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -121,13 +123,14 @@
       (let [retry-counter       (atom 0)
             skip-promise        (promise)
             call-counter        (atom 0)
-            msg                 (assoc (gen-msg) :msg "skip")
+            retry-count         5
+            message-payload     (assoc (assoc-in (gen-message-payload) [:message :msg] "skip") :retry-count retry-count)
             topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
-                                                 (update-in [:retry :count] (constantly 5))
+                                                 (update-in [:retry :count] (constantly retry-count))
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
@@ -136,7 +139,7 @@
                                                     :skip-promise       skip-promise
                                                     :retry-limit        -1}) topic-identifier [])
 
-          (producer/publish-to-delay-queue topic-identifier msg)
+          (producer/publish-to-delay-queue topic-identifier message-payload)
 
           (when-let [promise-success? (deref skip-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -149,14 +152,15 @@
     (fix/with-queues {:default {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
-            retries             5
+            retry-count         5
+            message-payload     #(assoc (gen-message-payload) :retry-count retry-count)
             no-of-msgs          2
             topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
-                                                 (update-in [:retry :count] (constantly retries))
+                                                 (update-in [:retry :count] (constantly retry-count))
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
@@ -165,7 +169,7 @@
                                                     :retry-limit        (* no-of-msgs 10)}) topic-identifier [])
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (gen-msg) topic-identifier))
+            (producer/retry (message-payload) topic-identifier))
 
           (block-and-retry-until (fn []
                                    (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-identifier no-of-msgs))]
@@ -173,7 +177,7 @@
                                        (throw (ex-info "Dead set messages were never populated"
                                                        {:dead-set-msgs dead-set-msgs}))))))
 
-          (is (= (* retries no-of-msgs) @retry-counter))
+          (is (= (* retry-count no-of-msgs) @retry-counter))
           (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-identifier no-of-msgs)))))
         (close rmq-ch))))
 
@@ -214,7 +218,8 @@
     (let [retry-counter       (atom 0)
           call-counter        (atom 0)
           success-promise     (promise)
-          msg                 (gen-msg)
+          retry-count         5
+          message-payload     (assoc (gen-message-payload) :retry-count retry-count)
           topic-entity        :default
           channel             :channel-1
           channel-fn          (mock-mapper-fn {:retry-counter-atom retry-counter
@@ -226,12 +231,12 @@
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
                                       channel     channel-fn}}
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
-                                                 (update-in [:stream-router topic-entity :channels channel :retry :count] (constantly 5))
+                                                 (update-in [:stream-router topic-entity :channels channel :retry :count] (constantly retry-count))
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly true))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (with-redefs [lch/open (fn [_] rmq-ch)]
             (start-channels-subscriber {channel channel-fn} topic-entity))
-          (producer/retry-for-channel msg topic-entity channel)
+          (producer/retry-for-channel message-payload topic-entity channel)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
             (is (= true promise-success?))
@@ -242,7 +247,7 @@
     (let [retry-counter       (atom 0)
           call-counter        (atom 0)
           success-promise     (promise)
-          msg                 (gen-msg)
+          message-payload     (gen-message-payload)
           topic-entity        :default
           channel             :channel-1
           channel-fn          (mock-mapper-fn {:retry-counter-atom retry-counter
@@ -257,7 +262,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (start-channels-subscriber {channel channel-fn} topic-entity)
-          (producer/publish-to-channel-instant-queue topic-entity channel msg)
+          (producer/publish-to-channel-instant-queue topic-entity channel message-payload)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (close rmq-ch))))))
