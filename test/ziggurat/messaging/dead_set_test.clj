@@ -11,80 +11,80 @@
   (testing "puts message from dead set to instant queue"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message           {:foo "bar"}
+            message-payload   {:message {:foo "bar"} :retry-count 0}
             topic-name        "default"]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-dead-queue topic-name message))
+          (producer/publish-to-dead-queue topic-name message-payload))
         (ds/replay count-of-messages topic-name nil)
         (doseq [_ (range count-of-messages)]
-          (is (= message (rmq/get-msg-from-instant-queue topic-name))))
+          (is (= message-payload (rmq/get-msg-from-instant-queue topic-name))))
         (is (not (rmq/get-msg-from-instant-queue topic-name))))))
 
   (testing "puts message from dead set to instant channel queue"
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message           {:foo "bar"}
+            message-payload   {:message {:foo "bar"} :retry-count 0}
             topic-name        "default"
             channel           "channel-1"]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-channel-dead-queue topic-name channel message))
+          (producer/publish-to-channel-dead-queue topic-name channel message-payload))
         (ds/replay count-of-messages topic-name channel)
         (doseq [_ (range count-of-messages)]
-          (is (= message (rmq/get-message-from-channel-instant-queue topic-name channel))))
+          (is (= message-payload (rmq/get-message-from-channel-instant-queue topic-name channel))))
         (is (not (rmq/get-message-from-channel-instant-queue topic-name channel)))))))
 
 (deftest view-test
   (testing "gets dead set messages for topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message           {:foo "bar"}
+            message-payload   {:message {:foo "bar"} :retry-count 0}
             topic-name        "default"
             _                 (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-name message))
+                                (producer/publish-to-dead-queue topic-name message-payload))
             dead-set-messages (ds/view count-of-messages topic-name nil)]
         (doseq [dead-set-message dead-set-messages]
-          (is (= message dead-set-message)))
+          (is (= message-payload dead-set-message)))
         (is (not (empty? (rmq/get-msg-from-dead-queue topic-name)))))))
 
   (testing "gets dead set messages for channel"
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message           {:foo "bar"}
+            message-payload   {:message {:foo "bar"} :retry-count 0}
             topic-name        "default"
             channel           "channel-1"
             _                 (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-channel-dead-queue topic-name channel message))
+                                (producer/publish-to-channel-dead-queue topic-name channel message-payload))
             dead-set-messages (ds/view count-of-messages topic-name channel)]
         (doseq [dead-set-message dead-set-messages]
-          (is (= message dead-set-message)))
+          (is (= message-payload dead-set-message)))
         (is (not (empty? (rmq/get-msg-from-channel-dead-queue topic-name channel))))))))
 
 (deftest delete-messages-test
   (testing "deletes messages from the dead set in order for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages       10
-            message                 {:foo "bar" :number 0}
-            messages                (map #(assoc message :number %) (range count-of-messages))
+            message-payload         {:message {:foo "bar" :number 0} :retry-count 0}
+            message-payloads        (map #(assoc-in message-payload [:message :number] %) (range count-of-messages))
             topic-name              "default"
             remaining-message-count 2
             delete-count            (- count-of-messages remaining-message-count)
-            _                       (doseq [message messages]
+            _                       (doseq [message message-payloads]
                                       (producer/publish-to-dead-queue topic-name message))
             _                       (ds/delete delete-count topic-name nil)
             dead-set-messages       (ds/view count-of-messages topic-name nil)]
 
         (is (= (count dead-set-messages) remaining-message-count))
-        (is (= dead-set-messages (take-last remaining-message-count messages))))))
+        (is (= dead-set-messages (take-last remaining-message-count message-payloads))))))
 
   (testing "deletes all messages from the dead set for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message           {:foo "bar"}
+            message-payload   {:message {:foo "bar"} :retry-count 0}
             topic-name        "default"]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-dead-queue topic-name message))
+          (producer/publish-to-dead-queue topic-name message-payload))
         (ds/delete count-of-messages topic-name nil)
         (is (empty? (rmq/get-msg-from-dead-queue topic-name))))))
 
@@ -92,10 +92,10 @@
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message           {:foo "bar"}
+            message-payload   {:message {:foo "bar"} :retry-count 0}
             topic-name        "default"
             channel-name      "channel-1"]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-channel-dead-queue topic-name channel-name message))
+          (producer/publish-to-channel-dead-queue topic-name channel-name message-payload))
         (ds/delete count-of-messages topic-name channel-name)
         (is (empty? (rmq/get-msg-from-channel-dead-queue topic-name channel-name)))))))
