@@ -78,10 +78,6 @@
                          (Serdes/ByteArray)
                          (SystemTime.)))
 
-(defn- construct-message
-  [message]
-  {:message message})
-
 (defn- value-mapper [f]
   (reify ValueMapper
     (apply [_ v] (f v))))
@@ -108,7 +104,7 @@
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mpr/mapper-func handler-fn topic-entity channels) (construct-message %))))
+         (map-values #((mpr/mapper-func handler-fn topic-entity channels) (mpr/construct-message-payload %))))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]

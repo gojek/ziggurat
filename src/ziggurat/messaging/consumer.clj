@@ -3,6 +3,7 @@
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
+            [schema.core :as s]
             [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [get-in-config]]
@@ -11,6 +12,18 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.util :refer :all])
   (:import [com.rabbitmq.client AlreadyClosedException Channel]))
+
+(defn- convert-to-message-payload
+  "checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to message-payload to pass onto the mapper-fn.
+  This function is used for migration from Ziggurat Version 2.x to 3.x"
+  [message]
+  (try
+    (s/validate mpr/message-payload message)
+    (catch Exception e
+      (log/info "old message format read, converting to message-payload: " message)
+      (let [retry-count (:retry-count message)
+            message-payload (mpr/construct-message-payload (dissoc message :retry-count))]
+        (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
   "Take the ch metadata payload and ack? as parameter.
@@ -21,7 +34,7 @@
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
       (when ack?
         (lb/ack ch delivery-tag))
-      message)
+      (convert-to-message-payload message))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while decoding message")
       (lb/reject ch delivery-tag false)

@@ -1,10 +1,11 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all])
   (:require [langohr.channel :as lch]
+            [schema.core :as s]
             [sentry-clj.async :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.mapper :refer [mapper-func channel-mapper-func]]
+            [ziggurat.mapper :refer :all]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]))
@@ -185,3 +186,9 @@
                                               (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) topic channel) message-payload)
           (is @reported-execution-time?))))))
+
+(deftest construct-message-payload-test
+  (testing "given a clojure map, it returns a message-payload"
+    (let [message {:foo "bar"}
+          expected-message {:message {:foo "bar"}}]
+      (is (= expected-message (mpr/construct-message-payload message))))))

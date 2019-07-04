@@ -1,5 +1,6 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
+            [schema.core :as s]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
@@ -88,3 +89,12 @@
             (producer/retry-for-channel message-payload topic-entity channel)
             (sentry/report-error sentry-reporter e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/multi-ns-increment-count multi-namespaces failure-metric additional-tags)))))))
+
+
+(defn construct-message-payload
+  [message]
+  {:message message})
+
+(s/defschema message-payload
+  {:message s/Any
+   :retry-count s/Int})

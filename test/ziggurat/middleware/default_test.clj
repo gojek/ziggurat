@@ -33,4 +33,15 @@
                                                        (reset! metric-reporter-called? true))]
         ((protobuf->hash handler-fn nil topic-entity-name) nil))
       (is (false? @handler-fn-called?))
-      (is (true? @metric-reporter-called?)))))
+      (is (true? @metric-reporter-called?))))
+  (testing "When an already deserialised message is passed to the function it calls the handler fn without altering it"
+    (let [handler-fn-called? (atom false)
+          message            {:id   7
+                              :path "/photos/h2k3j4h9h23"}
+          proto-class        Example$Photo
+          topic-entity-name  "test"
+          handler-fn         (fn [msg]
+                               (if (= msg message)
+                                 (reset! handler-fn-called? true)))]
+      ((protobuf->hash handler-fn proto-class topic-entity-name) message)
+      (is (true? @handler-fn-called?)))))
