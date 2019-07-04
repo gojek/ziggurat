@@ -11,7 +11,7 @@
   (testing "puts message from dead set to instant queue"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message-payload   {:message {:foo "bar"} :retry-count 0}
+            message-payload   {:message {:foo "bar"}}
             topic-name        "default"]
         (doseq [_ (range count-of-messages)]
           (producer/publish-to-dead-queue topic-name message-payload))
@@ -24,7 +24,7 @@
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message-payload   {:message {:foo "bar"} :retry-count 0}
+            message-payload   {:message {:foo "bar"}}
             topic-name        "default"
             channel           "channel-1"]
         (doseq [_ (range count-of-messages)]
@@ -38,7 +38,7 @@
   (testing "gets dead set messages for topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message-payload   {:message {:foo "bar"} :retry-count 0}
+            message-payload   {:message {:foo "bar"}}
             topic-name        "default"
             _                 (doseq [_ (range count-of-messages)]
                                 (producer/publish-to-dead-queue topic-name message-payload))
@@ -51,7 +51,7 @@
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message-payload   {:message {:foo "bar"} :retry-count 0}
+            message-payload   {:message {:foo "bar"}}
             topic-name        "default"
             channel           "channel-1"
             _                 (doseq [_ (range count-of-messages)]
@@ -65,7 +65,7 @@
   (testing "deletes messages from the dead set in order for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages       10
-            message-payload         {:message {:foo "bar" :number 0} :retry-count 0}
+            message-payload         {:message {:foo "bar" :number 0}}
             message-payloads        (map #(assoc-in message-payload [:message :number] %) (range count-of-messages))
             topic-name              "default"
             remaining-message-count 2
@@ -81,7 +81,7 @@
   (testing "deletes all messages from the dead set for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages 10
-            message-payload   {:message {:foo "bar"} :retry-count 0}
+            message-payload   {:message {:foo "bar"}}
             topic-name        "default"]
         (doseq [_ (range count-of-messages)]
           (producer/publish-to-dead-queue topic-name message-payload))
@@ -92,7 +92,7 @@
     (fix/with-queues {:default {:handler-fn (constantly nil)
                                 :channel-1  (constantly nil)}}
       (let [count-of-messages 10
-            message-payload   {:message {:foo "bar"} :retry-count 0}
+            message-payload   {:message {:foo "bar"}}
             topic-name        "default"
             channel-name      "channel-1"]
         (doseq [_ (range count-of-messages)]

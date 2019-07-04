@@ -23,7 +23,7 @@
       (let [topic-entity :default
             channel :channel-1
             retry-count (atom (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
-            message-payload      {:message {:foo "bar"} :retry-count @retry-count}
+            message-payload      {:message {:foo "bar"}}
             expected-message-payload (assoc message-payload :retry-count 0)]
         (producer/retry-for-channel message-payload topic-entity channel)
         (while (> @retry-count 0)
@@ -64,28 +64,28 @@
   (testing "message with a retry count of 0 will publish to dead queue"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message-payload  {:message {:foo "bar"} :retry-count 0}
-            topic-entity     :default]
+      (let [message-payload {:message {:foo "bar"} :retry-count 0}
+            topic-entity    :default]
         (producer/retry message-payload topic-entity)
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= message-payload message-from-mq)))))
+          (is (= message-payload message-from-mq))))))
 
-    (testing "it will retry publishing message six times when unable to publish to rabbitmq"
-      (fix/with-queues
-        {:default {:handler-fn #(constantly nil)}}
-        (let [retry-count (atom 0)
-              message-payload  {:message {:foo "bar"} :retry-count 5}
-              topic-entity     :default]
-          (with-redefs [lb/publish (fn [_ _ _ _ props]
-                                     (swap! retry-count inc)
-                                     (throw (Exception. "some exception")))]
-            (producer/retry message-payload topic-entity)
-            (is (= 6 @retry-count)))))))
+  (testing "it will retry publishing message six times when unable to publish to rabbitmq"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [retry-count     (atom 0)
+            message-payload {:message {:foo "bar"} :retry-count 5}
+            topic-entity    :default]
+        (with-redefs [lb/publish (fn [_ _ _ _ props]
+                                   (swap! retry-count inc)
+                                   (throw (Exception. "some exception")))]
+          (producer/retry message-payload topic-entity)
+          (is (= 6 @retry-count))))))
 
   (testing "message with no retry count will publish to delay queue"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message          {:message {:foo "bar"} :retry-count (:count (:retry (ziggurat-config)))}
+      (let [message          {:message {:foo "bar"}}
             expected-message {:message {:foo "bar"} :retry-count 4}
             topic-entity     :default]
         (producer/retry message topic-entity)
@@ -95,7 +95,7 @@
   (testing "publish to delay queue publishes with expiration from config"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message-payload        {:message {:foo "bar"} :retry-count (:count (:retry (ziggurat-config)))}
+      (let [message-payload        {:message {:foo "bar"}}
             topic-entity   :default
             expected-props {:content-type "application/octet-stream"
                             :persistent   true
@@ -104,11 +104,11 @@
                                    (is (= expected-props props)))]
           (producer/publish-to-delay-queue topic-entity message-payload)))))
 
-  (testing "message will be retried as defined in ziggurat config retry-count when message doesnt have retry-count"
+  (testing "message will be retried as defined in ziggurat config retry-count when message doesn't have retry-count"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
       (let [retry-count (atom (get-in (config/ziggurat-config) [:retry :count]))
-            message-payload     {:message {:foo "bar"} :retry-count @retry-count}
+            message-payload     {:message {:foo "bar"}}
             expected-message-payload (assoc message-payload :retry-count 0)
             topic-entity :default]
         (producer/retry message-payload topic-entity)

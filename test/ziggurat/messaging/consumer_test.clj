@@ -11,8 +11,7 @@
 (use-fixtures :once fix/init-rabbit-mq)
 
 (defn- gen-message-payload []
-  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
-   :retry-count (rand-int 5)})
+  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}})
 
 (deftest get-dead-set-messages-for-topic-test
   (testing "when ack is enabled, get the dead set messages and remove from dead set"
@@ -94,7 +93,7 @@
             call-counter        (atom 0)
             success-promise     (promise)
             retry-count         5
-            message-payload     (assoc (gen-message-payload) :retry-count retry-count)
+            message-payload     (gen-message-payload)
             topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
@@ -124,7 +123,7 @@
             skip-promise        (promise)
             call-counter        (atom 0)
             retry-count         5
-            message-payload     (assoc (assoc-in (gen-message-payload) [:message :msg] "skip") :retry-count retry-count)
+            message-payload     (assoc-in (gen-message-payload) [:message :msg] "skip")
             topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
@@ -153,7 +152,6 @@
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
             retry-count         5
-            message-payload     #(assoc (gen-message-payload) :retry-count retry-count)
             no-of-msgs          2
             topic-identifier    "default"
             original-zig-config (ziggurat-config)
@@ -169,7 +167,7 @@
                                                     :retry-limit        (* no-of-msgs 10)}) topic-identifier [])
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (message-payload) topic-identifier))
+            (producer/retry (gen-message-payload) topic-identifier))
 
           (block-and-retry-until (fn []
                                    (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-identifier no-of-msgs))]
@@ -219,7 +217,7 @@
           call-counter        (atom 0)
           success-promise     (promise)
           retry-count         5
-          message-payload     (assoc (gen-message-payload) :retry-count retry-count)
+          message-payload     (gen-message-payload)
           topic-entity        :default
           channel             :channel-1
           channel-fn          (mock-mapper-fn {:retry-counter-atom retry-counter

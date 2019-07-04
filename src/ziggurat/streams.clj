@@ -80,8 +80,7 @@
 
 (defn- construct-message
   [message]
-  {:message     message
-   :retry-count (-> (ziggurat-config) :retry :count)})
+  {:message message})
 
 (defn- value-mapper [f]
   (reify ValueMapper

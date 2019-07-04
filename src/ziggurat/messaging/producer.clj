@@ -106,12 +106,14 @@
 (defn retry [{:keys [retry-count] :as message-payload} topic-entity]
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
+      (nil? retry-count) (publish-to-delay-queue topic-entity (assoc message-payload :retry-count (dec (-> (ziggurat-config) :retry :count))))
       (pos? retry-count) (publish-to-delay-queue topic-entity (assoc message-payload :retry-count (dec retry-count)))
       (zero? retry-count) (publish-to-dead-queue topic-entity message-payload))))
 
 (defn retry-for-channel [{:keys [retry-count] :as message-payload} topic-entity channel]
   (when (channel-retries-enabled topic-entity channel)
     (cond
+      (nil? retry-count) (publish-to-channel-delay-queue topic-entity channel (assoc message-payload :retry-count (dec (get-channel-retry-count topic-entity channel))))
       (pos? retry-count) (publish-to-channel-delay-queue topic-entity channel (assoc message-payload :retry-count (dec retry-count)))
       (zero? retry-count) (publish-to-channel-dead-queue topic-entity channel message-payload))))
 
