@@ -10,56 +10,53 @@
 
 (use-fixtures :once fix/init-rabbit-mq)
 
-(defn- gen-message-payload []
-  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}})
+(defn- gen-message-payload [topic-entity]
+  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
+   :topic-entity topic-entity})
+
+(def topic-entity :default)
 
 (deftest get-dead-set-messages-for-topic-test
-  (testing "when ack is enabled, get the dead set messages and remove from dead set"
-    (fix/with-queues {:default {:handler-fn (constantly nil)}}
-      (let [count-of-messages 10
-            message-payload   (gen-message-payload)
-            topic-identifier  "default"
-            pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message-payload))
-            dead-set-messages (get-dead-set-messages-for-topic true topic-identifier count-of-messages)]
-        (is (= (repeat count-of-messages message-payload) dead-set-messages))
-        (is (empty? (get-dead-set-messages-for-topic true topic-identifier count-of-messages))))))
+  (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
+    (testing "when ack is enabled, get the dead set messages and remove from dead set"
+      (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
+                       (let [count-of-messages 10
+                             pushed-message    (doseq [_ (range count-of-messages)]
+                                                 (producer/publish-to-dead-queue topic-entity message-payload))
+                             dead-set-messages (get-dead-set-messages-for-topic true topic-entity count-of-messages)]
+                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
+                         (is (empty? (get-dead-set-messages-for-topic true topic-entity count-of-messages))))))
 
-  (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-    (fix/with-queues {:default {:handler-fn (constantly nil)}}
-      (let [count-of-messages 10
-            message-payload   (gen-message-payload)
-            topic-identifier  "default"
-            pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message-payload))
-            dead-set-messages (get-dead-set-messages-for-topic false topic-identifier count-of-messages)]
-        (is (= (repeat count-of-messages message-payload) dead-set-messages))
-        (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-identifier count-of-messages)))))))
+    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
+      (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
+                       (let [count-of-messages 10
+                             pushed-message    (doseq [_ (range count-of-messages)]
+                                                 (producer/publish-to-dead-queue topic-entity message-payload))
+                             dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
+                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
+                         (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
 
 (deftest get-dead-set-messages-from-channel-test
-  (testing "when ack is enabled, get the dead set messages and remove from dead set"
-    (fix/with-queues {:default {:handler-fn (constantly nil)
-                                :channel-1  (constantly nil)}}
-      (let [count-of-messages 10
-            message-payload   (gen-message-payload)
-            topic-identifier  "default"
-            channel           "channel-1"
-            pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-channel-dead-queue topic-identifier channel message-payload))
-            dead-set-messages (get-dead-set-messages-for-channel true topic-identifier channel count-of-messages)]
-        (is (= (repeat count-of-messages message-payload) dead-set-messages))
-        (is (empty? (get-dead-set-messages-for-channel true topic-identifier channel count-of-messages))))))
+  (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
+    (testing "when ack is enabled, get the dead set messages and remove from dead set"
+      (fix/with-queues {topic-entity {:handler-fn (constantly nil)
+                                  :channel-1  (constantly nil)}}
+                       (let [count-of-messages 10
+                             channel           "channel-1"
+                             pushed-message    (doseq [_ (range count-of-messages)]
+                                                 (producer/publish-to-channel-dead-queue topic-entity channel message-payload))
+                             dead-set-messages (get-dead-set-messages-for-channel true topic-entity channel count-of-messages)]
+                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
+                         (is (empty? (get-dead-set-messages-for-channel true topic-entity channel count-of-messages))))))
 
-  (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
-      (let [count-of-messages 10
-            message-payload   (gen-message-payload)
-            topic-identifier  "default"
-            pushed-message    (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-identifier message-payload))
-            dead-set-messages (get-dead-set-messages-for-topic false topic-identifier count-of-messages)]
-        (is (= (repeat count-of-messages message-payload) dead-set-messages))
-        (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-identifier count-of-messages)))))))
+    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
+      (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+                       (let [count-of-messages 10
+                             pushed-message    (doseq [_ (range count-of-messages)]
+                                                 (producer/publish-to-dead-queue topic-entity message-payload))
+                             dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
+                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
+                         (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom
@@ -88,13 +85,12 @@
 
 (deftest test-retries
   (testing "when retry is enabled the mapper-fn for stream subscriber should be retried until return success"
-    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
             success-promise     (promise)
             retry-count         5
-            message-payload     (gen-message-payload)
-            topic-identifier    "default"
+            message-payload     (assoc (gen-message-payload topic-entity) :retry-count 2)
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
@@ -106,9 +102,9 @@
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
                                                     :retry-limit        2
-                                                    :success-promise    success-promise}) topic-identifier [])
+                                                    :success-promise    success-promise}) topic-entity [])
 
-          (producer/publish-to-delay-queue topic-identifier message-payload)
+          (producer/publish-to-delay-queue topic-entity message-payload)
 
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -118,13 +114,12 @@
           (close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should not be retried if it returns skip"
-    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             skip-promise        (promise)
             call-counter        (atom 0)
             retry-count         5
-            message-payload     (assoc-in (gen-message-payload) [:message :msg] "skip")
-            topic-identifier    "default"
+            message-payload     (assoc (assoc-in (gen-message-payload topic-entity) [:message :msg] "skip") :retry-count 2)
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
@@ -136,9 +131,9 @@
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
                                                     :skip-promise       skip-promise
-                                                    :retry-limit        -1}) topic-identifier [])
+                                                    :retry-limit        -1}) topic-entity [])
 
-          (producer/publish-to-delay-queue topic-identifier message-payload)
+          (producer/publish-to-delay-queue topic-entity message-payload)
 
           (when-let [promise-success? (deref skip-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -148,12 +143,11 @@
           (close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should be retried with the maximum specified times"
-    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [retry-counter       (atom 0)
             call-counter        (atom 0)
             retry-count         5
             no-of-msgs          2
-            topic-identifier    "default"
             original-zig-config (ziggurat-config)
             rmq-ch              (lch/open connection)]
 
@@ -164,23 +158,23 @@
 
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
-                                                    :retry-limit        (* no-of-msgs 10)}) topic-identifier [])
+                                                    :retry-limit        (* no-of-msgs 10)}) topic-entity [])
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (gen-message-payload) topic-identifier))
+            (producer/retry (gen-message-payload topic-entity) topic-entity))
 
           (block-and-retry-until (fn []
-                                   (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-identifier no-of-msgs))]
+                                   (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
                                      (if (< dead-set-msgs no-of-msgs)
                                        (throw (ex-info "Dead set messages were never populated"
                                                        {:dead-set-msgs dead-set-msgs}))))))
 
           (is (= (* retry-count no-of-msgs) @retry-counter))
-          (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-identifier no-of-msgs)))))
+          (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs)))))
         (close rmq-ch))))
 
   (testing "start subscribers should not call start-subscriber* when stream router is nil"
-    (fix/with-queues {:default {:handler-fn #(constantly nil)}}
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
             ch                  (lch/open connection)
@@ -201,7 +195,7 @@
           original-zig-config (ziggurat-config)
           ch                  (lch/open connection)
           counter             (atom 0)
-          stream-routes       {:default {:handler-fn #(constantly nil)}
+          stream-routes       {topic-entity {:handler-fn #(constantly nil)}
                                :test    {:handler-fn #(constantly nil)}}]
       (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
                                                        (update-in [:retry :enabled] (constantly true))
@@ -217,8 +211,7 @@
           call-counter        (atom 0)
           success-promise     (promise)
           retry-count         5
-          message-payload     (gen-message-payload)
-          topic-entity        :default
+          message-payload     (gen-message-payload topic-entity)
           channel             :channel-1
           channel-fn          (mock-mapper-fn {:retry-counter-atom retry-counter
                                                :call-counter-atom  call-counter
@@ -245,8 +238,7 @@
     (let [retry-counter       (atom 0)
           call-counter        (atom 0)
           success-promise     (promise)
-          message-payload     (gen-message-payload)
-          topic-entity        :default
+          message-payload     (gen-message-payload topic-entity)
           channel             :channel-1
           channel-fn          (mock-mapper-fn {:retry-counter-atom retry-counter
                                                :call-counter-atom  call-counter

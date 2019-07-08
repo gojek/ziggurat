@@ -104,7 +104,7 @@
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mpr/mapper-func handler-fn topic-entity channels) (mpr/construct-message-payload %))))
+         (map-values #((mpr/mapper-func handler-fn topic-entity channels) (mpr/construct-message-payload % topic-entity))))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]

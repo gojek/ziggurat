@@ -92,9 +92,11 @@
 
 
 (defn construct-message-payload
-  [message]
-  {:message message})
+  [message topic-entity]
+  {:message message
+   :topic-entity topic-entity})
 
-(s/defschema message-payload
+(s/defschema message-payload-schema
   {:message s/Any
-   :retry-count s/Int})
+   :topic-entity s/Keyword
+   (s/optional-key :retry-count) s/Int})
