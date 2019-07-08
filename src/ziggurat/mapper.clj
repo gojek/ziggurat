@@ -9,14 +9,15 @@
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 
-(defn- send-msg-to-channel [channels message-payload topic-entity return-code]
+(defn- send-msg-to-channel [channels message-payload return-code]
   (when-not (contains? (set channels) return-code)
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
-  (producer/publish-to-channel-instant-queue topic-entity return-code message-payload))
+  (producer/publish-to-channel-instant-queue return-code message-payload))
 
-(defn mapper-func [mapper-fn topic-entity channels]
+(defn mapper-func [mapper-fn channels]
   (fn [message-payload]
     (let [service-name               (:app-name (ziggurat-config))
+          topic-entity               (:topic-entity message-payload)
           topic-entity-name          (name topic-entity)
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
           default-namespace          "message-processing"
@@ -41,20 +42,21 @@
             (case return-code
               :success (metrics/multi-ns-increment-count multi-namespaces success-metric additional-tags)
               :retry   (do (metrics/multi-ns-increment-count multi-namespaces retry-metric additional-tags)
-                           (producer/retry message-payload topic-entity))
+                           (producer/retry message-payload))
               :skip    (metrics/multi-ns-increment-count multi-namespaces skip-metric additional-tags)
               :block   'TODO
               (do
-                (send-msg-to-channel channels message-payload topic-entity return-code)
+                (send-msg-to-channel channels message-payload return-code)
                 (metrics/multi-ns-increment-count multi-namespaces success-metric additional-tags))))
           (catch Throwable e
-            (producer/retry message-payload topic-entity)
+            (producer/retry message-payload)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
             (metrics/multi-ns-increment-count multi-namespaces failure-metric additional-tags)))))))
 
-(defn channel-mapper-func [mapper-fn topic-entity channel]
+(defn channel-mapper-func [mapper-fn channel]
   (fn [message-payload]
     (let [service-name       (:app-name (ziggurat-config))
+          topic-entity       (:topic-entity message-payload)
           topic-entity-name  (name topic-entity)
           channel-name       (name channel)
           default-namespace  "message-processing"
@@ -81,15 +83,14 @@
             (case return-code
               :success (metrics/multi-ns-increment-count multi-namespaces success-metric additional-tags)
               :retry   (do (metrics/multi-ns-increment-count multi-namespaces retry-metric additional-tags)
-                           (producer/retry-for-channel message-payload topic-entity channel))
+                           (producer/retry-for-channel message-payload channel))
               :skip    (metrics/multi-ns-increment-count multi-namespaces skip-metric additional-tags)
               :block   'TODO
               (throw (ex-info "Invalid mapper return code" {:code return-code}))))
           (catch Throwable e
-            (producer/retry-for-channel message-payload topic-entity channel)
+            (producer/retry-for-channel message-payload channel)
             (sentry/report-error sentry-reporter e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/multi-ns-increment-count multi-namespaces failure-metric additional-tags)))))))
-
 
 (defn construct-message-payload
   [message topic-entity]

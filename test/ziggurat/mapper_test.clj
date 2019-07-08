@@ -37,7 +37,7 @@
                                                 (when (or (= metric-namespaces expected-report-time-namespaces)
                                                           (= metric-namespaces [report-time-namespace]))
                                                   (reset! successfully-reported-time? true)))]
-          ((mapper-func (constantly :success) topic-entity []) message-payload)
+          ((mapper-func (constantly :success) []) message-payload)
           (is @successfully-processed?)
           (is @successfully-reported-time?))))
 
@@ -51,7 +51,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! successfully-processed? true)))]
-            ((mapper-func (constantly :channel-1) topic-entity [:channel-1]) message-payload)
+            ((mapper-func (constantly :channel-1) [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
               (is (= message-payload message-from-mq))
               (is @successfully-processed?))))))
@@ -63,7 +63,7 @@
                                       (let [err (Throwable->map e)]
                                         (is (= (:cause err) "Invalid mapper return code"))
                                         (is (= (-> err :data :code) :channel-1))))]
-          ((mapper-func (constantly :channel-1) topic-entity [:some-other-channel]) message-payload)
+          ((mapper-func (constantly :channel-1) [:some-other-channel]) message-payload)
           (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
             (is (nil? message-from-mq))))))
 
@@ -79,7 +79,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (constantly :retry) topic-entity []) message-payload)
+            ((mapper-func (constantly :retry) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
@@ -97,7 +97,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((mapper-func (fn [_] (throw (Exception. "test exception"))) topic-entity []) message-payload)
+            ((mapper-func (fn [_] (throw (Exception. "test exception"))) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
@@ -114,7 +114,7 @@
                                                       (= metric-namespaces [execution-time-namesapce]))
                                               (reset! reported-execution-time? true)))]
 
-          ((mapper-func (constantly :success) topic-entity []) message-payload)
+          ((mapper-func (constantly :success) []) message-payload)
           (is @reported-execution-time?))))))
 
 (deftest channel-mapper-func-test
@@ -140,7 +140,7 @@
                                                            (= metric expected-metric)
                                                            (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))]
-          ((channel-mapper-func (constantly :success) topic channel) message-payload)
+          ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @successfully-processed?))))
 
     (testing "message process should be unsuccessful and retry"
@@ -155,7 +155,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((channel-mapper-func (constantly :retry) topic channel) message-payload)
+            ((channel-mapper-func (constantly :retry) channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
@@ -173,7 +173,7 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
-            ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) topic channel) message-payload)
+            ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
@@ -186,7 +186,7 @@
                                             (when (or (= metric-namespaces [service-name expected-topic-entity-name channel-name execution-time-namesapce])
                                                       (= metric-namespaces [execution-time-namesapce]))
                                               (reset! reported-execution-time? true)))]
-          ((channel-mapper-func (constantly :success) topic channel) message-payload)
+          ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @reported-execution-time?))))))
 
 (deftest construct-message-payload-test

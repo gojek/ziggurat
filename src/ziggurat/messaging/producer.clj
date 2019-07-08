@@ -65,35 +65,39 @@
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
 
-(defn publish-to-delay-queue [topic-entity message-payload]
+(defn publish-to-delay-queue [message-payload]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
+        topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message-payload queue-timeout-ms)))
 
-(defn publish-to-dead-queue [topic-entity message-payload]
+(defn publish-to-dead-queue [message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+        topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message-payload)))
 
-(defn publish-to-instant-queue
-  [topic-entity message]
+(defn publish-to-instant-queue [message-payload]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
+        topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
-    (publish exchange-name message)))
+    (publish exchange-name message-payload)))
 
-(defn publish-to-channel-delay-queue [topic-entity channel message-payload]
+(defn publish-to-channel-delay-queue [channel message-payload]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
+        topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message-payload queue-timeout-ms)))
 
-(defn publish-to-channel-dead-queue [topic-entity channel message-payload]
+(defn publish-to-channel-dead-queue [channel message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+        topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message-payload)))
 
-(defn publish-to-channel-instant-queue
-  [topic-entity channel message-payload]
+(defn publish-to-channel-instant-queue [channel message-payload]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
+        topic-entity (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message-payload)))
 
@@ -103,19 +107,19 @@
 (defn- get-channel-retry-count [topic-entity channel]
   (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
 
-(defn retry [{:keys [retry-count] :as message-payload} topic-entity]
+(defn retry [{:keys [retry-count topic-entity] :as message-payload}]
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
-      (nil? retry-count) (publish-to-delay-queue topic-entity (assoc message-payload :retry-count (dec (-> (ziggurat-config) :retry :count))))
-      (pos? retry-count) (publish-to-delay-queue topic-entity (assoc message-payload :retry-count (dec retry-count)))
-      (zero? retry-count) (publish-to-dead-queue topic-entity message-payload))))
+      (nil? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec (-> (ziggurat-config) :retry :count))))
+      (pos? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec retry-count)))
+      (zero? retry-count) (publish-to-dead-queue message-payload))))
 
-(defn retry-for-channel [{:keys [retry-count] :as message-payload} topic-entity channel]
+(defn retry-for-channel [{:keys [retry-count topic-entity] :as message-payload} channel]
   (when (channel-retries-enabled topic-entity channel)
     (cond
-      (nil? retry-count) (publish-to-channel-delay-queue topic-entity channel (assoc message-payload :retry-count (dec (get-channel-retry-count topic-entity channel))))
-      (pos? retry-count) (publish-to-channel-delay-queue topic-entity channel (assoc message-payload :retry-count (dec retry-count)))
-      (zero? retry-count) (publish-to-channel-dead-queue topic-entity channel message-payload))))
+      (nil? retry-count) (publish-to-channel-delay-queue channel (assoc message-payload :retry-count (dec (get-channel-retry-count topic-entity channel))))
+      (pos? retry-count) (publish-to-channel-delay-queue channel (assoc message-payload :retry-count (dec retry-count)))
+      (zero? retry-count) (publish-to-channel-dead-queue channel message-payload))))
 
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange]} (:delay (rabbitmq-config))

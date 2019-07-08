@@ -5,7 +5,6 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config]]))
 
-
 (defn- deserialise-message [message proto-class]
   (if-not (map? message)
     (let [proto-klass  (proto/protodef proto-class)

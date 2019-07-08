@@ -20,43 +20,43 @@
   (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "when ack is enabled, get the dead set messages and remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-                       (let [count-of-messages 10
-                             pushed-message    (doseq [_ (range count-of-messages)]
-                                                 (producer/publish-to-dead-queue topic-entity message-payload))
-                             dead-set-messages (get-dead-set-messages-for-topic true topic-entity count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (empty? (get-dead-set-messages-for-topic true topic-entity count-of-messages))))))
+        (let [count-of-messages 10
+              pushed-message    (doseq [_ (range count-of-messages)]
+                                  (producer/publish-to-dead-queue message-payload))
+              dead-set-messages (get-dead-set-messages-for-topic true topic-entity count-of-messages)]
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (empty? (get-dead-set-messages-for-topic true topic-entity count-of-messages))))))
 
     (testing "when ack is disabled, get the dead set messages and not remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-                       (let [count-of-messages 10
-                             pushed-message    (doseq [_ (range count-of-messages)]
-                                                 (producer/publish-to-dead-queue topic-entity message-payload))
-                             dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
+        (let [count-of-messages 10
+              pushed-message    (doseq [_ (range count-of-messages)]
+                                  (producer/publish-to-dead-queue message-payload))
+              dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
 
 (deftest get-dead-set-messages-from-channel-test
   (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "when ack is enabled, get the dead set messages and remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)
-                                  :channel-1  (constantly nil)}}
-                       (let [count-of-messages 10
-                             channel           "channel-1"
-                             pushed-message    (doseq [_ (range count-of-messages)]
-                                                 (producer/publish-to-channel-dead-queue topic-entity channel message-payload))
-                             dead-set-messages (get-dead-set-messages-for-channel true topic-entity channel count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (empty? (get-dead-set-messages-for-channel true topic-entity channel count-of-messages))))))
+                                      :channel-1  (constantly nil)}}
+        (let [count-of-messages 10
+              channel           "channel-1"
+              pushed-message    (doseq [_ (range count-of-messages)]
+                                  (producer/publish-to-channel-dead-queue channel message-payload))
+              dead-set-messages (get-dead-set-messages-for-channel true topic-entity channel count-of-messages)]
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (empty? (get-dead-set-messages-for-channel true topic-entity channel count-of-messages))))))
 
     (testing "when ack is disabled, get the dead set messages and not remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-                       (let [count-of-messages 10
-                             pushed-message    (doseq [_ (range count-of-messages)]
-                                                 (producer/publish-to-dead-queue topic-entity message-payload))
-                             dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
+        (let [count-of-messages 10
+              pushed-message    (doseq [_ (range count-of-messages)]
+                                  (producer/publish-to-dead-queue message-payload))
+              dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom
@@ -104,7 +104,7 @@
                                                     :retry-limit        2
                                                     :success-promise    success-promise}) topic-entity [])
 
-          (producer/publish-to-delay-queue topic-entity message-payload)
+          (producer/publish-to-delay-queue message-payload)
 
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -133,7 +133,7 @@
                                                     :skip-promise       skip-promise
                                                     :retry-limit        -1}) topic-entity [])
 
-          (producer/publish-to-delay-queue topic-entity message-payload)
+          (producer/publish-to-delay-queue message-payload)
 
           (when-let [promise-success? (deref skip-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -161,7 +161,7 @@
                                                     :retry-limit        (* no-of-msgs 10)}) topic-entity [])
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (gen-message-payload topic-entity) topic-entity))
+            (producer/retry (gen-message-payload topic-entity)))
 
           (block-and-retry-until (fn []
                                    (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
@@ -227,7 +227,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (with-redefs [lch/open (fn [_] rmq-ch)]
             (start-channels-subscriber {channel channel-fn} topic-entity))
-          (producer/retry-for-channel message-payload topic-entity channel)
+          (producer/retry-for-channel message-payload channel)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
             (is (= true promise-success?))
@@ -252,7 +252,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (start-channels-subscriber {channel channel-fn} topic-entity)
-          (producer/publish-to-channel-instant-queue topic-entity channel message-payload)
+          (producer/publish-to-channel-instant-queue channel message-payload)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (close rmq-ch))))))

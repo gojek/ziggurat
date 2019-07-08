@@ -16,7 +16,7 @@
       (let [count-of-messages 10
             message-payload   default-message-payload]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-dead-queue topic-entity message-payload))
+          (producer/publish-to-dead-queue message-payload))
         (ds/replay count-of-messages topic-entity nil)
         (doseq [_ (range count-of-messages)]
           (is (= message-payload (rmq/get-msg-from-instant-queue (name topic-entity)))))
@@ -29,7 +29,7 @@
             message-payload   default-message-payload
             channel           "channel-1"]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-channel-dead-queue topic-entity channel message-payload))
+          (producer/publish-to-channel-dead-queue channel message-payload))
         (ds/replay count-of-messages topic-entity channel)
         (doseq [_ (range count-of-messages)]
           (is (= message-payload (rmq/get-message-from-channel-instant-queue (name topic-entity) channel))))
@@ -41,7 +41,7 @@
       (let [count-of-messages 10
             message-payload   default-message-payload
             _                 (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-dead-queue topic-entity message-payload))
+                                (producer/publish-to-dead-queue message-payload))
             dead-set-messages (ds/view count-of-messages topic-entity nil)]
         (doseq [dead-set-message dead-set-messages]
           (is (= message-payload dead-set-message)))
@@ -54,7 +54,7 @@
             message-payload   default-message-payload
             channel           "channel-1"
             _                 (doseq [_ (range count-of-messages)]
-                                (producer/publish-to-channel-dead-queue topic-entity channel message-payload))
+                                (producer/publish-to-channel-dead-queue channel message-payload))
             dead-set-messages (ds/view count-of-messages topic-entity channel)]
         (doseq [dead-set-message dead-set-messages]
           (is (= message-payload dead-set-message)))
@@ -70,7 +70,7 @@
             remaining-message-count 2
             delete-count            (- count-of-messages remaining-message-count)
             _                       (doseq [message message-payloads]
-                                      (producer/publish-to-dead-queue topic-entity message))
+                                      (producer/publish-to-dead-queue message))
             _                       (ds/delete delete-count topic-entity nil)
             dead-set-messages       (ds/view count-of-messages topic-entity nil)]
 
@@ -82,7 +82,7 @@
       (let [count-of-messages 10
             message-payload   default-message-payload]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-dead-queue topic-entity message-payload))
+          (producer/publish-to-dead-queue message-payload))
         (ds/delete count-of-messages topic-entity nil)
         (is (empty? (rmq/get-msg-from-dead-queue (name topic-entity)))))))
 
@@ -93,6 +93,6 @@
             message-payload   default-message-payload
             channel-name      "channel-1"]
         (doseq [_ (range count-of-messages)]
-          (producer/publish-to-channel-dead-queue topic-entity channel-name message-payload))
+          (producer/publish-to-channel-dead-queue channel-name message-payload))
         (ds/delete count-of-messages topic-entity channel-name)
         (is (empty? (rmq/get-msg-from-channel-dead-queue (name topic-entity) channel-name)))))))

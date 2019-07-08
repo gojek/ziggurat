@@ -102,7 +102,7 @@
       (start-subscriber* (lch/open connection)
                          (get-in-config [:jobs :instant :prefetch-count])
                          (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
-                         (mpr/mapper-func mapper-fn topic-entity channels)
+                         (mpr/mapper-func mapper-fn channels)
                          topic-entity))))
 
 (defn start-channels-subscriber [channels topic-entity]
@@ -113,7 +113,7 @@
         (start-subscriber* (lch/open connection)
                            1
                            (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
-                           (mpr/channel-mapper-func channel-handler-fn topic-entity channel-key)
+                           (mpr/channel-mapper-func channel-handler-fn channel-key)
                            topic-entity)))))
 
 (defn start-subscribers
