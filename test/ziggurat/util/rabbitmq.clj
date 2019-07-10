@@ -7,7 +7,8 @@
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.messaging.util :as rutil]))
+            [ziggurat.messaging.util :as rutil])
+  (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]
   (with-open [ch (lch/open connection)]
@@ -44,3 +45,9 @@
   (let [{:keys [queue-name]} (:instant (rabbitmq-config))
         queue-name (prefixed-channel-name topic-name channel-name queue-name)]
     (get-msg-from-rabbitmq queue-name topic-name)))
+
+(defn close [^Channel channel]
+  (try
+    (.close channel)
+    (catch AlreadyClosedException _
+      nil)))

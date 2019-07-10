@@ -10,8 +10,7 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer :all])
-  (:import [com.rabbitmq.client AlreadyClosedException Channel]))
+            [ziggurat.messaging.util :refer :all]))
 
 (defn- convert-to-message-payload
   "checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to message-payload to pass onto the mapper-fn.
@@ -79,12 +78,6 @@
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true topic-entity)]
       (wrapped-mapper-fn message))))
-
-(defn close [^Channel channel]
-  (try
-    (.close channel)
-    (catch AlreadyClosedException _
-      nil)))
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)

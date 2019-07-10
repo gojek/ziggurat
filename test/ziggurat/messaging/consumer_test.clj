@@ -6,7 +6,8 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :refer :all]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.retry :as retry]))
+            [ziggurat.retry :as retry]
+            [ziggurat.util.rabbitmq :as util]))
 
 (use-fixtures :once fix/init-rabbit-mq)
 
@@ -111,7 +112,7 @@
             (is (= true promise-success?))
             (is (= 2 @retry-counter)))
 
-          (close rmq-ch)))))
+          (util/close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should not be retried if it returns skip"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
@@ -140,7 +141,7 @@
             (is (= true promise-success?))
             (is (= 0 @retry-counter)))
 
-          (close rmq-ch)))))
+          (util/close rmq-ch)))))
 
   (testing "when retry is enabled the mapper-fn should be retried with the maximum specified times"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
@@ -171,7 +172,7 @@
 
           (is (= (* retry-count no-of-msgs) @retry-counter))
           (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs)))))
-        (close rmq-ch))))
+        (util/close rmq-ch))))
 
   (testing "start subscribers should not call start-subscriber* when stream router is nil"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
@@ -188,7 +189,7 @@
           (start-subscribers nil)
 
           (is (= 0 @counter))
-          (close ch)))))
+          (util/close ch)))))
 
   (testing "start subscribers should call start-subscriber* according to the product of worker and mapper-fns in stream-routes"
     (let [no-of-workers       3
@@ -203,7 +204,7 @@
                     start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
         (start-subscribers stream-routes)
         (is (= (count stream-routes) @counter))
-        (close ch)))))
+        (util/close ch)))))
 
 (deftest start-channels-subscriber-test
   (testing "the mapper-fn for channel subscriber should be retried until return success when retry is enabled to for that channel"
@@ -232,7 +233,7 @@
             (is (not (= :timeout promise-success?)))
             (is (= true promise-success?))
             (is (= 2 @retry-counter)))
-          (close rmq-ch)))))
+          (util/close rmq-ch)))))
 
   (testing "the mapper-fn for channel subscriber should not enqueue the message when retry is disabled for that channel"
     (let [retry-counter       (atom 0)
@@ -255,4 +256,4 @@
           (producer/publish-to-channel-instant-queue channel message-payload)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
-          (close rmq-ch))))))
+          (util/close rmq-ch))))))
