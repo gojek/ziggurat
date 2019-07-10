@@ -83,6 +83,8 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
 ```
 
+Please refer to the [Middleware section](#middleware-on-ziggurat)
+
 * The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
     * :success - The message was successfuly processed and the stream should continue to the next message
@@ -149,6 +151,36 @@ There are four modes supported by ziggurat
 
 You can pass in multiple modes and it will start accordingly
 If nothing passed to modes then it will start all the modes.
+
+## Middleware in Ziggurat
+Version 3.0 of Ziggurat introduces the support of Middleware. Old versions of Ziggurat (< 3.0) assumed that the messages read from kafka were serialized in proto-format and thus it deserialized
+them and passed a clojure hash-map to the mapper-fn. We have now pulled the deserialization function into a middleware and users have the freedom to use this function to deserialized their messages
+or define their custom middlewares.
+
+### Custom Middleware usage
+The default middleware `default/protobuf->hash` assumes that the message is serialized in proto format.
+```clojure
+(require '[ziggurat.init :as ziggurat])
+  
+(defn start-fn []
+    ;; your logic that runs at startup goes here
+)
+  
+(defn stop-fn []
+    ;; your logic that runs at shutdown goes here
+)
+  
+(defn main-fn
+    [message]
+    (println message)
+    :success)
+    
+(def handler-fn
+    (-> main-fn
+      (middleware/protobuf->hash ProtoClass :stream-id)))
+  
+(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
+```
 
 ## Publishing data to Kafka Topics in Ziggurat
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
