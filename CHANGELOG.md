@@ -3,10 +3,14 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+
 ## 3.0.0-alpha.3 - 2019-07-10
 - Adds middleware support
 - `Breaking Change!` Mapper-function will now receive deserialised message if middleware is not applied
 - Deadset view will now return serialized messages
+
+## 3.0.0-alpha.2 - 2019-07-03
+- Fixes a bug that incorrectly checked for additional-tags in ziggurat.metrics/merge-tags
 
 ## 3.0.0-alpha.1 - 2019-06-28
 - Fixes a bug where calling inc-or-dec count without passing additional tags raised and exception
