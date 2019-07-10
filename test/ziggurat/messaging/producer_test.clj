@@ -3,7 +3,7 @@
             [langohr.channel :as lch]
             [langohr.exchange :as le]
             [langohr.queue :as lq]
-            [ziggurat.config :refer [rabbitmq-config]]
+            [ziggurat.config :refer [rabbitmq-config ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
@@ -12,24 +12,26 @@
             [langohr.basic :as lb]
             [ziggurat.config :as config]))
 
-(use-fixtures :once fix/init-rabbit-mq)
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging]))
 
 (deftest retry-for-channel-test
-  (testing "message in channel will be retried as defined in ziggurat config channel retry when message doesnt have retry-count"
+  (testing "message in channel will be retried as defined in ziggurat config channel retry when message doesn't have retry-count"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)
                  :channel-1 #(constantly nil)}}
       (let [topic-entity :default
             channel :channel-1
-            retry-count (atom (-> (config/ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
-            message {:foo "bar"}]
-        (producer/retry-for-channel message topic-entity channel)
+            retry-count (atom (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
+            message-payload      {:message {:foo "bar"} :topic-entity topic-entity}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry-for-channel message-payload channel)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-            (producer/retry-for-channel message-from-mq topic-entity channel)))
+            (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
-          (is (= message message-from-mq))))))
+          (is (= expected-message-payload message-from-mq))))))
 
   (testing "message in channel will be retried as defined in message retry-count when message has retry-count"
     (fix/with-queues
@@ -38,106 +40,105 @@
       (let [retry-count (atom 2)
             topic-entity :default
             channel :channel-1
-            message {:foo "bar" :retry-count @retry-count}
-            expected-message {:foo "bar"}]
-        (producer/retry-for-channel message topic-entity channel)
+            message-payload {:message {:foo "bar"} :retry-count @retry-count :topic-entity topic-entity}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry-for-channel message-payload channel)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-            (producer/retry-for-channel message-from-mq topic-entity channel)))
+            (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
-          (is (= expected-message message-from-mq)))))))
+          (is (= expected-message-payload message-from-mq)))))))
 
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message          {:foo "bar" :retry-count 5}
-            expected-message {:foo "bar" :retry-count 4}
-            topic-entity     :default]
-        (producer/retry message topic-entity)
+      (let [topic-entity             :default
+            message-payload          {:message {:foo "bar"} :retry-count 5 :topic-entity topic-entity}
+            expected-message-payload (update message-payload :retry-count dec)]
+        (producer/retry message-payload)
         (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
-          (is (= expected-message message-from-mq))))))
+          (is (= expected-message-payload message-from-mq))))))
 
   (testing "message with a retry count of 0 will publish to dead queue"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message          {:foo "bar" :retry-count 0}
-            expected-message (dissoc message :retry-count)
-            topic-entity     :default]
-        (producer/retry message topic-entity)
+      (let [topic-entity    :default
+            message-payload {:message {:foo "bar"} :retry-count 0 :topic-entity topic-entity}]
+        (producer/retry message-payload)
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= expected-message message-from-mq)))))
+          (is (= message-payload message-from-mq))))))
 
-    (testing "it will retry publishing message six times when unable to publish to rabbitmq"
-      (fix/with-queues
-        {:default {:handler-fn #(constantly nil)}}
-        (let [retry-count (atom 0)
-              message          {:foo "bar" :retry-count 5}
-              expected-message {:foo "bar" :retry-count 4}
-              topic-entity     :default]
-          (with-redefs [lb/publish (fn [_ _ _ _ props]
-                                     (swap! retry-count inc)
-                                     (throw (Exception. "some exception")))]
-            (producer/retry message topic-entity)
-            (is (= 6 @retry-count)))))))
+  (testing "it will retry publishing message six times when unable to publish to rabbitmq"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [retry-count     (atom 0)
+            topic-entity    :default
+            message-payload {:message {:foo "bar"} :retry-count 5 :topic-entity topic-entity}]
+        (with-redefs [lb/publish (fn [_ _ _ _ props]
+                                   (swap! retry-count inc)
+                                   (throw (Exception. "some exception")))]
+          (producer/retry message-payload)
+          (is (= 6 @retry-count))))))
 
   (testing "message with no retry count will publish to delay queue"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message          {:foo "bar"}
-            expected-message {:foo "bar" :retry-count 4}
-            topic-entity     :default]
-        (producer/retry message topic-entity)
+      (let [topic-entity     :default
+            message-payload  {:message {:foo "bar"} :topic-entity topic-entity}
+            expected-message (assoc message-payload :retry-count 4)]
+        (producer/retry message-payload)
         (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
           (is (= message-from-mq expected-message))))))
 
   (testing "publish to delay queue publishes with expiration from config"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [message        {:foo "bar"}
-            topic-entity   :default
-            expected-props {:content-type "application/octet-stream"
-                            :persistent   true
-                            :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]
+      (let [topic-entity    :default
+            message-payload {:message {:foo "bar"} :topic-entity topic-entity}
+            expected-props  {:content-type "application/octet-stream"
+                             :persistent   true
+                             :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
-          (producer/publish-to-delay-queue topic-entity message)))))
+          (producer/publish-to-delay-queue message-payload)))))
 
-  (testing "message will be retried as defined in ziggurat config retry-count when message doesnt have retry-count"
+  (testing "message will be retried as defined in ziggurat config retry-count when message doesn't have retry-count"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
       (let [retry-count (atom (get-in (config/ziggurat-config) [:retry :count]))
-            message {:foo "bar"}
-            topic-entity :default]
-        (producer/retry message topic-entity)
+            topic-entity :default
+            message-payload     {:message {:foo "bar"} :topic-entity topic-entity}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry message-payload)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
-            (producer/retry message-from-mq topic-entity)))
+            (producer/retry message-from-mq)))
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= message message-from-mq))))))
+          (is (= expected-message-payload message-from-mq))))))
 
   (testing "message will be retried as defined in message retry-count when message has retry-count"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [retry-count (atom 2)
-            message {:foo "bar" :retry-count @retry-count}
-            expected-message {:foo "bar"}
-            topic-entity :default]
-        (producer/retry message topic-entity)
+      (let [retry-count              (atom 2)
+            topic-entity             :default
+            message-payload          {:message {:foo "bar"} :retry-count @retry-count :topic-entity topic-entity}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry message-payload)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
-            (producer/retry message-from-mq topic-entity)))
+            (producer/retry message-from-mq)))
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= expected-message message-from-mq)))))))
+          (is (= expected-message-payload message-from-mq)))))))
 
 (deftest make-queues-test
-  (let [ziggurat-config (config/ziggurat-config)]
+  (let [ziggurat-config (ziggurat-config)]
     (testing "When retries are enabled"
-      (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                              :retry {:enabled true}))]
+      (with-redefs [ziggurat-config (constantly (assoc ziggurat-config
+                                                       :retry {:enabled true}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -263,3 +264,26 @@
               (is (= expected-queue-status (lq/status ch channel1-instant-queue-name)))
               (lq/delete ch channel1-instant-queue-name)
               (le/delete ch channel1-instant-exchange-name))))))))
+
+(deftest publish-to-instant-queue-test
+  (testing "given a message-payload, it publishes it to the correct queue"
+    (let [expected-exchange-name   "exchange"
+          expected-topic-entity    :topic
+          prefixed-queue-name-called? (atom false)
+          publish-called?             (atom false)
+          message-payload          {:message      {:foo "bar"}
+                                    :topic-entity expected-topic-entity
+                                    :retry-count  0}]
+      (with-redefs [rabbitmq-config (constantly {:instant {:exchange-name expected-exchange-name}})
+                    util/prefixed-queue-name (fn [topic-entity exchange]
+                                               (if (and (= topic-entity expected-topic-entity)
+                                                        (= exchange expected-exchange-name))
+                                                 (reset! prefixed-queue-name-called? true))
+                                               expected-exchange-name)
+                    producer/publish (fn [exchange message]
+                                       (if (and (= exchange expected-exchange-name)
+                                                (= message message-payload))
+                                         (reset! publish-called? true)))]
+        (producer/publish-to-instant-queue message-payload)
+        (is (true? @prefixed-queue-name-called?))
+        (is (true? @publish-called?))))))

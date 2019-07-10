@@ -83,6 +83,8 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
 ```
 
+Please refer to the [Middleware section](#middleware-on-ziggurat)
+
 * The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
     * :success - The message was successfuly processed and the stream should continue to the next message
@@ -150,6 +152,36 @@ There are four modes supported by ziggurat
 You can pass in multiple modes and it will start accordingly
 If nothing passed to modes then it will start all the modes.
 
+## Middleware in Ziggurat
+Version 3.0 of Ziggurat introduces the support of Middleware. Old versions of Ziggurat (< 3.0) assumed that the messages read from kafka were serialized in proto-format and thus it deserialized
+them and passed a clojure hash-map to the mapper-fn. We have now pulled the deserialization function into a middleware and users have the freedom to use this function to deserialized their messages
+or define their custom middlewares.
+
+### Custom Middleware usage
+The default middleware `default/protobuf->hash` assumes that the message is serialized in proto format.
+```clojure
+(require '[ziggurat.init :as ziggurat])
+  
+(defn start-fn []
+    ;; your logic that runs at startup goes here
+)
+  
+(defn stop-fn []
+    ;; your logic that runs at shutdown goes here
+)
+  
+(defn main-fn
+    [message]
+    (println message)
+    :success)
+    
+(def handler-fn
+    (-> main-fn
+      (middleware/protobuf->hash ProtoClass :stream-id)))
+  
+(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
+```
+
 ## Publishing data to Kafka Topics in Ziggurat
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
 
@@ -179,7 +211,6 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                           :stream-threads-count           [1 :int]
                                                           :origin-topic                   "kafka-topic-*"
                                                           :oldest-processed-message-in-s  [604800 :int]
-                                                          :proto-class          "proto-class"
                                                           :changelog-topic-replication-factor [3 :int]
                                                           :producer   {:bootstrap-servers                     "localhost:9092"
                                                                        :acks                                  "all"
@@ -224,9 +255,8 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
         * application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
         * bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
         * stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
-        * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams should be of the same proto-class.
+        * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
         * oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
-        * proto-class - The proto-class of the message so that it can be decompiled before being passed to the mapper function
         * changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
         * producer - Configuration for KafkaProducer. Currently, only following options are supported. Please see [Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) for detailed explanation for each of the configuration parameters.
             * bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.

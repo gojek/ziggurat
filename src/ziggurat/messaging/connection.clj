@@ -18,13 +18,11 @@
     (or (pos? (count all-channels))
         (-> (ziggurat-config) :retry :enabled))))
 
-(defn- channel-threads
-  [channels]
+(defn- channel-threads [channels]
   (reduce (fn [sum [_ channel-config]]
             (+ sum (:worker-count channel-config))) 0 channels))
 
-(defn- total-thread-count
-  []
+(defn- total-thread-count []
   (let [stream-routes (:stream-router (ziggurat-config))
         worker-count  (get-in (ziggurat-config) [:jobs :instant :worker-count])]
     (reduce (fn [sum [_ route-config]]

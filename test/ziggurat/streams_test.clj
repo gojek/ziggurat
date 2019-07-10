@@ -3,7 +3,8 @@
             [flatland.protobuf.core :as proto]
             [ziggurat.streams :refer [start-streams stop-streams]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.config :refer [ziggurat-config]])
+            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.middleware.default :as default-middleware])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
            [kafka.utils MockTime]
@@ -23,9 +24,10 @@
 
 (def message {:id   7
               :path "/photos/h2k3j4h9h23"})
+(def proto-class Example$Photo)
 
 (defn create-photo []
-  (proto/protobuf-dump (proto/protodef Example$Photo) message))
+  (proto/protobuf-dump (proto/protodef proto-class) message))
 
 (def message-key-value (KeyValue/pair (create-photo) (create-photo)))
 
@@ -41,21 +43,22 @@
                               (when (= message message-from-kafka)
                                 (swap! message-received-count inc))
                               :success)]
-      (let [times                         6
-            oldest-processed-message-in-s 10
+      (let [times                              6
+            oldest-processed-message-in-s      10
             changelog-topic-replication-factor 1
-            kvs                           (repeat times message-key-value)
-            streams                       (start-streams {:default {:handler-fn mapped-fn}}
-                                                         (-> (ziggurat-config)
-                                                             (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                             (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
-                                                             (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-        (Thread/sleep 10000)                                ;;waiting for streams to start
+            kvs                                (repeat times message-key-value)
+            handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
+            streams                            (start-streams {:default {:handler-fn handler-fn}}
+                                                              (-> (ziggurat-config)
+                                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                                  (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
+                                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+        (Thread/sleep 10000)                                    ;;waiting for streams to start
         (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                             kvs
                                                             (props)
                                                             (MockTime. (- (System/currentTimeMillis) (* 1000 oldest-processed-message-in-s)) (System/nanoTime)))
-        (Thread/sleep 5000)                                 ;;wating for streams to consume messages
+        (Thread/sleep 5000)                                     ;;wating for streams to consume messages
         (stop-streams streams)
         (is (= 0 @message-received-count))))))
 
@@ -65,18 +68,19 @@
                               (when (= message message-from-kafka)
                                 (swap! message-received-count inc))
                               :success)]
-      (let [times   6
+      (let [times                              6
             changelog-topic-replication-factor 1
-            kvs     (repeat times message-key-value)
-            streams (start-streams {:default {:handler-fn mapped-fn}}
-                                   (-> (ziggurat-config)
-                                       (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                       (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-        (Thread/sleep 10000)                                ;;waiting for streams to start
+            kvs                                (repeat times message-key-value)
+            handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
+            streams                            (start-streams {:default {:handler-fn handler-fn}}
+                                                              (-> (ziggurat-config)
+                                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+        (Thread/sleep 10000)                                    ;;waiting for streams to start
         (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                             kvs
                                                             (props)
                                                             (MockTime.))
-        (Thread/sleep 5000)                                 ;;wating for streams to consume messages
+        (Thread/sleep 5000)                                     ;;wating for streams to consume messages
         (stop-streams streams)
         (is (= times @message-received-count))))))

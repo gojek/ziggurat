@@ -1,13 +1,11 @@
 (ns ziggurat.streams
   (:require [clojure.tools.logging :as log]
-            [flatland.protobuf.core :as proto]
             [mount.core :as mount :refer [defstate]]
             [sentry-clj.async :as sentry]
             [ziggurat.channel :as chl]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.mapper :as mpr]
+            [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.timestamp-transformer :as transformer]
             [ziggurat.util.map :as umap])
   (:import [java.util Properties]
@@ -98,37 +96,15 @@
         additional-tags   {:topic_name topic-entity-name}]
     (.transform stream-builder (transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
 
-(defn- protobuf->hash [message proto-class topic-entity-name]
-  (try
-    (let [proto-klass  (-> proto-class
-                           java.lang.Class/forName
-                           proto/protodef)
-          loaded-proto (proto/protobuf-load proto-klass message)
-          proto-keys   (-> proto-klass
-                           proto/protobuf-schema
-                           :fields
-                           keys)]
-      (select-keys loaded-proto proto-keys))
-    (catch Throwable e
-      (let [service-name      (:app-name (ziggurat-config))
-            additional-tags   {:topic_name topic-entity-name}
-            default-namespace "message-parsing"
-            metric-namespaces [service-name "message-parsing"]
-            multi-namespaces  [metric-namespaces [default-namespace]]]
-        (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
-        (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
-        nil))))
-
-(defn- topology [handler-fn {:keys [origin-topic proto-class oldest-processed-message-in-s]} topic-entity channels]
+(defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
     (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
-         (map-values #(protobuf->hash % proto-class topic-entity-name))
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mpr/mapper-func handler-fn topic-entity channels) %)))
+         (map-values #((mapper-func handler-fn channels) (->MessagePayload % topic-entity))))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]

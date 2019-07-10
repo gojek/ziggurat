@@ -16,7 +16,6 @@
                                :bootstrap-servers    \"localhost:9092\"\n
                                :stream-threads-count [1 :int]\n
                                :origin-topic         \"topic\"\n
-                               :proto-class          \"flatland.protobuf.test.Example$Photo\"\n
                                :channels             {:channel-1 {:worker-count [10 :int]\n  :retry {:count [5 :int]\n  :enabled [true :bool]}}}\n
                                :producer             {:bootstrap-servers \"localhost:9092\"\n
                                                       :acks \"all\"\n
