@@ -28,4 +28,4 @@
               multi-namespaces  [metric-namespaces [default-namespace]]]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
           (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
-          nil)))))
+          (handler-fn nil))))))

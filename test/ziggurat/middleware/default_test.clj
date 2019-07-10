@@ -23,16 +23,17 @@
                                  (reset! handler-fn-called? true)))]
       ((protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
       (is (true? @handler-fn-called?))))
-  (testing "When deserialisation fails, it reports to sentry and publishes metrics"
+  (testing "When deserialisation fails, it reports to sentry, publishes metrics and passes nil to handler function"
     (let [handler-fn-called? (atom false)
           metric-reporter-called? (atom false)
           topic-entity-name "test"
           handler-fn (fn [msg]
-                       (reset! handler-fn-called? true))]
+                       (if (nil? msg)
+                         (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]
         ((protobuf->hash handler-fn nil topic-entity-name) nil))
-      (is (false? @handler-fn-called?))
+      (is (true? @handler-fn-called?))
       (is (true? @metric-reporter-called?))))
   (testing "When an already deserialised message is passed to the function it calls the handler fn without altering it"
     (let [handler-fn-called? (atom false)
