@@ -179,7 +179,6 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                           :stream-threads-count           [1 :int]
                                                           :origin-topic                   "kafka-topic-*"
                                                           :oldest-processed-message-in-s  [604800 :int]
-                                                          :proto-class          "proto-class"
                                                           :changelog-topic-replication-factor [3 :int]
                                                           :producer   {:bootstrap-servers                     "localhost:9092"
                                                                        :acks                                  "all"
@@ -224,9 +223,8 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
         * application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
         * bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
         * stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
-        * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams should be of the same proto-class.
+        * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
         * oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
-        * proto-class - The proto-class of the message so that it can be decompiled before being passed to the mapper function
         * changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
         * producer - Configuration for KafkaProducer. Currently, only following options are supported. Please see [Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) for detailed explanation for each of the configuration parameters.
             * bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
