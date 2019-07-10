@@ -4,7 +4,7 @@
             [sentry-clj.async :as sentry]
             [ziggurat.channel :as chl]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.mapper :as mpr]
+            [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as transformer]
             [ziggurat.util.map :as umap])
@@ -104,7 +104,7 @@
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mpr/mapper-func handler-fn channels) (mpr/construct-message-payload % topic-entity))))
+         (map-values #((mapper-func handler-fn channels) (->MessagePayload % topic-entity))))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]

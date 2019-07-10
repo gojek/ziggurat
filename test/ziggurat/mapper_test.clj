@@ -1,6 +1,6 @@
 (ns ziggurat.mapper-test
-  (:require [clojure.test :refer :all])
-  (:require [langohr.channel :as lch]
+  (:require [clojure.test :refer :all]
+            [langohr.channel :as lch]
             [schema.core :as s]
             [sentry-clj.async :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
@@ -8,7 +8,8 @@
             [ziggurat.mapper :refer :all]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.rabbitmq :as rmq]))
+            [ziggurat.util.rabbitmq :as rmq])
+  (:import [ziggurat.mapper MessagePayload]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -188,13 +189,6 @@
                                               (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @reported-execution-time?))))))
-
-(deftest construct-message-payload-test
-  (testing "given a clojure map, it returns a message-payload"
-    (let [message {:foo "bar"}
-          topic-entity :topic
-          expected-message {:message {:foo "bar"} :topic-entity topic-entity}]
-      (is (= expected-message (construct-message-payload message topic-entity))))))
 
 (deftest message-payload-schema-test
   (testing "it validates the schema for a message containing retry-count"

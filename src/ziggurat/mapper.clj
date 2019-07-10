@@ -92,10 +92,7 @@
             (sentry/report-error sentry-reporter e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/multi-ns-increment-count multi-namespaces failure-metric additional-tags)))))))
 
-(defn construct-message-payload
-  [message topic-entity]
-  {:message message
-   :topic-entity topic-entity})
+(defrecord MessagePayload [message topic-entity])
 
 (s/defschema message-payload-schema
   {:message s/Any
