@@ -15,7 +15,7 @@
             [ziggurat.streams :as streams])
   (:gen-class
     :name tech.gojek.ziggurat.Init
-    :methods [^{:static true} [javaMain [clojure.lang.IPersistentMap clojure.lang.IPersistentMap] void]]))
+    :methods [^{:static true} [javaMain [clojure.lang.IPersistentMap] void]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -193,6 +193,10 @@
 
 
 (defn -javaMain
-  [map {:keys [start-fn stop-fn stream-routes actor-routes modes] :as abc}]
-  (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes :modes modes}))
+  [{:keys [start-fn stop-fn stream-routes actor-routes modes]}]
+  (main {:start-fn start-fn
+         :stop-fn stop-fn
+         :stream-routes stream-routes
+         :actor-routes actor-routes
+         :modes modes}))
 

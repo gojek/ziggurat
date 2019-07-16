@@ -2,7 +2,12 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clonfig.core :as clonfig]
-            [mount.core :refer [defstate]]))
+            [mount.core :refer [defstate]])
+  (:gen-class
+    :name tech.gojek.ziggurat.Config
+    :methods [^{:static true} [get [clojure.lang.Keyword] Object]
+              ^{:static true} [getIn [clojure.lang.PersistentVector] Object]]))
+
 
 (def config-file "config.edn")
 
@@ -75,4 +80,11 @@
 
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
+
+
+(defn -getIn [keys]
+  (get-in config keys))
+
+(defn -get [key]
+   (-getIn [key]))
 
