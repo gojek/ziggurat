@@ -83,7 +83,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
 ```
 
-Please refer to the [Middleware section](#middleware-on-ziggurat)
+Please refer to the [Middleware section](#middleware-in-ziggurat)
 
 * The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
