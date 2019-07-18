@@ -1,6 +1,5 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all]
-            [langohr.channel :as lch]
             [schema.core :as s]
             [sentry-clj.async :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
@@ -8,8 +7,7 @@
             [ziggurat.mapper :refer :all]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.rabbitmq :as rmq])
-  (:import [ziggurat.mapper MessagePayload]))
+            [ziggurat.util.rabbitmq :as rmq]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -119,17 +117,17 @@
           (is @reported-execution-time?))))))
 
 (deftest channel-mapper-func-test
-  (let [service-name               (:app-name (ziggurat-config))
+  (let [channel                    :channel-1
+        channel-name               (name channel)
+        service-name               (:app-name (ziggurat-config))
         stream-routes              {:default {:handler-fn #(constantly nil)
-                                              :channel-1  #(constantly nil)}}
+                                              channel     #(constantly nil)}}
         topic                      (first (keys stream-routes))
         message-payload            {:message      {:foo "bar"}
                                     :retry-count  (:count (:retry (ziggurat-config)))
                                     :topic-entity topic}
         expected-topic-entity-name (name topic)
-        expected-additional-tags   {:topic_name expected-topic-entity-name}
-        channel                    :channel-1
-        channel-name               (name channel)
+        expected-additional-tags   {:topic_name expected-topic-entity-name :channel_name channel-name}
         default-namespace          "message-processing"
         expected-metric-namespaces [expected-topic-entity-name channel default-namespace]]
     (testing "message process should be successful"
