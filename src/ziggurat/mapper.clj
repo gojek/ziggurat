@@ -62,7 +62,7 @@
           default-namespace  "message-processing"
           base-namespaces    [service-name topic-entity-name channel-name]
           metric-namespaces  (conj base-namespaces default-namespace)
-          additional-tags    {:topic_name topic-entity-name}
+          additional-tags    {:topic_name topic-entity-name :channel_name channel-name}
           default-namespaces [default-namespace]
           metric-namespace   (str/join "." metric-namespaces)
           success-metric     "success"
