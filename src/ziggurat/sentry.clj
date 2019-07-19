@@ -3,7 +3,10 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
             [sentry-clj.async :as sentry]
-            [ziggurat.config :refer [ziggurat-config]]))
+            [ziggurat.config :refer [ziggurat-config]])
+  (:gen-class
+    :name tech.gojek.ziggurat.Sentry
+    :methods [^{:static true} [reportError [Throwable String] void]]))
 
 (defn create-sentry-reporter []
   (let [sentry-config (merge (:sentry (ziggurat-config))
@@ -25,3 +28,6 @@
   still want to report to Sentry."
   [^Throwable error & msgs]
   `(sentry/report-error sentry-reporter ~error ~@msgs))
+
+(defn -reportError [^Throwable error msg]
+  (report-error error msg))
