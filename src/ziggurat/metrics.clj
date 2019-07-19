@@ -48,11 +48,17 @@
   (let [topic-name (:topic_name additional-tags)]
     (dissoc additional-tags (when (some #(= % topic-name) ns) :topic_name))))
 
+(defn- get-metric-namespaces
+  [metric-namespaces]
+  (if (vector? metric-namespaces)
+    (intercalate-dot metric-namespaces)
+    (str (:app-name (ziggurat-config)) "." metric-namespaces)))
+
 (defn- inc-or-dec-count
   ([sign metric-namespace metric]
    (inc-or-dec-count sign metric-namespace metric nil))
   ([sign metric-namespaces metric additional-tags]
-   (let [metric-namespace (intercalate-dot metric-namespaces)
+   (let [metric-namespace (get-metric-namespaces metric-namespaces)
          meter            ^Meter (mk-meter metric-namespace metric (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
      (.mark meter (sign 1)))))
 
@@ -68,7 +74,7 @@
   ([metric-namespaces time-val]
    (report-time metric-namespaces time-val nil))
   ([metric-namespaces time-val additional-tags]
-   (let [metric-namespace (intercalate-dot metric-namespaces)
+   (let [metric-namespace (get-metric-namespaces metric-namespaces)
          histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
      (.update histogram (int time-val)))))
 
