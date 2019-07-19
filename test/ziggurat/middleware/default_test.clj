@@ -1,10 +1,10 @@
 (ns ziggurat.middleware.default-test
   (:require [clojure.test :refer :all]
             [flatland.protobuf.core :as proto]
-            [ziggurat.middleware.default :refer :all]
-            [ziggurat.fixtures :as fix]
             [sentry-clj.async :as sentry]
-            [ziggurat.metrics :as metrics])
+            [ziggurat.fixtures :as fix]
+            [ziggurat.metrics :as metrics]
+            [ziggurat.middleware.default :refer :all])
   (:import (flatland.protobuf.test Example$Photo)))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
@@ -24,14 +24,14 @@
       ((protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
       (is (true? @handler-fn-called?))))
   (testing "When deserialisation fails, it reports to sentry, publishes metrics and passes nil to handler function"
-    (let [handler-fn-called? (atom false)
+    (let [handler-fn-called?      (atom false)
           metric-reporter-called? (atom false)
-          topic-entity-name "test"
-          handler-fn (fn [msg]
-                       (if (nil? msg)
-                         (reset! handler-fn-called? true)))]
-      (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
-                                                       (reset! metric-reporter-called? true))]
+          topic-entity-name       "test"
+          handler-fn              (fn [msg]
+                                    (if (nil? msg)
+                                      (reset! handler-fn-called? true)))]
+      (with-redefs [metrics/increment-count (fn [_ _ _]
+                                              (reset! metric-reporter-called? true))]
         ((protobuf->hash handler-fn nil topic-entity-name) nil))
       (is (true? @handler-fn-called?))
       (is (true? @metric-reporter-called?))))
