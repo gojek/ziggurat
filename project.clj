@@ -39,8 +39,11 @@
                                       :password :env/clojars_password
                                       :sign-releases false}]]
   :java-source-paths ["src/com"]
-  :aliases {"test-all"      ["with-profile" "default:+1.8:+1.9" "test"]
-            "code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
+  :aliases {"test-all"                   ["with-profile" "default:+1.8:+1.9" "test"]
+            "code-coverage"              ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]
+            "run-junit"                  ["do" "clean," "install," "with-profile" "test" "junit"]}
+            ;"test-with-junit"            ["do" "clean," "test," "install," "with-profile" "test" "junit"]
+            ;"test-all-with-junit"        ["do" "clean," "test-all," "install," "with-profile" "test" "junit"]}
   :aot :all
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
@@ -51,9 +54,14 @@
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
                                       [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
-                                      [org.clojure/test.check "0.9.0"]]
-                       :plugins      [[lein-cloverage "1.0.13"]]
-                       :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
+                                      [org.clojure/test.check "0.9.0"]
+                                      [tech.gojek/ziggurat-test-utils "1.0.0-SNAPSHOT" :scope "test"]]
+                       :plugins      [[lein-cloverage "1.0.13"]
+                                      [lein-junit "1.1.9"]]
+                       :junit ["test"]
+                       :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]
+                       :aot :all
+                       :java-source-paths ["src/com", "test/tech"]}
              :dev     {:plugins  [[lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
                                   [lein-kibit "0.1.6"]]}

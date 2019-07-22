@@ -14,8 +14,8 @@
             [ziggurat.server :as server]
             [ziggurat.streams :as streams])
   (:gen-class
-    :name tech.gojek.ziggurat.Init
-    :methods [^{:static true} [javaMain [clojure.lang.IPersistentMap] void]]))
+   :name tech.gojek.ziggurat.Init
+   :methods [^{:static true} [javaMain [clojure.lang.IPersistentMap] void]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -190,7 +190,6 @@
        (log/error e)
        (stop stop-fn modes)
        (System/exit 1)))))
-
 
 (defn -javaMain
   [{:keys [start-fn stop-fn stream-routes actor-routes modes]}]

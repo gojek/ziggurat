@@ -5,8 +5,8 @@
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]])
   (:gen-class
-    :name tech.gojek.ziggurat.Sentry
-    :methods [^{:static true} [reportError [Throwable String] void]]))
+   :name tech.gojek.ziggurat.Sentry
+   :methods [^{:static true} [reportError [Throwable String] void]]))
 
 (defn create-sentry-reporter []
   (let [sentry-config (merge (:sentry (ziggurat-config))
