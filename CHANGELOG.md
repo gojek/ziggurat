@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.3 - 2019-07-26
+- Fix functions to either take vector or string as input
+
+## 2.12.2 - 2019-07-03
+- Fixes a bug that incorrectly checked for additional-tags in ziggurat.metrics/merge-tags
+
 ## 2.12.1 - 2019-06-28
 - Fixes a bug where calling inc-or-dec count without passing additional tags raised and exception
 
