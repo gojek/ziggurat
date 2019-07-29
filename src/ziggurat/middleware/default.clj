@@ -1,9 +1,9 @@
 (ns ziggurat.middleware.default
   (:require [flatland.protobuf.core :as proto]
             [sentry-clj.async :as sentry]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.config :refer [ziggurat-config]]))
+            [ziggurat.sentry :refer [sentry-reporter]]))
 
 (defn- deserialise-message
   "This function takes in the message(proto Byte Array) and the proto-class and deserializes the proto ByteArray into a
@@ -24,11 +24,9 @@
       (catch Throwable e
         (let [service-name      (:app-name (ziggurat-config))
               additional-tags   {:topic_name topic-entity-name}
-              default-namespace "message-parsing"
-              metric-namespaces [service-name "message-parsing"]
-              multi-namespaces  [metric-namespaces [default-namespace]]]
+              default-namespace "message-parsing"]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
-          (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
+          (metrics/increment-count default-namespace "failed" additional-tags)
           nil)))
     message))
 

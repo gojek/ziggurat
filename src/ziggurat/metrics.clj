@@ -44,38 +44,31 @@
   [names]
   (str/join "." names))
 
-(defn remove-topic-tag-for-old-namespace
-  [additional-tags ns]
-  (let [topic-name (:topic_name additional-tags)]
-    (dissoc additional-tags (when (some #(= % topic-name) ns) :topic_name))))
+(defn- get-metric-namespaces
+  [metric-namespaces]
+  (if (vector? metric-namespaces)
+    (intercalate-dot metric-namespaces)
+    metric-namespaces))
 
 (defn- inc-or-dec-count
   ([sign metric-namespace metric]
    (inc-or-dec-count sign metric-namespace metric nil))
   ([sign metric-namespaces metric additional-tags]
-   (let [metric-namespace (intercalate-dot metric-namespaces)
-         meter            ^Meter (mk-meter metric-namespace metric (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+   (let [metric-namespace (get-metric-namespaces metric-namespaces)
+         meter            ^Meter (mk-meter metric-namespace metric additional-tags)]
      (.mark meter (sign 1)))))
 
 (def increment-count (partial inc-or-dec-count +))
 
 (def decrement-count (partial inc-or-dec-count -))
 
-(defn multi-ns-increment-count [nss metric additional-tags]
-  (doseq [ns nss]
-    (increment-count ns metric additional-tags)))
-
 (defn report-time
   ([metric-namespaces time-val]
    (report-time metric-namespaces time-val nil))
   ([metric-namespaces time-val additional-tags]
-   (let [metric-namespace (intercalate-dot metric-namespaces)
-         histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+   (let [metric-namespace (get-metric-namespaces metric-namespaces)
+         histogram        ^Histogram (mk-histogram metric-namespace "all" additional-tags)]
      (.update histogram (int time-val)))))
-
-(defn multi-ns-report-time [nss time-val additional-tags]
-  (doseq [ns nss]
-    (report-time ns time-val additional-tags)))
 
 (defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
