@@ -56,6 +56,19 @@
                                                                                            :enable-idempotence                    false
                                                                                            :value-serializer                      "org.apache.kafka.common.serialization.ByteArraySerializer"
                                                                                            :key-serializer                        "org.apache.kafka.common.serialization.ByteArraySerializer"}}
+                                   :with-diff-key-val-type-producer       {:application-id       "dss-transport-java-test-02-multiple"
+                                                                           :bootstrap-servers    "localhost:9092"
+                                                                           :stream-threads-count [1 :int]
+                                                                           :changelog-topic-replication-factor [3 :int]
+                                                                           :origin-topic         "GO_RIDE-booking-log"
+                                                                           :proto-class          "com.gojek.esb.booking.BookingLogMessage"
+                                                                           :producer             {:bootstrap-servers                     "localhost:9092"
+                                                                                                  :acks                                  "all"
+                                                                                                  :retries-config                        5
+                                                                                                  :max-in-flight-requests-per-connection 5
+                                                                                                  :enable-idempotence                    false
+                                                                                                  :value-serializer                      "org.apache.kafka.common.serialization.ByteArraySerializer"
+                                                                                                  :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}
                                    :without-producer               {:application-id       "test"
                                                                     :bootstrap-servers    "localhost:9092"
                                                                     :stream-threads-count [1 :int]

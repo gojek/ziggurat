@@ -52,6 +52,46 @@ public class ProducerTest {
         Assert.assertEquals("Sent from Java", new String(result.get(0).value));
     }
 
+    /**
+     * Following test should fail because consumer is trying to deserialize a byte
+     * array data using StringDeserializer.
+     *
+     * @throws InterruptedException
+     */
+    @Test(expected = ClassCastException.class)
+    public void shouldFailWhileSendingByteArrayData() throws InterruptedException {
+        String kafkaTopic = "ziggurat-java-test-byte-array";
+        Producer.send(Keyword.intern("with-byte-array-producer"), kafkaTopic, "Key".getBytes(), "Sent from Java".getBytes());
+
+        List<KeyValue<byte[],byte[]>> result = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(getStringConsumerConfig(),
+                kafkaTopic, 1, 2000);
+
+        //Byte arrays converted to strings for comparison
+        Assert.assertEquals("Key", new String(result.get(0).key));
+        Assert.assertEquals("Sent from Java", new String(result.get(0).value));
+    }
+
+    @Test
+    public void shouldSendDataWithDifferentTypesForKeyAndValue() throws InterruptedException {
+        String kafkaTopic = "ziggurat-java-test-diff-types";
+        Producer.send(Keyword.intern("with-diff-key-val-type-producer"), kafkaTopic, "Key", "Sent from Java".getBytes());
+
+        List<KeyValue<byte[],byte[]>> result = IntegrationTestUtils
+                .waitUntilMinKeyValueRecordsReceived(getConsumerConfigForStringTypeKeyAndByteArrayTypeValue(),
+                kafkaTopic, 1, 2000);
+
+        //Byte arrays converted to strings for comparison
+        Assert.assertEquals("Key", result.get(0).key);
+        Assert.assertEquals("Sent from Java", new String(result.get(0).value));
+    }
+
+    private Properties getConsumerConfigForStringTypeKeyAndByteArrayTypeValue() {
+        Properties consumerProperties = getComonConsumerProperties();
+        consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        consumerProperties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        return consumerProperties;
+    }
+
     private Properties getByteArrayConsumerConfig() {
         Properties consumerProperties = getComonConsumerProperties();
         consumerProperties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
