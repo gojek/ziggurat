@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.0.0-alpha.4 - 2019-07-29
+- Remove old metrics from being sent
 
 ## 3.0.0-alpha.3 - 2019-07-10
 - Adds middleware support

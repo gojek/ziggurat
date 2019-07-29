@@ -36,7 +36,7 @@ from a clojure application such that a user only needs to pass a function that w
 
 Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
-## Dev Setup 
+## Dev Setup
 (For mac users only)
 
 - Install Clojure: ```brew install clojure```
@@ -57,29 +57,29 @@ Upgrade Guide to 3.x refer [here](UpgradeGuide.md)
 
 Add this to your project.clj:
 
-`[tech.gojek/ziggurat "3.0.0-alpha"]`
+`[tech.gojek/ziggurat "3.0.0-alpha.4"]`
 
-or for latest stable version 
+or for latest stable version
 
-`[tech.gojek/ziggurat "2.10.2"]`
+`[tech.gojek/ziggurat "2.12.3"]`
 
 To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
 ```clojure
 (require '[ziggurat.init :as ziggurat])
-  
+
 (defn start-fn []
     ;; your logic that runs at startup goes here
 )
-  
+
 (defn stop-fn []
     ;; your logic that runs at shutdown goes here
 )
-  
+
 (defn main-fn
     [message]
     (println message)
     :success)
-  
+
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
 ```
 
@@ -106,33 +106,33 @@ Please refer to the [Middleware section](#middleware-in-ziggurat)
 (defn start-fn []
     ;; your logic that runs at startup goes here
 )
-  
+
 (defn stop-fn []
     ;; your logic that runs at shutdown goes here
 )
-  
-  
+
+
 (defn handler-function [_request]
   {:status  200
    :headers {"Content-Type" "application/json"}
    :body    (get-resource)})
-   
+
 (def routes [["v1/resources" {:get handler-function}]])
-  
+
 (defn main-fn
     [message]
     (println message)
     :success)
-  
+
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}} routes)
 
 ```
 Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
-how you can pass in your own route. 
+how you can pass in your own route.
 
-or 
+or
 ```clojure
-(ziggurat/main {:start-fn start-fn 
+(ziggurat/main {:start-fn start-fn
                 :stop-fn stop-fn
                 :stream-routes {:stream-id {:handler-fn main-fn}}
                 :actor-routes routes
@@ -143,7 +143,7 @@ This will start both api-server and stream-worker modes
 
 There are four modes supported by ziggurat
 ```
- :api-server - Mode by which only server will be started with actor routes and management routes(Dead set management)   
+ :api-server - Mode by which only server will be started with actor routes and management routes(Dead set management)
  :stream-worker - Only start the server plus rabbitmq for only producing the messages for retry and channels
  :worker - Starts the rabbitmq consumer for retry and channel
  :management-api - Servers only routes which used for deadset management
@@ -161,24 +161,24 @@ or define their custom middlewares.
 The default middleware `default/protobuf->hash` assumes that the message is serialized in proto format.
 ```clojure
 (require '[ziggurat.init :as ziggurat])
-  
+
 (defn start-fn []
     ;; your logic that runs at startup goes here
 )
-  
+
 (defn stop-fn []
     ;; your logic that runs at shutdown goes here
 )
-  
+
 (defn main-fn
     [message]
     (println message)
     :success)
-    
+
 (def handler-fn
     (-> main-fn
       (middleware/protobuf->hash ProtoClass :stream-id)))
-  
+
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
 
@@ -261,12 +261,12 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
         * producer - Configuration for KafkaProducer. Currently, only following options are supported. Please see [Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) for detailed explanation for each of the configuration parameters.
             * bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
             * acks - The number of acknowledgments the producer requires the leader to have received before considering a request complete. Valid values are [all, -1, 0, 1].
-            * retries - Setting a value greater than zero will cause the client to resend any record whose send fails with a potentially transient error. 
+            * retries - Setting a value greater than zero will cause the client to resend any record whose send fails with a potentially transient error.
             * key.serializer - Serializer class for key that implements the org.apache.kafka.common.serialization.Serializer interface.
             * value.serializer - Serializer class for value that implements the org.apache.kafka.common.serialization.Serializer interface.
             * max.in.flight.requests.per.connection - The maximum number of unacknowledged requests the client will send on a single connection before blocking.
-            * enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream. 
-         
+            * enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
+
 * datadog - The statsd host and port that metrics should be sent to, although the key name is datadog, it supports statsd as well to send metrics.
 * sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
 * rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
