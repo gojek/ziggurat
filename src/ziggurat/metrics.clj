@@ -6,7 +6,15 @@
   (:import com.gojek.metrics.datadog.DatadogReporter
            [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
-           java.util.concurrent.TimeUnit))
+           java.util.concurrent.TimeUnit)
+  (:gen-class
+    :name tech.gojek.ziggurat.Metrics
+    :methods [^{:static true} [incrementCount [String String] void]
+              ^{:static true} [incrementCount ["[Ljava.lang.String;" String "[Ljava.lang.String;"] void]
+              ^{:static true} [decrementCount [String String] void]
+              ^{:static true} [decrementCount ["[Ljava.lang.String;" String "[Ljava.lang.String;"] void]
+              ^{:static true} [reportTime     ["[Ljava.lang.String;" Long] void]
+              ^{:static true} [reportTime     ["[Ljava.lang.String;" Long "[Ljava.lang.String;"] void]]))
 
 (defonce metrics-registry
   (MetricRegistry.))
@@ -91,3 +99,22 @@
     (.stop ^DatadogReporter reporter)
     (.close ^UdpTransport transport)
     (log/info "Stopped statsd reporter")))
+
+
+(defn -incrementCount
+  ([metric-namespace metric]
+   (increment-count metric-namespace metric))
+  ([metric-namespaces metric additional-tags]
+   (increment-count (seq metric-namespaces) metric (seq additional-tags))))
+
+(defn -decrementCount
+  ([metric-namespace metric]
+   (decrement-count metric-namespace metric))
+  ([metric-namespaces metric additional-tags]
+   (decrement-count (seq metric-namespaces) metric (seq additional-tags))))
+
+(defn -reportTime
+  ([metric-namespace time-val]
+   (report-time metric-namespace time-val))
+  ([metric-namespaces time-val additional-tags]
+   (report-time (seq metric-namespaces) time-val (seq additional-tags))))
