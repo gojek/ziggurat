@@ -5,8 +5,9 @@
             [mount.core :refer [defstate]])
   (:gen-class
    :name tech.gojek.ziggurat.Config
-   :methods [^{:static true} [get [clojure.lang.Keyword] Object]
-             ^{:static true} [getIn [clojure.lang.PersistentVector] Object]]))
+   :methods [^{:static true} [get [String] Object]
+             ^{:static true} [getIn [java.lang.Iterable] Object]
+             ^{:static true} [getIn ["[Ljava.lang.String;"] Object]]))
 
 (def config-file "config.edn")
 
@@ -80,9 +81,14 @@
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
 
+(defn- list-of-keywords [java-list]
+  (map #(keyword %) (seq java-list)))
+
 (defn -getIn [keys]
-  (get-in config keys))
+  (let [keys-in-seq (list-of-keywords keys)]
+    (get-in config keys-in-seq)))
 
 (defn -get [key]
-  (-getIn [key]))
+  (let [key-word (keyword key)]
+    (-getIn [key-word])))
 

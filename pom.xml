@@ -3,7 +3,7 @@
   <groupId>tech.gojek</groupId>
   <artifactId>ziggurat</artifactId>
   <packaging>jar</packaging>
-  <version>4.0.0-alpha.3</version>
+  <version>4.0.0-alpha.4</version>
   <name>ziggurat</name>
   <description>A stream processing framework to build stateless applications on kafka</description>
   <url>https://github.com/gojektech/ziggurat</url>
@@ -17,7 +17,7 @@
     <url>https://github.com/gojek/ziggurat</url>
     <connection>scm:git:git://github.com/gojek/ziggurat.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/gojek/ziggurat.git</developerConnection>
-    <tag>022e7c568769d54e43bd62d286017cb07ce81ca5</tag>
+    <tag>c6c845345d7455e3dc010047c10edf009cfb7f13</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
