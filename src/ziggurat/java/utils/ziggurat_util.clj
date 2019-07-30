@@ -5,7 +5,7 @@
    :name tech.gojek.ziggurat.ZigguratUtil
    :methods [^{:static true} [createClojureHashMap [java.util.Map] clojure.lang.APersistentMap]]))
 
-(defn -createClojureHashMap [^Map java-map]
+(defn create-clojure-hash-map [^Map java-map]
   "A util method for converting a Java HashMap (Map) to a clojure hash-map.
    This but can be used to convert any Java HashMap where following
    are required:
@@ -23,10 +23,14 @@
      (let [key (.getKey entry)
            value (.getValue entry)]
        (if (instance? Map value)
-         (assoc map (keyword key) (-createClojureHashMap value))
+         (assoc map (keyword key) (create-clojure-hash-map value))
          (if (or (instance? java.lang.Iterable value)
                  (str/starts-with? (.getName (.getClass value)) "["))
            (assoc map (keyword key) (seq value))
            (assoc map (keyword key) value)))))
    (hash-map)
    (.toArray (.entrySet java-map))))
+
+(defn -createClojureHashMap
+  [java-map]
+  (create-clojure-hash-map java-map))

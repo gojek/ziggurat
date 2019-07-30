@@ -1,6 +1,5 @@
 package tech.gojek.ziggurat;
 
-import clojure.lang.Keyword;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.integration.utils.IntegrationTestUtils;
@@ -30,7 +29,7 @@ public class ProducerTest {
     public void shouldSendStringData() throws InterruptedException {
         String kafkaTopic = "ziggurat-java-test";
 
-        Producer.send(Keyword.intern("default"), kafkaTopic, "Key", "Sent from Java");
+        Producer.send("default", kafkaTopic, "Key", "Sent from Java");
 
         List<KeyValue<String,String>> result = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(getStringConsumerConfig(),
                 kafkaTopic, 1, 2000);
@@ -42,7 +41,7 @@ public class ProducerTest {
     @Test
     public void shouldSendByteArrayData() throws InterruptedException {
         String kafkaTopic = "ziggurat-java-test-byte-array";
-        Producer.send(Keyword.intern("with-byte-array-producer"), kafkaTopic, "Key".getBytes(), "Sent from Java".getBytes());
+        Producer.send("with-byte-array-producer", kafkaTopic, "Key".getBytes(), "Sent from Java".getBytes());
 
         List<KeyValue<byte[],byte[]>> result = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(getByteArrayConsumerConfig(),
                 kafkaTopic, 1, 2000);
@@ -61,7 +60,7 @@ public class ProducerTest {
     @Test(expected = ClassCastException.class)
     public void shouldFailWhileSendingByteArrayData() throws InterruptedException {
         String kafkaTopic = "ziggurat-java-test-byte-array";
-        Producer.send(Keyword.intern("with-byte-array-producer"), kafkaTopic, "Key".getBytes(), "Sent from Java".getBytes());
+        Producer.send("with-byte-array-producer", kafkaTopic, "Key".getBytes(), "Sent from Java".getBytes());
 
         List<KeyValue<byte[],byte[]>> result = IntegrationTestUtils.waitUntilMinKeyValueRecordsReceived(getStringConsumerConfig(),
                 kafkaTopic, 1, 2000);
@@ -74,7 +73,7 @@ public class ProducerTest {
     @Test
     public void shouldSendDataWithDifferentTypesForKeyAndValue() throws InterruptedException {
         String kafkaTopic = "ziggurat-java-test-diff-types";
-        Producer.send(Keyword.intern("with-diff-key-val-type-producer"), kafkaTopic, "Key", "Sent from Java".getBytes());
+        Producer.send("with-diff-key-val-type-producer", kafkaTopic, "Key", "Sent from Java".getBytes());
 
         List<KeyValue<byte[],byte[]>> result = IntegrationTestUtils
                 .waitUntilMinKeyValueRecordsReceived(getConsumerConfigForStringTypeKeyAndByteArrayTypeValue(),

@@ -1,6 +1,6 @@
 (ns tech.gojek.ziggurat.ziggurat-util-test
   (:require [clojure.test :refer :all]
-            [ziggurat.java.utils.ziggurat-util :refer [-createClojureHashMap]]))
+            [ziggurat.java.utils.ziggurat-util :refer [create-clojure-hash-map]]))
 
 (defn- create-java-list []
   (doto (new java.util.ArrayList)
@@ -23,7 +23,7 @@
 
 (deftest creates-stream-routes-map
   (testing "Should construct a clojure hash-map for stream routes from a Java HashMap"
-    (let [clojure-hash-map (-createClojureHashMap (java-hash-map-with-a-hash-map))
+    (let [clojure-hash-map (create-clojure-hash-map (java-hash-map-with-a-hash-map))
           val (:keyword clojure-hash-map)
           val-hash-map (:another-keyword clojure-hash-map)]
       (is (= "value" val))

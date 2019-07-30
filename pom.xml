@@ -17,7 +17,7 @@
     <url>https://github.com/gojek/ziggurat</url>
     <connection>scm:git:git://github.com/gojek/ziggurat.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/gojek/ziggurat.git</developerConnection>
-    <tag>ec6bb4c2b6872fe42131786e3188c6d0cba1c893</tag>
+    <tag>befe42458709f0fbc776a9f95c8575dec7ec6fc8</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>
@@ -307,6 +307,12 @@
       <groupId>tech.gojek</groupId>
       <artifactId>ziggurat-test-utils</artifactId>
       <version>1.0.0-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>ziggurat</artifactId>
+          <groupId>tech.gojek</groupId>
+        </exclusion>
+      </exclusions>
       <scope>test</scope>
     </dependency>
   </dependencies>

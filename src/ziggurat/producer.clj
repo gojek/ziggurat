@@ -51,8 +51,8 @@
            (java.util Properties))
   (:gen-class
    :name tech.gojek.ziggurat.Producer
-   :methods  [^{:static true} [send [clojure.lang.Keyword String Object Object] void]
-              ^{:static true} [send [clojure.lang.Keyword String int Object Object] void]]))
+   :methods  [^{:static true} [send [String String Object Object] void]
+              ^{:static true} [send [String String int Object Object] void]]))
 
 (defn- producer-properties-from-config [{:keys [bootstrap-servers
                                                 acks
@@ -128,7 +128,7 @@
 
 (defn -send
   ([stream-config-key topic key value]
-   (send stream-config-key topic key value))
+   (send (keyword stream-config-key) topic key value))
 
   ([stream-config-key topic partition key value]
-   (send stream-config-key topic partition key value)))
+   (send (keyword stream-config-key) topic partition key value)))

@@ -55,7 +55,7 @@
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
                                       [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
                                       [org.clojure/test.check "0.9.0"]
-                                      [tech.gojek/ziggurat-test-utils "1.0.0-SNAPSHOT" :scope "test"]]
+                                      [tech.gojek/ziggurat-test-utils "1.0.0-SNAPSHOT" :scope "test" :exclusions [tech.gojek/ziggurat]]]
                        :plugins      [[lein-cloverage "1.0.13"]
                                       [lein-junit "1.1.9"]]
                        :junit ["test"]
