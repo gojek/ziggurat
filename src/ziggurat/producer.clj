@@ -46,7 +46,8 @@
 
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
-            [mount.core :refer [defstate]])
+            [mount.core :refer [defstate]]
+            [ziggurat.java.utils.ziggurat-util :refer [get-key]])
   (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
            (java.util Properties))
   (:gen-class
@@ -128,7 +129,7 @@
 
 (defn -send
   ([stream-config-key topic key value]
-   (send (keyword stream-config-key) topic key value))
+   (send (get-key stream-config-key) topic key value))
 
   ([stream-config-key topic partition key value]
-   (send (keyword stream-config-key) topic partition key value)))
+   (send (get-key stream-config-key) topic partition key value)))

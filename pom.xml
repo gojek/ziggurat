@@ -17,7 +17,7 @@
     <url>https://github.com/gojek/ziggurat</url>
     <connection>scm:git:git://github.com/gojek/ziggurat.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/gojek/ziggurat.git</developerConnection>
-    <tag>a577b9b45bd7ee35b905694bb4b1fe427445ab10</tag>
+    <tag>d01ae68ee0b7f0bf818c8d8403173a3ec9170fff</tag>
   </scm>
   <build>
     <sourceDirectory>src</sourceDirectory>

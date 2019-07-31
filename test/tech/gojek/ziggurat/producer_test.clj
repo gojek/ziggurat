@@ -43,7 +43,7 @@
           kafka-topic  (gen/generate alphanum-gen 10)
           key "Key"
           value "Sent from Java"]
-      (Producer/send "default" kafka-topic key value)
+      (Producer/send ":default" kafka-topic key value)
       (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived
                     (getConsumerConfigForKeyAndValueOfTypeString) kafka-topic 1 2000)]
         (is (= key (.key (.get result 0))))
@@ -57,7 +57,7 @@
           kafka-topic  (gen/generate alphanum-gen 10)
           key (.getBytes "Key")
           value (.getBytes "Sent from Java")]
-      (Producer/send "with-byte-array-producer" kafka-topic key value)
+      (Producer/send ":with-byte-array-producer" kafka-topic key value)
       (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived
                     (getConsumerConfigForKeyAndValueOfTypeString) kafka-topic 1 2000)]
         (is (= "Key" (String. (.key (.get result 0)))))
@@ -69,7 +69,7 @@
           kafka-topic  (gen/generate alphanum-gen 10)
           key (.getBytes "Key")
           value (.getBytes "Sent from Java")]
-      (Producer/send "with-byte-array-producer" kafka-topic key value)
+      (Producer/send ":with-byte-array-producer" kafka-topic key value)
       (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived
                     (getConsumerConfigForKeyAndValueOfTypeByteArray) kafka-topic 1 2000)]
         (is (= "Key" (String. (.key (.get result 0)))))
@@ -81,7 +81,7 @@
           kafka-topic  (gen/generate alphanum-gen 10)
           key "Key"
           value (.getBytes "Sent from Java")]
-      (Producer/send "with-diff-key-val-type-producer" kafka-topic key value)
+      (Producer/send ":with-diff-key-val-type-producer" kafka-topic key value)
       (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived
                     (getConsumerConfigForStringTypeKeyAndByteArrayTypeValue) kafka-topic 1 2000)]
         (is (= "Key" (.key (.get result 0))))
