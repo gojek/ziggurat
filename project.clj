@@ -44,7 +44,7 @@
             "run-junit"                  ["do" "clean," "install," "with-profile" "test" "junit"]}
             ;"test-with-junit"            ["do" "clean," "test," "install," "with-profile" "test" "junit"]
             ;"test-all-with-junit"        ["do" "clean," "test-all," "install," "with-profile" "test" "junit"]}
-  :aot :all
+  :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.return-vals]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
@@ -60,7 +60,6 @@
                                       [lein-junit "1.1.9"]]
                        :junit ["test"]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]
-                       :aot :all
                        :java-source-paths ["src/com", "test/tech"]}
              :dev     {:plugins  [[lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
