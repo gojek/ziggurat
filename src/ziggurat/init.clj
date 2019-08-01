@@ -16,7 +16,7 @@
             [ziggurat.java.utils.ziggurat-util :as util])
   (:gen-class
    :name tech.gojek.ziggurat.Init
-   :methods [^{:static true} [zigguratMain [java.util.Map] void]]))
+   :methods [^{:static true} [initJava [clojure.lang.APersistentMap] void]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -192,7 +192,6 @@
        (stop stop-fn modes)
        (System/exit 1)))))
 
-(defn -zigguratMain [args-in-java-hash-map]
-  (let [main-args (util/create-clojure-hash-map args-in-java-hash-map)]
-    (main main-args)))
+(defn -initJava [args]
+  (main args))
 

@@ -50,15 +50,12 @@
    (fn [map entry]
      (let [key (.getKey entry)
            value (.getValue entry)]
-         (cond (instance? Map value)                (assoc map (get-key key) (create-clojure-hash-map value))
-               (instance? java.lang.Iterable value) (assoc map (get-key key) (create-clojure-vector value))
-               (is-java-array? value)               (assoc map (get-key key) (create-clojure-vector-from-array value))
-               :else                                (assoc map (get-key key) value))))
+       (cond (instance? Map value)                (assoc map (get-key key) (create-clojure-hash-map value))
+             (instance? java.lang.Iterable value) (assoc map (get-key key) (create-clojure-vector value))
+             (is-java-array? value)               (assoc map (get-key key) (create-clojure-vector-from-array value))
+             :else                                (assoc map (get-key key) value))))
    (hash-map)
    (.toArray (.entrySet java-map))))
-
-
-
 
 (defn -createClojureHashMap
   [java-map]
