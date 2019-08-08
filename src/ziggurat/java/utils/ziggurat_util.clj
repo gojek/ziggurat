@@ -3,7 +3,9 @@
   (:import (java.util Map Arrays))
   (:gen-class
    :name tech.gojek.ziggurat.ZigguratUtil
-   :methods [^{:static true} [createClojureHashMap [java.util.Map] clojure.lang.APersistentMap]]))
+   :methods [^{:static true} [createClojureHashMap [java.util.Map] clojure.lang.APersistentMap]
+             ^{:static true} [createClojureList [java.lang.Iterable] clojure.lang.APersistentVector]
+             ^{:static true} [createClojureListFromArray ["[Ljava.lang.Object;"] clojure.lang.APersistentVector]]))
 
 (declare create-clojure-hash-map)
 (declare create-clojure-vector)
@@ -16,12 +18,12 @@
 (defn create-clojure-vector
   [^java.lang.Iterable java-list]
   (let [cloj-seq (seq java-list)]
-    (map (fn [x]
-           (cond
-             (instance? java.util.Map x) (create-clojure-hash-map x)
-             (instance? java.lang.Iterable x) (create-clojure-vector x)
-             :else x))
-         cloj-seq)))
+    (vec (map (fn [x]
+                (cond
+                  (instance? java.util.Map x) (create-clojure-hash-map x)
+                  (instance? java.lang.Iterable x) (create-clojure-vector x)
+                  :else x))
+              cloj-seq))))
 
 (defn create-clojure-vector-from-array
   [java-array]
@@ -60,3 +62,11 @@
 (defn -createClojureHashMap
   [java-map]
   (create-clojure-hash-map java-map))
+
+(defn -createClojureList
+  [java-list]
+  (create-clojure-vector java-list))
+
+(defn -createClojureListFromArray
+  [java-array]
+  (create-clojure-vector-from-array java-array))

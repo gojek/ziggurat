@@ -33,8 +33,8 @@
             java-array-val (get val-hash-map "third")
             inner-val-fourth (get val-hash-map "fourth")]
         (is (= "first value" inner-val))
-        (is (seq? java-iterable-val))
-        (is (seq? java-array-val))
+        (is (vector? java-iterable-val))
+        (is (vector? java-array-val))
         (is (= "just-another-value" inner-val-fourth))))))
 
 (defn ultra-simple-java-hash-map []
@@ -50,12 +50,12 @@
 
 (deftest converts-java-list-to-clojure-vector-test
   (testing "Should convert a complex java list to a clojure vector"
-    (let [clojure-vector (doall (create-clojure-vector (create-complex-java-list)))
+    (let [clojure-vector (create-clojure-vector (create-complex-java-list))
           first (first clojure-vector)
           second (doall (second clojure-vector))
           third (nth clojure-vector 2)]
       (is (= "ping" first))
-      (is (and (seq? second) (some #(= % "123") second)))
+      (is (and (vector? second) (some #(= % "123") second)))
       (is (and (map? third) (= "first value" (get third "first-key")))))))
 
 

@@ -6,8 +6,7 @@
   (:gen-class
    :name tech.gojek.ziggurat.Config
    :methods [^{:static true} [get [clojure.lang.Keyword] Object]
-             ^{:static true} [getIn [java.lang.Iterable] Object]
-             ^{:static true} [getIn ["[Ljava.lang.String;"] Object]]))
+             ^{:static true} [get [clojure.lang.APersistentVector] Object]]))
 
 (def config-file "config.edn")
 
@@ -81,13 +80,9 @@
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
 
-(defn- list-of-keywords [java-list]
-  (map keyword (seq java-list)))
+(defn -get [^clojure.lang.APersistentVector keys]
+  (get-in config keys))
 
-(defn -getIn [keys]
-  (let [keys-in-seq (list-of-keywords keys)]
-    (get-in config keys-in-seq)))
-
-(defn -get [key]
-  (-getIn [key]))
+(defn -get [^clojure.lang.Keyword key]
+  (get-in config [key]))
 
