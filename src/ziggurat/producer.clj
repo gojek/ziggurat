@@ -48,12 +48,12 @@
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
             [ziggurat.java.utils.ziggurat-util :refer [get-key]])
-  (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
-           (java.util Properties))
+  (:import  (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
+            (java.util Properties))
   (:gen-class
    :name tech.gojek.ziggurat.Producer
-   :methods  [^{:static true} [send [String String Object Object] void]
-              ^{:static true} [send [String String int Object Object] void]]))
+   :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
+              ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
 (defn- producer-properties-from-config [{:keys [bootstrap-servers
                                                 acks

@@ -6,7 +6,7 @@
             [ziggurat.config :refer [ziggurat-config]])
   (:gen-class
    :name tech.gojek.ziggurat.Sentry
-   :methods [^{:static true} [reportError [Throwable String] void]]))
+   :methods [^{:static true} [reportError [Throwable String] java.util.concurrent.Future]]))
 
 (defn create-sentry-reporter []
   (let [sentry-config (merge (:sentry (ziggurat-config))
