@@ -1,10 +1,16 @@
-(ns tech.gojek.ziggurat.ziggurat-util-test
+(ns ziggurat.util.java-util-test
   (:require [clojure.test :refer :all]
             [ziggurat.java.utils.ziggurat-util :refer :all]))
 
 (defn- create-java-list []
   (doto (new java.util.ArrayList)
     (.add "123")))
+
+(defn- create-java-list-of-strings []
+  (doto (new java.util.ArrayList)
+    (.add "a")
+    (.add "b")
+    (.add "c")))
 
 (defn- create-java-array []
   (into-array String ["Hello" "World" "!!!"]))
@@ -57,6 +63,12 @@
       (is (= "ping" first))
       (is (and (vector? second) (some #(= % "123") second)))
       (is (and (map? third) (= "first value" (get third "first-key")))))))
+
+(deftest creates-a-list-of-keywords-from-java-list
+  (testing "Should create a list of Clojure keywords from a Java list of strings"
+    (let [java-list (list-of-keywords (create-java-list-of-strings))
+          expected-list '(:a :b :c)]
+      (is (= expected-list java-list)))))
 
 
 

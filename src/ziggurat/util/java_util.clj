@@ -1,11 +1,6 @@
-(ns ziggurat.java.utils.ziggurat-util
+(ns ziggurat.util.java-util
   (:require [clojure.string :as str])
-  (:import (java.util Map Arrays))
-  (:gen-class
-   :name tech.gojek.ziggurat.ZigguratUtil
-   :methods [^{:static true} [createClojureHashMap [java.util.Map] clojure.lang.APersistentMap]
-             ^{:static true} [createClojureList [java.lang.Iterable] clojure.lang.APersistentVector]
-             ^{:static true} [createClojureListFromArray ["[Ljava.lang.Object;"] clojure.lang.APersistentVector]]))
+  (:import (java.util Map Arrays)))
 
 (declare create-clojure-hash-map)
 (declare create-clojure-vector)
@@ -34,6 +29,10 @@
   (if (str/starts-with? key ":")
     (keyword (subs key 1))
     key))
+
+(defn list-of-keywords
+  [keys]
+  (map keyword (seq keys)))
 
 (defn create-clojure-hash-map [^Map java-map]
   "A util method for converting a Java HashMap (Map) to a clojure hash-map.

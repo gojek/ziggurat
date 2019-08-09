@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [ziggurat.config :refer :all]
             [mount.core :as mount]
-            [clonfig.core :as clonfig]))
+            [clonfig.core :as clonfig]) (:import (java.util ArrayList)))
 
 (deftest config-from-env-test
   (testing "calls clonfig"
@@ -68,3 +68,16 @@
         (mount/start #'config)
         (is (= (-> config-values-from-env :ziggurat :stream-router topic-entity :channels channel :retry)
                (channel-retry-config topic-entity channel)))))))
+
+(deftest java-config-get-test
+  (testing ""
+    (let [mocked-config {:a "Apple"
+                         :m {:b "Bell"
+                             :n {:c "Cat"}}}
+          config-keys-list (doto (ArrayList.)
+                             (.add "m")
+                             (.add "b"))]
+      (with-redefs [config-from-env (constantly mocked-config)]
+        (mount/start #'config)
+        (is (= "Bell" (-getIn config-keys-list)))
+        (is (= "Apple" (-get "a")))))))
