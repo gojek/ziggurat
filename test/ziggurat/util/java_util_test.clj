@@ -1,6 +1,6 @@
 (ns ziggurat.util.java-util-test
   (:require [clojure.test :refer :all]
-            [ziggurat.java.utils.ziggurat-util :refer :all]))
+            [ziggurat.util.java-util :refer :all]))
 
 (defn- create-java-list []
   (doto (new java.util.ArrayList)

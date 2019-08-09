@@ -57,15 +57,3 @@
              :else                                (assoc map (get-key key) value))))
    (hash-map)
    (.toArray (.entrySet java-map))))
-
-(defn -createClojureHashMap
-  [java-map]
-  (create-clojure-hash-map java-map))
-
-(defn -createClojureList
-  [java-list]
-  (create-clojure-vector java-list))
-
-(defn -createClojureListFromArray
-  [java-array]
-  (create-clojure-vector-from-array java-array))

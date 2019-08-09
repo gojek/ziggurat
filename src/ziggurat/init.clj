@@ -13,10 +13,10 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
-            [ziggurat.java.utils.ziggurat-util :as util])
+            [ziggurat.util.java-util :as util])
   (:gen-class
    :name tech.gojek.ziggurat.Init
-   :methods [^{:static true} [initJava [clojure.lang.APersistentMap] void]]))
+   :methods [^{:static true} [initJava [java.util.Map] void]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -193,5 +193,4 @@
        (System/exit 1)))))
 
 (defn -initJava [args]
-  (main args))
-
+  (main (util/create-clojure-hash-map args)))

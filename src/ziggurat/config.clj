@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clonfig.core :as clonfig]
             [mount.core :refer [defstate]]
-            [ziggurat.java.utils.ziggurat-util :as util])
+            [ziggurat.util.java-util :as util])
   (:gen-class
    :name tech.gojek.ziggurat.Config
    :methods [^{:static true} [get [String] Object]

@@ -47,7 +47,7 @@
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
-            [ziggurat.java.utils.ziggurat-util :refer [get-key]])
+            [ziggurat.util.java-util :refer [get-key]])
   (:import  (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
             (java.util Properties))
   (:gen-class

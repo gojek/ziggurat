@@ -67,7 +67,8 @@
       (with-redefs [config-from-env (fn [_] config-values-from-env)]
         (mount/start #'config)
         (is (= (-> config-values-from-env :ziggurat :stream-router topic-entity :channels channel :retry)
-               (channel-retry-config topic-entity channel)))))))
+               (channel-retry-config topic-entity channel)))
+        (mount/stop)))))
 
 (deftest java-config-get-test
   (testing ""
@@ -80,4 +81,5 @@
       (with-redefs [config-from-env (constantly mocked-config)]
         (mount/start #'config)
         (is (= "Bell" (-getIn config-keys-list)))
-        (is (= "Apple" (-get "a")))))))
+        (is (= "Apple" (-get "a")))
+        (mount/stop)))))

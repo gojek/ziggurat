@@ -40,11 +40,8 @@
                                       :sign-releases false}]]
   :java-source-paths ["src/com"]
   :aliases {"test-all"                   ["with-profile" "default:+1.8:+1.9" "test"]
-            "code-coverage"              ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]
-            "run-junit"                  ["do" "clean," "install," "with-profile" "test" "junit"]}
-            ;"test-with-junit"            ["do" "clean," "test," "install," "with-profile" "test" "junit"]
-            ;"test-all-with-junit"        ["do" "clean," "test-all," "install," "with-profile" "test" "junit"]}
-  :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.return-vals]
+            "code-coverage"              ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
+  :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
@@ -58,9 +55,7 @@
                                       [tech.gojek/ziggurat-test-utils "1.0.0-SNAPSHOT" :scope "test" :exclusions [tech.gojek/ziggurat]]]
                        :plugins      [[lein-cloverage "1.0.13"]
                                       [lein-junit "1.1.9"]]
-                       :junit ["test"]
-                       :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]
-                       :java-source-paths ["src/com", "test/tech"]}
+                       :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins  [[lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
                                   [lein-kibit "0.1.6"]]}
