@@ -51,10 +51,8 @@
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
                                       [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
-                                      [org.clojure/test.check "0.9.0"]
-                                      [tech.gojek/ziggurat-test-utils "1.0.0-SNAPSHOT" :scope "test" :exclusions [tech.gojek/ziggurat]]]
-                       :plugins      [[lein-cloverage "1.0.13"]
-                                      [lein-junit "1.1.9"]]
+                                      [org.clojure/test.check "0.9.0"]]
+                       :plugins      [[lein-cloverage "1.0.13"]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins  [[lein-cljfmt "0.6.3"]
                                   [lein-cloverage "1.0.13"]
