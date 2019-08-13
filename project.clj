@@ -41,7 +41,7 @@
   :java-source-paths ["src/com"]
   :aliases {"test-all"                   ["with-profile" "default:+1.8:+1.9" "test"]
             "code-coverage"              ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
-  :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics]
+  :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.fixtures]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
