@@ -51,7 +51,7 @@
   (:import  (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
             (java.util Properties))
   (:gen-class
-   :name tech.gojek.ziggurat.Producer
+   :name tech.gojek.ziggurat.internal.Producer
    :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
               ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 

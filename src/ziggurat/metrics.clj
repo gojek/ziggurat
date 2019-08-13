@@ -8,7 +8,7 @@
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
            java.util.concurrent.TimeUnit)
   (:gen-class
-   :name tech.gojek.ziggurat.Metrics
+   :name tech.gojek.ziggurat.internal.Metrics
    :methods [^{:static true} [incrementCount [String String] void]
              ^{:static true} [incrementCount ["[Ljava.lang.String;" String "[Ljava.lang.String;"] void]
              ^{:static true} [decrementCount [String String] void]

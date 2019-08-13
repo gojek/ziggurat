@@ -5,7 +5,7 @@
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]])
   (:gen-class
-   :name tech.gojek.ziggurat.Sentry
+   :name tech.gojek.ziggurat.internal.Sentry
    :methods [^{:static true} [reportError [Throwable String] java.util.concurrent.Future]]))
 
 (defn create-sentry-reporter []

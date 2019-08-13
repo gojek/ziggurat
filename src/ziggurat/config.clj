@@ -5,7 +5,7 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:gen-class
-   :name tech.gojek.ziggurat.Config
+   :name tech.gojek.ziggurat.internal.Config
    :methods [^{:static true} [get [String] Object]
              ^{:static true} [getIn [java.lang.Iterable] Object]]))
 

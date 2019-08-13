@@ -16,10 +16,10 @@
            (org.apache.kafka.clients.producer ProducerConfig)
            (org.apache.kafka.clients.consumer ConsumerConfig))
   (:gen-class
-   :name tech.gojek.ziggurat.test.Fixtures
+   :name tech.gojek.ziggurat.internal.test.Fixtures
    :methods [^{:static true} [mountConfig [] void]
-                ^{:static true} [mountProducer [] void]
-                ^{:static true} [unmountAll [] void]]))
+             ^{:static true} [mountProducer [] void]
+             ^{:static true} [unmountAll [] void]]))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
@@ -130,13 +130,13 @@
   (mount/stop))
 
 (defn unmount-all []
-      (mount/stop))
+  (mount/stop))
 
 (defn -mountConfig []
-      (mount-config))
+  (mount-config))
 
 (defn -mountProducer []
-      (mount-producer))
+  (mount-producer))
 
 (defn -unmountAll []
-      (unmount-all))
+  (unmount-all))

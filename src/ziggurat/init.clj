@@ -15,7 +15,7 @@
             [ziggurat.streams :as streams]
             [ziggurat.util.java-util :as util])
   (:gen-class
-   :name tech.gojek.ziggurat.Init
+   :name tech.gojek.ziggurat.internal.Init
    :methods [^{:static true} [initJava [java.util.Map] void]]))
 
 (defstate statsd-reporter
