@@ -1,8 +1,9 @@
 (ns ziggurat.util.java-util
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [clojure.walk :refer [stringify-keys postwalk]])
   (:import (java.util Map Arrays)))
 
-(declare create-clojure-hash-map)
+(declare java->clojure-map)
 (declare create-clojure-vector)
 (declare create-clojure-vector-from-array)
 
@@ -15,7 +16,7 @@
   (let [cloj-seq (seq java-list)]
     (vec (map (fn [x]
                 (cond
-                  (instance? java.util.Map x) (create-clojure-hash-map x)
+                  (instance? java.util.Map x) (java->clojure-map x)
                   (instance? java.lang.Iterable x) (create-clojure-vector x)
                   :else x))
               cloj-seq))))
@@ -34,7 +35,7 @@
   [keys]
   (map keyword (seq keys)))
 
-(defn create-clojure-hash-map [^Map java-map]
+(defn java->clojure-map [^Map java-map]
   "A util method for converting a Java HashMap (Map) to a clojure hash-map.
    This but can be used to convert any Java HashMap where following
    are required:
@@ -51,9 +52,18 @@
    (fn [map entry]
      (let [key (.getKey entry)
            value (.getValue entry)]
-       (cond (instance? Map value)                (assoc map (get-key key) (create-clojure-hash-map value))
+       (cond (instance? Map value)                (assoc map (get-key key) (java->clojure-map value))
              (instance? java.lang.Iterable value) (assoc map (get-key key) (create-clojure-vector value))
              (is-java-array? value)               (assoc map (get-key key) (create-clojure-vector-from-array value))
              :else                                (assoc map (get-key key) value))))
    (hash-map)
    (.toArray (.entrySet java-map))))
+
+(defn clojure->java-map [clojure-map]
+  "A util method to convert nested clojure.lang.PersistentArrayMap (or clojure.lang.PersistentHashMap to java.util.HashMap. It only converts a map and does not affect lists and vectors."
+  (let [string-keys-map (stringify-keys clojure-map)]
+    (postwalk (fn [value]
+                (if (map? value)
+                  (java.util.HashMap. value)
+                  value))
+              string-keys-map)))

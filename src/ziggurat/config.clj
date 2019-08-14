@@ -81,9 +81,16 @@
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
 
+(defn- construct-java-response [config-vals]
+  (if (map? config-vals)
+    (util/clojure->java-map config-vals)
+    config-vals))
+
 (defn -getIn [^java.lang.Iterable keys]
-  (get-in config (util/list-of-keywords keys)))
+  (let [config-vals (get-in config (util/list-of-keywords keys))]
+    (construct-java-response config-vals)))
 
 (defn -get [^String key]
-  (get config (keyword key)))
+  (let [config-vals (get config (keyword key))]
+    (construct-java-response config-vals)))
 

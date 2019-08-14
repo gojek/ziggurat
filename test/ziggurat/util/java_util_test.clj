@@ -29,7 +29,7 @@
 
 (deftest creates-stream-routes-map-test
   (testing "Should construct a clojure hash-map for stream routes from a Java HashMap"
-    (let [clojure-hash-map (create-clojure-hash-map (java-hash-map-with-a-hash-map))
+    (let [clojure-hash-map (java->clojure-map (java-hash-map-with-a-hash-map))
           val (:keyword clojure-hash-map)
           val-hash-map (get clojure-hash-map "string-key")]
       (is (= "value" val))
@@ -69,6 +69,18 @@
     (let [java-list (list-of-keywords (create-java-list-of-strings))
           expected-list '(:a :b :c)]
       (is (= expected-list java-list)))))
+
+(deftest clojure->java-map-test
+  (testing "It returns a java HashMap when a nested clojure map is passed to it"
+    (let [clojure-map {:a 1
+                       :b {:c {:d 123}}
+                       :c '(1 2 3)
+                       123 "abcd"}
+          java-map   (clojure->java-map clojure-map)]
+      (is (instance? java.util.HashMap java-map))
+      (is (instance? java.util.HashMap (.get (.get java-map "b") "c")))
+      (is (instance? java.lang.String (.get java-map 123)))
+      (is (instance? clojure.lang.PersistentList (.get java-map "c"))))))
 
 
 

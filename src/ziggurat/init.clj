@@ -193,4 +193,4 @@
        (System/exit 1)))))
 
 (defn -initJava [args]
-  (main (util/create-clojure-hash-map args)))
+  (main (util/java->clojure-map args)))
