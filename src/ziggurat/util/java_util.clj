@@ -13,12 +13,13 @@
 
 (defn java-list->clojure-vector
   [^java.lang.Iterable java-list]
-  (postwalk (fn [element]
-              (cond
-                (instance? java.util.Map element) (java->clojure-map element)
-                (instance? java.lang.Iterable element) (vec (seq element))
-                :else element))
-            (vec (seq java-list))))
+  (let [cloj-seq (seq java-list)]
+    (vec (map (fn [x]
+                (cond
+                  (instance? java.util.Map x) (java->clojure-map x)
+                  (instance? java.lang.Iterable x) (java-list->clojure-vector x)
+                  :else x))
+              cloj-seq))))
 
 (defn java-array->clojure-vector
   [java-array]

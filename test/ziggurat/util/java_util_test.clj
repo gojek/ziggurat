@@ -19,7 +19,7 @@
   (doto (new java.util.HashMap)
     (.put ":first" "first value")
     (.put ":second" (create-java-list))
-    (.put "third"  (create-java-array))
+    (.put "third" (create-java-array))
     (.put "fourth" "just-another-value")))
 
 (defn- create-fn-which-returns-java-map []
@@ -43,7 +43,9 @@
   (doto (new java.util.ArrayList)
     (.add "ping")
     (.add (create-java-list))
-    (.add (ultra-simple-java-hash-map))))
+    (.add (ultra-simple-java-hash-map))
+    (.add (doto (java.util.ArrayList.)
+            (.add (create-java-list))))))
 
 (defn- verify-that-simple-java-map-is-a-clojure-map
   [map]
@@ -73,10 +75,12 @@
     (let [clojure-vector (java-list->clojure-vector (create-complex-java-list))
           first (first clojure-vector)
           second (doall (second clojure-vector))
-          third (nth clojure-vector 2)]
+          third (nth clojure-vector 2)
+          fourth (nth clojure-vector 3)]
       (is (= "ping" first))
       (is (and (vector? second) (some #(= % "123") second)))
-      (is (and (map? third) (= "first value" (get third "first-key")))))))
+      (is (and (map? third) (= "first value" (get third "first-key"))))
+      (is (and (vector? fourth) (vector? (nth fourth 0)) (some #(= % "123") (nth fourth 0)))))))
 
 (deftest creates-a-list-of-keywords-from-java-list
   (testing "Should create a list of Clojure keywords from a Java list of strings"
@@ -86,11 +90,11 @@
 
 (deftest clojure->java-map-test
   (testing "It returns a java HashMap when a nested clojure map is passed to it"
-    (let [clojure-map {:a 1
-                       :b {:c {:d 123}}
-                       :c '(1 2 3)
+    (let [clojure-map {:a  1
+                       :b  {:c {:d 123}}
+                       :c  '(1 2 3)
                        123 "abcd"}
-          java-map   (clojure->java-map clojure-map)]
+          java-map (clojure->java-map clojure-map)]
       (is (instance? java.util.HashMap java-map))
       (is (instance? java.util.HashMap (.get (.get java-map "b") "c")))
       (is (instance? java.lang.String (.get java-map 123)))
