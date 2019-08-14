@@ -35,25 +35,40 @@
   [keys]
   (map keyword (seq keys)))
 
-(defn java->clojure-map [^Map java-map]
+(defn output-transformer-fn
+  "This function returns a function which transforms the output of the provided
+   function `func`, if the output is an instance of `java.util.Map`."
+  [func]
+  (fn [& args]
+    (let [result (apply func args)]
+      (if (instance? Map result)
+          (java->clojure-map result)
+          result))))
+
+(defn java->clojure-map
   "A util method for converting a Java HashMap (Map) to a clojure hash-map.
    This but can be used to convert any Java HashMap where following
    are required:
-     1) Some inner value of type `java.util.Map` need to be
+     1) An inner value of type `java.util.Map` need to be
         converted to Clojure's hash-map (or `clojure.lang.APersistentMap`).
-     2) Some inner value which either is a Java Array or extends
+     2) An inner value which either is a Java Array or extends
         `java.lang.Iterable` (e.g. ArraLists, HashSets) need to
         be converted to Clojure sequences.
+     3) An inner value which is a Clojure function but returns a java.util.Map
+        as output. This method will wrap the function using `output-transformer-fn`
+        to return the output as a clojure map.
 
    It supports conversion of Java Maps to Clojure's `APersistent` type;
    and Java Lists and Arrays or anything which extends `java.lang.Iterable`
    to clojure's PersistentVector type."
+  [^Map java-map]
   (reduce
    (fn [map entry]
      (let [key (.getKey entry)
            value (.getValue entry)]
        (cond (instance? Map value)                (assoc map (get-key key) (java->clojure-map value))
              (instance? java.lang.Iterable value) (assoc map (get-key key) (create-clojure-vector value))
+             (instance? clojure.lang.IFn value)   (assoc map (get-key key) (output-transformer-fn value))
              (is-java-array? value)               (assoc map (get-key key) (create-clojure-vector-from-array value))
              :else                                (assoc map (get-key key) value))))
    (hash-map)
