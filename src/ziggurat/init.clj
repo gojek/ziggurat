@@ -16,7 +16,7 @@
             [ziggurat.util.java-util :as util])
   (:gen-class
    :name tech.gojek.ziggurat.internal.Init
-   :methods [^{:static true} [initJava [java.util.Map] void]]))
+   :methods [^{:static true} [init [java.util.Map] void]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -192,5 +192,5 @@
        (stop stop-fn modes)
        (System/exit 1)))))
 
-(defn -initJava [args]
+(defn -init [args]
   (main (util/java->clojure-map args)))
