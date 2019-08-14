@@ -2,7 +2,8 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [clojure.walk :refer [stringify-keys]]
-            [ziggurat.config :refer [ziggurat-config]])
+            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.util.java-util :as util])
   (:import com.gojek.metrics.datadog.DatadogReporter
            [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
@@ -10,11 +11,11 @@
   (:gen-class
    :name tech.gojek.ziggurat.internal.Metrics
    :methods [^{:static true} [incrementCount [String String] void]
-             ^{:static true} [incrementCount ["[Ljava.lang.String;" String "[Ljava.lang.String;"] void]
+             ^{:static true} [incrementCount ["[Ljava.lang.String;" String java.util.Map] void]
              ^{:static true} [decrementCount [String String] void]
-             ^{:static true} [decrementCount ["[Ljava.lang.String;" String "[Ljava.lang.String;"] void]
-             ^{:static true} [reportTime     ["[Ljava.lang.String;" Long] void]
-             ^{:static true} [reportTime     ["[Ljava.lang.String;" Long "[Ljava.lang.String;"] void]]))
+             ^{:static true} [decrementCount ["[Ljava.lang.String;" String java.util.Map] void]
+             ^{:static true} [reportTime     ["[Ljava.lang.String;" long] void]
+             ^{:static true} [reportTime     ["[Ljava.lang.String;" long java.util.Map] void]]))
 
 (defonce metrics-registry
   (MetricRegistry.))
@@ -104,16 +105,16 @@
   ([metric-namespace metric]
    (increment-count metric-namespace metric))
   ([metric-namespaces metric additional-tags]
-   (increment-count (seq metric-namespaces) metric (seq additional-tags))))
+   (increment-count (seq metric-namespaces) metric (util/create-clojure-hash-map additional-tags))))
 
 (defn -decrementCount
   ([metric-namespace metric]
    (decrement-count metric-namespace metric))
   ([metric-namespaces metric additional-tags]
-   (decrement-count (seq metric-namespaces) metric (seq additional-tags))))
+   (decrement-count (seq metric-namespaces) metric (util/create-clojure-hash-map additional-tags))))
 
 (defn -reportTime
   ([metric-namespace time-val]
    (report-time metric-namespace time-val))
   ([metric-namespaces time-val additional-tags]
-   (report-time (seq metric-namespaces) time-val (seq additional-tags))))
+   (report-time (seq metric-namespaces) time-val (util/create-clojure-hash-map additional-tags))))
