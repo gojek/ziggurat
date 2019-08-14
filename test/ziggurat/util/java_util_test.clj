@@ -52,25 +52,25 @@
         java-iterable-val (:second map)
         java-array-val (get map "third")
         inner-val-fourth (get map "fourth")]
-  (is (= "first value" inner-val))
-  (is (vector? java-iterable-val))
-  (is (vector? java-array-val))
-  (is (= "just-another-value" inner-val-fourth))))
+    (is (= "first value" inner-val))
+    (is (vector? java-iterable-val))
+    (is (vector? java-array-val))
+    (is (= "just-another-value" inner-val-fourth))))
 
 (deftest creates-stream-routes-map-test
   (testing "Should construct a clojure hash-map for stream routes from a Java HashMap"
     (with-redefs [output-transformer-fn (constantly "output-fn-transformer was called")]
-    (let [clojure-hash-map (java->clojure-map (complex-java-hash-map))
-          val (:keyword clojure-hash-map)
-          hash-map-val (get clojure-hash-map "string-key")
-          func-val (get clojure-hash-map "func")]
-      (is (= "value" val))
-      (is (= "output-fn-transformer was called" func-val))
-      (verify-that-simple-java-map-is-a-clojure-map hash-map-val)))))
+      (let [clojure-hash-map (java->clojure-map (complex-java-hash-map))
+            val (:keyword clojure-hash-map)
+            hash-map-val (get clojure-hash-map "string-key")
+            func-val (get clojure-hash-map "func")]
+        (is (= "value" val))
+        (is (= "output-fn-transformer was called" func-val))
+        (verify-that-simple-java-map-is-a-clojure-map hash-map-val)))))
 
 (deftest converts-java-list-to-clojure-vector-test
   (testing "Should convert a complex java list to a clojure vector"
-    (let [clojure-vector (create-clojure-vector (create-complex-java-list))
+    (let [clojure-vector (java-list->clojure-vector (create-complex-java-list))
           first (first clojure-vector)
           second (doall (second clojure-vector))
           third (nth clojure-vector 2)]

@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [ziggurat.config :refer :all]
             [mount.core :as mount]
-            [clonfig.core :as clonfig]) (:import (java.util ArrayList)))
+            [clonfig.core :as clonfig])
+  (:import (java.util ArrayList)))
 
 (deftest config-from-env-test
   (testing "calls clonfig"

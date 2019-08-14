@@ -11,19 +11,18 @@
   [array]
   (str/starts-with? (.getName (.getClass array)) "["))
 
-(defn create-clojure-vector
+(defn java-list->clojure-vector
   [^java.lang.Iterable java-list]
-  (let [cloj-seq (seq java-list)]
-    (vec (map (fn [x]
-                (cond
-                  (instance? java.util.Map x) (java->clojure-map x)
-                  (instance? java.lang.Iterable x) (create-clojure-vector x)
-                  :else x))
-              cloj-seq))))
+  (postwalk (fn [element]
+              (cond
+                (instance? java.util.Map element) (java->clojure-map element)
+                (instance? java.lang.Iterable element) (vec (seq element))
+                :else element))
+            (vec (seq java-list))))
 
-(defn create-clojure-vector-from-array
+(defn java-array->clojure-vector
   [java-array]
-  (create-clojure-vector (Arrays/asList java-array)))
+  (java-list->clojure-vector (Arrays/asList java-array)))
 
 (defn get-key
   [key]
@@ -42,8 +41,8 @@
   (fn [& args]
     (let [result (apply func args)]
       (if (instance? Map result)
-          (java->clojure-map result)
-          result))))
+        (java->clojure-map result)
+        result))))
 
 (defn java->clojure-map
   "A util method for converting a Java HashMap (Map) to a clojure hash-map.
@@ -67,9 +66,9 @@
      (let [key (.getKey entry)
            value (.getValue entry)]
        (cond (instance? Map value)                (assoc map (get-key key) (java->clojure-map value))
-             (instance? java.lang.Iterable value) (assoc map (get-key key) (create-clojure-vector value))
+             (instance? java.lang.Iterable value) (assoc map (get-key key) (java-list->clojure-vector value))
              (instance? clojure.lang.IFn value)   (assoc map (get-key key) (output-transformer-fn value))
-             (is-java-array? value)               (assoc map (get-key key) (create-clojure-vector-from-array value))
+             (is-java-array? value)               (assoc map (get-key key) (java-array->clojure-vector value))
              :else                                (assoc map (get-key key) value))))
    (hash-map)
    (.toArray (.entrySet java-map))))
