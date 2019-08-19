@@ -19,15 +19,17 @@
         message-payload                {:message {:foo "bar"} :topic-entity (keyword topic-entity)}
         expected-additional-tags       {:topic_name topic-entity}
         expected-metric-namespace      "message-processing"
-        expected-report-time-namespace "handler-fn-execution-time"]
+        expected-report-time-namespace "handler-fn-execution-time"
+        expected-n                     1]
     (testing "message process should be successful"
       (let [successfully-processed?     (atom false)
             successfully-reported-time? (atom false)
             expected-metric             "success"]
-        (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+        (with-redefs [metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                 (when (and (= metric-namespace expected-metric-namespace)
                                                            (= metric expected-metric)
-                                                           (= additional-tags expected-additional-tags))
+                                                           (= additional-tags expected-additional-tags)
+                                                           (= n expected-n))
                                                   (reset! successfully-processed? true)))
                       metrics/report-time     (fn [metric-namespace _ _]
                                                 (when (= metric-namespace expected-report-time-namespace)
@@ -40,10 +42,11 @@
       (fix/with-queues (assoc-in stream-routes [:default :channel-1] (constantly :success))
         (let [successfully-processed? (atom false)
               expected-metric         "success"]
-          (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                   (when (and (= metric-namespace expected-metric-namespace)
                                                              (= metric expected-metric)
-                                                             (= additional-tags expected-additional-tags))
+                                                             (= additional-tags expected-additional-tags)
+                                                             (= n expected-n))
                                                     (reset! successfully-processed? true)))]
             ((mapper-func (constantly :channel-1) [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
@@ -67,10 +70,11 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
-          (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                   (when (and (= metric-namespace expected-metric-namespace)
                                                              (= metric expected-metric)
-                                                             (= additional-tags expected-additional-tags))
+                                                             (= additional-tags expected-additional-tags)
+                                                             (= n expected-n))
                                                     (reset! unsuccessfully-processed? true)))]
             ((mapper-func (constantly :retry) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
@@ -84,10 +88,11 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        metrics/increment-count (fn [metric-namespace metric additional-tags]
+                        metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                   (when (and (= metric-namespace expected-metric-namespace)
                                                              (= metric expected-metric)
-                                                             (= additional-tags expected-additional-tags))
+                                                             (= additional-tags expected-additional-tags)
+                                                             (= n expected-n))
                                                     (reset! unsuccessfully-processed? true)))]
             ((mapper-func (fn [_] (throw (Exception. "test exception"))) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
@@ -117,14 +122,16 @@
                                     :topic-entity topic}
         expected-topic-entity-name (name topic)
         expected-additional-tags   {:topic_name expected-topic-entity-name :channel_name channel-name}
-        expected-metric-namespace  "message-processing"]
+        expected-metric-namespace  "message-processing"
+        expected-n                 1]
     (testing "message process should be successful"
       (let [successfully-processed? (atom false)
             expected-metric         "success"]
-        (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+        (with-redefs [metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                 (when (and (= metric-namespace expected-metric-namespace)
                                                            (= metric expected-metric)
-                                                           (= additional-tags expected-additional-tags))
+                                                           (= additional-tags expected-additional-tags)
+                                                           (= n expected-n))
                                                   (reset! successfully-processed? true)))]
           ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @successfully-processed?))))
@@ -135,10 +142,11 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
-          (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                   (when (and (= metric-namespace expected-metric-namespace)
                                                              (= metric expected-metric)
-                                                             (= additional-tags expected-additional-tags))
+                                                             (= additional-tags expected-additional-tags)
+                                                             (= n expected-n))
                                                     (reset! unsuccessfully-processed? true)))]
             ((channel-mapper-func (constantly :retry) channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
@@ -152,10 +160,11 @@
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        metrics/increment-count (fn [metric-namespace metric additional-tags]
+                        metrics/increment-count (fn [metric-namespace metric n additional-tags]
                                                   (when (and (= metric-namespace expected-metric-namespace)
                                                              (= metric expected-metric)
-                                                             (= additional-tags expected-additional-tags))
+                                                             (= additional-tags expected-additional-tags)
+                                                             (= n expected-n))
                                                     (reset! unsuccessfully-processed? true)))]
             ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]

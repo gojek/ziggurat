@@ -65,7 +65,7 @@
         additional-tags   {:topic_name topic-entity-name}
         default-namespace "message"
         metric            "read"]
-    (metrics/increment-count default-namespace metric additional-tags))
+    (metrics/increment-count default-namespace metric 1 additional-tags))
   message)
 
 (defn store-supplier-builder []

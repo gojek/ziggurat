@@ -26,7 +26,7 @@
               additional-tags   {:topic_name topic-entity-name}
               default-namespace "message-parsing"]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
-          (metrics/increment-count default-namespace "failed" additional-tags)
+          (metrics/increment-count default-namespace "failed" 1 additional-tags)
           nil)))
     message))
 
