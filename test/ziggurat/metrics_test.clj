@@ -47,7 +47,8 @@
 (deftest increment-count-test
   (let [metric                     "metric3"
         expected-topic-entity-name "expected-topic-entity-name"
-        input-additional-tags      {:topic_name expected-topic-entity-name}]
+        input-additional-tags      {:topic_name expected-topic-entity-name}
+        expected-n                 1]
     (testing "increases count on the meter - vector as an argument"
       (let [expected-metric-namespace ["metric" "ns"]
             mk-meter-args             (atom nil)
@@ -58,8 +59,36 @@
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric input-additional-tags)
-          (is (= 1 (.getCount meter)))
+          (metrics/increment-count expected-metric-namespace metric expected-n input-additional-tags)
+          (is (= expected-n (.getCount meter)))
+          (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-meter-args)))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "increases count on the meter - 3rd argument is a number"
+      (let [expected-metric-namespace ["metric" "ns"]
+            mk-meter-args             (atom nil)
+            meter                     (Meter.)
+            expected-additional-tags  {}]
+        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+                                         (is (= additional-tags expected-additional-tags))
+                                         (reset! mk-meter-args {:metric-namespace metric-namespace
+                                                                :metric           metric})
+                                         meter)]
+          (metrics/increment-count expected-metric-namespace metric expected-n)
+          (is (= expected-n (.getCount meter)))
+          (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-meter-args)))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "increases count on the meter - 3rd argument is a map"
+      (let [expected-metric-namespace ["metric" "ns"]
+            mk-meter-args             (atom nil)
+            meter                     (Meter.)
+            expected-additional-tags  {}]
+        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+                                         (is (= additional-tags expected-additional-tags))
+                                         (reset! mk-meter-args {:metric-namespace metric-namespace
+                                                                :metric           metric})
+                                         meter)]
+          (metrics/increment-count expected-metric-namespace metric expected-additional-tags)
+          (is (= expected-n (.getCount meter)))
           (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter - string as an argument"
@@ -72,36 +101,36 @@
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric            metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
-          (is (= 1 (.getCount meter)))
+          (metrics/increment-count expected-metric-namespaces metric expected-n input-additional-tags)
+          (is (= expected-n (.getCount meter)))
           (is (= expected-metric-namespaces (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter - w/o additional-tags argument"
       (let [expected-metric-namespace "metric-ns"
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  nil]
+            expected-additional-tags  {}]
         (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
           (metrics/increment-count expected-metric-namespace metric)
-          (is (= 1 (.getCount meter)))
+          (is (= expected-n (.getCount meter)))
           (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter when additional-tags is nil"
       (let [expected-metric-namespace "metric-ns"
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  nil]
+            expected-additional-tags  {}]
         (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric expected-additional-tags)
-          (is (= 1 (.getCount meter)))
+          (metrics/increment-count expected-metric-namespace metric expected-n expected-additional-tags)
+          (is (= expected-n (.getCount meter)))
           (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "-incrementCount calls increment-count with the correct arguments"
@@ -133,7 +162,8 @@
         metric                "metric3"
         mk-meter-args         (atom nil)
         meter                 (Meter.)
-        input-additional-tags {:topic_name expected-topic-name}]
+        input-additional-tags {:topic_name expected-topic-name}
+        expected-n            1]
     (testing "decreases count on the meter - vector as an argument"
       (let [expected-additional-tags  input-additional-tags
             expected-metric-namespace ["metric" "ns"]]
@@ -142,9 +172,9 @@
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric input-additional-tags)
-          (is (= 1 (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespace metric input-additional-tags)
+          (metrics/increment-count expected-metric-namespace metric expected-n input-additional-tags)
+          (is (= expected-n (.getCount meter)))
+          (metrics/decrement-count expected-metric-namespace metric expected-n input-additional-tags)
           (is (zero? (.getCount meter)))
           (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
@@ -156,9 +186,9 @@
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric            metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
-          (is (= 1 (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespaces metric input-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric expected-n input-additional-tags)
+          (is (= expected-n (.getCount meter)))
+          (metrics/decrement-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (zero? (.getCount meter)))
           (is (= expected-metric-namespaces (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
@@ -170,23 +200,23 @@
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric            metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespaces metric input-additional-tags)
-          (is (= 1 (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespaces metric input-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric expected-n input-additional-tags)
+          (is (= expected-n (.getCount meter)))
+          (metrics/decrement-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (zero? (.getCount meter)))
           (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter when additional-tags is nil"
-      (let [expected-additional-tags  nil
+      (let [expected-additional-tags  {}
             expected-metric-namespace "metric-ns"]
         (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric expected-additional-tags)
-          (is (= 1 (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespace metric expected-additional-tags)
+          (metrics/increment-count expected-metric-namespace metric expected-n expected-additional-tags)
+          (is (= expected-n (.getCount meter)))
+          (metrics/decrement-count expected-metric-namespace metric expected-n expected-additional-tags)
           (is (zero? (.getCount meter)))
           (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
