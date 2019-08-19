@@ -54,13 +54,25 @@
     (intercalate-dot metric-namespaces)
     (str (:app-name (ziggurat-config)) "." metric-namespaces)))
 
+(defn- get-v
+  [f d v]
+  (if (f v) v d))
+
+(def ^:private get-int (partial get-v number? 1))
+
+(def ^:private get-map (partial get-v map? {}))
+
 (defn- inc-or-dec-count
   ([sign metric-namespace metric]
-   (inc-or-dec-count sign metric-namespace metric nil))
-  ([sign metric-namespaces metric additional-tags]
-   (let [metric-namespace (get-metric-namespaces metric-namespaces)
-         meter            ^Meter (mk-meter metric-namespace metric (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
-     (.mark meter (sign 1)))))
+   (inc-or-dec-count sign metric-namespace metric 1 {}))
+  ([sign metric-namespace metric n-or-additional-tags]
+   (inc-or-dec-count sign metric-namespace metric (get-int n-or-additional-tags) (get-map n-or-additional-tags)))
+  ([sign metric-namespace metric n additional-tags]
+   (inc-or-dec-count sign {:metric-namespace metric-namespace :metric metric :n n :additional-tags additional-tags}))
+  ([sign {:keys [metric-namespace metric n additional-tags]}]
+   (let [metric-ns (get-metric-namespaces metric-namespace)
+         meter     ^Meter (mk-meter metric-ns metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
+     (.mark meter (sign (get-int n))))))
 
 (def increment-count (partial inc-or-dec-count +))
 
