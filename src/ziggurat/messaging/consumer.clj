@@ -39,41 +39,6 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
-(defn- try-consuming-dead-set-messages [ch ack? queue-name topic-entity]
-  (try
-    (let [[meta payload] (lb/get ch queue-name false)]
-      (when (some? payload)
-        (convert-and-ack-message ch meta payload ack? topic-entity)))
-    (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
-
-(defn- get-dead-set-messages*
-  "Get the n(count) messages from the rabbitmq.
-
-   If ack is set to true,
-   then ack all the messages while consuming and make them unavailable to other subscribers.
-
-   If ack is false,
-   it will not ack the message."
-  [ack? queue-name count topic-entity]
-  (remove nil?
-          (with-open [ch (lch/open connection)]
-            (doall (for [_ (range count)]
-                     (try-consuming-dead-set-messages ch ack? queue-name topic-entity))))))
-
-(defn get-dead-set-messages-for-topic [ack? topic-entity count]
-  (get-dead-set-messages* ack?
-                          (prefixed-queue-name topic-entity
-                                               (get-in-config [:rabbit-mq :dead-letter :queue-name]))
-                          count
-                          topic-entity))
-
-(defn get-dead-set-messages-for-channel [ack? topic-entity channel count]
-  (get-dead-set-messages* ack?
-                          (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name]))
-                          count
-                          topic-entity))
-
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
     (if-let [message (convert-and-ack-message ch meta payload true topic-entity)]

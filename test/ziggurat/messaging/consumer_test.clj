@@ -5,6 +5,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :refer :all]
+            [ziggurat.messaging.dead-set :as dead-set]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
             [ziggurat.util.rabbitmq :as util]))
@@ -16,48 +17,6 @@
    :topic-entity topic-entity})
 
 (def topic-entity :default)
-
-(deftest get-dead-set-messages-for-topic-test
-  (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
-    (testing "when ack is enabled, get the dead set messages and remove from dead set"
-      (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-        (let [count-of-messages 10
-              pushed-message    (doseq [_ (range count-of-messages)]
-                                  (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (get-dead-set-messages-for-topic true topic-entity count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (empty? (get-dead-set-messages-for-topic true topic-entity count-of-messages))))))
-
-    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-      (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-        (let [count-of-messages 10
-              pushed-message    (doseq [_ (range count-of-messages)]
-                                  (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
-
-(deftest get-dead-set-messages-from-channel-test
-  (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
-    (testing "when ack is enabled, get the dead set messages and remove from dead set"
-      (fix/with-queues {topic-entity {:handler-fn (constantly nil)
-                                      :channel-1  (constantly nil)}}
-        (let [count-of-messages 10
-              channel           "channel-1"
-              pushed-message    (doseq [_ (range count-of-messages)]
-                                  (producer/publish-to-channel-dead-queue channel message-payload))
-              dead-set-messages (get-dead-set-messages-for-channel true topic-entity channel count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (empty? (get-dead-set-messages-for-channel true topic-entity channel count-of-messages))))))
-
-    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-      (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-        (let [count-of-messages 10
-              pushed-message    (doseq [_ (range count-of-messages)]
-                                  (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom
@@ -165,13 +124,13 @@
             (producer/retry (gen-message-payload topic-entity)))
 
           (block-and-retry-until (fn []
-                                   (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
+                                   (let [dead-set-msgs (count (dead-set/get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
                                      (if (< dead-set-msgs no-of-msgs)
                                        (throw (ex-info "Dead set messages were never populated"
                                                        {:dead-set-msgs dead-set-msgs}))))))
 
           (is (= (* retry-count no-of-msgs) @retry-counter))
-          (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs)))))
+          (is (= no-of-msgs (count (dead-set/get-dead-set-messages-for-topic false topic-entity no-of-msgs)))))
         (util/close rmq-ch))))
 
   (testing "start subscribers should not call start-subscriber* when stream router is nil"
