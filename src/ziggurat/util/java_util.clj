@@ -3,7 +3,7 @@
             [clojure.walk :refer [stringify-keys postwalk]])
   (:import (java.util Map Arrays)))
 
-(declare java->clojure-map)
+(declare java-map->clojure-map)
 (declare create-clojure-vector)
 (declare create-clojure-vector-from-array)
 
@@ -16,7 +16,7 @@
   (let [cloj-seq (seq java-list)]
     (vec (map (fn [x]
                 (cond
-                  (instance? java.util.Map x) (java->clojure-map x)
+                  (instance? java.util.Map x) (java-map->clojure-map x)
                   (instance? java.lang.Iterable x) (java-list->clojure-vector x)
                   :else x))
               cloj-seq))))
@@ -42,10 +42,10 @@
   (fn [& args]
     (let [result (apply func args)]
       (if (instance? Map result)
-        (java->clojure-map result)
+        (java-map->clojure-map result)
         result))))
 
-(defn java->clojure-map
+(defn java-map->clojure-map
   "A util method for converting a Java HashMap (Map) to a clojure hash-map.
    This but can be used to convert any Java HashMap where following
    are required:
@@ -66,7 +66,7 @@
    (fn [map entry]
      (let [key (.getKey entry)
            value (.getValue entry)]
-       (cond (instance? Map value)                (assoc map (get-key key) (java->clojure-map value))
+       (cond (instance? Map value)                (assoc map (get-key key) (java-map->clojure-map value))
              (instance? java.lang.Iterable value) (assoc map (get-key key) (java-list->clojure-vector value))
              (instance? clojure.lang.IFn value)   (assoc map (get-key key) (output-transformer-fn value))
              (is-java-array? value)               (assoc map (get-key key) (java-array->clojure-vector value))

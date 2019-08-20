@@ -105,16 +105,16 @@
   ([metric-namespace metric]
    (increment-count metric-namespace metric))
   ([metric-namespaces metric additional-tags]
-   (increment-count (seq metric-namespaces) metric (util/java->clojure-map additional-tags))))
+   (increment-count (seq metric-namespaces) metric (util/java-map->clojure-map additional-tags))))
 
 (defn -decrementCount
   ([metric-namespace metric]
    (decrement-count metric-namespace metric))
   ([metric-namespaces metric additional-tags]
-   (decrement-count (seq metric-namespaces) metric (util/java->clojure-map additional-tags))))
+   (decrement-count (seq metric-namespaces) metric (util/java-map->clojure-map additional-tags))))
 
 (defn -reportTime
   ([metric-namespace time-val]
    (report-time metric-namespace time-val))
   ([metric-namespaces time-val additional-tags]
-   (report-time (seq metric-namespaces) time-val (util/java->clojure-map additional-tags))))
+   (report-time (seq metric-namespaces) time-val (util/java-map->clojure-map additional-tags))))

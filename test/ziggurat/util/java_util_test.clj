@@ -62,7 +62,7 @@
 (deftest creates-stream-routes-map-test
   (testing "Should construct a clojure hash-map for stream routes from a Java HashMap"
     (with-redefs [output-transformer-fn (constantly "output-fn-transformer was called")]
-      (let [clojure-hash-map (java->clojure-map (complex-java-hash-map))
+      (let [clojure-hash-map (java-map->clojure-map (complex-java-hash-map))
             val (:keyword clojure-hash-map)
             hash-map-val (get clojure-hash-map "string-key")
             func-val (get clojure-hash-map "func")]
