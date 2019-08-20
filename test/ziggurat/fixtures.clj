@@ -14,7 +14,12 @@
             [langohr.queue :as lq])
   (:import (java.util Properties)
            (org.apache.kafka.clients.producer ProducerConfig)
-           (org.apache.kafka.clients.consumer ConsumerConfig)))
+           (org.apache.kafka.clients.consumer ConsumerConfig))
+  (:gen-class
+   :name tech.gojek.ziggurat.internal.test.Fixtures
+   :methods [^{:static true} [mountConfig [] void]
+             ^{:static true} [mountProducer [] void]
+             ^{:static true} [unmountAll [] void]]))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
@@ -123,3 +128,15 @@
                                         (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer"))]
         (f))))
   (mount/stop))
+
+(defn unmount-all []
+  (mount/stop))
+
+(defn -mountConfig []
+  (mount-config))
+
+(defn -mountProducer []
+  (mount-producer))
+
+(defn -unmountAll []
+  (unmount-all))

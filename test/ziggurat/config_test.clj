@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [ziggurat.config :refer :all]
             [mount.core :as mount]
-            [clonfig.core :as clonfig]))
+            [clonfig.core :as clonfig])
+  (:import (java.util ArrayList)))
 
 (deftest config-from-env-test
   (testing "calls clonfig"
@@ -67,4 +68,36 @@
       (with-redefs [config-from-env (fn [_] config-values-from-env)]
         (mount/start #'config)
         (is (= (-> config-values-from-env :ziggurat :stream-router topic-entity :channels channel :retry)
-               (channel-retry-config topic-entity channel)))))))
+               (channel-retry-config topic-entity channel)))
+        (mount/stop)))))
+
+(deftest java-config-get-test
+  (testing "It fetches the correct values for a given config"
+    (let [mocked-config {:a "Apple"
+                         :m {:b "Bell"
+                             :n {:c "Cat"}}}
+          config-keys-list (doto (ArrayList.)
+                             (.add "m")
+                             (.add "b"))]
+      (with-redefs [config-from-env (constantly mocked-config)]
+        (mount/start #'config)
+        (is (= "Bell" (-getIn config-keys-list)))
+        (is (= "Apple" (-get "a")))
+        (mount/stop))))
+  (testing "-get returns a Java.util.HashMap when the requested config is a clojure map"
+    (let [mocked-config {:a {:b "abcd"}}]
+      (with-redefs [config-from-env (constantly mocked-config)]
+        (mount/start #'config)
+        (is (instance? java.util.HashMap (-get "a")))
+        (is (= (.get (-get "a") "b") "abcd"))
+        (mount/stop))))
+  (testing "-getin returns a Java.util.HashMap when the requested config is a clojure map"
+    (let [mocked-config {:a {:b "foo"}
+                         :c {:d {:e "bar"}}}
+          config-keys-list (doto (ArrayList.)
+                             (.add "c")
+                             (.add "d"))]
+      (with-redefs [config-from-env (constantly mocked-config)]
+        (mount/start #'config)
+        (is (instance? java.util.HashMap (-getIn config-keys-list)))
+        (mount/stop)))))

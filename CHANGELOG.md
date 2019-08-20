@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.0.0-alpha.5 - 2019-08-20
+- Exposes Java methods for init, config, producer, sentry, metrics, fixtures namespaces
+- Adds util methods for converting data types between java and Clojure
+
 ## 3.0.0-alpha.4 - 2019-07-29
 - Remove old metrics from being sent
 

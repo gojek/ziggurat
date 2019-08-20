@@ -2,7 +2,12 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clonfig.core :as clonfig]
-            [mount.core :refer [defstate]]))
+            [mount.core :refer [defstate]]
+            [ziggurat.util.java-util :as util])
+  (:gen-class
+   :name tech.gojek.ziggurat.internal.Config
+   :methods [^{:static true} [get [String] Object]
+             ^{:static true} [getIn [java.lang.Iterable] Object]]))
 
 (def config-file "config.edn")
 
@@ -75,4 +80,21 @@
 
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
+
+(defn- java-response
+  "When returning config from -get or -getIn, we can either return a Map or string (based on the key/keys passed).
+  Since we do not want to pass a ClojureMap to a Java application, we check whether the config-vals (config to be returned)
+  is a string or a PersistentHashMap. If it is a PersistentHashMap, we convert it to a Java Map and then return it."
+  [config-vals]
+  (if (map? config-vals)
+    (util/clojure->java-map config-vals)
+    config-vals))
+
+(defn -getIn [^java.lang.Iterable keys]
+  (let [config-vals (get-in config (util/list-of-keywords keys))]
+    (java-response config-vals)))
+
+(defn -get [^String key]
+  (let [config-vals (get config (keyword key))]
+    (java-response config-vals)))
 

@@ -2,11 +2,20 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
             [clojure.walk :refer [stringify-keys]]
-            [ziggurat.config :refer [ziggurat-config]])
+            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.util.java-util :as util])
   (:import com.gojek.metrics.datadog.DatadogReporter
            [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
-           java.util.concurrent.TimeUnit))
+           java.util.concurrent.TimeUnit)
+  (:gen-class
+   :name tech.gojek.ziggurat.internal.Metrics
+   :methods [^{:static true} [incrementCount [String String] void]
+             ^{:static true} [incrementCount [String String java.util.Map] void]
+             ^{:static true} [decrementCount [String String] void]
+             ^{:static true} [decrementCount [String String java.util.Map] void]
+             ^{:static true} [reportTime     [String long] void]
+             ^{:static true} [reportTime     [String long java.util.Map] void]]))
 
 (defonce metrics-registry
   (MetricRegistry.))
@@ -91,3 +100,21 @@
     (.stop ^DatadogReporter reporter)
     (.close ^UdpTransport transport)
     (log/info "Stopped statsd reporter")))
+
+(defn -incrementCount
+  ([metric-namespace metric]
+   (increment-count metric-namespace metric))
+  ([metric-namespace metric additional-tags]
+   (increment-count metric-namespace metric (util/java-map->clojure-map additional-tags))))
+
+(defn -decrementCount
+  ([metric-namespace metric]
+   (decrement-count metric-namespace metric))
+  ([metric-namespace metric additional-tags]
+   (decrement-count metric-namespace metric (util/java-map->clojure-map additional-tags))))
+
+(defn -reportTime
+  ([metric-namespace time-val]
+   (report-time metric-namespace time-val))
+  ([metric-namespace time-val additional-tags]
+   (report-time metric-namespace time-val (util/java-map->clojure-map additional-tags))))

@@ -41,14 +41,19 @@
    - max.in.flight.requests.per.connection
    - enable.idempotencecd
 
-   Please see [Producer configs](http://kafka.apache.org/documentation.html#producerconfigs)
+   Please see [producer configs](http://kafka.apache.org/documentation.html#producerconfigs)
    for a complete list of all producer configs available in Kafka."
 
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
-            [mount.core :refer [defstate]])
-  (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
-           (java.util Properties)))
+            [mount.core :refer [defstate]]
+            [ziggurat.util.java-util :refer [get-key]])
+  (:import  (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
+            (java.util Properties))
+  (:gen-class
+   :name tech.gojek.ziggurat.internal.Producer
+   :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
+              ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
 (defn- producer-properties-from-config [{:keys [bootstrap-servers
                                                 acks
@@ -121,3 +126,10 @@
      (let [error-msg (str "Can't publish data. No producers defined for stream config [" stream-config-key "]")]
        (log/error error-msg)
        (throw (ex-info error-msg {:stream-config-key stream-config-key}))))))
+
+(defn -send
+  ([stream-config-key topic key value]
+   (send (get-key stream-config-key) topic key value))
+
+  ([stream-config-key topic partition key value]
+   (send (get-key stream-config-key) topic partition key value)))

@@ -12,7 +12,11 @@
             [ziggurat.producer :as producer :refer [kafka-producers]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
-            [ziggurat.streams :as streams]))
+            [ziggurat.streams :as streams]
+            [ziggurat.util.java-util :as util])
+  (:gen-class
+   :name tech.gojek.ziggurat.internal.Init
+   :methods [^{:static true} [init [java.util.Map] void]]))
 
 (defstate statsd-reporter
   :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
@@ -187,3 +191,6 @@
        (log/error e)
        (stop stop-fn modes)
        (System/exit 1)))))
+
+(defn -init [args]
+  (main (util/java-map->clojure-map args)))
