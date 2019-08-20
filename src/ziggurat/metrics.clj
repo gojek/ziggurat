@@ -11,11 +11,11 @@
   (:gen-class
    :name tech.gojek.ziggurat.internal.Metrics
    :methods [^{:static true} [incrementCount [String String] void]
-             ^{:static true} [incrementCount ["[Ljava.lang.String;" String java.util.Map] void]
+             ^{:static true} [incrementCount [String String java.util.Map] void]
              ^{:static true} [decrementCount [String String] void]
-             ^{:static true} [decrementCount ["[Ljava.lang.String;" String java.util.Map] void]
-             ^{:static true} [reportTime     ["[Ljava.lang.String;" long] void]
-             ^{:static true} [reportTime     ["[Ljava.lang.String;" long java.util.Map] void]]))
+             ^{:static true} [decrementCount [String String java.util.Map] void]
+             ^{:static true} [reportTime     [String long] void]
+             ^{:static true} [reportTime     [String long java.util.Map] void]]))
 
 (defonce metrics-registry
   (MetricRegistry.))
@@ -104,17 +104,17 @@
 (defn -incrementCount
   ([metric-namespace metric]
    (increment-count metric-namespace metric))
-  ([metric-namespaces metric additional-tags]
-   (increment-count (seq metric-namespaces) metric (util/java-map->clojure-map additional-tags))))
+  ([metric-namespace metric additional-tags]
+   (increment-count metric-namespace metric (util/java-map->clojure-map additional-tags))))
 
 (defn -decrementCount
   ([metric-namespace metric]
    (decrement-count metric-namespace metric))
-  ([metric-namespaces metric additional-tags]
-   (decrement-count (seq metric-namespaces) metric (util/java-map->clojure-map additional-tags))))
+  ([metric-namespace metric additional-tags]
+   (decrement-count metric-namespace metric (util/java-map->clojure-map additional-tags))))
 
 (defn -reportTime
   ([metric-namespace time-val]
    (report-time metric-namespace time-val))
-  ([metric-namespaces time-val additional-tags]
-   (report-time (seq metric-namespaces) time-val (util/java-map->clojure-map additional-tags))))
+  ([metric-namespace time-val additional-tags]
+   (report-time metric-namespace time-val (util/java-map->clojure-map additional-tags))))

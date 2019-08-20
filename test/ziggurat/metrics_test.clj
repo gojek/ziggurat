@@ -103,7 +103,30 @@
           (metrics/increment-count expected-metric-namespace metric expected-additional-tags)
           (is (= 1 (.getCount meter)))
           (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "-incrementCount calls increment-count with the correct arguments"
+      (let [metric-namespace "namespace"
+            increment-count-called? (atom false)]
+        (with-redefs [metrics/increment-count (fn [actual-metric-namespace actual-metric]
+                                                (if (and (= actual-metric-namespace metric-namespace)
+                                                         (= actual-metric metric))
+                                                  (reset! increment-count-called? true)))]
+          (metrics/-incrementCount metric-namespace metric)
+          (is (true? @increment-count-called?))))
+      (let [additional-tags (doto (java.util.HashMap.)
+                              (.put ":foo" "bar")
+                              (.put ":bar" "foo"))
+            expected-additional-tags {:foo "bar"
+                                      :bar "foo"}
+            increment-count-called? (atom false)
+            metric-namespace "namespace"]
+        (with-redefs [metrics/increment-count (fn [actual-namespace actual-metric actual-additional-tags]
+                                                (if (and (= actual-namespace metric-namespace)
+                                                         (= actual-metric metric)
+                                                         (= actual-additional-tags expected-additional-tags))
+                                                  (reset! increment-count-called? true)))]
+          (metrics/-incrementCount metric-namespace metric additional-tags)
+          (is (true? @increment-count-called?)))))))
 
 (deftest decrement-count-test
   (let [expected-topic-name   "expected-topic-name"
@@ -166,7 +189,30 @@
           (metrics/decrement-count expected-metric-namespace metric expected-additional-tags)
           (is (zero? (.getCount meter)))
           (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))))
+          (is (= metric (:metric @mk-meter-args))))))
+    (testing "-decrementCount passes the correct arguments to decrement-count"
+      (let [metric-namespace "namespace"
+            decrement-count-called? (atom false)]
+        (with-redefs [metrics/decrement-count (fn [actual-metric-namespace actual-metric]
+                                                (if (and (= actual-metric-namespace metric-namespace)
+                                                         (= actual-metric metric))
+                                                  (reset! decrement-count-called? true)))]
+          (metrics/-decrementCount metric-namespace metric)
+          (is (true? @decrement-count-called?))))
+      (let [additional-tags (doto (java.util.HashMap.)
+                              (.put ":foo" "bar")
+                              (.put ":bar" "foo"))
+            expected-additional-tags {:foo "bar"
+                                      :bar "foo"}
+            decrement-count-called? (atom false)
+            metric-namespace "namespace"]
+        (with-redefs [metrics/decrement-count (fn [actual-namespace actual-metric actual-additional-tags]
+                                                (if (and (= actual-namespace metric-namespace)
+                                                         (= actual-metric metric)
+                                                         (= actual-additional-tags expected-additional-tags))
+                                                  (reset! decrement-count-called? true)))]
+          (metrics/-decrementCount metric-namespace metric additional-tags)
+          (is (true? @decrement-count-called?)))))))
 
 (deftest report-time-test
   (let [expected-topic-entity-name "expected-topic-entity-name"
@@ -216,4 +262,28 @@
           (metrics/report-time expected-metric-namespace time-val)
           (is (= 1 (.getCount histogram)))
           (is (= expected-metric-namespace (:metric-namespace @mk-histogram-args)))
-          (is (= "all" (:metric @mk-histogram-args))))))))
+          (is (= "all" (:metric @mk-histogram-args)))))))
+  (testing "report time java function passes the correct parameters to report time"
+    (let [expected-metric-namespace "namespace"
+          expected-time-val         123
+          report-time-called?       (atom false)]
+      (with-redefs [metrics/report-time (fn [actual-metric-namespace actual-time-val]
+                                          (if (and (= actual-metric-namespace expected-metric-namespace)
+                                                   (= actual-time-val expected-time-val))
+                                            (reset! report-time-called? true)))]
+        (metrics/-reportTime expected-metric-namespace expected-time-val)
+        (is (true? @report-time-called?))))
+    (let [expected-metric-namespace "namespace"
+          expected-time-val         123
+          additional-tags           (doto (java.util.HashMap.)
+                                      (.put ":foo" "bar")
+                                      (.put ":bar" "foo"))
+          expected-additional-tags {:foo "bar" :bar "foo"}
+          report-time-called?       (atom false)]
+      (with-redefs [metrics/report-time (fn [actual-metric-namespace actual-time-val actual-additional-tags]
+                                          (if (and (= actual-metric-namespace expected-metric-namespace)
+                                                   (= actual-time-val expected-time-val)
+                                                   (= actual-additional-tags expected-additional-tags))
+                                            (reset! report-time-called? true)))]
+        (metrics/-reportTime expected-metric-namespace expected-time-val additional-tags)
+        (is (true? @report-time-called?))))))

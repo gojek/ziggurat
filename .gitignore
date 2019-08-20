@@ -1,6 +1,7 @@
 /target
 /classes
 /checkouts
+/coverage
 pom.xml.asc
 pom.xml
 *.jar
