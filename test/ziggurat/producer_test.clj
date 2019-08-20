@@ -4,7 +4,7 @@
             [clojure.test.check.generators :as gen]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix :refer [*producer-properties* *consumer-properties*]]
-            [ziggurat.producer :refer [producer-properties-map send kafka-producers]]
+            [ziggurat.producer :refer [producer-properties-map send kafka-producers -send]]
             [ziggurat.streams :refer [start-streams stop-streams]])
   (:import (org.apache.kafka.clients.producer KafkaProducer)
            (org.apache.kafka.streams.integration.utils IntegrationTestUtils)))
@@ -27,7 +27,7 @@
           key          "message"
           value        "Hello World!!"]
       (send :default topic key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic  1 2000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 2000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-data-with-topic-key-partition-and-value-test
@@ -38,7 +38,7 @@
           value        "Hello World!!"
           partition    (int 0)]
       (send :default topic partition key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic  1 2000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 2000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-throws-exception-when-no-producers-are-configured
@@ -59,3 +59,32 @@
   ; Here the config is read from config.test.edn which contains
   ; valid producer configs.
   (is (seq (producer-properties-map))))
+
+(deftest java-send-test
+  (let [stream-config-key           ":entity"
+        expected-stream-config-key  (keyword (subs stream-config-key 1))
+        topic                       "topic"
+        key                         "key"
+        value                       "value"
+        partition                   1
+        send-called?                (atom false)
+        send-with-partition-called? (atom false)]
+    (testing "it calls send with the correct parameters i.e. config-key(keyword), topic(string), key, value"
+      (with-redefs [send (fn [actual-stream-config-key actual-topic actual-key actual-value]
+                           (if (and (= actual-stream-config-key expected-stream-config-key)
+                                    (= actual-key key)
+                                    (= actual-topic topic)
+                                    (= actual-value value))
+                             (reset! send-called? true)))]
+        (-send stream-config-key topic key value)
+        (is (true? @send-called?))))
+    (testing "it calls send with the correct parameters i.e. config-key(keyword), topic(string), partition, key, value"
+      (with-redefs [send (fn [actual-stream-config-key actual-topic actual-partition actual-key actual-value]
+                           (if (and (= actual-stream-config-key expected-stream-config-key)
+                                    (= actual-key key)
+                                    (= actual-partition partition)
+                                    (= actual-topic topic)
+                                    (= actual-value value))
+                             (reset! send-with-partition-called? true)))]
+        (-send stream-config-key topic partition key value)
+        (is (true? @send-with-partition-called?))))))
