@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.0.0-alpha.5 - 2019-08-22
+- Fix increment/decrement count to accept both number and map
+
 ## 3.0.0-alpha.4 - 2019-07-29
 - Remove old metrics from being sent
 
@@ -19,6 +22,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## 3.0.0-alpha - 2019-06-21
 - Upgrades kafka streams to version 2.1. Please refer [this](UpgradeGuide.md) to upgrade
+
+## 2.12.4 - 2019-08-22
+- Fix increment/decrement count to accept both number and map
 
 ## 2.12.3 - 2019-07-26
 - Fix functions to either take vector or string as input
