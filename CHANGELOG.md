@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.4 - 2019-08-22
+- Fix increment/decrement count by supporting both number and map
+
 ## 2.12.3 - 2019-07-26
 - Fix functions to either take vector or string as input
 
