@@ -3,15 +3,15 @@
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
-  :dependencies [[bidi "2.1.4"]
+  :dependencies [[bidi "2.1.6"]
                  [camel-snake-kebab "0.4.0"]
-                 [cheshire "5.8.1"]
+                 [cheshire "5.9.0"]
                  [clonfig "0.2.0"]
-                 [clj-http "3.7.0"]
+                 [clj-http "3.10.0"]
                  [com.cemerick/url "0.1.1"]
                  [com.datadoghq/java-dogstatsd-client "2.4"]
                  [com.fasterxml.jackson.core/jackson-databind "2.9.3"]
-                 [com.novemberain/langohr "5.0.0"]
+                 [com.novemberain/langohr "5.1.0"]
                  [com.taoensso/nippy "2.14.0"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
                  [medley "0.8.4"]
@@ -54,8 +54,8 @@
                                       [org.clojure/test.check "0.9.0"]]
                        :plugins      [[lein-cloverage "1.0.13"]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
-             :dev     {:plugins  [[lein-cljfmt "0.6.3"]
-                                  [lein-cloverage "1.0.13"]
-                                  [lein-kibit "0.1.6"]]}
+             :dev     {:plugins [[lein-cljfmt "0.6.4"]
+                                 [lein-cloverage "1.0.13"]
+                                 [lein-kibit "0.1.7" :exclusions [org.clojure/tools.cli rewrite-clj org.clojure/tools.reader]]]}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})
