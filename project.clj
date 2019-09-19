@@ -15,17 +15,16 @@
                  [com.taoensso/nippy "2.14.0"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
                  [medley "1.2.0"]
-                 [mount "0.1.10"]
+                 [mount "0.1.16"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                 [org.apache.logging.log4j/log4j-core "2.7"]
-                 [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
+                 [org.apache.logging.log4j/log4j-core "2.12.1"]
+                 [org.apache.logging.log4j/log4j-slf4j-impl "2.12.1"]
                  [org.clojure/clojure "1.10.0"]
-                 [org.clojure/data.json "0.2.6"]
-                 [org.clojure/tools.logging "0.3.1"]
-                 [org.clojure/tools.nrepl "0.2.12"]
+                 [org.clojure/tools.logging "0.5.0"]
+                 [org.clojure/tools.nrepl "0.2.13"]
                  [org.flatland/protobuf "0.8.1"]
-                 [prismatic/schema "1.1.9"]
+                 [prismatic/schema "1.1.12"]
                  [ring/ring "1.6.3"]
                  [ring/ring-core "1.6.3"]
                  [ring/ring-defaults "0.3.1"]
@@ -33,7 +32,7 @@
                  [ring/ring-json "0.4.0"]
                  [ring-logger "0.7.7"]
                  [tech.gojek/sentry-clj.async "1.0.0"]
-                 [yleisradio/new-reliquary "1.0.0"]]
+                 [yleisradio/new-reliquary "1.1.0"]]
   :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
                                       :username :env/clojars_username
                                       :password :env/clojars_password
@@ -45,7 +44,7 @@
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}}
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
-                       :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
+                       :dependencies [[com.google.protobuf/protobuf-java "3.9.1"]
                                       [io.confluent/kafka-schema-registry "4.1.1"]
                                       [junit/junit "4.12"]
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
