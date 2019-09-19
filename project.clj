@@ -14,7 +14,7 @@
                  [com.novemberain/langohr "5.1.0"]
                  [com.taoensso/nippy "2.14.0"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
-                 [medley "0.8.4"]
+                 [medley "1.2.0"]
                  [mount "0.1.10"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
