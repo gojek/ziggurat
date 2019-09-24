@@ -49,5 +49,8 @@
                                                       :origin-topic         "topic"
                                                       :channels             {:channel-1 {:worker-count [10 :int]
                                                                                          :retry        {:count   [5 :int]
-                                                                                                        :enabled [true :bool]}}}}}}}
+                                                                                                        :enabled [true :bool]}}}}}
+            :tracer               {:jaeger_service_name       "test_service"
+                                   :jaeger_endpoint           "test_endpoint"
+                                   :jaeger_reporter_log_spans [true :bool]}}}
 

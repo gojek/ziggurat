@@ -1,4 +1,5 @@
 (defproject tech.gojek/ziggurat "3.0.0"
+(defproject tech.gojek/ziggurat "3.0.1-alpha.1"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -16,6 +17,11 @@
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
                  [medley "1.2.0" :exclusions [org.clojure/clojure]]
                  [mount "0.1.16"]
+                 [io.jaegertracing/jaeger-core "1.0.0"]
+                 [io.jaegertracing/jaeger-client "1.0.0"]
+                 [io.opentracing/opentracing-api "0.33.0"]
+                 [io.opentracing/opentracing-noop "0.33.0"]
+                 [io.opentracing.contrib/opentracing-kafka-streams "0.1.4"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.12.1"]
@@ -48,6 +54,7 @@
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
                        :dependencies [[com.google.protobuf/protobuf-java "3.9.1"]
                                       [io.confluent/kafka-schema-registry "4.1.1" :exclusions [javax.ws.rs/javax.ws.rs-api com.fasterxml.jackson.core/jackson-annotations]]
+                                      [io.opentracing/opentracing-mock "0.33.0"]
                                       [junit/junit "4.12"]
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]

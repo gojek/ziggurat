@@ -16,7 +16,13 @@
            [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
-           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
+           [ziggurat.timestamp_transformer IngestionTimeExtractor]
+           [io.jaegertracing Configuration]
+           [io.opentracing Tracer]
+           [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
+           [io.opentracing.contrib.kafka TracingKafkaUtils]
+           (io.opentracing.tag Tags)
+           (io.opentracing.noop NoopTracerFactory)))
 
 (def default-config-for-stream
   {:buffered-records-per-partition     10000
@@ -92,7 +98,20 @@
         additional-tags  {:topic_name topic-entity-name}]
     (.transform stream-builder (transformer-supplier metric-namespace oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
 
-(defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
+(defn- traced-handler-fn [tracer handler-fn channels message-payload topic-entity]
+  (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message-payload) tracer)
+        span (-> tracer
+              (.buildSpan "Message-Handler")
+              (.asChildOf parent-ctx)
+              (.withTag (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
+              (.withTag (.getKey Tags/COMPONENT) "lambda")
+              (.start))
+        ctx (.context span)]
+    (log/debug "Trace id ------ " (.toTraceId ctx))
+    ((mapper-func handler-fn channels) (->MessagePayload (:value message-payload) topic-entity))
+    (.finish span)))
+
+(defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels tracer]
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
@@ -100,17 +119,26 @@
     (->> (.stream builder topic-pattern)
          (transform-values topic-entity-name oldest-processed-message-in-s)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mapper-func handler-fn channels) (->MessagePayload % topic-entity))))
+         (map-values #(traced-handler-fn tracer handler-fn channels % topic-entity)))
     (.build builder)))
 
-(defn- start-stream* [handler-fn stream-config topic-entity channels]
-  (KafkaStreams. ^Topology (topology handler-fn stream-config topic-entity channels)
-                 ^Properties (properties stream-config)))
+(defn- start-stream* [handler-fn stream-config topic-entity channels tracer]
+  (KafkaStreams. ^Topology (topology handler-fn stream-config topic-entity channels tracer)
+                 ^Properties (properties stream-config)
+                 (new TracingKafkaClientSupplier tracer)))
+
+(defn- default-tracer-provider [config]
+  (fn [] (let [jaeger-service-name (-> config :tracer :jaeger_service_name)]
+           (if (nil? jaeger-service-name)
+             (NoopTracerFactory/create)
+             (.getTracer (Configuration/fromEnv jaeger-service-name))))))
 
 (defn start-streams
   ([stream-routes]
-   (start-streams stream-routes (ziggurat-config)))
+   (start-streams stream-routes (ziggurat-config) (default-tracer-provider (ziggurat-config))))
   ([stream-routes stream-configs]
+   (start-streams stream-routes stream-configs (default-tracer-provider stream-configs)))
+  ([stream-routes stream-configs tracer-provider]
    (reduce (fn [streams stream]
              (let [topic-entity     (first stream)
                    topic-handler-fn (-> stream second :handler-fn)
@@ -118,7 +146,8 @@
                    stream-config    (-> stream-configs
                                         (get-in [:stream-router topic-entity])
                                         (umap/deep-merge default-config-for-stream))
-                   stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
+                   tracer           (tracer-provider)
+                   stream           (start-stream* topic-handler-fn stream-config topic-entity channels tracer)]
                (.start stream)
                (conj streams stream)))
            []

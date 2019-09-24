@@ -5,7 +5,8 @@
             [ziggurat.util.time :refer :all])
   (:import [org.apache.kafka.clients.consumer ConsumerRecord]
            [org.apache.kafka.streams.processor ProcessorContext]
-           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
+           [ziggurat.timestamp_transformer IngestionTimeExtractor]
+           [org.apache.kafka.common.header.internals RecordHeaders]))
 
 (deftest ingestion-time-extractor-test
   (let [ingestion-time-extractor (IngestionTimeExtractor.)
@@ -34,7 +35,8 @@
         expected-delay             1000]
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay"
       (let [context                    (reify ProcessorContext
-                                         (timestamp [_] record-timestamp))
+                                         (timestamp [_] record-timestamp)
+                                         (headers [_] (RecordHeaders.)))
             expected-topic-entity-name "expected-topic-entity-name"
             timestamp-transformer      (create expected-metric-namespaces current-time expected-topic-entity-name)]
         (.init timestamp-transformer context)
@@ -47,7 +49,8 @@
           (.transform timestamp-transformer nil nil))))
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay when topic-entity-name is nil"
       (let [context                    (reify ProcessorContext
-                                         (timestamp [_] record-timestamp))
+                                         (timestamp [_] record-timestamp)
+                                         (headers [_] (RecordHeaders.)))
             expected-topic-entity-name nil
             timestamp-transformer      (create expected-metric-namespaces current-time)]
         (.init timestamp-transformer context)
@@ -57,4 +60,5 @@
                                                    (is (or (= metric-namespaces expected-metric-namespaces)
                                                            (= metric-namespaces [default-namespace])))
                                                    (is (= topic-entity-name expected-topic-entity-name)))]
-          (.transform timestamp-transformer nil nil))))))
+          (.transform timestamp-transformer nil nil))))
+    ))

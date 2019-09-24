@@ -25,7 +25,7 @@
            (let [message-time (.timestamp processor-context)]
              (when (message-to-process? message-time oldest-processed-message-in-s)
                (calculate-and-report-kafka-delay metric-namespace message-time additional-tags)
-               (KeyValue/pair record-key record-value))))
+               (KeyValue/pair record-key {:value record-value :headers (.headers processor-context)}))))
          (close [_] nil))
 
 (defn create
