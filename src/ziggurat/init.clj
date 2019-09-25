@@ -13,7 +13,8 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
-            [ziggurat.util.java-util :as util])
+            [ziggurat.util.java-util :as util]
+            [ziggurat.tracer :as tracer])
   (:gen-class
    :name tech.gojek.ziggurat.internal.Init
    :methods [^{:static true} [init [java.util.Map] void]]))
@@ -113,13 +114,15 @@
   (start* #{#'config/config
             #'statsd-reporter
             #'sentry-reporter
-            #'nrepl-server/server}))
+            #'nrepl-server/server
+            #'tracer/tracer}))
 
 (defn stop-common-states []
   (mount/stop #'config/config
               #'statsd-reporter
               #'messaging-connection/connection
-              #'nrepl-server/server))
+              #'nrepl-server/server
+              #'tracer/tracer))
 
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"

@@ -10,7 +10,8 @@
             [ziggurat.messaging.connection :refer [connection is-connection-required?]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
-            [ziggurat.sentry :refer [sentry-reporter]]))
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.tracer :refer [tracer]]))
 
 (defn delay-queue-name [topic-entity queue-name]
   (prefixed-queue-name topic-entity queue-name))
@@ -43,33 +44,40 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
+(defn- record-headers->map [record-headers]
+  (reduce (fn [header-map record-header]
+            (assoc header-map (.key record-header) (String. (.value record-header)))),
+          {},
+          record-headers))
+
 (defn- properties-for-publish
-  [expiration]
+  [expiration headers]
   (let [props {:content-type "application/octet-stream"
-               :persistent   true}]
+               :persistent   true
+               :headers      (record-headers->map headers)}]
     (if expiration
       (assoc props :expiration (str expiration))
       props)))
 
 (defn- publish
   ([exchange message-payload]
-   (publish exchange message-payload nil))
-  ([exchange message-payload expiration]
+   (publish exchange message-payload nil {}))
+  ([exchange message-payload expiration headers]
    (try
      (with-retry {:count      5
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
        (with-open [ch (lch/open connection)]
-         (lb/publish ch exchange "" (nippy/freeze message-payload) (properties-for-publish expiration))))
+         (lb/publish ch exchange "" (nippy/freeze message-payload) (properties-for-publish expiration headers))))
      (catch Throwable e
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
 
-(defn publish-to-delay-queue [message-payload]
+(defn publish-to-delay-queue [message-payload headers]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
-    (publish exchange-name message-payload queue-timeout-ms)))
+    (publish exchange-name message-payload queue-timeout-ms headers)))
 
 (defn publish-to-dead-queue [message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
@@ -87,7 +95,7 @@
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
-    (publish exchange-name message-payload queue-timeout-ms)))
+    (publish exchange-name message-payload queue-timeout-ms {})))
 
 (defn publish-to-channel-dead-queue [channel message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
@@ -107,11 +115,11 @@
 (defn- get-channel-retry-count [topic-entity channel]
   (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
 
-(defn retry [{:keys [retry-count topic-entity] :as message-payload}]
+(defn retry [{:keys [retry-count topic-entity] :as message-payload} headers]
   (when (-> (ziggurat-config) :retry :enabled)
     (cond
-      (nil? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec (-> (ziggurat-config) :retry :count))))
-      (pos? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec retry-count)))
+      (nil? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec (-> (ziggurat-config) :retry :count))) headers)
+      (pos? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec retry-count)) headers)
       (zero? retry-count) (publish-to-dead-queue message-payload))))
 
 (defn retry-for-channel [{:keys [retry-count topic-entity] :as message-payload} channel]

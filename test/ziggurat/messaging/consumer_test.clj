@@ -7,10 +7,11 @@
             [ziggurat.messaging.consumer :refer :all]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
+            [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as util]))
 
-(use-fixtures :once fix/init-rabbit-mq)
-
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging]))
 (defn- gen-message-payload [topic-entity]
   {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
    :topic-entity topic-entity})
@@ -105,7 +106,7 @@
                                                     :retry-limit        2
                                                     :success-promise    success-promise}) topic-entity [])
 
-          (producer/publish-to-delay-queue message-payload)
+          (producer/publish-to-delay-queue message-payload {})
 
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -134,7 +135,7 @@
                                                     :skip-promise       skip-promise
                                                     :retry-limit        -1}) topic-entity [])
 
-          (producer/publish-to-delay-queue message-payload)
+          (producer/publish-to-delay-queue message-payload {})
 
           (when-let [promise-success? (deref skip-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -162,7 +163,7 @@
                                                     :retry-limit        (* no-of-msgs 10)}) topic-entity [])
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (gen-message-payload topic-entity)))
+            (producer/retry (gen-message-payload topic-entity) {}))
 
           (block-and-retry-until (fn []
                                    (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
@@ -257,3 +258,39 @@
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (util/close rmq-ch))))))
+
+(deftest start-retry-subscriber-test
+  (testing "creates a span when tracer is enabled"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [retry-counter (atom 0)
+            call-counter (atom 0)
+            success-promise (promise)
+            retry-count 3
+            message-payload (assoc (gen-message-payload topic-entity) :retry-count 3)
+            original-zig-config (ziggurat-config)
+            rmq-ch (lch/open connection)]
+        (.reset tracer)
+        (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                                 (update-in [:retry :count] (constantly retry-count))
+                                                 (update-in [:retry :enabled] (constantly true))
+                                                 (update-in [:jobs :instant :worker-count] (constantly 1))))]
+
+          (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                    :call-counter-atom  call-counter
+                                                    :retry-limit        0
+                                                    :success-promise    success-promise}) topic-entity [])
+
+          (producer/publish-to-delay-queue message-payload {})
+
+          (when-let [promise-success? (deref success-promise 5000 :timeout)]
+            (is (not (= :timeout promise-success?)))
+            (is (= true promise-success?)))
+          (util/close rmq-ch)
+          (let [finished-spans (.finishedSpans tracer)]
+            (is (= 2 (.size finished-spans)))
+            (is (= "send" (-> finished-spans
+                              (.get 0)
+                              (.operationName))))
+            (is (= "receive" (-> finished-spans
+                                 (.get 1)
+                                 (.operationName))))))))))

@@ -22,6 +22,7 @@
                  [io.opentracing/opentracing-api "0.33.0"]
                  [io.opentracing/opentracing-noop "0.33.0"]
                  [io.opentracing.contrib/opentracing-kafka-streams "0.1.4"]
+                 [io.opentracing.contrib/opentracing-rabbitmq-client "0.1.5"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.12.1"]

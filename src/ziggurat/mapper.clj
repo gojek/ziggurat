@@ -14,7 +14,7 @@
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
-(defn mapper-func [mapper-fn channels]
+(defn mapper-func [mapper-fn channels headers]
   (fn [{:keys [topic-entity message] :as message-payload}]
     (let [topic-entity-name          (name topic-entity)
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
@@ -35,14 +35,14 @@
             (case return-code
               :success (metrics/increment-count default-namespace success-metric additional-tags)
               :retry   (do (metrics/increment-count default-namespace retry-metric additional-tags)
-                           (producer/retry message-payload))
+                           (producer/retry message-payload headers))
               :skip    (metrics/increment-count default-namespace skip-metric additional-tags)
               :block   'TODO
               (do
                 (send-msg-to-channel channels message-payload return-code)
                 (metrics/increment-count default-namespace success-metric additional-tags))))
           (catch Throwable e
-            (producer/retry message-payload)
+            (producer/retry message-payload headers)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
             (metrics/increment-count default-namespace failure-metric additional-tags)))))))
 

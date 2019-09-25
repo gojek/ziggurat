@@ -5,9 +5,12 @@
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.channel :refer [get-keys-for-topic]])
-  (:import [com.rabbitmq.client ShutdownListener]
-           [java.util.concurrent Executors]))
+            [ziggurat.channel :refer [get-keys-for-topic]]
+            [ziggurat.tracer :refer [tracer]])
+  (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver]
+           [java.util.concurrent Executors ExecutorService]
+           (io.opentracing.contrib.rabbitmq TracingConnectionFactory)
+           (com.rabbitmq.client.impl DefaultCredentialsProvider)))
 
 (defn is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
@@ -28,11 +31,16 @@
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
+(defn create-connection [config]
+  (let [connection-factory (TracingConnectionFactory. tracer)]
+    (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
+    (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (list (Address. (:host config) (:port config)))))))
+
 (defn- start-connection []
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
     (try
-      (let [connection (rmq/connect (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))))]
+      (let [connection (create-connection (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))))]
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
@@ -45,7 +53,7 @@
 
 (defn- stop-connection [conn]
   (when (is-connection-required?)
-    (rmq/close conn)
+    (.close conn)
     (log/info "Disconnected from RabbitMQ")))
 
 (defstate connection

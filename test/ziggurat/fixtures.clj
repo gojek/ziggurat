@@ -11,10 +11,12 @@
             [ziggurat.producer :as producer]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
-            [langohr.queue :as lq])
+            [langohr.queue :as lq]
+            [ziggurat.tracer :as tracer])
   (:import (java.util Properties)
            (org.apache.kafka.clients.producer ProducerConfig)
-           (org.apache.kafka.clients.consumer ConsumerConfig))
+           (org.apache.kafka.clients.consumer ConsumerConfig)
+           (io.opentracing.mock MockTracer))
   (:gen-class
    :name tech.gojek.ziggurat.internal.test.Fixtures
    :methods [^{:static true} [mountConfig [] void]
@@ -30,6 +32,25 @@
   (mount-config)
   (f)
   (mount/stop))
+
+(defn mount-tracer []
+  (with-redefs [tracer/create-tracer (fn [] (MockTracer.))]
+    (-> (mount/only [#'tracer/tracer])
+        (mount/start))))
+
+(defn mount-config-with-tracer [f]
+  (mount-config)
+  (mount-tracer)
+  (f)
+  (mount/stop))
+
+(defn with-tracer* [f]
+  (mount-tracer)
+  (f)
+  (mount/stop #'tracer/tracer))
+
+(defmacro with-tracer [& body]
+  `(with-tracer* (fn [] ~@body)))
 
 (defn silence-logging
   [f]
@@ -72,6 +93,7 @@
   (let [stream-routes {:default {:handler-fn #(constantly nil)
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
+    (mount-tracer)
     (->
      (mount/only [#'connection])
      (mount/with-args {:stream-routes stream-routes})

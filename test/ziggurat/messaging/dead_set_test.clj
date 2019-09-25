@@ -5,7 +5,8 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq]))
 
-(use-fixtures :once fix/init-rabbit-mq)
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging]))
 
 (def topic-entity :default)
 (def default-message-payload {:message {:foo "bar"} :topic-entity topic-entity :retry-count 0})
