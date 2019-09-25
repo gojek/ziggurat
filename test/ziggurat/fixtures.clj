@@ -131,9 +131,10 @@
 (def ^:dynamic *consumer-properties* nil)
 (def ^:dynamic *producer-properties* nil)
 
-(defn mount-only-config-and-producer [f]
+(defn mount-producer-with-config-and-tracer [f]
   (do
     (mount-config)
+    (mount-tracer)
     (mount-producer)
     (binding [*bootstrap-servers* "localhost:9092"]
       (binding [*consumer-properties* (doto (Properties.)

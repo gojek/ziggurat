@@ -104,9 +104,8 @@
               (.asChildOf parent-ctx)
               (.withTag (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
               (.withTag (.getKey Tags/COMPONENT) "lambda")
-              (.start))
-        ctx (.context span)]
-    (log/debug "Trace id ------ " (.toTraceId ctx))
+              (.start))]
+    (.activate (.scopeManager tracer) span)
     ((mapper-func handler-fn channels (:headers message-payload)) (->MessagePayload (:value message-payload) topic-entity))
     (.finish span)))
 

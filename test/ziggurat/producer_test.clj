@@ -5,11 +5,13 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix :refer [*producer-properties* *consumer-properties*]]
             [ziggurat.producer :refer [producer-properties-map send kafka-producers -send]]
-            [ziggurat.streams :refer [start-streams stop-streams]])
+            [ziggurat.streams :refer [start-streams stop-streams]]
+            [ziggurat.tracer :refer [tracer]])
   (:import (org.apache.kafka.clients.producer KafkaProducer)
-           (org.apache.kafka.streams.integration.utils IntegrationTestUtils)))
+           (org.apache.kafka.streams.integration.utils IntegrationTestUtils)
+           (io.opentracing.contrib.kafka TracingKafkaProducer)))
 
-(use-fixtures :once fix/mount-only-config-and-producer)
+(use-fixtures :once fix/mount-producer-with-config-and-tracer)
 
 (defn stream-router-config-without-producer [])
 (:stream-router {:default {:application-id       "test"
@@ -59,6 +61,22 @@
   ; Here the config is read from config.test.edn which contains
   ; valid producer configs.
   (is (seq (producer-properties-map))))
+
+(deftest send-data-with-tracer-enabled
+  (with-redefs [kafka-producers (hash-map :default (TracingKafkaProducer. (KafkaProducer. *producer-properties*) tracer))]
+    (let [alphanum-gen (gen/such-that #(not (blank? %)) gen/string-alphanumeric)
+          topic        (gen/generate alphanum-gen 10)
+          key          "message"
+          value        "Hello World!!"]
+      (.reset tracer)
+      (send :default topic key value)
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 2000)
+            finished-spans (.finishedSpans tracer)]
+        (is (= value (.value (first result))))
+        (is (= 1 (.size finished-spans)))
+        (is (= (str "To_" topic) (-> finished-spans
+                                     (.get 0)
+                                     (.operationName))))))))
 
 (deftest java-send-test
   (let [stream-config-key           ":entity"
