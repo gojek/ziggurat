@@ -44,14 +44,6 @@
   (f)
   (mount/stop))
 
-(defn with-tracer* [f]
-  (mount-tracer)
-  (f)
-  (mount/stop #'tracer/tracer))
-
-(defmacro with-tracer [& body]
-  `(with-tracer* (fn [] ~@body)))
-
 (defn silence-logging
   [f]
   (with-redefs [log/log* (constantly nil)]

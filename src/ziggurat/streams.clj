@@ -100,11 +100,11 @@
 (defn- traced-handler-fn [handler-fn channels message-payload topic-entity]
   (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message-payload) tracer)
         span (-> tracer
-              (.buildSpan "Message-Handler")
-              (.asChildOf parent-ctx)
-              (.withTag (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
-              (.withTag (.getKey Tags/COMPONENT) "lambda")
-              (.start))]
+                 (.buildSpan "Message-Handler")
+                 (.asChildOf parent-ctx)
+                 (.withTag (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
+                 (.withTag (.getKey Tags/COMPONENT) "lambda")
+                 (.start))]
     (.activate (.scopeManager tracer) span)
     ((mapper-func handler-fn channels (:headers message-payload)) (->MessagePayload (:value message-payload) topic-entity))
     (.finish span)))

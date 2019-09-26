@@ -60,5 +60,4 @@
                                                    (is (or (= metric-namespaces expected-metric-namespaces)
                                                            (= metric-namespaces [default-namespace])))
                                                    (is (= topic-entity-name expected-topic-entity-name)))]
-          (.transform timestamp-transformer nil nil))))
-    ))
+          (.transform timestamp-transformer nil nil))))))

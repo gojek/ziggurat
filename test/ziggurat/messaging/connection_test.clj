@@ -67,9 +67,9 @@
           orig-create-conn       mc/create-connection
           ziggurat-config        (config/ziggurat-config)
           stream-routes          {:default   {:handler-fn (constantly :channel-1)
-                                           :channel-1  (constantly :success)}
-                               :default-1 {:handler-fn (constantly :channel-3)
-                                           :channel-3  (constantly :success)}}]
+                                              :channel-1  (constantly :success)}
+                                  :default-1 {:handler-fn (constantly :channel-3)
+                                              :channel-3  (constantly :success)}}]
       (with-redefs [mc/create-connection   (fn [provided-config]
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config))

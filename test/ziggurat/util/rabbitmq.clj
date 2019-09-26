@@ -16,8 +16,8 @@
   (with-open [ch (lch/open connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
-           (when (seq payload)
-             (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))
+        (when (seq payload)
+          (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))
       (catch NullPointerException e
         nil))))
 
