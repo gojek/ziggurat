@@ -200,6 +200,29 @@ For publishing data using a producer which is defined for the stream router conf
 
 `(send :default "test-topic" 1 "key" "value")`
 
+## Tracing
+[Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
+
+Currently, the execution of the handler function can be traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
+
+Tracing has been added to the following flows:
+
+1. Normal basic consume
+2. Retry via rabbitmq
+3. Produce to another kafka topic
+
+Visualization of the traces is done via [Jaeger](https://www.jaegertracing.io/). 
+
+To enable tracing, the following config needs to be added to the `config.edn` under `:ziggurat` key.
+
+```clojure
+:tracer {:enabled                   [true :bool]
+         :jaeger_service_name       "jaeger_service_name"
+         :jaeger_endpoint           "jaeger_endpoint"
+         :jaeger_reporter_log_spans [true :bool]}
+```
+`:jaeger_service_name` is the operation name for the trace
+
 ## Configuration
 
 All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.
