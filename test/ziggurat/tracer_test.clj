@@ -14,6 +14,13 @@
 
   (testing "should start NoopTracer when tracer is not enabled"
     (fix/mount-config)
+    (with-redefs [ziggurat-config (fn [] {:tracer {:enabled false}})]
+      (mount/start (mount/only [#'tracer/tracer]))
+      (is (= "NoopTracerImpl" (.getSimpleName (.getClass tracer/tracer)))))
+    (mount/stop))
+
+  (testing "should start NoopTracer when tracer is not configured"
+    (fix/mount-config)
     (with-redefs [ziggurat-config (fn [] {})]
       (mount/start (mount/only [#'tracer/tracer]))
       (is (= "NoopTracerImpl" (.getSimpleName (.getClass tracer/tracer)))))

@@ -5,10 +5,10 @@
            (io.opentracing.noop NoopTracerFactory)))
 
 (defn- create-tracer []
-  (let [jaeger-service-name (-> (ziggurat-config) :tracer :jaeger_service_name)]
-    (if (nil? jaeger-service-name)
+  (let [tracer-config (:tracer (ziggurat-config))]
+    (if (or (nil? tracer-config) (false? (:enabled tracer-config)))
       (NoopTracerFactory/create)
-      (.getTracer (Configuration/fromEnv jaeger-service-name)))))
+      (.getTracer (Configuration/fromEnv (:jaeger_service_name tracer-config))))))
 
 (defstate tracer
   :start (create-tracer)
