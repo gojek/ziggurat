@@ -21,7 +21,7 @@
            [io.opentracing Tracer]
            [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
            [io.opentracing.contrib.kafka TracingKafkaUtils]
-           (io.opentracing.tag Tags)))
+           [io.opentracing.tag Tags]))
 
 (def default-config-for-stream
   {:buffered-records-per-partition     10000

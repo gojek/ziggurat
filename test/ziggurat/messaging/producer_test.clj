@@ -12,7 +12,7 @@
             [langohr.basic :as lb]
             [ziggurat.config :as config]
             [ziggurat.tracer :refer [tracer]])
-  (:import (org.apache.kafka.common.header.internals RecordHeaders RecordHeader)))
+  (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))

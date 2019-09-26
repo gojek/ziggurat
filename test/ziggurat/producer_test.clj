@@ -7,9 +7,9 @@
             [ziggurat.producer :refer [producer-properties-map send kafka-producers -send]]
             [ziggurat.streams :refer [start-streams stop-streams]]
             [ziggurat.tracer :refer [tracer]])
-  (:import (org.apache.kafka.clients.producer KafkaProducer)
-           (org.apache.kafka.streams.integration.utils IntegrationTestUtils)
-           (io.opentracing.contrib.kafka TracingKafkaProducer)))
+  (:import [org.apache.kafka.clients.producer KafkaProducer]
+           [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
+           [io.opentracing.contrib.kafka TracingKafkaProducer]))
 
 (use-fixtures :once fix/mount-producer-with-config-and-tracer)
 

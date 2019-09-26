@@ -12,8 +12,7 @@
            [org.apache.kafka.clients.producer ProducerConfig]
            [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
-           (io.opentracing Tracer)
-           (io.opentracing.tag Tags)))
+           [io.opentracing.tag Tags]))
 
 (use-fixtures :once fix/mount-config-with-tracer)
 

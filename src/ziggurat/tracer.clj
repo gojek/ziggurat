@@ -1,8 +1,8 @@
 (ns ziggurat.tracer
   (:require [mount.core :refer [defstate]]
             [ziggurat.config :refer [ziggurat-config]])
-  (:import (io.jaegertracing Configuration)
-           (io.opentracing.noop NoopTracerFactory)))
+  (:import [io.jaegertracing Configuration]
+           [io.opentracing.noop NoopTracerFactory]))
 
 (defn- create-tracer []
   (let [tracer-config (:tracer (ziggurat-config))]

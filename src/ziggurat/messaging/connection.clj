@@ -1,6 +1,5 @@
 (ns ziggurat.messaging.connection
   (:require [clojure.tools.logging :as log]
-            [langohr.core :as rmq]
             [mount.core :as mount :refer [defstate start]]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
@@ -9,8 +8,8 @@
             [ziggurat.tracer :refer [tracer]])
   (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver]
            [java.util.concurrent Executors ExecutorService]
-           (io.opentracing.contrib.rabbitmq TracingConnectionFactory)
-           (com.rabbitmq.client.impl DefaultCredentialsProvider)))
+           [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
+           [com.rabbitmq.client.impl DefaultCredentialsProvider]))
 
 (defn is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
