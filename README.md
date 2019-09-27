@@ -209,17 +209,20 @@ Tracing has been added to the following flows:
 
 1. Normal basic consume
 2. Retry via rabbitmq
-3. Produce to another kafka topic
+3. Produce to rabbitmq channel
+4. Produce to another kafka topic
 
-Visualization of the traces is done via [Jaeger](https://www.jaegertracing.io/). 
+By default, tracing is done via [Jaeger](https://www.jaegertracing.io/). The corresponding `:default-tracer-config` has to be set to publish the traces to the desired Jaeger cluster.
+To enable custom tracer, a tracer provider function name can be set in `:tracer-provider`. The corresponding function will be executed in runtime to create a tracer. In the event of any errors while executing the custom tracer provider, a Noop tracer will be created.
 
 To enable tracing, the following config needs to be added to the `config.edn` under `:ziggurat` key.
 
 ```clojure
-:tracer {:enabled                   [true :bool]
-         :jaeger_service_name       "jaeger_service_name"
-         :jaeger_endpoint           "jaeger_endpoint"
-         :jaeger_reporter_log_spans [true :bool]}
+:tracer {:enabled               [true :bool]
+         :tracer-provider       ""
+         :default-tracer-config {:jaeger-service-name       "test_service"
+                                 :jaeger-endpoint           "test_endpoint"
+                                 :jaeger-reporter-log-spans [true :bool]}}
 ```
 `:jaeger_service_name` is the operation name for the trace
 
