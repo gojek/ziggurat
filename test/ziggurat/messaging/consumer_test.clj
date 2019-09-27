@@ -254,7 +254,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (start-channels-subscriber {channel channel-fn} topic-entity)
-          (producer/publish-to-channel-instant-queue channel message-payload)
+          (producer/publish-to-channel-instant-queue channel message-payload {})
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (util/close rmq-ch))))))

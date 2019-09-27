@@ -105,9 +105,13 @@
                  (.withTag (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
                  (.withTag (.getKey Tags/COMPONENT) "lambda")
                  (.start))]
-    (.activate (.scopeManager tracer) span)
-    ((mapper-func handler-fn channels (:headers message-payload)) (->MessagePayload (:value message-payload) topic-entity))
-    (.finish span)))
+    (try
+      (.activate (.scopeManager tracer) span)
+      ((mapper-func handler-fn channels (:headers message-payload)) (->MessagePayload (:value message-payload) topic-entity))
+      (catch Exception e
+        (log/error "Exception while executing handler function " e))
+      (finally
+        (.finish span)))))
 
 (defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)

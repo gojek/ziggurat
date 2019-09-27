@@ -319,3 +319,19 @@
             (is (= "send" (-> finished-spans
                               (.get 0)
                               (.operationName))))))))))
+
+(deftest publish-to-channel-instant-queue-test
+  (testing "creates a span when tracer is enabled"
+    (let [stream-routes {:default {:handler-fn #(constantly nil)
+                                   :channel-1  #(constantly nil)}}]
+      (.reset tracer)
+      (fix/with-queues
+        stream-routes
+        (let [topic-entity :default
+              message-payload {:message {:foo "bar"} :topic-entity topic-entity}]
+          (producer/publish-to-channel-instant-queue :channel-1 message-payload {})
+          (let [finished-spans (.finishedSpans tracer)]
+            (is (= 1 (.size finished-spans)))
+            (is (= "send" (-> finished-spans
+                              (.get 0)
+                              (.operationName))))))))))

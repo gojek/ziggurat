@@ -9,10 +9,10 @@
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 
-(defn- send-msg-to-channel [channels message-payload return-code]
+(defn- send-msg-to-channel [channels message-payload return-code headers]
   (when-not (contains? (set channels) return-code)
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
-  (producer/publish-to-channel-instant-queue return-code message-payload))
+  (producer/publish-to-channel-instant-queue return-code message-payload headers))
 
 (defn mapper-func [mapper-fn channels headers]
   (fn [{:keys [topic-entity message] :as message-payload}]
@@ -39,7 +39,7 @@
               :skip    (metrics/increment-count default-namespace skip-metric additional-tags)
               :block   'TODO
               (do
-                (send-msg-to-channel channels message-payload return-code)
+                (send-msg-to-channel channels message-payload return-code headers)
                 (metrics/increment-count default-namespace success-metric additional-tags))))
           (catch Throwable e
             (producer/retry message-payload headers)
