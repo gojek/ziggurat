@@ -53,6 +53,7 @@
             :tracer               {:enabled               [true :bool]
                                    :tracer-provider       ""
                                    :default-tracer-config {:jaeger-service-name       "test_service"
-                                                           :jaeger-endpoint           "test_endpoint"
+                                                           :jaeger-agent-host         "localhost"
+                                                           :jaeger-agent-port         [6831 :int]
                                                            :jaeger-reporter-log-spans [true :bool]}}}}
 

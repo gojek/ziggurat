@@ -10,8 +10,7 @@
             [ziggurat.messaging.connection :refer [connection is-connection-required?]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.tracer :refer [tracer]]))
+            [ziggurat.sentry :refer [sentry-reporter]]))
 
 (defn delay-queue-name [topic-entity queue-name]
   (prefixed-queue-name topic-entity queue-name))
@@ -46,8 +45,8 @@
 
 (defn- record-headers->map [record-headers]
   (reduce (fn [header-map record-header]
-            (assoc header-map (.key record-header) (String. (.value record-header)))),
-          {},
+            (assoc header-map (.key record-header) (String. (.value record-header))))
+          {}
           record-headers))
 
 (defn- properties-for-publish

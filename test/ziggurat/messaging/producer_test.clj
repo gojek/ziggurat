@@ -51,7 +51,7 @@
             (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= expected-message-payload message-from-mq)))))))
-;
+
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
     (fix/with-queues
@@ -106,7 +106,7 @@
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
           (producer/publish-to-delay-queue message-payload {})))))
-;
+
   (testing "publish to delay queue publishes with parsed record headers"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
