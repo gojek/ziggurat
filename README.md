@@ -221,7 +221,8 @@ To enable tracing, the following config needs to be added to the `config.edn` un
 :tracer {:enabled               [true :bool]
          :tracer-provider       ""
          :default-tracer-config {:jaeger-service-name       "test_service"
-                                 :jaeger-endpoint           "test_endpoint"
+                                 :jaeger-agent-host         "localhost"
+                                 :jaeger-agent-port         [6831 :int]
                                  :jaeger-reporter-log-spans [true :bool]}}
 ```
 `:jaeger_service_name` is the operation name for the trace
