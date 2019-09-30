@@ -227,7 +227,7 @@
                                              (reset! mk-histogram-args {:metric-namespaces metric-namespaces
                                                                         :metric            metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (metrics/report-histogram expected-metric-namespaces time-val input-additional-tags)
           (is (= 1 (.getCount histogram)))
           (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
@@ -242,7 +242,7 @@
                                              (reset! mk-histogram-args {:metric-namespaces metric-namespaces
                                                                         :metric            metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (metrics/report-histogram expected-metric-namespaces time-val input-additional-tags)
           (is (= 1 (.getCount histogram)))
           (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespaces) (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
@@ -257,7 +257,7 @@
                                              (reset! mk-histogram-args {:metric-namespaces metric-namespaces
                                                                         :metric            metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespaces time-val)
+          (metrics/report-histogram expected-metric-namespaces time-val)
           (is (= 1 (.getCount histogram)))
           (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
@@ -272,7 +272,7 @@
                                              (reset! mk-histogram-args {:metric-namespaces metric-namespaces
                                                                         :metric            metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (metrics/report-histogram expected-metric-namespaces time-val input-additional-tags)
           (is (= 1 (.getCount histogram)))
           (is (= (apply str (interpose "." expected-metric-namespaces)) (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))))

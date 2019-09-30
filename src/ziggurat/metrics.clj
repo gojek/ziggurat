@@ -82,17 +82,19 @@
   (doseq [ns nss]
     (increment-count ns metric additional-tags)))
 
-(defn report-time
-  ([metric-namespaces time-val]
-   (report-time metric-namespaces time-val nil))
-  ([metric-namespaces time-val additional-tags]
+(defn report-histogram
+  ([metric-namespaces val]
+   (report-histogram metric-namespaces val nil))
+  ([metric-namespaces val additional-tags]
    (let [metric-namespace (get-metric-namespaces metric-namespaces)
          histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
-     (.update histogram (int time-val)))))
+     (.update histogram (int val)))))
+
+(defn report-time report-histogram)                         ;; for backward compatibility
 
 (defn multi-ns-report-time [nss time-val additional-tags]
   (doseq [ns nss]
-    (report-time ns time-val additional-tags)))
+    (report-histogram ns time-val additional-tags)))
 
 (defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
