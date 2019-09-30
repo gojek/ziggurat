@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.5 - 2019-09-30
+- Rename report-time to report-histogram while still keeping the old API
+
 ## 2.12.4 - 2019-08-22
 - Fix increment/decrement count by supporting both number and map
 
