@@ -88,7 +88,7 @@
   ([metric-namespaces val additional-tags]
    (let [metric-namespace (get-metric-namespaces metric-namespaces)
          histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
-     (.update histogram (int val)))))
+     (.update histogram (get-int val)))))
 
 (defn report-time report-histogram)                         ;; for backward compatibility
 
