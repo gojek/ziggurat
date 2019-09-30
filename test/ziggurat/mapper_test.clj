@@ -27,15 +27,15 @@
             successfully-reported-time? (atom false)
             expected-metric             "success"]
         (with-redefs [metrics/increment-count  (fn [metric-namespaces metric additional-tags]
-                                                (when (and (or (= metric-namespaces expected-metric-namespaces)
-                                                               (= metric-namespaces [default-namespace]))
-                                                           (= metric expected-metric)
-                                                           (= additional-tags expected-additional-tags))
-                                                  (reset! successfully-processed? true)))
+                                                 (when (and (or (= metric-namespaces expected-metric-namespaces)
+                                                                (= metric-namespaces [default-namespace]))
+                                                            (= metric expected-metric)
+                                                            (= additional-tags expected-additional-tags))
+                                                   (reset! successfully-processed? true)))
                       metrics/report-histogram (fn [metric-namespaces _ _]
-                                                (when (or (= metric-namespaces expected-report-time-namespaces)
-                                                          (= metric-namespaces [report-time-namespace]))
-                                                  (reset! successfully-reported-time? true)))]
+                                                 (when (or (= metric-namespaces expected-report-time-namespaces)
+                                                           (= metric-namespaces [report-time-namespace]))
+                                                   (reset! successfully-reported-time? true)))]
           ((mapper-func (constantly :success) expected-topic-entity-name []) message)
           (is @successfully-processed?)
           (is @successfully-reported-time?))))
@@ -107,11 +107,11 @@
             execution-time-namesapce   "handler-fn-execution-time"
             expected-metric-namespaces [service-name "default" execution-time-namesapce]]
         (with-redefs [metrics/report-histogram (fn [metric-namespaces _ _]
-                                            (is (or (= metric-namespaces expected-metric-namespaces)
-                                                    (= metric-namespaces [execution-time-namesapce])))
-                                            (when (or (= metric-namespaces expected-metric-namespaces)
-                                                      (= metric-namespaces [execution-time-namesapce]))
-                                              (reset! reported-execution-time? true)))]
+                                                 (is (or (= metric-namespaces expected-metric-namespaces)
+                                                         (= metric-namespaces [execution-time-namesapce])))
+                                                 (when (or (= metric-namespaces expected-metric-namespaces)
+                                                           (= metric-namespaces [execution-time-namesapce]))
+                                                   (reset! reported-execution-time? true)))]
 
           ((mapper-func (constantly :success) expected-topic-entity-name []) message)
           (is @reported-execution-time?))))))
@@ -180,8 +180,8 @@
       (let [reported-execution-time? (atom false)
             execution-time-namesapce "execution-time"]
         (with-redefs [metrics/report-histogram (fn [metric-namespaces _ _]
-                                            (when (or (= metric-namespaces [service-name expected-topic-entity-name channel-name execution-time-namesapce])
-                                                      (= metric-namespaces [execution-time-namesapce]))
-                                              (reset! reported-execution-time? true)))]
+                                                 (when (or (= metric-namespaces [service-name expected-topic-entity-name channel-name execution-time-namesapce])
+                                                           (= metric-namespaces [execution-time-namesapce]))
+                                                   (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) topic channel) message)
           (is @reported-execution-time?))))))
