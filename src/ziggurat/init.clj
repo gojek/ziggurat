@@ -145,12 +145,22 @@
                            (shutdown-agents))
             "Shutdown-handler")))
 
-(s/defschema StreamRoute
+(s/defschema StreamRouteOld
   (s/conditional
    #(and (seq %)
          (map? %))
    {s/Keyword {:handler-fn (s/pred #(fn? %))
                s/Keyword   (s/pred #(fn? %))}}))
+
+(s/defschema StreamRouteNew
+  (s/conditional
+   #(and (seq %)
+         (map? %))
+   {s/Keyword {:handler (s/pred #(fn? %))
+               s/Keyword   (s/pred #(fn? %))}}))
+
+(s/defschema StreamRoute
+  (s/either StreamRouteOld StreamRouteNew))
 
 (defn validate-stream-routes [stream-routes modes]
   (when (or (empty? modes) (contains? (set modes) :stream-worker))

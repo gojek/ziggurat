@@ -7,7 +7,8 @@
             [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as transformer]
-            [ziggurat.util.map :as umap])
+            [ziggurat.util.map :as umap]
+            [ziggurat.middleware.default :as mw])
   (:import [java.util Properties]
            [java.util.regex Pattern]
            [org.apache.kafka.clients.consumer ConsumerConfig]
@@ -107,17 +108,25 @@
   (KafkaStreams. ^Topology (topology handler-fn stream-config topic-entity channels)
                  ^Properties (properties stream-config)))
 
+(defn- get-handler-fn [stream topic-entity {:keys [proto-class]}]
+  (let [handler-fn (-> stream second :handler-fn)
+        new-handler-fn (-> stream second :handler)]
+    (if (some? handler-fn)
+      (-> handler-fn
+          (mw/protobuf->hash (java.lang.Class/forName proto-class) topic-entity))
+      new-handler-fn)))
+
 (defn start-streams
   ([stream-routes]
    (start-streams stream-routes (ziggurat-config)))
   ([stream-routes stream-configs]
    (reduce (fn [streams stream]
              (let [topic-entity     (first stream)
-                   topic-handler-fn (-> stream second :handler-fn)
                    channels         (chl/get-keys-for-topic stream-routes topic-entity)
                    stream-config    (-> stream-configs
                                         (get-in [:stream-router topic-entity])
                                         (umap/deep-merge default-config-for-stream))
+                   topic-handler-fn (get-handler-fn stream topic-entity stream-config)
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (.start stream)
                (conj streams stream)))

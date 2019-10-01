@@ -48,7 +48,7 @@
             changelog-topic-replication-factor 1
             kvs                                (repeat times message-key-value)
             handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
-            streams                            (start-streams {:default {:handler-fn handler-fn}}
+            streams                            (start-streams {:default {:handler handler-fn}}
                                                               (-> (ziggurat-config)
                                                                   (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                                   (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
@@ -72,7 +72,7 @@
             changelog-topic-replication-factor 1
             kvs                                (repeat times message-key-value)
             handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
-            streams                            (start-streams {:default {:handler-fn handler-fn}}
+            streams                            (start-streams {:default {:handler handler-fn}}
                                                               (-> (ziggurat-config)
                                                                   (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                                   (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
@@ -84,3 +84,26 @@
         (Thread/sleep 5000)                                     ;;wating for streams to consume messages
         (stop-streams streams)
         (is (= times @message-received-count))))))
+
+(deftest start-streams-middleware-backward-compatibility-test
+  (testing "Mapper function passed in as :handler-fn should deserialize and process the Kafka message"
+    (let [message-received-count (atom 0)]
+      (with-redefs [mapped-fn (fn [message-from-kafka]
+                                (when (= message message-from-kafka)
+                                  (swap! message-received-count inc))
+                                :success)]
+        (let [times                              6
+              changelog-topic-replication-factor 1
+              kvs                                (repeat times message-key-value)
+              streams                            (start-streams {:default {:handler-fn mapped-fn}}
+                                                                (-> (ziggurat-config)
+                                                                    (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                                    (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+          (Thread/sleep 10000)                                    ;;waiting for streams to start
+          (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                              kvs
+                                                              (props)
+                                                              (MockTime.))
+          (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+          (stop-streams streams)
+          (is (= times @message-received-count)))))))
