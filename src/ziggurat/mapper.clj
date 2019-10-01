@@ -9,12 +9,12 @@
             [ziggurat.sentry :refer [sentry-reporter]])
   (:import (java.time Instant)))
 
-(defn- send-msg-to-channel [channels message-payload return-code headers]
+(defn- send-msg-to-channel [channels message-payload return-code]
   (when-not (contains? (set channels) return-code)
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
-  (producer/publish-to-channel-instant-queue return-code message-payload headers))
+  (producer/publish-to-channel-instant-queue return-code message-payload))
 
-(defn mapper-func [mapper-fn channels headers]
+(defn mapper-func [mapper-fn channels]
   (fn [{:keys [topic-entity message] :as message-payload}]
     (let [topic-entity-name          (name topic-entity)
           new-relic-transaction-name (str topic-entity-name ".handler-fn")
@@ -35,14 +35,14 @@
             (case return-code
               :success (metrics/increment-count default-namespace success-metric additional-tags)
               :retry   (do (metrics/increment-count default-namespace retry-metric additional-tags)
-                           (producer/retry message-payload headers))
+                           (producer/retry message-payload))
               :skip    (metrics/increment-count default-namespace skip-metric additional-tags)
               :block   'TODO
               (do
-                (send-msg-to-channel channels message-payload return-code headers)
+                (send-msg-to-channel channels message-payload return-code)
                 (metrics/increment-count default-namespace success-metric additional-tags))))
           (catch Throwable e
-            (producer/retry message-payload headers)
+            (producer/retry message-payload)
             (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
             (metrics/increment-count default-namespace failure-metric additional-tags)))))))
 
@@ -80,7 +80,7 @@
             (sentry/report-error sentry-reporter e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/increment-count default-namespace failure-metric additional-tags)))))))
 
-(defrecord MessagePayload [message topic-entity])
+(defrecord MessagePayload [message topic-entity headers])
 
 (s/defschema message-payload-schema
   {:message                      s/Any

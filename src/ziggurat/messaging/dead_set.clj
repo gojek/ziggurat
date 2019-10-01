@@ -9,7 +9,7 @@
     (doseq [message-payload (consumer/get-dead-set-messages-for-topic true topic-entity count-of-message)]
       (producer/publish-to-instant-queue message-payload))
     (doseq [message-payload (consumer/get-dead-set-messages-for-channel true topic-entity channel count-of-message)]
-      (producer/publish-to-channel-instant-queue channel message-payload {}))))
+      (producer/publish-to-channel-instant-queue channel message-payload))))
 
 (defn- get-messages
   "Gets n messages from dead queue and gives the option to ack or un-ack them"

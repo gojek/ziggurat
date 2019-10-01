@@ -106,7 +106,7 @@
                                                     :retry-limit        2
                                                     :success-promise    success-promise}) topic-entity [])
 
-          (producer/publish-to-delay-queue message-payload {})
+          (producer/publish-to-delay-queue message-payload)
 
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -135,7 +135,7 @@
                                                     :skip-promise       skip-promise
                                                     :retry-limit        -1}) topic-entity [])
 
-          (producer/publish-to-delay-queue message-payload {})
+          (producer/publish-to-delay-queue message-payload)
 
           (when-let [promise-success? (deref skip-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -163,7 +163,7 @@
                                                     :retry-limit        (* no-of-msgs 10)}) topic-entity [])
 
           (dotimes [_ no-of-msgs]
-            (producer/retry (gen-message-payload topic-entity) {}))
+            (producer/retry (gen-message-payload topic-entity)))
 
           (block-and-retry-until (fn []
                                    (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
@@ -254,7 +254,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (start-channels-subscriber {channel channel-fn} topic-entity)
-          (producer/publish-to-channel-instant-queue channel message-payload {})
+          (producer/publish-to-channel-instant-queue channel message-payload)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (util/close rmq-ch))))))
@@ -280,7 +280,7 @@
                                                     :retry-limit        0
                                                     :success-promise    success-promise}) topic-entity [])
 
-          (producer/publish-to-delay-queue message-payload {})
+          (producer/publish-to-delay-queue message-payload)
 
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))

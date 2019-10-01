@@ -9,7 +9,7 @@
 
 (use-fixtures :once fix/silence-logging)
 
-(defn tracer-provider []
+(defn custom-tracer-provider []
   (MockTracer.))
 
 (deftest mount-tracer-test
@@ -30,25 +30,25 @@
   (testing "should execute create custom tracer when tracer is enabled and tracer provider is set"
     (fix/mount-config)
     (with-redefs [ziggurat-config (fn [] {:tracer {:enabled         true
-                                                   :tracer-provider "ziggurat.tracer-test/tracer-provider"}})]
+                                                   :custom-provider "ziggurat.tracer-test/custom-tracer-provider"}})]
       (mount/start (mount/only [#'tracer/tracer]))
       (is (= "MockTracer" (.getSimpleName (.getClass tracer/tracer)))))
     (mount/stop))
 
   (testing "should handle gracefully when custom tracer provider returns nil and create NoopTracer"
     (fix/mount-config)
-    (with-redefs [tracer-provider (fn [] nil)
+    (with-redefs [custom-tracer-provider (fn [] nil)
                   ziggurat-config (fn [] {:tracer {:enabled         true
-                                                   :tracer-provider "ziggurat.tracer-test/tracer-provider"}})]
+                                                   :custom-provider "ziggurat.tracer-test/custom-tracer-provider"}})]
       (mount/start (mount/only [#'tracer/tracer]))
       (is (= "NoopTracerImpl" (.getSimpleName (.getClass tracer/tracer)))))
     (mount/stop))
 
   (testing "should handle gracefully when custom tracer provider returns non tracer instance and create NoopTracer"
     (fix/mount-config)
-    (with-redefs [tracer-provider (fn [] "")
+    (with-redefs [custom-tracer-provider (fn [] "")
                   ziggurat-config (fn [] {:tracer {:enabled         true
-                                                   :tracer-provider "ziggurat.tracer-test/tracer-provider"}})]
+                                                   :custom-provider "ziggurat.tracer-test/custom-tracer-provider"}})]
       (mount/start (mount/only [#'tracer/tracer]))
       (is (= "NoopTracerImpl" (.getSimpleName (.getClass tracer/tracer)))))
     (mount/stop))
@@ -69,9 +69,9 @@
 
   (testing "should handle create tracer exception gracefully and create NoopTracer"
     (fix/mount-config)
-    (with-redefs [tracer-provider (fn [] (throw (RuntimeException.)))
+    (with-redefs [custom-tracer-provider (fn [] (throw (RuntimeException.)))
                   ziggurat-config (fn [] {:tracer {:enabled         true
-                                                   :tracer-provider "ziggurat.tracer-test/tracer-provider"}})]
+                                                   :custom-provider "ziggurat.tracer-test/custom-tracer-provider"}})]
       (mount/start (mount/only [#'tracer/tracer]))
       (is (= "NoopTracerImpl" (.getSimpleName (.getClass tracer/tracer)))))
     (mount/stop)))

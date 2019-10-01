@@ -107,7 +107,7 @@
                  (.start))]
     (try
       (.activate (.scopeManager tracer) span)
-      ((mapper-func handler-fn channels (:headers message-payload)) (->MessagePayload (:value message-payload) topic-entity))
+      ((mapper-func handler-fn channels) (->MessagePayload (:value message-payload) topic-entity (:headers message-payload)))
       (catch Exception e
         (log/error "Exception while executing handler function " e))
       (finally

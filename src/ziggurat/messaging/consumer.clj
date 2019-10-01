@@ -21,7 +21,7 @@
     (catch Exception e
       (log/info "old message format read, converting to message-payload: " message)
       (let [retry-count (:retry-count message)
-            message-payload (mpr/->MessagePayload (dissoc message :retry-count) topic-entity)]
+            message-payload (mpr/->MessagePayload (dissoc message :retry-count) topic-entity {})]
         (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
@@ -95,7 +95,7 @@
       (start-subscriber* (lch/open connection)
                          (get-in-config [:jobs :instant :prefetch-count])
                          (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
-                         (mpr/mapper-func mapper-fn channels {})
+                         (mpr/mapper-func mapper-fn channels)
                          topic-entity))))
 
 (defn start-channels-subscriber [channels topic-entity]
