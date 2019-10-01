@@ -39,7 +39,7 @@
             timestamp-transformer      (create expected-metric-namespaces current-time expected-topic-entity-name)]
         (.init timestamp-transformer context)
         (with-redefs [get-current-time-in-millis (constantly current-time)
-                      metrics/report-time        (fn [metric-namespaces delay topic-entity-name]
+                      metrics/report-histogram   (fn [metric-namespaces delay topic-entity-name]
                                                    (is (= delay expected-delay))
                                                    (is (or (= metric-namespaces expected-metric-namespaces)
                                                            (= metric-namespaces [default-namespace])))
@@ -52,7 +52,7 @@
             timestamp-transformer      (create expected-metric-namespaces current-time)]
         (.init timestamp-transformer context)
         (with-redefs [get-current-time-in-millis (constantly current-time)
-                      metrics/report-time        (fn [metric-namespaces delay topic-entity-name]
+                      metrics/report-histogram   (fn [metric-namespaces delay topic-entity-name]
                                                    (is (= delay expected-delay))
                                                    (is (or (= metric-namespaces expected-metric-namespaces)
                                                            (= metric-namespaces [default-namespace])))
