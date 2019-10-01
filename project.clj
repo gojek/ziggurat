@@ -37,7 +37,7 @@
                                       :username :env/clojars_username
                                       :password :env/clojars_password
                                       :sign-releases false}]]
-  :pedantic? :abort
+  :pedantic? :warn
   :java-source-paths ["src/com"]
   :aliases {"test-all"                   ["with-profile" "default:+1.8:+1.9" "test"]
             "code-coverage"              ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
