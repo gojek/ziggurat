@@ -4,7 +4,8 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.tracer :as tracer])
-  (:import [io.opentracing.mock MockTracer]))
+  (:import [io.opentracing.mock MockTracer]
+           (io.jaegertracing.internal JaegerTracer$Builder)))
 
 (use-fixtures :once fix/silence-logging)
 
@@ -14,14 +15,16 @@
 (deftest mount-tracer-test
   (testing "should start JaegerTracer when tracer is enabled and tracer provider is empty"
     (fix/mount-config)
-    (mount/start (mount/only [#'tracer/tracer]))
-    (is (= "JaegerTracer" (.getSimpleName (.getClass tracer/tracer))))
+    (with-redefs [tracer/default-tracer-provider (fn [] (.build (JaegerTracer$Builder. "test")))]
+      (mount/start (mount/only [#'tracer/tracer]))
+      (is (= "JaegerTracer" (.getSimpleName (.getClass tracer/tracer)))))
     (mount/stop))
 
   (testing "should start JaegerTracer when tracer is enabled and tracer provider is nil"
     (fix/mount-config)
-    (mount/start (mount/only [#'tracer/tracer]))
-    (is (= "JaegerTracer" (.getSimpleName (.getClass tracer/tracer))))
+    (with-redefs [tracer/default-tracer-provider (fn [] (.build (JaegerTracer$Builder. "test")))]
+      (mount/start (mount/only [#'tracer/tracer]))
+      (is (= "JaegerTracer" (.getSimpleName (.getClass tracer/tracer)))))
     (mount/stop))
 
   (testing "should execute create custom tracer when tracer is enabled and tracer provider is set"
