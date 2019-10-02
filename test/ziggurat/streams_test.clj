@@ -117,7 +117,7 @@
           (is (= "Message-Handler" (-> finished-spans
                                        (.get 1)
                                        (.operationName))))
-          (is (= {(.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER, (.getKey Tags/COMPONENT) "lambda"} tags)))))))
+          (is (= {(.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER, (.getKey Tags/COMPONENT) "ziggurat"} tags)))))))
 
 (deftest start-streams-test-when-tracer-is-not-configured
   (let [message-received-count (atom 0)]

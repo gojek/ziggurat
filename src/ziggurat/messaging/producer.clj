@@ -106,7 +106,7 @@
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
         topic-entity (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
-    (publish exchange-name message-payload nil)))
+    (publish exchange-name message-payload)))
 
 (defn- channel-retries-enabled [topic-entity channel]
   (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :enabled))

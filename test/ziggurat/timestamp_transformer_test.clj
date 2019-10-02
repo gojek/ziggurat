@@ -35,8 +35,7 @@
         expected-delay             1000]
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay"
       (let [context                    (reify ProcessorContext
-                                         (timestamp [_] record-timestamp)
-                                         (headers [_] (RecordHeaders.)))
+                                         (timestamp [_] record-timestamp))
             expected-topic-entity-name "expected-topic-entity-name"
             timestamp-transformer      (create expected-metric-namespaces current-time expected-topic-entity-name)]
         (.init timestamp-transformer context)
@@ -49,8 +48,7 @@
           (.transform timestamp-transformer nil nil))))
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay when topic-entity-name is nil"
       (let [context                    (reify ProcessorContext
-                                         (timestamp [_] record-timestamp)
-                                         (headers [_] (RecordHeaders.)))
+                                         (timestamp [_] record-timestamp))
             expected-topic-entity-name nil
             timestamp-transformer      (create expected-metric-namespaces current-time)]
         (.init timestamp-transformer context)
