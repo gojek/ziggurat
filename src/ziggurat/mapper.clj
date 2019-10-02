@@ -10,9 +10,9 @@
 (defn- send-msg-to-channel [channels message topic-entity return-code]
   (when-not (contains? (set channels) return-code)
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
-  (let [queue-timeout-ms (get-in (ziggurat-config) [:stream-router topic-entity :channels return-code :queue-timeout-ms])]
-    (if queue-timeout-ms
-      (producer/publish-to-channel-custom-delay-queue topic-entity return-code message queue-timeout-ms)
+  (let [channel-delay-ms (get-in (ziggurat-config) [:stream-router topic-entity :channels return-code :channel-delay-ms])]
+    (if channel-delay-ms
+      (producer/publish-to-channel-custom-delay-queue topic-entity return-code message channel-delay-ms)
       (producer/publish-to-channel-instant-queue topic-entity return-code message))))
 
 (defn mapper-func [mapper-fn topic-entity channels]

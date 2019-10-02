@@ -56,8 +56,7 @@
               (is @successfully-processed?))))))
 
     (testing "message process should successfully push to delay channel queue"
-      (fix/with-queues
-        (assoc-in stream-routes [:default :channels :channel-1 :queue-timeout-ms] 1000)
+      (fix/with-queues (assoc-in stream-routes [:default :channel-delay] (constantly :success))
         (let [successfully-processed? (atom false)
               expected-metric         "success"]
           (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
@@ -66,8 +65,8 @@
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! successfully-processed? true)))]
-            ((mapper-func (constantly :channel-1) expected-topic-entity-name [:channel-1]) message)
-            (let [message-from-mq (rmq/get-message-from-channel-delay-queue expected-topic-entity-name :channel-1)]
+            ((mapper-func (constantly :channel-delay) :default [:channel-delay]) message)
+            (let [message-from-mq (rmq/get-message-from-channel-delay-queue :default :channel-delay)]
               (is (= message message-from-mq))
               (is @successfully-processed?))))))
 
