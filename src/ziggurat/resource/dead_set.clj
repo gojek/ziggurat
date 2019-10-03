@@ -23,8 +23,12 @@
       nil)))
 
 (defn- validate-params [count topic-entity stream-routes channel]
-  (and (some? (get-in stream-routes [(keyword topic-entity) (or (keyword channel) :handler-fn)]))
-       (validate-count count)))
+  (let [channel-val (get-in stream-routes [(keyword topic-entity) (keyword channel)])
+        ;;TODO: Remove the usage of :handler-fn when it is deprecated
+        handler-fn-val (get-in stream-routes [(keyword topic-entity) :handler-fn])
+        handler-val (get-in stream-routes [(keyword topic-entity) :handler])]
+  (and (or (some? channel-val) (some? handler-fn-val) (some? handler-val))
+       (validate-count count))))
 
 (defn- channel-request? [channel]
   (some? channel))
