@@ -109,12 +109,15 @@
                            (mpr/channel-mapper-func channel-handler-fn channel-key)
                            topic-entity)))))
 
+(defn- get-handler-function [stream-route]
+  (or (-> stream-route second :handler) (-> stream-route second :handler-fn)))
+
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes]
   (doseq [stream-route stream-routes]
     (let [topic-entity  (first stream-route)
-          topic-handler (-> stream-route second :handler-fn)
-          channels      (-> stream-route second (dissoc :handler-fn))]
+          topic-handler (get-handler-function stream-route)
+          channels      (-> stream-route second (dissoc :handler-fn) (dissoc :handler))]
       (start-channels-subscriber channels topic-entity)
       (start-retry-subscriber* topic-handler topic-entity (keys channels)))))

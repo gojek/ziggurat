@@ -206,6 +206,43 @@
         (is (= (count stream-routes) @counter))
         (util/close ch)))))
 
+
+(deftest start-subscriber-test-for-new-handler-function-keyword
+  (testing "start subscribers should call start-retry-subscriber* with the handler function defined against :handler keyword in stream routes"
+    (let [no-of-workers       3
+          original-zig-config (ziggurat-config)
+          ch                  (lch/open connection)
+          first-result        (atom "nil")
+          second-result       (atom "nil")
+          stream-routes       {topic-entity {:handler #(reset! first-result "Inside handler function")}
+                               :test    {:handler #(reset! second-result "Inside another handler function")}}]
+      (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
+                                                       (update-in [:retry :enabled] (constantly true))
+                                                       (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
+                    start-retry-subscriber* (fn [mapper-fn x y] (mapper-fn))]
+        (start-subscribers stream-routes)
+        (is (= "Inside handler function" @first-result))
+        (is (= "Inside another handler function" @second-result))
+        (util/close ch))))
+  (testing "start subscribers should call start-channels-subscriber with correct value of channels from stream-routes"
+    (let [no-of-workers       3
+          original-zig-config (ziggurat-config)
+          ch                  (lch/open connection)
+          correct-channels    (atom true)
+          stream-routes       {topic-entity {:handler #() :channel-one "value-one"}
+                               :test    {:handler #() :channel-two "value-two"}}]
+      (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
+                                                       (update-in [:retry :enabled] (constantly false))
+                                                       (update-in [:jobs :instant :worker-count] (constantly 0))
+                                                       (update-in [:stream-router topic-entity :channels :channel-one :worker-count] (constantly 0))
+                                                       (update-in [:stream-router topic-entity :channels :channel-two :worker-count] (constantly 0))))
+                    start-channels-subscriber (fn [channels topic-entity] (fn []
+                                                                            (if (or (contains? channels :handler) (contains? channels :handler-fn))
+                                                                              (reset! correct-channels false))))]
+        (start-subscribers stream-routes)
+        (is (true? @correct-channels))
+        (util/close ch)))))
+
 (deftest start-channels-subscriber-test
   (testing "the mapper-fn for channel subscriber should be retried until return success when retry is enabled to for that channel"
     (let [retry-counter       (atom 0)
