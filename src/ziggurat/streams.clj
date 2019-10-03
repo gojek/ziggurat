@@ -2,13 +2,13 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [sentry-clj.async :as sentry]
-            [ziggurat.channel :as chl]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as transformer]
             [ziggurat.util.map :as umap]
-            [ziggurat.middleware.default :as mw])
+            [ziggurat.middleware.default :as mw]
+            [ziggurat.messaging.util :refer [get-channel-names]])
   (:import [java.util Properties]
            [java.util.regex Pattern]
            [org.apache.kafka.clients.consumer ConsumerConfig]
@@ -122,7 +122,7 @@
   ([stream-routes stream-configs]
    (reduce (fn [streams stream]
              (let [topic-entity     (first stream)
-                   channels         (chl/get-keys-for-topic stream-routes topic-entity)
+                   channels         (get-channel-names stream-routes topic-entity)
                    stream-config    (-> stream-configs
                                         (get-in [:stream-router topic-entity])
                                         (umap/deep-merge default-config-for-stream))

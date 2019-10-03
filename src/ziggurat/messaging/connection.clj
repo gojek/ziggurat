@@ -5,14 +5,14 @@
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.channel :refer [get-keys-for-topic]])
+            [ziggurat.messaging.util :refer [get-channel-names]])
   (:import [com.rabbitmq.client ShutdownListener]
            [java.util.concurrent Executors]))
 
 (defn is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
         all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
-                                (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
+                                (concat all-channel-vec (get-channel-names stream-routes topic-entity)))
                               []
                               stream-routes)]
     (or (pos? (count all-channels))

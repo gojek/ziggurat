@@ -13,5 +13,7 @@
 (defn get-channel-names [stream-routes topic-entity]
   (-> stream-routes
       (get topic-entity)
+      ;;TODO: Remove the usage of :handler-fn when it is deprecated
       (dissoc :handler-fn)
+      (dissoc :handler)
       keys))
