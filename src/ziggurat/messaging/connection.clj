@@ -1,5 +1,6 @@
 (ns ziggurat.messaging.connection
   (:require [clojure.tools.logging :as log]
+            [langohr.core :as rmq]
             [mount.core :as mount :refer [defstate start]]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
@@ -30,16 +31,19 @@
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
-(defn create-connection [config]
-  (let [connection-factory (TracingConnectionFactory. tracer)]
-    (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
-    (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (list (Address. (:host config) (:port config)))))))
+(defn create-connection [config tracer-enabled]
+  (if tracer-enabled
+    (let [connection-factory (TracingConnectionFactory. tracer)]
+      (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
+      (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (list (Address. (:host config) (:port config))))))
+
+    (rmq/connect config)))
 
 (defn- start-connection []
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
     (try
-      (let [connection (create-connection (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))))]
+      (let [connection (create-connection (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))) (get-in (ziggurat-config) [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
@@ -52,7 +56,9 @@
 
 (defn- stop-connection [conn]
   (when (is-connection-required?)
-    (.close conn)
+    (if (get-in (ziggurat-config) [:tracer :enabled])
+      (.close conn)
+      (rmq/close conn))
     (log/info "Disconnected from RabbitMQ")))
 
 (defstate connection
