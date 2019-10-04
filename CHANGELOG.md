@@ -6,16 +6,16 @@ All notable changes to this project will be documented in this file. This change
 ## 3.0.0 - 2019-10-04
 - Updates kafka streams - 1.1.1 -> 2.1.0
 - Changes metrics format
-  - instead of having service name and topic in the metric name, everything is now added to tags
-- middleware
-  - handler-fn will now receive the message as a byte array
-  - channel-fns will now receive the message as a byte array
+  - Instead of having service name and topic in the metric name, everything is now added to tags
+- Middleware
+  - Handler-fn will now receive the message as a byte array
+  - Channel-fns will now receive the message as a byte array
   - We have provided middlewares, that can be used to deserialize the messages
-  - deadset-get api will now get serialized messages
+  - Deadset-get api will now get serialized messages
 - Java functions
   - Java functions are now exposed for all public functions in namespaces
 - Dependency simplification
-  - removes dependency overrides.
+  - Removes dependency overrides.
 
 
 ## 3.0.0-alpha.7 - 2019-10-04
