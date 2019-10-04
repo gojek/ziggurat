@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.0.0-alpha.7 - 2019-10-04
+- Removes dependency overrides and conflicts
+- Adds pedantic warn to generic profile
+- Adds pedantic abort to uberjar profile
+
 ## 3.0.0-alpha.6 - 2019-08-22
 - Fix increment/decrement count to accept both number and map
 
