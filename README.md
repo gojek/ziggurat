@@ -25,7 +25,7 @@
 
 ## Description
 
-Ziggurat is a framework built to simplify Multi-Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
+Ziggurat is a framework built to simplify Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
 Ziggurat is built with the intent to abstract out
 ```
 - reading messages from Kafka
@@ -53,15 +53,11 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 ## Usage
 
-Upgrade Guide to 3.x refer [here](UpgradeGuide.md)
+Add this to your project.clj
 
-Add this to your project.clj:
+`[tech.gojek/ziggurat "3.0.0"]`
 
-`[tech.gojek/ziggurat "3.0.0-alpha.4"]`
-
-or for latest stable version
-
-`[tech.gojek/ziggurat "2.12.3"]`
+_Please refer [clojars](https://clojars.org/tech.gojek/ziggurat) for the latest stable version_
 
 To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
 ```clojure
@@ -79,11 +75,16 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
     [message]
     (println message)
     :success)
+    
+(def handler-fn
+    (-> main-fn
+      (middleware/protobuf->hash ProtoClass :stream-id)))
 
-(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}})
+(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
+_NOTE: this example assumes that the message is serialized in Protobuf format_ 
 
-Please refer to the [Middleware section](#middleware-in-ziggurat)
+Please refer the [Middleware section](#middleware-in-ziggurat) for understanding `handler-fn` here.
 
 * The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
@@ -96,8 +97,8 @@ Please refer to the [Middleware section](#middleware-in-ziggurat)
 * Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
 
     * ```clojure
-        (ziggurat/main start-fn stop-fn {:stream-id-1 {:handler-fn main-fn-1}
-                                         :stream-id-2 {:handler-fn main-fn-2}})
+        (ziggurat/main start-fn stop-fn {:stream-id-1 {:handler-fn handler-fn-1}
+                                         :stream-id-2 {:handler-fn handler-fn-2}})
         ```
 
 ```clojure
@@ -112,21 +113,27 @@ Please refer to the [Middleware section](#middleware-in-ziggurat)
 )
 
 
-(defn handler-function [_request]
+(defn api-handler [_request]
   {:status  200
    :headers {"Content-Type" "application/json"}
    :body    (get-resource)})
 
-(def routes [["v1/resources" {:get handler-function}]])
+(def routes [["v1/resources" {:get api-handler}]])
 
 (defn main-fn
     [message]
     (println message)
     :success)
+    
+(def handler-fn
+    (-> main-fn
+      (middleware/protobuf->hash ProtoClass :stream-id)))
 
-(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn main-fn}} routes)
+(ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}} routes)
 
 ```
+_NOTE: this example assumes that the message is serialized in Protobuf format_ 
+
 Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
 how you can pass in your own route.
 
@@ -153,9 +160,9 @@ You can pass in multiple modes and it will start accordingly
 If nothing passed to modes then it will start all the modes.
 
 ## Middleware in Ziggurat
-Version 3.0 of Ziggurat introduces the support of Middleware. Old versions of Ziggurat (< 3.0) assumed that the messages read from kafka were serialized in proto-format and thus it deserialized
-them and passed a clojure hash-map to the mapper-fn. We have now pulled the deserialization function into a middleware and users have the freedom to use this function to deserialized their messages
-or define their custom middlewares.
+Version 3.0.0 of Ziggurat introduces the support of Middleware. Old versions of Ziggurat (< 3.0) assumed that the messages read from kafka were serialized in proto-format and thus it deserialized
+them and passed a clojure map to the mapper-fn. We have now pulled the deserialization function into a middleware and users have the freedom to use this function to deserialize their messages
+or define their custom middlewares. This enables ziggurat to process messages serialized in any format.
 
 ### Custom Middleware usage
 The default middleware `default/protobuf->hash` assumes that the message is serialized in proto format.
@@ -175,12 +182,19 @@ The default middleware `default/protobuf->hash` assumes that the message is seri
     (println message)
     :success)
 
+(defn wrap-middleware-fn
+    [mapper-fn :stream-id]
+    (fn [message]
+      (println "processing message for stream: " :stream-id)
+      (mapper-fn (deserialize-message message))))
+
 (def handler-fn
     (-> main-fn
-      (middleware/protobuf->hash ProtoClass :stream-id)))
+      (wrap-middleware-fn :stream-id)))
 
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
+_The handler-fn gets a serialized message from kafka and thus we need a deserealize-message function. We have provided default deserializers in Ziggurat_
 
 ## Publishing data to Kafka Topics in Ziggurat
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
