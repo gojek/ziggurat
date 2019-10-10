@@ -1,4 +1,7 @@
 (ns ziggurat.middleware.json
+  "This namespace defines middleware methods for parsing JSON strings.
+   Please see [Ziggurat Middleware](https://github.com/gojek/ziggurat#middleware-in-ziggurat) for more details.
+  "
   (:require [cheshire.core :refer :all]
             [sentry-clj.async :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
@@ -17,7 +20,16 @@
 
 (defn parse-json
   "This method returns a function which deserializes the provided message before processing it.
-   It uses `deserialize-json` defined in this namespace to parse JSON strings."
-  [handler-fn topic-entity-name key-fn]
-  (fn [message]
-    (handler-fn (deserialize-json message topic-entity-name key-fn))))
+   It uses `deserialize-json` defined in this namespace to parse JSON strings.
+
+   Takes following arguments:
+   `handler-fn`        : A function which would process the parsed JSON string
+   `topic-entity-name` : Stream route topic entity (as defined in config.edn). It is only used for publishing metrics.
+   `key-fn`            : key-fn can be either true, false of a generic function to transform keys in JSON string.
+                         If `true`, would coerce keys to keywords, and if `false` it would leave keys as strings.
+                         Default value is true."
+  ([handler-fn topic-entity-name]
+   (parse-json handler-fn topic-entity-name true))
+  ([handler-fn topic-entity-name key-fn]
+   (fn [message]
+     (handler-fn (deserialize-json message topic-entity-name key-fn)))))

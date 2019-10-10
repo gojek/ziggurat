@@ -1,6 +1,7 @@
 (ns ziggurat.middleware.default
   (:require [flatland.protobuf.core :as proto]
             [sentry-clj.async :as sentry]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.metrics :as metrics]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
@@ -21,7 +22,8 @@
                              keys)]
         (select-keys loaded-proto proto-keys))
       (catch Throwable e
-        (let [additional-tags   {:topic_name topic-entity-name}
+        (let [service-name      (:app-name (ziggurat-config))
+              additional-tags   {:topic_name topic-entity-name}
               default-namespace "message-parsing"]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
           (metrics/increment-count default-namespace "failed" additional-tags)
