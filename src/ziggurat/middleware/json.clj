@@ -30,7 +30,7 @@
                          Default value is true.
 
    An Example
-   For parsing a JSON string `\"{\"foo\":\"bar\"}\"` to `{"foo":"bar"}`, call the function with `key-fn` false
+   For parsing a JSON string `\"{\"foo\":\"bar\"}\"` to `{\"foo\":\"bar\"}`, call the function with `key-fn` false
    `(parse-json (fn [message] ()) \"topic\" false)`
 
    For parsing a JSON string `\"{\"foo\":\"bar\"}\"` to `{:foo:\"bar\"}`, call the function without passing `key-fn`,
