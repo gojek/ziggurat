@@ -55,6 +55,21 @@
               (is (= message message-from-mq))
               (is @successfully-processed?))))))
 
+    (testing "message process should successfully push to delay channel queue"
+      (fix/with-queues (assoc-in stream-routes [:default :channel-delay] (constantly :success))
+        (let [successfully-processed? (atom false)
+              expected-metric         "success"]
+          (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                  (when (and (or (= metric-namespaces [service-name expected-topic-entity-name default-namespace])
+                                                                 (= metric-namespaces [default-namespace]))
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
+                                                    (reset! successfully-processed? true)))]
+            ((mapper-func (constantly :channel-delay) :default [:channel-delay]) message)
+            (let [message-from-mq (rmq/get-message-from-channel-delay-queue :default :channel-delay)]
+              (is (= message message-from-mq))
+              (is @successfully-processed?))))))
+
     (testing "message process should raise exception if channel not in list"
       (fix/with-queues
         (assoc-in stream-routes [:default :channel-1] (constantly :success))
