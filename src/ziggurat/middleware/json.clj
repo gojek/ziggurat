@@ -8,9 +8,9 @@
             [ziggurat.metrics :as metrics]))
 
 (defn- deserialize-json
-  [message topic-entity-name key-fn]
+  [message topic-entity-name key-fn encoding]
   (try
-    (parse-string message key-fn)
+    (parse-string (String. message encoding) key-fn)
     (catch Exception e
       (let [additional-tags   {:topic_name topic-entity-name}
             default-namespace "json-message-parsing"]
@@ -39,7 +39,9 @@
 
    "
   ([handler-fn topic-entity-name]
-   (parse-json handler-fn topic-entity-name true))
+   (parse-json handler-fn topic-entity-name true "UTF-8"))
   ([handler-fn topic-entity-name key-fn]
+   (parse-json handler-fn topic-entity-name key-fn "UTF-8"))
+  ([handler-fn topic-entity-name key-fn encoding]
    (fn [message]
-     (handler-fn (deserialize-json message topic-entity-name key-fn)))))
+     (handler-fn (deserialize-json message topic-entity-name key-fn encoding)))))
