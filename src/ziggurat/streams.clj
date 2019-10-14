@@ -29,7 +29,9 @@
    :commit-interval-ms                 15000
    :auto-offset-reset-config           "latest"
    :oldest-processed-message-in-s      604800
-   :changelog-topic-replication-factor 3})
+   :changelog-topic-replication-factor 3
+   :default-key-serde                  "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"
+   :default-value-serde                "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"})
 
 (defn- set-upgrade-from-config
   "Populates the upgrade.from config in kafka streams required for upgrading kafka-streams version from 1 to 2. If the
@@ -38,6 +40,20 @@
   [properties upgrade-from-config]
   (if (some? upgrade-from-config)
     (.put properties StreamsConfig/UPGRADE_FROM_CONFIG upgrade-from-config)))
+
+(defn- set-encoding-config
+  "Populates `key-deserializer-encoding`, `value-deserializer-encoding` and `deserializer-encoding`
+   in `properties` only if non-nil."
+  [properties key-deserializer-encoding value-deserializer-encoding deserializer-encoding]
+  (let [KEY_DESERIALIZER_ENCODING "key.deserializer.encoding"
+        VALUE_DESERIALIZER_ENCODING "value.deserializer.encoding"
+        DESERIALIZER_ENCODING "deserializer.encoding"]
+    (if (some? key-deserializer-encoding)
+      (.put properties KEY_DESERIALIZER_ENCODING key-deserializer-encoding))
+    (if (some? value-deserializer-encoding)
+      (.put properties VALUE_DESERIALIZER_ENCODING value-deserializer-encoding))
+    (if (some? deserializer-encoding)
+      (.put properties DESERIALIZER_ENCODING deserializer-encoding))))
 
 (defn- validate-auto-offset-reset-config
   [auto-offset-reset-config]
@@ -51,20 +67,26 @@
                            buffered-records-per-partition
                            commit-interval-ms
                            upgrade-from
-                           changelog-topic-replication-factor]}]
+                           changelog-topic-replication-factor
+                           default-key-serde
+                           default-value-serde
+                           key-deserializer-encoding
+                           value-deserializer-encoding
+                           deserializer-encoding]}]
   (validate-auto-offset-reset-config auto-offset-reset-config)
   (doto (Properties.)
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
     (.put StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
     (.put StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
-    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
-    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
+    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG default-key-serde)
+    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG default-value-serde)
     (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG IngestionTimeExtractor)
     (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int buffered-records-per-partition))
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
     (.put StreamsConfig/REPLICATION_FACTOR_CONFIG (int changelog-topic-replication-factor))
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)
-    (set-upgrade-from-config upgrade-from)))
+    (set-upgrade-from-config upgrade-from)
+    (set-encoding-config key-deserializer-encoding value-deserializer-encoding deserializer-encoding)))
 
 (defn- log-and-report-metrics [topic-entity message]
   (let [topic-entity-name (name topic-entity)
