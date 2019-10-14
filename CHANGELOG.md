@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.1.0-alpha.1 - 2019-10-14
+- Adds tracing support to the framework.
+
 ## 3.0.0 - 2019-10-04
 - Updates kafka streams - 1.1.1 -> 2.1.0
 - Changes metrics format
