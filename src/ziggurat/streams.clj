@@ -44,6 +44,9 @@
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config}))))
 
+(defn- get-serde [default-serde]
+  (if (some? default-serde) default-serde (.getName (.getClass (Serdes/ByteArray)))))
+
 (defn- properties [{:keys [application-id
                            bootstrap-servers
                            stream-threads-count
@@ -51,14 +54,16 @@
                            buffered-records-per-partition
                            commit-interval-ms
                            upgrade-from
-                           changelog-topic-replication-factor]}]
+                           changelog-topic-replication-factor
+                           default-key-serde
+                           default-value-serde]}]
   (validate-auto-offset-reset-config auto-offset-reset-config)
   (doto (Properties.)
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
     (.put StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
     (.put StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
-    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
-    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (.getName (.getClass (Serdes/ByteArray))))
+    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (get-serde default-key-serde))
+    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (get-serde default-value-serde))
     (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG IngestionTimeExtractor)
     (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int buffered-records-per-partition))
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
