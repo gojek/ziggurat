@@ -1,4 +1,4 @@
-(defproject tech.gojek/ziggurat "3.0.0"
+(defproject tech.gojek/ziggurat "3.0.1-alpha.1"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -16,6 +16,14 @@
                  [io.dropwizard.metrics5/metrics-core "5.0.0-rc2" :scope "compile"]
                  [medley "1.2.0" :exclusions [org.clojure/clojure]]
                  [mount "0.1.16"]
+                 [io.jaegertracing/jaeger-core "1.0.0"]
+                 [io.jaegertracing/jaeger-client "1.0.0"]
+                 [io.opentracing/opentracing-api "0.33.0"]
+                 [io.opentracing/opentracing-mock "0.33.0"]
+                 [io.opentracing/opentracing-noop "0.33.0"]
+                 [io.opentracing.contrib/opentracing-kafka-streams "0.1.4" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.apache.kafka/kafka-streams org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
+                 [io.opentracing.contrib/opentracing-kafka-client "0.1.4" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
+                 [io.opentracing.contrib/opentracing-rabbitmq-client "0.1.5" :exclusions [com.rabbitmq/amqp-client]]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.12.1"]

@@ -5,7 +5,8 @@
             [ziggurat.util.time :refer :all])
   (:import [org.apache.kafka.clients.consumer ConsumerRecord]
            [org.apache.kafka.streams.processor ProcessorContext]
-           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
+           [ziggurat.timestamp_transformer IngestionTimeExtractor]
+           [org.apache.kafka.common.header.internals RecordHeaders]))
 
 (deftest ingestion-time-extractor-test
   (let [ingestion-time-extractor (IngestionTimeExtractor.)

@@ -1,14 +1,15 @@
 (ns ziggurat.init-test
   (:require [clojure.test :refer :all]
+            [mount.core :refer [defstate] :as mount]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
             [ziggurat.messaging.connection :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams :refer [stream]]
-            [mount.core :refer [defstate]]
             [ziggurat.server.test-utils :as tu]
-            [mount.core :as mount]))
+            [ziggurat.tracer :as tracer])
+  (:import (io.opentracing.mock MockTracer)))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
@@ -17,7 +18,8 @@
                     streams/stop-streams  (constantly nil)
                     rmqc/start-connection (fn [] (reset! result (* @result 2)))
                     rmqc/stop-connection  (constantly nil)
-                    config/config-file    "config.test.edn"]
+                    config/config-file    "config.test.edn"
+                    tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #(reset! result (+ @result 3)) {} [] nil)
         (init/stop #() nil)
         (is (= 16 @result))))))
@@ -27,7 +29,8 @@
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (fn [_] (reset! result (* @result 2)))
-                    config/config-file    "config.test.edn"]
+                    config/config-file    "config.test.edn"
+                    tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #() {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= 8 @result))))))
@@ -38,7 +41,8 @@
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (constantly nil)
                     rmqc/stop-connection (fn [_] (reset! result (* @result 2)))
-                    config/config-file    "config.test.edn"]
+                    config/config-file    "config.test.edn"
+                    tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #() {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= 8 @result))))))
@@ -53,7 +57,8 @@
                                                            (swap! make-queues-called + 1)
                                                            (is (= stream-routes expected-stream-routes)))
                     messaging-consumer/start-subscribers (constantly nil)
-                    config/config-file                   "config.test.edn"]
+                    config/config-file                   "config.test.edn"
+                    tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #() expected-stream-routes [] nil)
         (init/stop #() nil)
         (is (= 2 @make-queues-called))))))
@@ -68,7 +73,8 @@
                                                            (swap! start-subscriber-called + 1)
                                                            (is (= stream-routes expected-stream-routes)))
                     messaging-producer/make-queues       (constantly nil)
-                    config/config-file                   "config.test.edn"]
+                    config/config-file                   "config.test.edn"
+                    tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #() expected-stream-routes [] nil)
         (init/stop #() nil)
         (is (= 1 @start-subscriber-called))))))
@@ -118,7 +124,8 @@
   (testing "The routes added by actor should be served along with ziggurat-routes"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
-                  config/config-file    "config.test.edn"]
+                  config/config-file    "config.test.edn"
+                  tracer/create-tracer  (fn [] (MockTracer.))]
       (init/start #() {} [["test-ping" (fn [_request] {:status 200
                                                        :body   "pong"})]] nil)
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
@@ -131,7 +138,8 @@
   (testing "Deadset management and server api modes should run both actor and deadset management routes"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
-                  config/config-file    "config.test.edn"]
+                  config/config-file    "config.test.edn"
+                  tracer/create-tracer  (fn [] (MockTracer.))]
       (init/start #() {} [["test-ping" (fn [_request] {:status 200
                                                        :body   "pong"})]] [:management-api :api-server])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
@@ -144,7 +152,8 @@
   (testing "The routes not added by actor should return 404"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
-                  config/config-file    "config.test.edn"]
+                  config/config-file    "config.test.edn"
+                  tracer/create-tracer  (fn [] (MockTracer.))]
       (init/start #() {} [] nil)
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)]
         (init/stop #() nil)
@@ -153,7 +162,8 @@
   (testing "The ziggurat routes should work fine when actor routes are not provided"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
-                  config/config-file    "config.test.edn"]
+                  config/config-file    "config.test.edn"
+                  tracer/create-tracer  (fn [] (MockTracer.))]
       (init/start #() {} [] nil)
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
         (init/stop #() nil)

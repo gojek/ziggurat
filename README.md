@@ -200,6 +200,36 @@ For publishing data using a producer which is defined for the stream router conf
 
 `(send :default "test-topic" 1 "key" "value")`
 
+## Tracing
+[Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
+
+Currently, the execution of the handler function is traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
+
+Tracing has been added to the following flows:
+
+1. Normal basic consume
+2. Retry via rabbitmq
+3. Produce to rabbitmq channel
+4. Produce to another kafka topic
+
+By default, tracing is done via [Jaeger](https://www.jaegertracing.io/) based on the env configs. Please refer [Jaeger Configuration](https://github.com/jaegertracing/jaeger-client-java/tree/master/jaeger-core#configuration-via-environment) 
+and [Jaeger Architecture](https://www.jaegertracing.io/docs/1.13/architecture/) to set the respective env variables. 
+To enable custom tracer, a custom tracer provider function name can be set in `:custom-provider`. The corresponding function will be executed in runtime to create a tracer. In the event of any errors while executing the custom tracer provider, a Noop tracer will be created.
+
+To enable tracing, the following config needs to be added to the `config.edn` under `:ziggurat` key.
+
+```clojure
+:tracer {:enabled               [true :bool]
+         :custom-provider       ""}
+```
+
+Example Jaeger Env Config:
+```
+JAEGER_SERVICE_NAME: "service-name"
+JAEGER_AGENT_HOST: "localhost"
+JAEGER_AGENT_PORT: 6831
+```
+
 ## Configuration
 
 All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.

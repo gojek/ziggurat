@@ -7,14 +7,19 @@
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.messaging.util :as rutil])
+            [ziggurat.messaging.util :as rutil]
+            [ziggurat.tracer :refer [tracer]]
+            [clojure.tools.logging :as log])
   (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]
   (with-open [ch (lch/open connection)]
-    (let [[meta payload] (lb/get ch queue-name false)]
-      (when (seq payload)
-        (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))))
+    (try
+      (let [[meta payload] (lb/get ch queue-name false)]
+        (when (seq payload)
+          (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))
+      (catch NullPointerException e
+        nil))))
 
 (defn get-msg-from-delay-queue [topic-name]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
