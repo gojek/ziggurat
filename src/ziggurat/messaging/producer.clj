@@ -90,8 +90,45 @@
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message-payload)))
 
+(defn- channel-retries-enabled [topic-entity channel]
+  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :enabled))
+
+(defn- get-channel-retry-count [topic-entity channel]
+  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
+
+(defn- get-channel-retry-queue-timeout-ms [topic-entity channel]
+  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :queue-timeout-ms))
+
+(defn- channel-retries-exponential-backoff-enabled [topic-entity channel]
+  "Get exponential backoff enabled for specific channel from config."
+  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :exponential-backoff-enabled))
+
+(defn- get-exponential-backoff [retry-count message-retry-count queue-timeout-ms]
+  "Get queue timeout value when exponential backoff is enabled."
+  (int (* (dec (Math/pow 2 (- retry-count message-retry-count))) queue-timeout-ms)))
+
+(defn get-queue-timeout-ms [topic-entity channel message-payload]
+  "Get queue timeout from config. It will use channel queue-timeout-ms if defined, otherwise it will use rabbitmq delay queue-timeout-ms.
+  If exponential-backoff-enabled is true, queue-timeout-ms will be exponential with formula (2^n)-1, n is message retry-count."
+  (let [queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
+        channel-queue-timeout-ms (get-channel-retry-queue-timeout-ms topic-entity channel)
+        exponential-backoff-enabled (channel-retries-exponential-backoff-enabled topic-entity channel)]
+    (if exponential-backoff-enabled
+      (let [retry-count (-> (ziggurat-config) :retry :count)
+            channel-retry-count (get-channel-retry-count topic-entity channel)
+            message-retry-count (message-payload :retry-count)]
+        (get-exponential-backoff (or channel-retry-count retry-count) message-retry-count (or channel-queue-timeout-ms queue-timeout-ms)))
+      (or channel-queue-timeout-ms queue-timeout-ms))))
+
 (defn publish-to-channel-delay-queue [channel message-payload]
   (let [{:keys [exchange-name queue-timeout-ms]} (:delay (rabbitmq-config))
+        topic-entity  (:topic-entity message-payload)
+        exchange-name (prefixed-channel-name topic-entity channel exchange-name)
+        queue-timeout-ms (get-queue-timeout-ms topic-entity channel message-payload)]
+    (publish exchange-name message-payload queue-timeout-ms)))
+
+(defn publish-to-channel-custom-delay-queue [channel message-payload queue-timeout-ms]
+  (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message-payload queue-timeout-ms)))
@@ -107,12 +144,6 @@
         topic-entity (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message-payload)))
-
-(defn- channel-retries-enabled [topic-entity channel]
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :enabled))
-
-(defn- get-channel-retry-count [topic-entity channel]
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
 
 (defn retry [{:keys [retry-count topic-entity] :as message-payload}]
   (when (-> (ziggurat-config) :retry :enabled)

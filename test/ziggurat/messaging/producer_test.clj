@@ -48,6 +48,57 @@
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+            (producer/retry-for-channel message-from-mq topic-entity channel)))
+        (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
+          (is (= expected-message-payload message-from-mq))))))
+
+  (testing "message in channel will be retried with linear queue timeout"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)
+                 :linear-retry #(constantly nil)}}
+      (let [retry-count (atom 2)
+            topic-entity :default
+            channel :linear-retry
+            message {:foo "bar" :retry-count @retry-count}
+            expected-message-payload {:foo "bar"}]
+        (producer/retry-for-channel message topic-entity channel)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+            (producer/retry-for-channel message-from-mq topic-entity channel)))
+        (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
+          (is (= expected-message-payload message-from-mq))))))
+
+  (testing "message in channel will be retried with exponential queue timeout"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)
+                 :exponential-retry #(constantly nil)}}
+      (let [retry-count (atom 2)
+            topic-entity :default
+            channel :exponential-retry
+            message {:foo "bar" :retry-count @retry-count}
+            expected-message-payload {:foo "bar"}]
+        (producer/retry-for-channel message topic-entity channel)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+            (producer/retry-for-channel message-from-mq topic-entity channel)))
+        (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
+          (is (= expected-message-payload message-from-mq))))))
+
+  (testing "message in channel will be retried with channel exponential queue timeout"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)
+                 :channel-exponential-retry #(constantly nil)}}
+      (let [retry-count (atom 2)
+            topic-entity :default
+            channel :channel-exponential-retry
+            message {:foo "bar" :retry-count @retry-count}
+            expected-message-payload {:foo "bar"}]
+        (producer/retry-for-channel message topic-entity channel)
+        (while (> @retry-count 0)
+          (swap! retry-count dec)
+          (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
             (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= expected-message-payload message-from-mq)))))))
@@ -335,3 +386,25 @@
             (is (= "send" (-> finished-spans
                               (.get 0)
                               (.operationName))))))))))
+
+(deftest get-queue-timeout-ms-test
+  (testing "when retries are enabled"
+    (let [topic-entity :default
+          channel :linear-retry
+          message {:foo "bar" :retry-count 2}]
+      (is (= 2000 (producer/get-queue-timeout-ms topic-entity channel message)))))
+  (testing "when exponential backoff are enabled and channel retry count not defined"
+    (let [topic-entity :default
+          channel :channel-no-retry-count
+          message {:foo "bar" :retry-count 2}]
+      (is (= 700 (producer/get-queue-timeout-ms topic-entity channel message)))))
+  (testing "when exponential backoff are enabled and channel queue timeout defined"
+    (let [topic-entity :default
+          channel :exponential-retry
+          message {:foo "bar" :retry-count 2}]
+      (is (= 7000 (producer/get-queue-timeout-ms topic-entity channel message)))))
+  (testing "when exponential backoff are enabled and channel queue timeout not defined"
+    (let [topic-entity :default
+          channel :channel-exponential-retry
+          message {:foo "bar" :retry-count 2}]
+      (is (= 700 (producer/get-queue-timeout-ms topic-entity channel message))))))
