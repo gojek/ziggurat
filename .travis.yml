@@ -1,5 +1,9 @@
 language: clojure
 
+lein: 2.8.1
+jdk:
+  - openjdk8
+
 services:
 - docker
 

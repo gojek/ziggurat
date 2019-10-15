@@ -43,10 +43,17 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
+(defn- record-headers->map [record-headers]
+  (reduce (fn [header-map record-header]
+            (assoc header-map (.key record-header) (String. (.value record-header))))
+          {}
+          record-headers))
+
 (defn- properties-for-publish
-  [expiration]
+  [expiration headers]
   (let [props {:content-type "application/octet-stream"
-               :persistent   true}]
+               :persistent   true
+               :headers      (record-headers->map headers)}]
     (if expiration
       (assoc props :expiration (str expiration))
       props)))
@@ -60,7 +67,7 @@
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
        (with-open [ch (lch/open connection)]
-         (lb/publish ch exchange "" (nippy/freeze message-payload) (properties-for-publish expiration))))
+         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))

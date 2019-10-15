@@ -47,9 +47,11 @@
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
+            [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.java-util :refer [get-key]])
-  (:import  (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
-            (java.util Properties))
+  (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
+           (java.util Properties)
+           (io.opentracing.contrib.kafka TracingKafkaProducer))
   (:gen-class
    :name tech.gojek.ziggurat.internal.Producer
    :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
@@ -85,7 +87,7 @@
            (do (log/info "Starting Kafka producers ...")
                (reduce (fn [producers [stream-config-key properties]]
                          (do (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
-                             (assoc producers stream-config-key (KafkaProducer. properties))))
+                             (assoc producers stream-config-key (TracingKafkaProducer. (KafkaProducer. properties) tracer))))
                        {}
                        (seq (producer-properties-map))))
            (log/info "No producers found. Can not initiate start."))

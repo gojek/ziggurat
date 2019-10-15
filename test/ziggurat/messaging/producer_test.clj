@@ -10,7 +10,9 @@
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]
-            [ziggurat.config :as config]))
+            [ziggurat.config :as config]
+            [ziggurat.tracer :refer [tracer]])
+  (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -99,7 +101,21 @@
             message-payload {:message {:foo "bar"} :topic-entity topic-entity}
             expected-props  {:content-type "application/octet-stream"
                              :persistent   true
-                             :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]
+                             :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))
+                             :headers      {}}]
+        (with-redefs [lb/publish (fn [_ _ _ _ props]
+                                   (is (= expected-props props)))]
+          (producer/publish-to-delay-queue message-payload)))))
+
+  (testing "publish to delay queue publishes with parsed record headers"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [topic-entity    :default
+            message-payload {:message {:foo "bar"} :topic-entity topic-entity :headers (RecordHeaders. (list (RecordHeader. "key" (byte-array (map byte "value")))))}
+            expected-props {:content-type "application/octet-stream"
+                            :persistent   true
+                            :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))
+                            :headers      {"key" "value"}}]
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
           (producer/publish-to-delay-queue message-payload)))))
@@ -287,3 +303,35 @@
         (producer/publish-to-instant-queue message-payload)
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?))))))
+
+(deftest publish-to-delay-queue-test
+  (testing "creates a span when tracer is enabled"
+    (let [stream-routes {:default {:handler-fn #(constantly nil)
+                                   :channel-1  #(constantly nil)}}]
+      (.reset tracer)
+      (fix/with-queues
+        stream-routes
+        (let [topic-entity :default
+              message-payload {:message {:foo "bar"} :topic-entity topic-entity}]
+          (producer/retry message-payload)
+          (let [finished-spans (.finishedSpans tracer)]
+            (is (= 1 (.size finished-spans)))
+            (is (= "send" (-> finished-spans
+                              (.get 0)
+                              (.operationName))))))))))
+
+(deftest publish-to-channel-instant-queue-test
+  (testing "creates a span when tracer is enabled"
+    (let [stream-routes {:default {:handler-fn #(constantly nil)
+                                   :channel-1  #(constantly nil)}}]
+      (.reset tracer)
+      (fix/with-queues
+        stream-routes
+        (let [topic-entity :default
+              message-payload {:message {:foo "bar"} :topic-entity topic-entity}]
+          (producer/publish-to-channel-instant-queue :channel-1 message-payload)
+          (let [finished-spans (.finishedSpans tracer)]
+            (is (= 1 (.size finished-spans)))
+            (is (= "send" (-> finished-spans
+                              (.get 0)
+                              (.operationName))))))))))

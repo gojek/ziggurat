@@ -4,19 +4,25 @@
             [sentry-clj.async :as sentry]
             [ziggurat.channel :as chl]
             [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.header-transformer :as header-transformer]
             [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.timestamp-transformer :as transformer]
-            [ziggurat.util.map :as umap])
+            [ziggurat.timestamp-transformer :as timestamp-transformer]
+            [ziggurat.util.map :as umap]
+            [ziggurat.tracer :refer [tracer]])
   (:import [java.util Properties]
            [java.util.regex Pattern]
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.common.utils SystemTime]
            [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
-           [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier]
+           [org.apache.kafka.streams.kstream ValueMapper TransformerSupplier ValueTransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
-           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
+           [ziggurat.timestamp_transformer IngestionTimeExtractor]
+           [io.opentracing Tracer]
+           [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
+           [io.opentracing.contrib.kafka TracingKafkaUtils]
+           [io.opentracing.tag Tags]))
 
 (def default-config-for-stream
   {:buffered-records-per-partition     10000
@@ -81,16 +87,39 @@
 (defn- map-values [mapper-fn stream-builder]
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
-(defn- transformer-supplier
+(defn- timestamp-transformer-supplier
   [metric-namespace oldest-processed-message-in-s additional-tags]
   (reify TransformerSupplier
-    (get [_] (transformer/create metric-namespace oldest-processed-message-in-s additional-tags))))
+    (get [_] (timestamp-transformer/create metric-namespace oldest-processed-message-in-s additional-tags))))
 
-(defn- transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
+(defn- header-transformer-supplier
+  []
+  (reify ValueTransformerSupplier
+    (get [_] (header-transformer/create))))
+
+(defn- timestamp-transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
   (let [service-name     (:app-name (ziggurat-config))
         metric-namespace "message-received-delay-histogram"
         additional-tags  {:topic_name topic-entity-name}]
-    (.transform stream-builder (transformer-supplier metric-namespace oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (timestamp-transformer-supplier metric-namespace oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
+
+(defn- header-transform-values [stream-builder]
+  (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
+
+(defn- traced-handler-fn [handler-fn channels message topic-entity]
+  (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message) tracer)
+        span (as-> tracer t
+               (.buildSpan t "Message-Handler")
+               (.withTag t (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
+               (.withTag t (.getKey Tags/COMPONENT) "ziggurat")
+               (if (nil? parent-ctx)
+                 t
+                 (.asChildOf t parent-ctx))
+               (.start t))]
+    (try
+      ((mapper-func handler-fn channels) (assoc (->MessagePayload (:value message) topic-entity) :headers (:headers message)))
+      (finally
+        (.finish span)))))
 
 (defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
@@ -98,14 +127,16 @@
         topic-pattern     (Pattern/compile origin-topic)]
     (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
-         (transform-values topic-entity-name oldest-processed-message-in-s)
+         (timestamp-transform-values topic-entity-name oldest-processed-message-in-s)
+         (header-transform-values)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #((mapper-func handler-fn channels) (->MessagePayload % topic-entity))))
+         (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]
   (KafkaStreams. ^Topology (topology handler-fn stream-config topic-entity channels)
-                 ^Properties (properties stream-config)))
+                 ^Properties (properties stream-config)
+                 (new TracingKafkaClientSupplier tracer)))
 
 (defn start-streams
   ([stream-routes]
