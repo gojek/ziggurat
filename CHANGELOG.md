@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.6 - 2019-10-15
+- Support for custom channel delay and retries with exponential backoff
+
 ## 2.12.5 - 2019-09-30
 - Rename report-time to report-histogram while still keeping the old API
 
