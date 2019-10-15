@@ -79,6 +79,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 (def handler-fn
     (-> main-fn
       (middleware/protobuf->hash ProtoClass :stream-id)))
+;; Here ProtoClass refers to the fully qualified name of the Java class which the code is used to de-serialize the message.
 
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
