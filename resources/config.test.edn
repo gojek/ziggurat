@@ -35,7 +35,27 @@
                                                       :upgrade-from         "1.1"
                                                       :channels             {:channel-1 {:worker-count [10 :int]
                                                                                          :retry        {:count   [5 :int]
-                                                                                                        :enabled [true :bool]}}}
+                                                                                                        :enabled [true :bool]}}
+                                                                             :channel-delay {:worker-count [10 :int]
+                                                                                             :retry        {:count   [5 :int]
+                                                                                                            :enabled [true :bool]}
+                                                                                             :channel-delay-ms [1000 :int]}
+                                                                             :linear-retry {:worker-count [10 :int]
+                                                                                            :retry        {:count   [5 :int]
+                                                                                                           :enabled [true :bool]
+                                                                                                           :queue-timeout-ms [2000 :int]}}
+                                                                             :exponential-retry {:worker-count [10 :int]
+                                                                                                 :retry        {:count   [5 :int]
+                                                                                                                :enabled [true :bool]
+                                                                                                                :queue-timeout-ms [1000 :int]
+                                                                                                                :exponential-backoff-enabled [true :bool]}}
+                                                                             :channel-exponential-retry {:worker-count [10 :int]
+                                                                                                         :retry        {:count   [5 :int]
+                                                                                                                        :enabled [true :bool]
+                                                                                                                        :exponential-backoff-enabled [true :bool]}}
+                                                                             :channel-no-retry-count {:worker-count [10 :int]
+                                                                                                      :retry        {:enabled [true :bool]
+                                                                                                                     :exponential-backoff-enabled [true :bool]}}}
                                                       :producer             {:bootstrap-servers                     "localhost:9092"
                                                                              :acks                                  "all"
                                                                              :retries-config                        5
