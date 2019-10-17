@@ -2,7 +2,7 @@
   "This namespace defines middleware methods for parsing JSON strings.
    Please see [Ziggurat Middleware](https://github.com/gojek/ziggurat#middleware-in-ziggurat) for more details.
   "
-  (:require [cheshire.core :refer :all]
+  (:require [cheshire.core :refer [parse-string]]
             [sentry-clj.async :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.metrics :as metrics]))
