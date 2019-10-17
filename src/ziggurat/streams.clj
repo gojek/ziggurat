@@ -29,11 +29,9 @@
    :commit-interval-ms                 15000
    :auto-offset-reset-config           "latest"
    :oldest-processed-message-in-s      604800
-   :changelog-topic-replication-factor 3})
-
-(def KEY_DESERIALIZER_ENCODING "key.deserializer.encoding")
-(def VALUE_DESERIALIZER_ENCODING "value.deserializer.encoding")
-(def DESERIALIZER_ENCODING "deserializer.encoding")
+   :changelog-topic-replication-factor 3
+   :default-key-serde                  "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"
+   :default-value-serde                "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"})
 
 (defn- set-upgrade-from-config
   "Populates the upgrade.from config in kafka streams required for upgrading kafka-streams version from 1 to 2. If the
@@ -47,20 +45,20 @@
   "Populates `key-deserializer-encoding`, `value-deserializer-encoding` and `deserializer-encoding`
    in `properties` only if non-nil."
   [properties key-deserializer-encoding value-deserializer-encoding deserializer-encoding]
-  (if (some? key-deserializer-encoding)
-    (.put properties KEY_DESERIALIZER_ENCODING key-deserializer-encoding))
-  (if (some? value-deserializer-encoding)
-    (.put properties VALUE_DESERIALIZER_ENCODING value-deserializer-encoding))
-  (if (some? deserializer-encoding)
-    (.put properties DESERIALIZER_ENCODING deserializer-encoding)))
+  (let [KEY_DESERIALIZER_ENCODING "key.deserializer.encoding"
+        VALUE_DESERIALIZER_ENCODING "value.deserializer.encoding"
+        DESERIALIZER_ENCODING "deserializer.encoding"]
+    (if (some? key-deserializer-encoding)
+      (.put properties KEY_DESERIALIZER_ENCODING key-deserializer-encoding))
+    (if (some? value-deserializer-encoding)
+      (.put properties VALUE_DESERIALIZER_ENCODING value-deserializer-encoding))
+    (if (some? deserializer-encoding)
+      (.put properties DESERIALIZER_ENCODING deserializer-encoding))))
 
 (defn- validate-auto-offset-reset-config
   [auto-offset-reset-config]
   (if-not (contains? #{"latest" "earliest" nil} auto-offset-reset-config)
     (throw (ex-info "Stream offset can only be latest or earliest" {:offset auto-offset-reset-config}))))
-
-(defn- get-serde [default-serde]
-  (if (some? default-serde) default-serde (.getName (.getClass (Serdes/ByteArray)))))
 
 (defn- properties [{:keys [application-id
                            bootstrap-servers
@@ -80,8 +78,8 @@
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
     (.put StreamsConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
     (.put StreamsConfig/NUM_STREAM_THREADS_CONFIG (int stream-threads-count))
-    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG (get-serde default-key-serde))
-    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG (get-serde default-value-serde))
+    (.put StreamsConfig/DEFAULT_KEY_SERDE_CLASS_CONFIG default-key-serde)
+    (.put StreamsConfig/DEFAULT_VALUE_SERDE_CLASS_CONFIG default-value-serde)
     (.put StreamsConfig/DEFAULT_TIMESTAMP_EXTRACTOR_CLASS_CONFIG IngestionTimeExtractor)
     (.put StreamsConfig/BUFFERED_RECORDS_PER_PARTITION_CONFIG (int buffered-records-per-partition))
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
