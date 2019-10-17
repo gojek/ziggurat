@@ -8,11 +8,11 @@
             [ziggurat.metrics :as metrics]))
 
 (defn- deserialize-json
-  [message topic-entity-name key-fn]
+  [message topic-entity key-fn]
   (try
     (parse-string message key-fn)
     (catch Exception e
-      (let [additional-tags   {:topic_name topic-entity-name}
+      (let [additional-tags   {:topic_name topic-entity}
             default-namespace "json-message-parsing"]
         (sentry/report-error sentry-reporter e (str "Could not parse JSON message " message))
         (metrics/increment-count default-namespace "failed" additional-tags)
@@ -23,9 +23,9 @@
    It uses `deserialize-json` defined in this namespace to parse JSON strings.
 
    Takes following arguments:
-   `handler-fn`        : A function which would process the parsed JSON string
-   `topic-entity-name` : Stream route topic entity (as defined in config.edn). It is only used for publishing metrics.
-   `key-fn`            : key-fn can be either true, false of a generic function to transform keys in JSON string.
+   `handler-fn`    : A function which would process the parsed JSON string
+   `topic-entity`  : Stream route topic entity (as defined in config.edn). It is only used for publishing metrics.
+   `key-fn`        : key-fn can be either true, false of a generic function to transform keys in JSON string.
                          If `true`, would coerce keys to keywords, and if `false` it would leave keys as strings.
                          Default value is true.
 
@@ -38,8 +38,8 @@
    `(parse-json (fn [message] ()) \"topic\")`
 
    "
-  ([handler-fn topic-entity-name]
-   (parse-json handler-fn topic-entity-name true))
-  ([handler-fn topic-entity-name key-fn]
+  ([handler-fn topic-entity]
+   (parse-json handler-fn topic-entity true))
+  ([handler-fn topic-entity key-fn]
    (fn [message]
-     (handler-fn (deserialize-json message topic-entity-name key-fn)))))
+     (handler-fn (deserialize-json message topic-entity key-fn)))))
