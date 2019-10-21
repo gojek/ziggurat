@@ -8,4 +8,4 @@
   ([metric-namespace record-timestamp additional-tags]
    (let [now-millis (get-current-time-in-millis)
          delay      (- now-millis record-timestamp)]
-     (metrics/report-time metric-namespace delay additional-tags))))
+     (metrics/report-histogram metric-namespace delay additional-tags))))

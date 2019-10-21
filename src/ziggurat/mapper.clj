@@ -35,7 +35,7 @@
                 end-time                 (.toEpochMilli (Instant/now))
                 time-val                 (- end-time start-time)
                 execution-time-namespace "handler-fn-execution-time"]
-            (metrics/report-time execution-time-namespace time-val additional-tags)
+            (metrics/report-histogram execution-time-namespace time-val additional-tags)
             (case return-code
               :success (metrics/increment-count default-namespace success-metric additional-tags)
               :retry   (do (metrics/increment-count default-namespace retry-metric additional-tags)
@@ -71,7 +71,7 @@
                 end-time                 (.toEpochMilli (Instant/now))
                 time-val                 (- end-time start-time)
                 execution-time-namespace "execution-time"]
-            (metrics/report-time execution-time-namespace time-val additional-tags)
+            (metrics/report-histogram execution-time-namespace time-val additional-tags)
             (case return-code
               :success (metrics/increment-count default-namespace success-metric additional-tags)
               :retry   (do (metrics/increment-count default-namespace retry-metric additional-tags)

@@ -29,9 +29,9 @@
                                                            (= metric expected-metric)
                                                            (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))
-                      metrics/report-time     (fn [metric-namespace _ _]
-                                                (when (= metric-namespace expected-report-time-namespace)
-                                                  (reset! successfully-reported-time? true)))]
+                      metrics/report-histogram     (fn [metric-namespace _ _]
+                                                     (when (= metric-namespace expected-report-time-namespace)
+                                                       (reset! successfully-reported-time? true)))]
           ((mapper-func (constantly :success) []) message-payload)
           (is @successfully-processed?)
           (is @successfully-reported-time?))))
@@ -112,9 +112,9 @@
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?  (atom false)
             expected-metric-namespace "handler-fn-execution-time"]
-        (with-redefs [metrics/report-time (fn [metric-namespace _ _]
-                                            (when (= metric-namespace expected-metric-namespace)
-                                              (reset! reported-execution-time? true)))]
+        (with-redefs [metrics/report-histogram (fn [metric-namespace _ _]
+                                                 (when (= metric-namespace expected-metric-namespace)
+                                                   (reset! reported-execution-time? true)))]
 
           ((mapper-func (constantly :success) []) message-payload)
           (is @reported-execution-time?))))))
@@ -180,9 +180,9 @@
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time? (atom false)
             execution-time-namespace "execution-time"]
-        (with-redefs [metrics/report-time (fn [metric-namespace _ _]
-                                            (when (= metric-namespace execution-time-namespace)
-                                              (reset! reported-execution-time? true)))]
+        (with-redefs [metrics/report-histogram (fn [metric-namespace _ _]
+                                                 (when (= metric-namespace execution-time-namespace)
+                                                   (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @reported-execution-time?))))))
 
