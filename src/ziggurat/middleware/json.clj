@@ -12,7 +12,7 @@
   (try
     (parse-string message key-fn)
     (catch Exception e
-      (let [additional-tags   {:topic_name topic-entity}
+      (let [additional-tags   {:topic_name (name topic-entity)}
             default-namespace "json-message-parsing"]
         (sentry/report-error sentry-reporter e (str "Could not parse JSON message " message))
         (metrics/increment-count default-namespace "failed" additional-tags)
