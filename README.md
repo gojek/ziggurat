@@ -215,7 +215,7 @@ For publishing data using a producer which is defined for the stream router conf
 
 `(send :default "test-topic" 1 "key" "value")`
 
-## Tracing
+## Tracing (Only available in 3.1.0-alpha.1)
 [Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
 
 Currently, the execution of the handler function is traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
