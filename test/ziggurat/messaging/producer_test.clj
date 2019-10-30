@@ -11,7 +11,8 @@
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]
             [ziggurat.config :as config]
-            [ziggurat.tracer :refer [tracer]])
+            [ziggurat.tracer :refer [tracer]]
+            [ziggurat.mapper :refer [->MessagePayload]])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
@@ -388,23 +389,20 @@
                               (.operationName))))))))))
 
 (deftest get-queue-timeout-ms-test
-  (testing "when retries are enabled"
-    (let [topic-entity :default
-          channel :linear-retry
-          message {:foo "bar" :retry-count 2}]
-      (is (= 2000 (producer/get-queue-timeout-ms topic-entity channel message)))))
-  (testing "when exponential backoff are enabled and channel retry count not defined"
-    (let [topic-entity :default
-          channel :channel-no-retry-count
-          message {:foo "bar" :retry-count 2}]
-      (is (= 700 (producer/get-queue-timeout-ms topic-entity channel message)))))
-  (testing "when exponential backoff are enabled and channel queue timeout defined"
-    (let [topic-entity :default
-          channel :exponential-retry
-          message {:foo "bar" :retry-count 2}]
-      (is (= 7000 (producer/get-queue-timeout-ms topic-entity channel message)))))
-  (testing "when exponential backoff are enabled and channel queue timeout not defined"
-    (let [topic-entity :default
-          channel :channel-exponential-retry
-          message {:foo "bar" :retry-count 2}]
-      (is (= 700 (producer/get-queue-timeout-ms topic-entity channel message))))))
+  (let [message (assoc (->MessagePayload "message" "topic-entity") :retry-count 2)]
+    (testing "when retries are enabled"
+      (let [topic-entity :default
+            channel :linear-retry]
+        (is (= 2000 (producer/get-queue-timeout-ms topic-entity channel message)))))
+    (testing "when exponential backoff are enabled and channel retry count not defined"
+      (let [topic-entity :default
+            channel :channel-no-retry-count]
+        (is (= 700 (producer/get-queue-timeout-ms topic-entity channel message)))))
+    (testing "when exponential backoff are enabled and channel queue timeout defined"
+      (let [topic-entity :default
+            channel :exponential-retry]
+        (is (= 7000 (producer/get-queue-timeout-ms topic-entity channel message)))))
+    (testing "when exponential backoff are enabled and channel queue timeout not defined"
+      (let [topic-entity :default
+            channel :channel-exponential-retry]
+        (is (= 700 (producer/get-queue-timeout-ms topic-entity channel message)))))))
