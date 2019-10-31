@@ -109,8 +109,6 @@
   `(try
      (pr/make-queues ~stream-routes)
      ~body
-     (catch Exception e#
-       (st/print-stack-trace e#))
      (finally
        (delete-queues ~stream-routes)
        (delete-exchanges ~stream-routes))))

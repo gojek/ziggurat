@@ -60,7 +60,7 @@
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
                                       [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
-                                      [org.clojure/test.check "0.9.0"]]
+                                      [org.clojure/test.check "0.10.0"]]
                        :plugins      [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins [[lein-cljfmt "0.6.4"]

@@ -49,7 +49,7 @@
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-            (producer/retry-for-channel message-from-mq topic-entity channel)))
+            (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= expected-message-payload message-from-mq))))))
 
@@ -60,13 +60,13 @@
       (let [retry-count (atom 2)
             topic-entity :default
             channel :linear-retry
-            message {:foo "bar" :retry-count @retry-count}
-            expected-message-payload {:foo "bar"}]
-        (producer/retry-for-channel message topic-entity channel)
+            message-payload {:message {:foo "bar"}  :topic-entity topic-entity :retry-count @retry-count}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry-for-channel message-payload channel)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-            (producer/retry-for-channel message-from-mq topic-entity channel)))
+            (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= expected-message-payload message-from-mq))))))
 
@@ -77,13 +77,13 @@
       (let [retry-count (atom 2)
             topic-entity :default
             channel :exponential-retry
-            message {:foo "bar" :retry-count @retry-count}
-            expected-message-payload {:foo "bar"}]
-        (producer/retry-for-channel message topic-entity channel)
+            message-payload {:message {:foo "bar"}  :topic-entity topic-entity :retry-count @retry-count}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry-for-channel message-payload channel)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-            (producer/retry-for-channel message-from-mq topic-entity channel)))
+            (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= expected-message-payload message-from-mq))))))
 
@@ -94,9 +94,9 @@
       (let [retry-count (atom 2)
             topic-entity :default
             channel :channel-exponential-retry
-            message {:foo "bar" :retry-count @retry-count}
-            expected-message-payload {:foo "bar"}]
-        (producer/retry-for-channel message topic-entity channel)
+            message-payload {:message {:foo "bar"}  :topic-entity topic-entity :retry-count @retry-count}
+            expected-message-payload (assoc message-payload :retry-count 0)]
+        (producer/retry-for-channel message-payload channel)
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
