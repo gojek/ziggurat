@@ -8,7 +8,9 @@ Ziggurat version 3.0 and above.
 
 For upgrading Ziggurat to 3.0, per [Apache Kafka Upgrade Guide](https://kafka.apache.org/21/documentation/streams/upgrade-guide) 
 and [KIP-268](https://cwiki.apache.org/confluence/display/KAFKA/KIP-268%3A+Simplify+Kafka+Streams+Rebalance+Metadata+Upgrade#KIP-268:SimplifyKafkaStreamsRebalanceMetadataUpgrade-Upgradingto2.0:), the user need to follow these steps
-- Add a new config `upgrade-from` for each of the top level config-map in :stream-router section of config.edn
+- Add a new config `upgrade-from` for each of the top level config-map in :stream-router section of config.edn. 
+  This config can be added either in `config.edn` file in the project or as an environment variable, 
+  as explained below. 
 - Do a rolling deploy of the application with the newly added configuration (above).
 - Remove the configs added above
 - Do a rolling deploy of the application again.
@@ -22,12 +24,9 @@ This can be understood with the help of an example. For the following stream-rou
                       {:topic-entity-2       {:application-id                 "application-2"
                                               :bootstrap-servers              "localhost:9092"
                                               :origin-topic                   "second-topic"}}
-                      {:topic-entity-3       {:application-id                 "application-3"
-                                              :bootstrap-servers              "localhost:9092"
-                                              :origin-topic                   "third-topic"}}
 ```
 
-if Ziggurat dependency is `[tech.gojek/ziggurat "2.6.0"]`, the new stream-router config 
+For projects using Ziggurat version <= 2.7.2, (`[tech.gojek/ziggurat "2.6.0"]`, for example), the new stream-router config 
 should look like this
 
 ```
@@ -39,13 +38,16 @@ should look like this
                                               :bootstrap-servers              "localhost:9092"
                                               :origin-topic                   "second-topic"
                                               :upgrade-from                   "0.11.0"}}
-                      {:topic-entity-3       {:application-id                 "application-3"
-                                              :bootstrap-servers              "localhost:9092"
-                                              :origin-topic                   "third-topic"
-                                              :upgrade-from                   "0.11.0"}}
 ```
 
-and if Ziggurat dependency is `[tech.gojek/ziggurat "2.12.1"]`, the new stream-router config 
+Or, if the user is not comfortable with modifying `config.edn`, equivalent environment variables can be added to
+the project environment.
+```
+ZIGGURAT_STREAM_ROUTER_TOPIC_ENTITY_1_UPGRADE_FROM=0.11.0
+ZIGGURAT_STREAM_ROUTER_TOPIC_ENTITY_2_UPGRADE_FROM=0.11.0
+```
+
+For projects using Ziggurat version > 2.7.2, (`[tech.gojek/ziggurat "2.12.1"]`, for example), the new stream-router config 
 should look like
 
 ```
@@ -57,12 +59,12 @@ should look like
                                               :bootstrap-servers              "localhost:9092"
                                               :origin-topic                   "second-topic"
                                               :upgrade-from                   "1.1"}}
-                      {:topic-entity-3       {:application-id                 "application-3"
-                                              :bootstrap-servers              "localhost:9092"
-                                              :origin-topic                   "third-topic"
-                                              :upgrade-from                   "1.1"}}
 ```
-
+Or, an equivalent environment variable can be added for each of the entiteis in `stream-router` section. Like this
+```
+ZIGGURAT_STREAM_ROUTER_TOPIC_ENTITY_1_UPGRADE_FROM=1.1
+ZIGGURAT_STREAM_ROUTER_TOPIC_ENTITY_2_UPGRADE_FROM=1.1
+```
 
 ### Using Middlewares
 
