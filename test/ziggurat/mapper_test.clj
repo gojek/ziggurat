@@ -55,7 +55,7 @@
         (let [successfully-processed? (atom false)
               expected-metric         "success"]
           (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
-                                                  (when (and (metric-namespaces expected-metric-namespace)
+                                                  (when (and (= metric-namespaces expected-metric-namespace)
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! successfully-processed? true)))]
