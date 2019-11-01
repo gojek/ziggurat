@@ -2,8 +2,8 @@
 
 ### Configuration Changes
 There were some breaking changes to kafka streams library being used by Ziggurat version 3.0. 
-Now Ziggurat will uses kafka streams version 2.1. This guide explains the steps to upgrade to
-Ziggurat version 3.0 and above.  
+Ziggurat 3.0 has upgraded kafka streams to v2.1. This requires the user to follow certain steps while
+upgrading. These are explained below.
 
 
 For upgrading Ziggurat to 3.0, per [Apache Kafka Upgrade Guide](https://kafka.apache.org/21/documentation/streams/upgrade-guide) 
