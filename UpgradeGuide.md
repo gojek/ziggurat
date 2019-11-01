@@ -8,8 +8,9 @@ Ziggurat version 3.0 and above.
 
 For upgrading Ziggurat to 3.0, per [Apache Kafka Upgrade Guide](https://kafka.apache.org/21/documentation/streams/upgrade-guide) 
 and [KIP-268](https://cwiki.apache.org/confluence/display/KAFKA/KIP-268%3A+Simplify+Kafka+Streams+Rebalance+Metadata+Upgrade#KIP-268:SimplifyKafkaStreamsRebalanceMetadataUpgrade-Upgradingto2.0:), the user need to follow these steps
-- Add a new config `upgrade-from` for each of the top level config-map in :stream-router section of config.edn. 
-  This config can be added either in `config.edn` file in the project or as an environment variable, 
+- Add a new config `upgrade-from` for each of the top level config-map in :stream-router section of 
+  config.edn. This config can be added either in `config.edn` file in the project or as an environment 
+  variable, 
   as explained below. 
 - Do a rolling deploy of the application with the newly added configuration (above).
 - Remove the configs added above
@@ -26,8 +27,8 @@ This can be understood with the help of an example. For the following stream-rou
                                               :origin-topic                   "second-topic"}}
 ```
 
-For projects using Ziggurat version <= 2.7.2, (`[tech.gojek/ziggurat "2.6.0"]`, for example), the new stream-router config 
-should look like this
+For projects using Ziggurat version <= 2.7.2, (`[tech.gojek/ziggurat "2.6.0"]`, for example), 
+the new stream-router config should look like this
 
 ```
 :stream-router        {:topic-entity-1       {:application-id                 "application-1"
@@ -82,19 +83,46 @@ As far as message processing is concerned, messages will be provided as byte arr
 has to explicitly use `ziggurat.middleware.default/protobuf->hash` to deserialize a message
 before processing it.
 
-For example, in previous versions, a mapper function in a Ziggurat-based project would look like this
+For example, in previous versions, for this stream-routes configuration,
 ```
-(init/main start-fn stop-fn {:booking {:handler-function mapper-fn}})
+:stream-router        {:topic-entity-1       {:application-id                 "application-1"
+                                              :bootstrap-servers              "localhost:9092"
+                                              :origin-topic                   "first-topic"}}
+                                              :channels {:geofence-channel {:worker-count [10 :int]
+                                                         :retry            {:count [3 :int]}}}}
+                      {:topic-entity-2       {:application-id                 "application-2"
+                                              :bootstrap-servers              "localhost:9092"
+                                              :origin-topic                   "second-topic"}}
+                                                                                                                                                                             :enabled [true :bool]
 ```
 
-After upgrading to Ziggurat 3.0, the mapper function explicitly deserializes the message using
-a proto middleware (provided in Ziggurat be default) before processing the message.
+a mapper function in a Ziggurat-based project would look like this
 ```
-(def handler-fn
+(init/main start-fn stop-fn {:topic-entity-1 {:handler-function  mapper-fn 
+                                              :geofence-channel  channel-mapper-fn}
+                             topic-entity-2  {:handler-function  mapper-fn-2}})
+```
+
+An upgrade to Ziggurat 3.0 would require the user to write a new mapper function 
+which explicitly deserializes the message using the proto middleware (provided in Ziggurat be default) 
+before passing it as an argument to the old mapper function.
+
+```
+(def middleware-based-mapper-fn
   (-> mapper-fn
-      (ziggurat.middleware.default/protobuf->hash com.gojek.esb.booking.BookingLogMessage :booking)))
+      (ziggurat.middleware.default/protobuf->hash com.gojek.esb.booking.BookingLogMessage :topic-entity-1)))
+      
+(def middleware-based-mapper-fn-2
+  (-> mapper-fn-2
+      (ziggurat.middleware.default/protobuf->hash com.gojek.esb.booking.BookingLogMessage :topic-entity-2)))
+      
+(def middleware-based-channel-mapper-fn
+  (-> channel-mapper-fn
+      (ziggurat.middleware.default/protobuf->hash com.gojek.esb.booking.BookingLogMessage :topic-entity-1)))
 
-(init/main start-fn stop-fn {:booking {:handler-function handler-fn}})
+(init/main start-fn stop-fn {:topic-entity-1 {:handler-function  middleware-based-mapper-fn 
+                                              :geofence-channel  middleware-based-channel-mapper-fn}
+                             topic-entity-2  {:handler-function  middleware-based-mapper-fn-2}})
 ```
 A similar change will be required for all the handler-functions/channel-functions in 
 `stream-routes` map which is passed to `init/main`.
