@@ -281,11 +281,11 @@
                                                     :success-promise    success-promise}) topic-entity [])
 
           (producer/publish-to-delay-queue message-payload)
-
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
             (is (= true promise-success?)))
           (util/close rmq-ch)
+          (Thread/sleep 500)
           (let [finished-spans (.finishedSpans tracer)]
             (is (= 2 (.size finished-spans)))
             (is (= "send" (-> finished-spans
