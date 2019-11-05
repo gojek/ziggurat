@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.1.0-alpha.2 - 2019-11-05
+- JSON middleware has been added.
+- Adds custom delay ([Issue#78](https://github.com/gojek/ziggurat/issues/78)) 
+  for processing messages from RabbitMQ channels and 
+  adds exponential backoff strategy (configurable) for channel retries.
+
 ## 3.1.0-alpha.1 - 2019-10-14
 - Adds tracing support to the framework.
 
