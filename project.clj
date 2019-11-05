@@ -1,4 +1,4 @@
-(defproject tech.gojek/ziggurat "3.1.0-alpha.1"
+(defproject tech.gojek/ziggurat "3.1.0-alpha.2"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
