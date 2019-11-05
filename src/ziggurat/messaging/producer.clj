@@ -116,7 +116,7 @@
     (if exponential-backoff-enabled
       (let [retry-count (-> (ziggurat-config) :retry :count)
             channel-retry-count (get-channel-retry-count topic-entity channel)
-            message-retry-count (message-payload :retry-count)]
+            message-retry-count (:retry-count message-payload)]
         (get-exponential-backoff (or channel-retry-count retry-count) message-retry-count (or channel-queue-timeout-ms queue-timeout-ms)))
       (or channel-queue-timeout-ms queue-timeout-ms))))
 
