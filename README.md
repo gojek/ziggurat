@@ -97,10 +97,10 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 * The stop-fn is run at shutdown and facilitates graceful shutdown, for example, releasing db connections, shutting down http servers etc.
 * Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
 
-    * ```clojure
-        (ziggurat/main start-fn stop-fn {:stream-id-1 {:handler-fn handler-fn-1}
+```clojure
+(ziggurat/main start-fn stop-fn {:stream-id-1 {:handler-fn handler-fn-1}
                                          :stream-id-2 {:handler-fn handler-fn-2}})
-        ```
+```
 
 ```clojure
 (require '[ziggurat.init :as ziggurat])
@@ -196,6 +196,20 @@ The default middleware `default/protobuf->hash` assumes that the message is seri
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
 _The handler-fn gets a serialized message from kafka and thus we need a deserealize-message function. We have provided default deserializers in Ziggurat_
+
+### Deserializing JSON messages using JSON middleware (Only available in 3.1.0-alpha.2)
+Ziggurat 3.1.0-alpha.2 provides a middleware to deserialize JSON messages, along with proto.
+It can be used like this.
+
+```clojure
+(def message-handler-fn
+  (-> actual-message-handler-function
+      (parse-json :stream-route-config)))
+```
+
+Here, `message-handler-fn` calls `parse-json` with a message handler function 
+`actual-message-handler-function` as the first argument and the key of a stream-route 
+config (as defined in `config.edn`) as the second argument. 
 
 ## Publishing data to Kafka Topics in Ziggurat
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
@@ -319,6 +333,38 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 * retry - The number of times the message should be retried and if retry flow should be enabled or not
 * jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 * http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
+
+## Alpha (Experimental) Features
+Ziggurat 3.1.0-alpha.2 introduces a few configurations to enable the following:
+- Add a delay (configurable) in processing the messages from RabbitMQ channels
+- Add exponential backoff retry strategy for processing messages from RabbitMQ channels
+
+Both of these features can be enabled by providing the following flags in `config.edn`.
+
+```
+:stream-router  {:default  {:application-id       "test"
+                              :bootstrap-servers    "localhost:9092"
+                              :stream-threads-count [1 :int]
+                              :origin-topic         "topic"
+                              :upgrade-from         "1.1"
+                              :channels             {:channel                    {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]}}
+                                                     :with-delay                 {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]}
+                                                                                  :channel-delay-ms [1000 :int]}
+                                                     :with-custom-timeout        {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]
+                                                                                                 :queue-timeout-ms [2000 :int]}}
+                                                     :with-exponential-retry     {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]
+                                                                                                 :queue-timeout-ms [1000 :int]
+                                                                                                 :exponential-backoff-enabled [true :bool]}}}}}
+```
+_Note: Alpha features are experimental features and SHOULD NOT be used until they're stable._
 
 ## Contribution
 - For dev setup and contributions please refer to CONTRIBUTING.md
