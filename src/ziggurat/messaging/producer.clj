@@ -99,8 +99,10 @@
   (int (* (- (Math/pow 2 (-  retry-count message-retry-count)) 1) queue-timeout-ms)))
 
 (defn get-queue-timeout-ms [topic-entity channel message]
-  "Get queue timeout from config. It will use channel queue-timeout-ms if defined, otherwise it will use rabbitmq delay queue-timeout-ms.
-  If exponential-backoff-enabled is true, queue-timeout-ms will be exponential with formula (2^n)-1, n is message retry-count."
+  "Get queue timeout from config. It will use channel `queue-timeout-ms` if defined, otherwise it will use rabbitmq delay `queue-timeout-ms`.
+   If `exponential-backoff-enabled` is true, `queue-timeout-ms` will be exponential with formula `(2^n)-1`, where `n` is message retry-count.
+
+   _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
   (let [queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
         channel-queue-timeout-ms (get-channel-retry-queue-timeout-ms topic-entity channel)
         exponential-backoff-enabled (channel-retries-exponential-backoff-enabled topic-entity channel)]
