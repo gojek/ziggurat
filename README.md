@@ -234,6 +234,39 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 * jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 * http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
 
+## Alpha (Experimental) Features
+Ziggurat 2.12.6 introduces a few configurations to enable the following:
+- Add a delay (configurable) in processing the messages from RabbitMQ channels
+- Add exponential backoff retry strategy for processing messages from RabbitMQ channels
+
+Both of these features can be enabled by providing the following flags in `config.edn`.
+
+```
+:stream-router  {:default  {:application-id       "test"
+                              :bootstrap-servers    "localhost:9092"
+                              :stream-threads-count [1 :int]
+                              :origin-topic         "topic"
+                              :upgrade-from         "1.1"
+                              :channels             {:channel                    {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]}}
+                                                     :with-delay                 {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]}
+                                                                                  :channel-delay-ms [1000 :int]}
+                                                     :with-custom-timeout        {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]
+                                                                                                 :queue-timeout-ms [2000 :int]}}
+                                                     :with-exponential-retry     {:worker-count [10 :int]
+                                                                                  :retry        {:count   [5 :int]
+                                                                                                 :enabled [true :bool]
+                                                                                                 :queue-timeout-ms [1000 :int]
+                                                                                                 :exponential-backoff-enabled [true :bool]}}}}}
+```
+_Note: Alpha features are experimental features and SHOULD NOT be used until they're stable._
+
+
 ## Contribution
 - For dev setup and contributions please refer to CONTRIBUTING.md
 
