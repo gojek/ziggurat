@@ -11,12 +11,14 @@
    A producer can be configured for each of the stream-routes
    in config.edn. Please see the example below
 
-   `
+   ```
      :stream-router {:default {:application-id \"test\"\n
                                :bootstrap-servers    \"localhost:9092\"\n
                                :stream-threads-count [1 :int]\n
                                :origin-topic         \"topic\"\n
-                               :channels             {:channel-1 {:worker-count [10 :int]\n  :retry {:count [5 :int]\n  :enabled [true :bool]}}}\n
+                               :channels             {:channel-1 {:worker-count [10 :int]\n
+                                                                  :retry {:count [5 :int]\n
+                                                                          :enabled [true :bool]}}}\n
                                :producer             {:bootstrap-servers \"localhost:9092\"\n
                                                       :acks \"all\"\n
                                                       :retries-config  5\n
@@ -24,13 +26,9 @@
                                                       :enable-idempotence  false\n
                                                       :value-serializer  \"org.apache.kafka.common.serialization.StringSerializer\"\n
                                                       :key-serializer    \"org.apache.kafka.common.serialization.StringSerializer\"}}
-   `
+   ```
 
-   Usage:
-
-   `
-      Please see `send` for publishing data via Kafka producers
-   `
+   Please see the documentation for `send` for publishing data via Kafka producers
 
    These are the KafkaProducer configs currenlty supported in Ziggurat.
    - bootstrap.servers
