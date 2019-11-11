@@ -13,7 +13,12 @@ requests; here are our guidelines:
 
 2.  Please follow this [Clojure Style Guide][3].
 
-3.  We ask that you squash all the commits together before
+3.  Please follow [CommonMark](https://commonmark.org/) dialect for docstrings. This what is
+    used by [cljdoc.org](https://github.com/cljdoc/cljdoc/blob/master/doc/userguide/for-library-authors.adoc#docstrings) 
+    to render Docstrings. Please look at 
+    [Writing Awesome Clojure Docstrings](https://www.martinklepsch.org/posts/writing-awesome-docstrings.html).
+
+4.  We ask that you squash all the commits together before
     pushing and that your commit message references the bug or issue.
 
 ## Issue Reporting
@@ -30,6 +35,9 @@ requests; here are our guidelines:
 - Use the same coding conventions as the rest of the project.
 - Open a [pull request][6] that relates to *only* one subject with a clear title
   and description in grammatically correct, complete sentences.
+- If a PR contains a fix or improvement for a release branch, 2.x for instance, that PR should be raised
+  to master first.
+  
 
 Much Thanks! ❤ ❤ ❤
 
