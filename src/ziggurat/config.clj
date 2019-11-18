@@ -61,21 +61,22 @@
       (slurp)
       (edn/read-string)))
 
-(defn config-from-env [config-file]
-  (clonfig/read-config (edn-config config-file)))
+(defn- disable-exponential-backoff [config-map]
+  (reduce-kv (fn [m k v]
+               (if (= k :exponential-backoff-enabled)
+                 (assoc m k false)
+                 (if (map? v)
+                   (assoc m k (disable-exponential-backoff v))
+                   (assoc m k v))))
+             {} config-map))
 
-(defn disable-exponential-backoff [config-map]
-  (let [stream-routes (-> config-map :ziggurat :stream-router)]
-    (doseq [stream-route-config-map (vals stream-routes)]
-      (fn []
-           (let [channels (:channels stream-route-config-map)]
-             (doseq [channel-config-map (vals channels)]
-               (assoc-in channel-config-map [:retry :exponential-backoff-enabled] false)))))))
+(defn config-from-env [config-file]
+  (disable-exponential-backoff (clonfig/read-config (edn-config config-file))))
 
 (defstate config
   :start (let [config-values-from-env (config-from-env config-file)
                app-name (-> config-values-from-env :ziggurat :app-name)]
-           (disable-exponential-backoff (deep-merge (interpolate-config default-config app-name) config-values-from-env))))
+           (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
   (get config :ziggurat))
