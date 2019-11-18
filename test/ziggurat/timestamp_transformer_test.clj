@@ -40,11 +40,11 @@
             timestamp-transformer      (create expected-metric-namespaces current-time expected-topic-entity-name)]
         (.init timestamp-transformer context)
         (with-redefs [get-current-time-in-millis (constantly current-time)
-                      metrics/report-time        (fn [metric-namespaces delay topic-entity-name]
-                                                   (is (= delay expected-delay))
-                                                   (is (or (= metric-namespaces expected-metric-namespaces)
-                                                           (= metric-namespaces [default-namespace])))
-                                                   (is (= expected-topic-entity-name topic-entity-name)))]
+                      metrics/report-histogram        (fn [metric-namespaces delay topic-entity-name]
+                                                        (is (= delay expected-delay))
+                                                        (is (or (= metric-namespaces expected-metric-namespaces)
+                                                                (= metric-namespaces [default-namespace])))
+                                                        (is (= expected-topic-entity-name topic-entity-name)))]
           (.transform timestamp-transformer nil nil))))
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay when topic-entity-name is nil"
       (let [context                    (reify ProcessorContext
@@ -53,9 +53,9 @@
             timestamp-transformer      (create expected-metric-namespaces current-time)]
         (.init timestamp-transformer context)
         (with-redefs [get-current-time-in-millis (constantly current-time)
-                      metrics/report-time        (fn [metric-namespaces delay topic-entity-name]
-                                                   (is (= delay expected-delay))
-                                                   (is (or (= metric-namespaces expected-metric-namespaces)
-                                                           (= metric-namespaces [default-namespace])))
-                                                   (is (= topic-entity-name expected-topic-entity-name)))]
+                      metrics/report-histogram        (fn [metric-namespaces delay topic-entity-name]
+                                                        (is (= delay expected-delay))
+                                                        (is (or (= metric-namespaces expected-metric-namespaces)
+                                                                (= metric-namespaces [default-namespace])))
+                                                        (is (= topic-entity-name expected-topic-entity-name)))]
           (.transform timestamp-transformer nil nil))))))

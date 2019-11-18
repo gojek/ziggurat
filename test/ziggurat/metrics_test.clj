@@ -244,7 +244,7 @@
           (metrics/-decrementCount metric-namespace metric additional-tags)
           (is (true? @decrement-count-called?)))))))
 
-(deftest report-time-test
+(deftest report-histogram-test
   (let [expected-topic-entity-name "expected-topic-entity-name"
         input-additional-tags      {:topic_name expected-topic-entity-name}
         time-val                   10]
@@ -259,7 +259,7 @@
                                              (reset! mk-histogram-args {:metric-namespace metric-namespace
                                                                         :metric           metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespace time-val input-additional-tags)
+          (metrics/report-histogram expected-metric-namespace time-val input-additional-tags)
           (is (= 1 (.getCount histogram)))
           (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
@@ -274,7 +274,7 @@
                                              (reset! mk-histogram-args {:metric-namespaces metric-namespaces
                                                                         :metric            metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespaces time-val input-additional-tags)
+          (metrics/report-histogram expected-metric-namespaces time-val input-additional-tags)
           (is (= 1 (.getCount histogram)))
           (is (= expected-metric-namespaces (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
@@ -289,31 +289,31 @@
                                              (reset! mk-histogram-args {:metric-namespace metric-namespace
                                                                         :metric           metric})
                                              histogram)]
-          (metrics/report-time expected-metric-namespace time-val)
+          (metrics/report-histogram expected-metric-namespace time-val)
           (is (= 1 (.getCount histogram)))
           (is (= expected-metric-namespace (:metric-namespace @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args)))))))
   (testing "report time java function passes the correct parameters to report time"
     (let [expected-metric-namespace "namespace"
           expected-time-val         123
-          report-time-called?       (atom false)]
-      (with-redefs [metrics/report-time (fn [actual-metric-namespace actual-time-val]
-                                          (if (and (= actual-metric-namespace expected-metric-namespace)
-                                                   (= actual-time-val expected-time-val))
-                                            (reset! report-time-called? true)))]
+          report-histogram-called?       (atom false)]
+      (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val]
+                                               (if (and (= actual-metric-namespace expected-metric-namespace)
+                                                        (= actual-time-val expected-time-val))
+                                                 (reset! report-histogram-called? true)))]
         (metrics/-reportTime expected-metric-namespace expected-time-val)
-        (is (true? @report-time-called?))))
+        (is (true? @report-histogram-called?))))
     (let [expected-metric-namespace "namespace"
           expected-time-val         123
           additional-tags           (doto (java.util.HashMap.)
                                       (.put ":foo" "bar")
                                       (.put ":bar" "foo"))
           expected-additional-tags {:foo "bar" :bar "foo"}
-          report-time-called?       (atom false)]
-      (with-redefs [metrics/report-time (fn [actual-metric-namespace actual-time-val actual-additional-tags]
-                                          (if (and (= actual-metric-namespace expected-metric-namespace)
-                                                   (= actual-time-val expected-time-val)
-                                                   (= actual-additional-tags expected-additional-tags))
-                                            (reset! report-time-called? true)))]
+          report-histogram-called?       (atom false)]
+      (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val actual-additional-tags]
+                                               (if (and (= actual-metric-namespace expected-metric-namespace)
+                                                        (= actual-time-val expected-time-val)
+                                                        (= actual-additional-tags expected-additional-tags))
+                                                 (reset! report-histogram-called? true)))]
         (metrics/-reportTime expected-metric-namespace expected-time-val additional-tags)
-        (is (true? @report-time-called?))))))
+        (is (true? @report-histogram-called?))))))

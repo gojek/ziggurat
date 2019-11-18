@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.1.0-alpha.3 - 2019-11-11
+- Renames report-time to report-histogram while being backward compatible
+
 ## 3.1.0-alpha.2 - 2019-11-05
 - JSON middleware has been added.
 - Adds custom delay ([Issue#78](https://github.com/gojek/ziggurat/issues/78)) 

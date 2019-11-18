@@ -83,13 +83,15 @@
 
 (def decrement-count (partial inc-or-dec-count -))
 
-(defn report-time
-  ([metric-namespaces time-val]
-   (report-time metric-namespaces time-val nil))
-  ([metric-namespaces time-val additional-tags]
+(defn report-histogram
+  ([metric-namespaces val]
+   (report-histogram metric-namespaces val nil))
+  ([metric-namespaces val additional-tags]
    (let [metric-namespace (get-metric-namespaces metric-namespaces)
          histogram        ^Histogram (mk-histogram metric-namespace "all" additional-tags)]
-     (.update histogram (int time-val)))))
+     (.update histogram (get-int val)))))
+
+(def report-time report-histogram)                         ;; for backward compatibility
 
 (defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
@@ -127,6 +129,6 @@
 
 (defn -reportTime
   ([metric-namespace time-val]
-   (report-time metric-namespace time-val))
+   (report-histogram metric-namespace time-val))
   ([metric-namespace time-val additional-tags]
-   (report-time metric-namespace time-val (util/java-map->clojure-map additional-tags))))
+   (report-histogram metric-namespace time-val (util/java-map->clojure-map additional-tags))))

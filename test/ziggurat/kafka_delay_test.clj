@@ -12,16 +12,16 @@
     (testing "calculates and reports the timestamp delay"
       (let [expected-additional-tags {:topic_name "expected-topic-entity-name"}]
         (with-redefs [get-current-time-in-millis (constantly current-time)
-                      metrics/report-time        (fn [metric-namespaces delay additional-tags]
-                                                   (is (= delay expected-delay))
-                                                   (is (= metric-namespaces expected-namespaces))
-                                                   (is (= additional-tags expected-additional-tags)))]
+                      metrics/report-histogram        (fn [metric-namespaces delay additional-tags]
+                                                        (is (= delay expected-delay))
+                                                        (is (= metric-namespaces expected-namespaces))
+                                                        (is (= additional-tags expected-additional-tags)))]
           (calculate-and-report-kafka-delay expected-namespaces record-timestamp expected-additional-tags))))
     (testing "calculates and reports the timestamp delay when additional tags is empty or nil"
       (let [expected-additional-tags nil]
         (with-redefs [get-current-time-in-millis (constantly current-time)
-                      metrics/report-time        (fn [metric-namespaces delay additional-tags]
-                                                   (is (= delay expected-delay))
-                                                   (is (= metric-namespaces expected-namespaces))
-                                                   (is (= additional-tags expected-additional-tags)))]
+                      metrics/report-histogram        (fn [metric-namespaces delay additional-tags]
+                                                        (is (= delay expected-delay))
+                                                        (is (= metric-namespaces expected-namespaces))
+                                                        (is (= additional-tags expected-additional-tags)))]
           (calculate-and-report-kafka-delay expected-namespaces record-timestamp))))))
