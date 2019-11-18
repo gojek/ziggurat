@@ -100,8 +100,11 @@
   (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :queue-timeout-ms))
 
 (defn- channel-retries-exponential-backoff-enabled [topic-entity channel]
-  "Get exponential backoff enabled for specific channel from config."
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :exponential-backoff-enabled))
+  "Get exponential backoff enabled for specific channel from config.
+
+  _NOTE: Exponential backoff for channel retries is an experimental feature. It is disabled until fixed._\""
+  ;(-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :exponential-backoff-enabled))
+  false)
 
 (defn- get-exponential-backoff [retry-count message-retry-count queue-timeout-ms]
   "Get queue timeout value when exponential backoff is enabled."
