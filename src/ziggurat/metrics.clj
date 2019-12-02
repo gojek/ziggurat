@@ -9,16 +9,16 @@
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
            java.util.concurrent.TimeUnit)
   (:gen-class
-   :name tech.gojek.ziggurat.internal.Metrics
-   :methods [^{:static true} [incrementCount [String String] void]
-             ^{:static true} [incrementCount [String String java.util.Map] void]
-             ^{:static true} [decrementCount [String String] void]
-             ^{:static true} [decrementCount [String String java.util.Map] void]
-             ^{:static true} [reportTime     [String long] void]
-             ^{:static true} [reportTime     [String long java.util.Map] void]]))
+    :name tech.gojek.ziggurat.internal.Metrics
+    :methods [^{:static true} [incrementCount [String String] void]
+              ^{:static true} [incrementCount [String String java.util.Map] void]
+              ^{:static true} [decrementCount [String String] void]
+              ^{:static true} [decrementCount [String String java.util.Map] void]
+              ^{:static true} [reportTime [String long] void]
+              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (defonce metrics-registry
-  (MetricRegistry.))
+         (MetricRegistry.))
 
 (defn- merge-tags
   [additional-tags]
@@ -100,11 +100,13 @@
          histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))] ;; verify if get-map is needed here
      (.update histogram (get-int val)))))
 
-(def report-time report-histogram)                         ;; for backward compatibility
+(def report-time report-histogram)                          ;; for backward compatibility
 
-(defn multi-ns-report-time [nss time-val additional-tags]
+(defn multi-ns-report-histogram [nss time-val additional-tags]
   (doseq [ns nss]
     (report-histogram ns time-val additional-tags)))
+
+(def multi-ns-report-time multi-ns-report-histogram)        ;; for backward compatibility
 
 (defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
@@ -114,10 +116,10 @@
                           (.withPort port)
                           (.build))
 
-            reporter (-> (DatadogReporter/forRegistry metrics-registry)
-                         (.withTransport transport)
-                         (.withTags [(str env)])
-                         (.build))]
+            reporter  (-> (DatadogReporter/forRegistry metrics-registry)
+                          (.withTransport transport)
+                          (.withTags [(str env)])
+                          (.build))]
         (log/info "Starting statsd reporter")
         (.start reporter 1 TimeUnit/SECONDS)
         {:reporter reporter :transport transport}))))

@@ -110,9 +110,9 @@
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
 (defn- timestamp-transformer-supplier
-  [metric-namespace oldest-processed-message-in-s additional-tags]
+  [metric-namespaces oldest-processed-message-in-s additional-tags]
   (reify TransformerSupplier
-    (get [_] (timestamp-transformer/create metric-namespace oldest-processed-message-in-s additional-tags))))
+    (get [_] (timestamp-transformer/create metric-namespaces oldest-processed-message-in-s additional-tags))))
 
 (defn- header-transformer-supplier
   []
@@ -121,9 +121,9 @@
 
 (defn- timestamp-transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
   (let [service-name     (:app-name (ziggurat-config))
-        metric-namespace "message-received-delay-histogram"
+        metric-namespaces [service-name topic-entity-name "message-received-delay-histogram"]
         additional-tags  {:topic_name topic-entity-name}]
-    (.transform stream-builder (timestamp-transformer-supplier metric-namespace oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (timestamp-transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- header-transform-values [stream-builder]
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
