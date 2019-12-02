@@ -50,18 +50,18 @@
         input-additional-tags      {:topic_name expected-topic-entity-name}
         expected-n                 1]
     (testing "increases count on the meter - vector as an argument"
-      (let [expected-metric-namespace ["metric" "ns"]
+      (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  input-additional-tags]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+            expected-additional-tags  {}]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric expected-n input-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (= expected-n (.getCount meter)))
-          (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-meter-args)))
+          (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter - 3rd argument is a number"
       (let [expected-metric-namespace ["metric" "ns"]
@@ -103,21 +103,21 @@
                                          meter)]
           (metrics/increment-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (= expected-n (.getCount meter)))
-          (is (= expected-metric-namespaces (:metric-namespaces @mk-meter-args)))
+          (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter - w/o additional-tags argument"
-      (let [expected-metric-namespace "metric-ns"
+      (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
             mk-meter-args             (atom nil)
             meter                     (Meter.)
             expected-additional-tags  {}]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
+                                         (reset! mk-meter-args {:metric-namespace metric-namespaces
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric)
+          (metrics/increment-count expected-metric-namespaces metric)
           (is (= expected-n (.getCount meter)))
-          (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
+          (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "increases count on the meter when additional-tags is nil"
       (let [expected-metric-namespace "metric-ns"
@@ -129,9 +129,9 @@
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric expected-n expected-additional-tags)
+          (metrics/increment-count expected-metric-namespace metric expected-n nil)
           (is (= expected-n (.getCount meter)))
-          (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
+          (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespace) (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "-incrementCount calls increment-count with the correct arguments"
       (let [metric-namespace "namespace"
@@ -165,18 +165,18 @@
         input-additional-tags {:topic_name expected-topic-name}
         expected-n            1]
     (testing "decreases count on the meter - vector as an argument"
-      (let [expected-additional-tags  input-additional-tags
-            expected-metric-namespace ["metric" "ns"]]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+      (let [expected-additional-tags  {}
+            expected-metric-namespaces [expected-topic-name "metric-ns"]]
+        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
-                                         (reset! mk-meter-args {:metric-namespace metric-namespace
+                                         (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric expected-n input-additional-tags)
+          (metrics/increment-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (= expected-n (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespace metric expected-n input-additional-tags)
+          (metrics/decrement-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (zero? (.getCount meter)))
-          (is (= (metrics/intercalate-dot expected-metric-namespace) (:metric-namespace @mk-meter-args)))
+          (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter - string as an argument"
       (let [expected-additional-tags   input-additional-tags
@@ -190,7 +190,7 @@
           (is (= expected-n (.getCount meter)))
           (metrics/decrement-count expected-metric-namespaces metric expected-n input-additional-tags)
           (is (zero? (.getCount meter)))
-          (is (= expected-metric-namespaces (:metric-namespaces @mk-meter-args)))
+          (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter - without topic name on the namespace"
       (let [expected-additional-tags   input-additional-tags
@@ -214,11 +214,11 @@
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
                                          meter)]
-          (metrics/increment-count expected-metric-namespace metric expected-n expected-additional-tags)
+          (metrics/increment-count expected-metric-namespace metric expected-n nil)
           (is (= expected-n (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespace metric expected-n expected-additional-tags)
+          (metrics/decrement-count expected-metric-namespace metric expected-n nil)
           (is (zero? (.getCount meter)))
-          (is (= expected-metric-namespace (:metric-namespace @mk-meter-args)))
+          (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespace) (:metric-namespace @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "-decrementCount passes the correct arguments to decrement-count"
       (let [metric-namespace "namespace"
@@ -249,11 +249,11 @@
         input-additional-tags      {:topic_name expected-topic-entity-name}
         time-val                   10]
     (testing "updates time-val - vector as an argument"
-      (let [expected-metric-namespace ["message-received-delay-histogram" "ns"]
+      (let [expected-metric-namespace [expected-topic-entity-name "message-received-delay-histogram"]
             mk-histogram-args         (atom nil)
             reservoir                 (UniformReservoir.)
             histogram                 (Histogram. reservoir)
-            expected-additional-tags  input-additional-tags]
+            expected-additional-tags  {}]
         (with-redefs [metrics/mk-histogram (fn [metric-namespace metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
                                              (reset! mk-histogram-args {:metric-namespace metric-namespace
@@ -276,7 +276,7 @@
                                              histogram)]
           (metrics/report-histogram expected-metric-namespaces time-val input-additional-tags)
           (is (= 1 (.getCount histogram)))
-          (is (= expected-metric-namespaces (:metric-namespaces @mk-histogram-args)))
+          (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespaces) (:metric-namespaces @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args))))))
     (testing "updates time-val - w/o additional-tags argument"
       (let [expected-metric-namespace "message-received-delay-histogram"
@@ -291,7 +291,7 @@
                                              histogram)]
           (metrics/report-histogram expected-metric-namespace time-val)
           (is (= 1 (.getCount histogram)))
-          (is (= expected-metric-namespace (:metric-namespace @mk-histogram-args)))
+          (is (= (str (:app-name (ziggurat-config)) "." expected-metric-namespace) (:metric-namespace @mk-histogram-args)))
           (is (= "all" (:metric @mk-histogram-args)))))))
   (testing "report time java function passes the correct parameters to report time"
     (let [expected-metric-namespace "namespace"
