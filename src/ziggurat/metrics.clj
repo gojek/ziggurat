@@ -53,11 +53,16 @@
   [names]
   (str/join "." names))
 
+(defn remove-topic-tag-for-old-namespace
+  [additional-tags ns]
+  (let [topic-name (:topic_name additional-tags)]
+    (dissoc additional-tags (when (some #(= % topic-name) ns) :topic_name))))
+
 (defn- get-metric-namespaces
   [metric-namespaces]
   (if (vector? metric-namespaces)
     (intercalate-dot metric-namespaces)
-    metric-namespaces))
+    (str (:app-name (ziggurat-config)) "." metric-namespaces)))
 
 (defn- get-v
   [f d v]
@@ -76,22 +81,30 @@
    (inc-or-dec-count sign {:metric-namespace metric-namespace :metric metric :n n :additional-tags additional-tags}))
   ([sign {:keys [metric-namespace metric n additional-tags]}]
    (let [metric-ns (get-metric-namespaces metric-namespace)
-         meter     ^Meter (mk-meter metric-ns metric (get-map additional-tags))]
+         meter     ^Meter (mk-meter metric-ns metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
      (.mark meter (sign (get-int n))))))
 
 (def increment-count (partial inc-or-dec-count +))
 
 (def decrement-count (partial inc-or-dec-count -))
 
+(defn multi-ns-increment-count [nss metric additional-tags]
+  (doseq [ns nss]
+    (increment-count ns metric additional-tags)))
+
 (defn report-histogram
   ([metric-namespaces val]
    (report-histogram metric-namespaces val nil))
   ([metric-namespaces val additional-tags]
    (let [metric-namespace (get-metric-namespaces metric-namespaces)
-         histogram        ^Histogram (mk-histogram metric-namespace "all" additional-tags)]
+         histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))] ;; verify if get-map is needed here
      (.update histogram (get-int val)))))
 
 (def report-time report-histogram)                         ;; for backward compatibility
+
+(defn multi-ns-report-time [nss time-val additional-tags]
+  (doseq [ns nss]
+    (report-histogram ns time-val additional-tags)))
 
 (defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
