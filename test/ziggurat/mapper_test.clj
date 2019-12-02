@@ -178,12 +178,12 @@
       (let [reported-execution-time? (atom false)
             execution-time-namespace "execution-time"
             expected-execution-time-namespaces [service-name expected-topic-entity-name channel-name execution-time-namespace]]
-            (with-redefs [metrics/report-histogram (fn [metric-namespaces _ _]
-                                                     (when (or (= metric-namespaces expected-execution-time-namespaces)
-                                                               (= metric-namespaces [execution-time-namespace]))
-                                                       (reset! reported-execution-time? true)))]
-              ((channel-mapper-func (constantly :success) channel) message-payload)
-              (is @reported-execution-time?))))))
+        (with-redefs [metrics/report-histogram (fn [metric-namespaces _ _]
+                                                 (when (or (= metric-namespaces expected-execution-time-namespaces)
+                                                           (= metric-namespaces [execution-time-namespace]))
+                                                   (reset! reported-execution-time? true)))]
+          ((channel-mapper-func (constantly :success) channel) message-payload)
+          (is @reported-execution-time?))))))
 
 (deftest message-payload-schema-test
   (testing "it validates the schema for a message containing retry-count"

@@ -9,16 +9,16 @@
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
            java.util.concurrent.TimeUnit)
   (:gen-class
-    :name tech.gojek.ziggurat.internal.Metrics
-    :methods [^{:static true} [incrementCount [String String] void]
-              ^{:static true} [incrementCount [String String java.util.Map] void]
-              ^{:static true} [decrementCount [String String] void]
-              ^{:static true} [decrementCount [String String java.util.Map] void]
-              ^{:static true} [reportTime [String long] void]
-              ^{:static true} [reportTime [String long java.util.Map] void]]))
+   :name tech.gojek.ziggurat.internal.Metrics
+   :methods [^{:static true} [incrementCount [String String] void]
+             ^{:static true} [incrementCount [String String java.util.Map] void]
+             ^{:static true} [decrementCount [String String] void]
+             ^{:static true} [decrementCount [String String java.util.Map] void]
+             ^{:static true} [reportTime [String long] void]
+             ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (defonce metrics-registry
-         (MetricRegistry.))
+  (MetricRegistry.))
 
 (defn- merge-tags
   [additional-tags]
