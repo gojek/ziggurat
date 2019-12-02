@@ -52,7 +52,7 @@
           handler-fn              (fn [msg]
                                     (if (nil? msg)
                                       (reset! handler-fn-called? true)))]
-      (with-redefs [metrics/increment-count (fn [_ _ _]
+      (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                               (reset! metric-reporter-called? true))]
         ((parse-json handler-fn topic-entity-name true) message))
       (is (true? @handler-fn-called?))

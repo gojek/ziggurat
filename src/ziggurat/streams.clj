@@ -89,11 +89,14 @@
     (set-encoding-config key-deserializer-encoding value-deserializer-encoding deserializer-encoding)))
 
 (defn- log-and-report-metrics [topic-entity message]
-  (let [topic-entity-name (name topic-entity)
+  (let [service-name      (:app-name (ziggurat-config))
+        topic-entity-name (name topic-entity)
         additional-tags   {:topic_name topic-entity-name}
         default-namespace "message"
+        metric-namespaces [service-name topic-entity-name default-namespace]
+        multi-namespaces  [metric-namespaces [default-namespace]]
         metric            "read"]
-    (metrics/increment-count default-namespace metric additional-tags))
+    (metrics/multi-ns-increment-count multi-namespaces metric additional-tags))
   message)
 
 (defn store-supplier-builder []

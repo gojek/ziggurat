@@ -24,9 +24,11 @@
       (catch Throwable e
         (let [service-name      (:app-name (ziggurat-config))
               additional-tags   {:topic_name topic-entity-name}
-              default-namespace "message-parsing"]
+              default-namespace "message-parsing"
+              metric-namespaces [service-name topic-entity-name default-namespace]
+              multi-namespaces  [metric-namespaces [default-namespace]]]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
-          (metrics/increment-count default-namespace "failed" additional-tags)
+          (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
           nil)))
     message))
 
