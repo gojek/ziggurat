@@ -31,7 +31,7 @@
                                     (if (nil? msg)
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
-                                              (reset! metric-reporter-called? true))]
+                                                       (reset! metric-reporter-called? true))]
         ((protobuf->hash handler-fn nil topic-entity-name) nil))
       (is (true? @handler-fn-called?))
       (is (true? @metric-reporter-called?))))
