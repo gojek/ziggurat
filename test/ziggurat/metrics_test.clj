@@ -317,3 +317,33 @@
                                                  (reset! report-histogram-called? true)))]
         (metrics/-reportTime expected-metric-namespace expected-time-val additional-tags)
         (is (true? @report-histogram-called?))))))
+
+(deftest multi-ns-increment-count-test
+  (testing "multi-ns-increment-count calls increment-count for every namespace list passed"
+    (let [metric-namespaces-list               [["test" "multi" "ns"] ["test-ns"]]
+          expected-metric                      "test-metric"
+          expected-additional-tags             {:foo "bar"}
+          increment-count-call-counts          (atom 0)
+          expected-increment-count-call-counts 2]
+      (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                              (when (and (some #{metric-namespaces} metric-namespaces-list)
+                                                         (= metric expected-metric)
+                                                         (= additional-tags expected-additional-tags))
+                                                (swap! increment-count-call-counts inc)))]
+        (metrics/multi-ns-increment-count metric-namespaces-list expected-metric expected-additional-tags)
+        (is (= expected-increment-count-call-counts @increment-count-call-counts))))))
+
+(deftest multi-ns-report-time-test
+  (testing "multi-ns-report-time calls report-histogram for every namespace list passed"
+    (let [metric-namespaces-list                [["test" "multi" "ns"] ["test-ns"]]
+          expected-metric                       "test-metric"
+          expected-additional-tags              {:foo "bar"}
+          report-histogram-call-counts          (atom 0)
+          expected-report-histogram-call-counts 2]
+      (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                              (when (and (some #{metric-namespaces} metric-namespaces-list)
+                                                         (= metric expected-metric)
+                                                         (= additional-tags expected-additional-tags))
+                                                (swap! report-histogram-call-counts inc)))]
+        (metrics/multi-ns-increment-count metric-namespaces-list expected-metric expected-additional-tags)
+        (is (= expected-report-histogram-call-counts @report-histogram-call-counts))))))
