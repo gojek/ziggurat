@@ -13,24 +13,28 @@
                                     fix/silence-logging]))
 
 (deftest mapper-func-test
-  (let [service-name                   (:app-name (ziggurat-config))
-        stream-routes                  {:default {:handler-fn #(constantly nil)}}
-        topic-entity                   (name (first (keys stream-routes)))
-        message-payload                {:message {:foo "bar"} :topic-entity (keyword topic-entity)}
-        expected-additional-tags       {:topic_name topic-entity}
-        expected-metric-namespace      "message-processing"
-        expected-report-time-namespace "handler-fn-execution-time"]
+  (let [service-name                    (:app-name (ziggurat-config))
+        stream-routes                   {:default {:handler-fn #(constantly nil)}}
+        topic-entity                    (name (first (keys stream-routes)))
+        message-payload                 {:message {:foo "bar"} :topic-entity (keyword topic-entity)}
+        expected-additional-tags        {:topic_name topic-entity}
+        expected-metric-namespace       "message-processing"
+        report-time-namespace           "handler-fn-execution-time"
+        expected-metric-namespaces      [topic-entity expected-metric-namespace]
+        expected-report-time-namespaces [topic-entity report-time-namespace]]
     (testing "message process should be successful"
       (let [successfully-processed?     (atom false)
             successfully-reported-time? (atom false)
             expected-metric             "success"]
-        (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                (when (and (= metric-namespace expected-metric-namespace)
+        (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                (when (and (or (= metric-namespaces expected-metric-namespaces)
+                                                               (= metric-namespaces [expected-metric-namespace]))
                                                            (= metric expected-metric)
                                                            (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))
-                      metrics/report-histogram     (fn [metric-namespace _ _]
-                                                     (when (= metric-namespace expected-report-time-namespace)
+                      metrics/report-histogram     (fn [metric-namespaces _ _]
+                                                     (when (or (= metric-namespaces expected-report-time-namespaces)
+                                                               (= metric-namespaces [report-time-namespace]))
                                                        (reset! successfully-reported-time? true)))]
           ((mapper-func (constantly :success) []) message-payload)
           (is @successfully-processed?)
@@ -41,7 +45,8 @@
         (let [successfully-processed? (atom false)
               expected-metric         "success"]
           (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
+                                                  (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
+                                                                 (= metric-namespace [expected-metric-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! successfully-processed? true)))]
@@ -68,7 +73,8 @@
               expected-metric           "retry"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
+                                                  (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
+                                                                 (= metric-namespace [expected-metric-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
@@ -85,7 +91,8 @@
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
+                                                  (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
+                                                                 (= metric-namespace [expected-metric-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
@@ -97,11 +104,12 @@
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?  (atom false)
-            expected-metric-namespace "handler-fn-execution-time"]
-        (with-redefs [metrics/report-histogram (fn [metric-namespace _ _]
-                                                 (when (= metric-namespace expected-metric-namespace)
+            expected-metric-namespace "handler-fn-execution-time"
+            expected-metric-namespaces [service-name "default" expected-metric-namespace]]
+        (with-redefs [metrics/report-histogram (fn [metric-namespaces _ _]
+                                                 (when (or (= metric-namespaces expected-metric-namespaces)
+                                                           (= metric-namespaces [expected-metric-namespace]))
                                                    (reset! reported-execution-time? true)))]
-
           ((mapper-func (constantly :success) []) message-payload)
           (is @reported-execution-time?))))))
 
@@ -117,12 +125,14 @@
                                     :topic-entity topic}
         expected-topic-entity-name (name topic)
         expected-additional-tags   {:topic_name expected-topic-entity-name :channel_name channel-name}
-        expected-metric-namespace  "message-processing"]
+        increment-count-namespace  "message-processing"
+        expected-increment-count-namespaces [service-name topic channel-name increment-count-namespace]]
     (testing "message process should be successful"
       (let [successfully-processed? (atom false)
             expected-metric         "success"]
         (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                (when (and (= metric-namespace expected-metric-namespace)
+                                                (when (and (or (= metric-namespace expected-increment-count-namespaces)
+                                                               (= metric-namespace [increment-count-namespace]))
                                                            (= metric expected-metric)
                                                            (= additional-tags expected-additional-tags))
                                                   (reset! successfully-processed? true)))]
@@ -136,7 +146,8 @@
               expected-metric           "retry"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
+                                                  (when (and (or (= metric-namespace expected-increment-count-namespaces)
+                                                                 (= metric-namespace [increment-count-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
@@ -153,7 +164,8 @@
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                  (when (and (= metric-namespace expected-metric-namespace)
+                                                  (when (and (or (= metric-namespace expected-increment-count-namespaces)
+                                                                 (= metric-namespace [increment-count-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
@@ -162,12 +174,13 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
             (is @sentry-report-fn-called?)))))
-
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time? (atom false)
-            execution-time-namespace "execution-time"]
-        (with-redefs [metrics/report-histogram (fn [metric-namespace _ _]
-                                                 (when (= metric-namespace execution-time-namespace)
+            execution-time-namespace "execution-time"
+            expected-execution-time-namespaces [service-name expected-topic-entity-name channel-name execution-time-namespace]]
+        (with-redefs [metrics/report-histogram (fn [metric-namespaces _ _]
+                                                 (when (or (= metric-namespaces expected-execution-time-namespaces)
+                                                           (= metric-namespaces [execution-time-namespace]))
                                                    (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @reported-execution-time?))))))

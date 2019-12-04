@@ -89,11 +89,14 @@
     (set-encoding-config key-deserializer-encoding value-deserializer-encoding deserializer-encoding)))
 
 (defn- log-and-report-metrics [topic-entity message]
-  (let [topic-entity-name (name topic-entity)
-        additional-tags   {:topic_name topic-entity-name}
-        default-namespace "message"
-        metric            "read"]
-    (metrics/increment-count default-namespace metric additional-tags))
+  (let [service-name                  (:app-name (ziggurat-config))
+        topic-entity-name             (name topic-entity)
+        additional-tags               {:topic_name topic-entity-name}
+        message-read-metric-namespace "message"
+        metric-namespaces             [service-name topic-entity-name message-read-metric-namespace]
+        multi-namespaces              [metric-namespaces [message-read-metric-namespace]]
+        metric                        "read"]
+    (metrics/multi-ns-increment-count multi-namespaces metric additional-tags))
   message)
 
 (defn store-supplier-builder []
@@ -110,9 +113,9 @@
   (.mapValues stream-builder (value-mapper mapper-fn)))
 
 (defn- timestamp-transformer-supplier
-  [metric-namespace oldest-processed-message-in-s additional-tags]
+  [metric-namespaces oldest-processed-message-in-s additional-tags]
   (reify TransformerSupplier
-    (get [_] (timestamp-transformer/create metric-namespace oldest-processed-message-in-s additional-tags))))
+    (get [_] (timestamp-transformer/create metric-namespaces oldest-processed-message-in-s additional-tags))))
 
 (defn- header-transformer-supplier
   []
@@ -121,9 +124,10 @@
 
 (defn- timestamp-transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
   (let [service-name     (:app-name (ziggurat-config))
-        metric-namespace "message-received-delay-histogram"
+        delay-metric-namespace "message-received-delay-histogram"
+        metric-namespaces [service-name topic-entity-name delay-metric-namespace]
         additional-tags  {:topic_name topic-entity-name}]
-    (.transform stream-builder (timestamp-transformer-supplier metric-namespace oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (timestamp-transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
 
 (defn- header-transform-values [stream-builder]
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))

@@ -4,6 +4,7 @@
   "
   (:require [cheshire.core :refer [parse-string]]
             [sentry-clj.async :as sentry]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.metrics :as metrics]))
 
@@ -12,10 +13,13 @@
   (try
     (parse-string message key-fn)
     (catch Exception e
-      (let [additional-tags   {:topic_name (name topic-entity)}
-            default-namespace "json-message-parsing"]
+      (let [service-name      (:app-name (ziggurat-config))
+            additional-tags   {:topic_name (name topic-entity)}
+            default-namespace "json-message-parsing"
+            metric-namespaces [service-name topic-entity default-namespace]
+            multi-namespaces  [metric-namespaces [default-namespace]]]
         (sentry/report-error sentry-reporter e (str "Could not parse JSON message " message))
-        (metrics/increment-count default-namespace "failed" additional-tags)
+        (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
         nil))))
 
 (defn parse-json
