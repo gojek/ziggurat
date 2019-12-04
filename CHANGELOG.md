@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.1.0-alpha.4 - 2019-12-4
+- Reintroduces old metrics format (statsd). Ziggurat now pushes metrics in both formats (statsd and prometheus like).
+- Reverts the changes for exponential backoff, the current implementation was broken and a new PR is being raised with the correct approach.
+
 ## 3.1.0-alpha.3 - 2019-11-11
 - Renames report-time to report-histogram while being backward compatible
 
