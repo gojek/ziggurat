@@ -20,7 +20,8 @@
           topic-entity-name                   (name topic-entity)
           new-relic-transaction-name          (str topic-entity-name ".handler-fn")
           message-processing-namespace        "message-processing"
-          message-processing-namespaces       [service-name topic-entity-name message-processing-namespace]
+          base-metric-namespaces              [service-name topic-entity-name]
+          message-processing-namespaces       (conj base-metric-namespaces message-processing-namespace)
           additional-tags                     {:topic_name topic-entity-name}
           success-metric                      "success"
           retry-metric                        "retry"
@@ -34,7 +35,7 @@
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
-                multi-execution-time-namespaces [[service-name topic-entity-name execution-time-namespace]
+                multi-execution-time-namespaces [(conj base-metric-namespaces execution-time-namespace)
                                                  [execution-time-namespace]]]
             (metrics/multi-ns-report-histogram multi-execution-time-namespaces time-val additional-tags)
             (case return-code
@@ -57,8 +58,8 @@
           topic-entity-name                   (name topic-entity)
           channel-name                        (name channel)
           message-processing-namespace        "message-processing"
-          base-namespaces                     [service-name topic-entity-name channel-name]
-          message-processing-namespaces       (conj base-namespaces message-processing-namespace)
+          base-metric-namespaces              [service-name topic-entity-name channel-name]
+          message-processing-namespaces       (conj base-metric-namespaces message-processing-namespace)
           additional-tags                     {:topic_name topic-entity-name :channel_name channel-name}
           metric-namespace                    (str/join "." message-processing-namespaces)
           success-metric                      "success"
@@ -73,7 +74,7 @@
                 end-time                       (.toEpochMilli (Instant/now))
                 time-val                       (- end-time start-time)
                 execution-time-namespace       "execution-time"
-                multi-execution-time-namespace [(conj base-namespaces execution-time-namespace)
+                multi-execution-time-namespace [(conj base-metric-namespaces execution-time-namespace)
                                                 [execution-time-namespace]]]
             (metrics/multi-ns-report-histogram multi-execution-time-namespace time-val additional-tags)
             (case return-code

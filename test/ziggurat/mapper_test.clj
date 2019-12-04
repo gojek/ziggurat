@@ -18,7 +18,7 @@
         topic-entity                    (name (first (keys stream-routes)))
         message-payload                 {:message {:foo "bar"} :topic-entity (keyword topic-entity)}
         expected-additional-tags        {:topic_name topic-entity}
-        expected-metric-namespace                "message-processing"
+        expected-metric-namespace       "message-processing"
         report-time-namespace           "handler-fn-execution-time"
         expected-metric-namespaces      [topic-entity expected-metric-namespace]
         expected-report-time-namespaces [topic-entity report-time-namespace]]
