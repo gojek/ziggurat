@@ -86,11 +86,6 @@
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
     (publish exchange-name message queue-timeout-ms)))
 
-(defn publish-to-channel-custom-delay-queue [topic-entity channel message queue-timeout-ms]
-  (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
-        exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
-    (publish exchange-name message queue-timeout-ms)))
-
 (defn publish-to-channel-dead-queue [topic-entity channel message]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
