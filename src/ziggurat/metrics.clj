@@ -61,8 +61,8 @@
 (defn- get-metric-namespaces
   [metric-namespaces]
   (if (vector? metric-namespaces)
-    (intercalate-dot metric-namespaces)
-    (str (:app-name (ziggurat-config)) "." metric-namespaces)))
+    [(intercalate-dot metric-namespaces)]
+    [metric-namespaces (str (:app-name (ziggurat-config)) "." metric-namespaces)]))
 
 (defn- get-v
   [f d v]
@@ -80,9 +80,10 @@
   ([sign metric-namespace metric n additional-tags]
    (inc-or-dec-count sign {:metric-namespace metric-namespace :metric metric :n n :additional-tags additional-tags}))
   ([sign {:keys [metric-namespace metric n additional-tags]}]
-   (let [metric-ns (get-metric-namespaces metric-namespace)
-         meter     ^Meter (mk-meter metric-ns metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
-     (.mark meter (sign (get-int n))))))
+   (let [metric-namespaces        (get-metric-namespaces metric-namespace)
+         make-meter-for-namespace #(mk-meter % metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
+     (doseq [metric-ns metric-namespaces]
+       (.mark ^Meter (make-meter-for-namespace metric-ns) (sign (get-int n)))))))
 
 (def increment-count (partial inc-or-dec-count +))
 
@@ -96,9 +97,10 @@
   ([metric-namespaces val]
    (report-histogram metric-namespaces val nil))
   ([metric-namespaces val additional-tags]
-   (let [metric-namespace (get-metric-namespaces metric-namespaces)
-         histogram        ^Histogram (mk-histogram metric-namespace "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
-     (.update histogram (get-int val)))))
+   (let [intercalated-metric-namespaces (get-metric-namespaces metric-namespaces)
+         make-histogram-for-namespace #(mk-histogram % "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+     (doseq [metric-ns intercalated-metric-namespaces]
+       (.update (make-histogram-for-namespace metric-ns) (get-int val))))))
 
 (def report-time report-histogram)                          ;; for backward compatibility
 
