@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.1.0-alpha.5 - 2019-12-5
+- Fixes metrics publishing for custom metrics (i.e. string metric namespaces): In 2.x ziggurat appended the service_name
+  to a string metrics namespace (e.g. "metric" -> "service_name.metric"), we changed the contract in 3.0 by
+  removing the service_name from the metric name and instead adding a tag for it. To have backward compatibility with both
+  2.x and 3.0 we now send metrics in both formats
+
 ## 3.1.0-alpha.4 - 2019-12-4
 - Reintroduces old metrics format (statsd). Ziggurat now pushes metrics in both formats (statsd and prometheus like).
 - Reverts the changes for exponential backoff, the current implementation was broken and a new PR is being raised with the correct approach.
