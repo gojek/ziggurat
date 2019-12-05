@@ -23,6 +23,10 @@
 * [Contribution Guidelines](#contribution)
 * [License](#license)
 
+* [Wiki](https://github.com/gojek/ziggurat/wiki)
+* [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
+
+
 ## Description
 
 Ziggurat is a framework built to simplify Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
@@ -197,8 +201,8 @@ The default middleware `default/protobuf->hash` assumes that the message is seri
 ```
 _The handler-fn gets a serialized message from kafka and thus we need a deserealize-message function. We have provided default deserializers in Ziggurat_
 
-### Deserializing JSON messages using JSON middleware (Only available in 3.1.0-alpha.2)
-Ziggurat 3.1.0-alpha.2 provides a middleware to deserialize JSON messages, along with proto.
+### Deserializing JSON messages using JSON middleware
+Ziggurat 3.1.0 provides a middleware to deserialize JSON messages, along with proto.
 It can be used like this.
 
 ```clojure
@@ -229,7 +233,7 @@ For publishing data using a producer which is defined for the stream router conf
 
 `(send :default "test-topic" 1 "key" "value")`
 
-## Tracing (Only available in 3.1.0-alpha.1)
+## Tracing
 [Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
 
 Currently, the execution of the handler function is traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
@@ -333,38 +337,6 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 * retry - The number of times the message should be retried and if retry flow should be enabled or not
 * jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 * http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
-
-## Alpha (Experimental) Features
-Ziggurat 3.1.0-alpha.2 introduces a few configurations to enable the following:
-- Add a delay (configurable) in processing the messages from RabbitMQ channels
-- Add exponential backoff retry strategy for processing messages from RabbitMQ channels
-
-Both of these features can be enabled by providing the following flags in `config.edn`.
-
-```
-:stream-router  {:default  {:application-id       "test"
-                              :bootstrap-servers    "localhost:9092"
-                              :stream-threads-count [1 :int]
-                              :origin-topic         "topic"
-                              :upgrade-from         "1.1"
-                              :channels             {:channel                    {:worker-count [10 :int]
-                                                                                  :retry        {:count   [5 :int]
-                                                                                                 :enabled [true :bool]}}
-                                                     :with-delay                 {:worker-count [10 :int]
-                                                                                  :retry        {:count   [5 :int]
-                                                                                                 :enabled [true :bool]}
-                                                                                  :channel-delay-ms [1000 :int]}
-                                                     :with-custom-timeout        {:worker-count [10 :int]
-                                                                                  :retry        {:count   [5 :int]
-                                                                                                 :enabled [true :bool]
-                                                                                                 :queue-timeout-ms [2000 :int]}}
-                                                     :with-exponential-retry     {:worker-count [10 :int]
-                                                                                  :retry        {:count   [5 :int]
-                                                                                                 :enabled [true :bool]
-                                                                                                 :queue-timeout-ms [1000 :int]
-                                                                                                 :exponential-backoff-enabled [true :bool]}}}}}
-```
-_Note: Alpha features are experimental features and SHOULD NOT be used until they're stable._
 
 ## Contribution
 - For dev setup and contributions please refer to CONTRIBUTING.md
