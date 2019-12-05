@@ -16,16 +16,16 @@
   </a>
 </p>
 
+* [Wiki](https://github.com/gojek/ziggurat/wiki)
+* [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
+* [Upgrade Guide](https://github.com/gojek/ziggurat/wiki/Upgrade-guide)
+-----------------------------------------------------------------------------------------
 * [Description](#description)
 * [Dev Setup](#dev-setup)
 * [Usage](#usage)
 * [Configuration](#configuration)
 * [Contribution Guidelines](#contribution)
 * [License](#license)
------------------------------------------------------------------------------------------
-* [Wiki](https://github.com/gojek/ziggurat/wiki)
-* [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
-* [Upgrade Guide](https://github.com/gojek/ziggurat/wiki/Upgrade-guide)
 
 
 ## Description
