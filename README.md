@@ -22,9 +22,10 @@
 * [Configuration](#configuration)
 * [Contribution Guidelines](#contribution)
 * [License](#license)
-
+-----------------------------------------------------------------------------------------
 * [Wiki](https://github.com/gojek/ziggurat/wiki)
 * [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
+* [Upgrade Guide](https://github.com/gojek/ziggurat/wiki/Upgrade-guide)
 
 
 ## Description
