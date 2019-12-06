@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.1.0 - 2019-12-6
+- Adds tracing support. With [Jaeger](https://www.jaegertracing.io/) as the default tracer
+- Adds a JSON middleware to parse JSON serialized functions
+- Renames report-time to report-histogram and adds deprecation notice on report-time
+- Makes metrics backward compatible with 2.x and 3.0.0 . Ziggurat now publishes metrics in 2 formats similar to version 2.12.0 and above.
+
+
 ## 3.1.0-alpha.5 - 2019-12-5
 - Fixes metrics publishing for custom metrics (i.e. string metric namespaces): In 2.x ziggurat appended the service_name
   to a string metrics namespace (e.g. "metric" -> "service_name.metric"), we changed the contract in 3.0 by
