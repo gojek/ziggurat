@@ -397,9 +397,9 @@
           report-histogram-call-counts          (atom 0)
           expected-report-histogram-call-counts 2]
       (with-redefs [metrics/report-histogram (fn [metric-namespaces metric additional-tags]
-                                              (when (and (some #{metric-namespaces} metric-namespaces-list)
-                                                         (= metric expected-metric)
-                                                         (= additional-tags expected-additional-tags))
-                                                (swap! report-histogram-call-counts inc)))]
+                                               (when (and (some #{metric-namespaces} metric-namespaces-list)
+                                                          (= metric expected-metric)
+                                                          (= additional-tags expected-additional-tags))
+                                                 (swap! report-histogram-call-counts inc)))]
         (metrics/multi-ns-report-histogram metric-namespaces-list expected-metric expected-additional-tags)
         (is (= expected-report-histogram-call-counts @report-histogram-call-counts))))))
