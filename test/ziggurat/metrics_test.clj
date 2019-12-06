@@ -3,7 +3,8 @@
             [clojure.walk :refer [stringify-keys]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.metrics :as metrics])
+            [ziggurat.metrics :as metrics]
+            [clojure.tools.logging :as log])
   (:import (io.dropwizard.metrics5 Meter Histogram UniformReservoir MetricRegistry)))
 
 (use-fixtures :once fix/mount-only-config)
@@ -346,6 +347,33 @@
         (metrics/-reportTime expected-metric-namespace expected-time-val additional-tags)
         (is (true? @report-histogram-called?))))))
 
+(deftest report-time-test
+  (let [metric-namespace "metric-namespace"
+        value            12
+        additional-tags  {:foo "bar"}]
+    (testing "report time passes the correct metric-namespace and values to report-histogram and logs deprecation notice"
+      (with-redefs [metrics/report-histogram (fn [received-metric-ns received-val]
+                                               (is (= metric-namespace received-metric-ns))
+                                               (is (= value received-val)))]
+        (metrics/report-time metric-namespace value)))
+    (testing "report time passes the correct namespace, val and addition-tags to report-histogram and logs deprecation notice"
+      (with-redefs [metrics/report-histogram (fn [received-metric-ns received-val received-additional-tags]
+                                               (is (= metric-namespace received-metric-ns))
+                                               (is (= value received-val))
+                                               (is (= additional-tags received-additional-tags)))]
+        (metrics/report-time metric-namespace value additional-tags)))))
+
+(deftest multi-ns-report-time-test
+  (testing "calls multi-ns-report-histogram with the correct arguments"
+    (let [namespaces [["multi" "ns" "test"] ["multi-ns"]]
+          time-val   123
+          additional-tags {:foo "bar"}]
+      (with-redefs [metrics/multi-ns-report-histogram (fn [received-nss received-time-val received-additional-tags]
+                                                        (is (= received-nss namespaces))
+                                                        (is (= received-time-val time-val))
+                                                        (is (= received-additional-tags additional-tags)))]
+        (metrics/multi-ns-report-time namespaces time-val additional-tags)))))
+
 (deftest multi-ns-increment-count-test
   (testing "multi-ns-increment-count calls increment-count for every namespace list passed"
     (let [metric-namespaces-list               [["test" "multi" "ns"] ["test-ns"]]
@@ -361,17 +389,17 @@
         (metrics/multi-ns-increment-count metric-namespaces-list expected-metric expected-additional-tags)
         (is (= expected-increment-count-call-counts @increment-count-call-counts))))))
 
-(deftest multi-ns-report-time-test
-  (testing "multi-ns-report-time calls report-histogram for every namespace list passed"
+(deftest multi-ns-report-histogram-test
+  (testing "multi-ns-report-histogram calls report-histogram for every namespace list passed"
     (let [metric-namespaces-list                [["test" "multi" "ns"] ["test-ns"]]
           expected-metric                       "test-metric"
           expected-additional-tags              {:foo "bar"}
           report-histogram-call-counts          (atom 0)
           expected-report-histogram-call-counts 2]
-      (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+      (with-redefs [metrics/report-histogram (fn [metric-namespaces metric additional-tags]
                                               (when (and (some #{metric-namespaces} metric-namespaces-list)
                                                          (= metric expected-metric)
                                                          (= additional-tags expected-additional-tags))
                                                 (swap! report-histogram-call-counts inc)))]
-        (metrics/multi-ns-increment-count metric-namespaces-list expected-metric expected-additional-tags)
+        (metrics/multi-ns-report-histogram metric-namespaces-list expected-metric expected-additional-tags)
         (is (= expected-report-histogram-call-counts @report-histogram-call-counts))))))

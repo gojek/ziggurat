@@ -73,6 +73,17 @@
 (def ^:private get-map (partial get-v map? {}))
 
 (defn- inc-or-dec-count
+  "This method increments or decrements the `metric` associated with `metric-namespace` by `n` count
+   according to the value of `sign`. Here sign can be '+' or '-'. User can pass tags as 'key-value' pairs
+   through `additional_tags`.
+
+   Deprecation Notice: As of version 3.1.0, this function publishes the metrics in two formats.
+   The first format appends the service name to `metric-namespace` before publishing while the second format publishes
+   the metrics without making any changes to `metric-namespace`.
+   E.g. if the passed metric-namespace is `throughput` it will be published as `service_name.throughput` and `throughput`.
+
+   In future releases, Ziggurat will stop publishing metrics in the first format i.e. `service_name.namespace`.
+   "
   ([sign metric-namespace metric]
    (inc-or-dec-count sign metric-namespace metric 1 {}))
   ([sign metric-namespace metric n-or-additional-tags]
@@ -102,13 +113,27 @@
      (doseq [metric-ns intercalated-metric-namespaces]
        (.update (make-histogram-for-namespace metric-ns) (get-int val))))))
 
-(def report-time report-histogram)                          ;; for backward compatibility
+(defn report-time
+  "This function is an alias for `report-histogram`.
+
+   Deprecation Notice: `report-time` will be removed in the future releases of Ziggurat. It has been renamed to
+   `report-histogram`."
+  [& args]
+  (log/warn "Deprecation Notice: This function is deprecated in favour of ziggurat.metrics/report-histogram. Both functions have the same interface, so please use that function. It will be removed in future releases.")
+  (apply report-histogram args))
 
 (defn multi-ns-report-histogram [nss time-val additional-tags]
   (doseq [ns nss]
     (report-histogram ns time-val additional-tags)))
 
-(def multi-ns-report-time multi-ns-report-histogram)        ;; for backward compatibility
+(defn multi-ns-report-time
+  "This function is an alias for `multi-ns-report-histogram`.
+
+   Deprecation Notice: `multi-ns-report-time` will be removed in the future releases of Ziggurat. It has been renamed to
+   `multi-ns-report-histogram`."
+  [nss time-val additional-tags]
+  (log/warn "Deprecation Notice: This function is deprecated in favour of ziggurat.metrics/multi-ns-report-histogram. Both functions have the same interface, so please use that function. It will be removed in future releases.")
+  (multi-ns-report-histogram nss time-val additional-tags))
 
 (defn start-statsd-reporter [statsd-config env]
   (let [{:keys [enabled host port]} statsd-config]
