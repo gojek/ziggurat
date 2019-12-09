@@ -60,7 +60,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 Add this to your project.clj
 
-`[tech.gojek/ziggurat "3.0.0"]`
+`[tech.gojek/ziggurat "3.1.0"]`
 
 _Please refer [clojars](https://clojars.org/tech.gojek/ziggurat) for the latest stable version_
 
