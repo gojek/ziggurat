@@ -39,6 +39,38 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
+(defn convert-message
+  "Take the ch metadata payload and ack? as parameter.
+   Decodes the payload the ack it if ack is enabled and returns the message"
+  [ch delivery-tag ^bytes payload topic-entity]
+  (try
+    (let [message (nippy/thaw payload)]
+      (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
+      (convert-to-message-payload message topic-entity))
+    (catch Exception e
+      (sentry/report-error sentry-reporter e "Error while decoding message")
+      (lb/reject ch delivery-tag false)
+      nil)))
+
+(defn- ack-message
+  ([ch delivery-tag]
+   (ack-message ch delivery-tag true))
+  ([ch delivery-tag ack?]
+   (when ack?
+     (lb/ack ch delivery-tag))))
+
+(defn process-message [ch meta payload topic-entity processing-fn]
+  (let [delivery-tag (:delivery-tag meta)
+        message      (convert-message ch delivery-tag payload topic-entity)]
+    (when message
+      (log/debugf "Processing message [%s] from RabbitMQ " message)
+      (try
+        (processing-fn message)
+        (ack-message ch delivery-tag)
+        (catch Exception e
+          (sentry/report-error sentry-reporter e "Error while processing message from RabbitMQ")
+          (lb/reject ch delivery-tag true))))))
+
 (defn- try-consuming-dead-set-messages [ch ack? queue-name topic-entity]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
@@ -76,8 +108,7 @@
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
-    (if-let [message (convert-and-ack-message ch meta payload true topic-entity)]
-      (wrapped-mapper-fn message))))
+    (process-message ch meta payload topic-entity wrapped-mapper-fn)))
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)
