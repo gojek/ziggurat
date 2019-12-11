@@ -8,23 +8,16 @@
   (if (nil? channel)
     (doseq [message-payload (consumer/get-dead-set-messages true topic-entity count-of-message)]
       (producer/publish-to-instant-queue message-payload))
-    (doseq [message-payload (consumer/get-dead-set-messages-for-channel true topic-entity channel count-of-message)]
+    (doseq [message-payload (consumer/get-dead-set-messages true topic-entity channel count-of-message)]
       (producer/publish-to-channel-instant-queue channel message-payload))))
-
-(defn- get-messages
-  "Gets n messages from dead queue and gives the option to ack or un-ack them"
-  [count-of-message topic-entity channel ack?]
-  (if (nil? channel)
-    (consumer/get-dead-set-messages ack? topic-entity count-of-message)
-    (consumer/get-dead-set-messages-for-channel ack? topic-entity channel count-of-message)))
 
 (defn view
   "Gets n number of messages from dead queue"
   [count-of-message topic-entity channel]
-  (get-messages count-of-message topic-entity channel false))
+  (consumer/get-dead-set-messages false topic-entity channel count-of-message))
 
 (defn delete
   "Deletes n number of messages from dead queue"
   [count-of-message topic-entity channel]
-  (get-messages count-of-message topic-entity channel true))
+  (consumer/get-dead-set-messages true topic-entity channel count-of-message))
 

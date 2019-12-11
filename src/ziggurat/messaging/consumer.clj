@@ -103,21 +103,12 @@
 
 (defn get-dead-set-messages
   ([ack? topic-entity count]
-    (get-dead-set-messages* ack?
-                            (construct-queue-name topic-entity)
-                            count
-                            topic-entity))
+    (get-dead-set-messages ack? topic-entity nil count))
   ([ack? topic-entity channel count]
    (get-dead-set-messages* ack?
                            (construct-queue-name topic-entity channel)
                            count
                            topic-entity)))
-
-(defn get-dead-set-messages-for-channel [ack? topic-entity channel count]
-  (get-dead-set-messages* ack?
-                          (construct-queue-name topic-entity channel)
-                          count
-                          topic-entity))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
