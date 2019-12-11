@@ -101,11 +101,17 @@
      (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :dead-letter :queue-name]))
      (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name])))))
 
-(defn get-dead-set-messages-for-topic [ack? topic-entity count]
-  (get-dead-set-messages* ack?
-                          (construct-queue-name topic-entity)
-                          count
-                          topic-entity))
+(defn get-dead-set-messages
+  ([ack? topic-entity count]
+    (get-dead-set-messages* ack?
+                            (construct-queue-name topic-entity)
+                            count
+                            topic-entity))
+  ([ack? topic-entity channel count]
+   (get-dead-set-messages* ack?
+                           (construct-queue-name topic-entity channel)
+                           count
+                           topic-entity)))
 
 (defn get-dead-set-messages-for-channel [ack? topic-entity channel count]
   (get-dead-set-messages* ack?

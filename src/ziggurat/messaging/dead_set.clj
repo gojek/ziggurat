@@ -6,7 +6,7 @@
   "Gets the message from the queue and puts them to instant queue"
   [count-of-message topic-entity channel]
   (if (nil? channel)
-    (doseq [message-payload (consumer/get-dead-set-messages-for-topic true topic-entity count-of-message)]
+    (doseq [message-payload (consumer/get-dead-set-messages true topic-entity count-of-message)]
       (producer/publish-to-instant-queue message-payload))
     (doseq [message-payload (consumer/get-dead-set-messages-for-channel true topic-entity channel count-of-message)]
       (producer/publish-to-channel-instant-queue channel message-payload))))
@@ -15,7 +15,7 @@
   "Gets n messages from dead queue and gives the option to ack or un-ack them"
   [count-of-message topic-entity channel ack?]
   (if (nil? channel)
-    (consumer/get-dead-set-messages-for-topic ack? topic-entity count-of-message)
+    (consumer/get-dead-set-messages ack? topic-entity count-of-message)
     (consumer/get-dead-set-messages-for-channel ack? topic-entity channel count-of-message)))
 
 (defn view
