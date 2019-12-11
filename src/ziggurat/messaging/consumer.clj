@@ -93,16 +93,23 @@
             (doall (for [_ (range count)]
                      (try-consuming-dead-set-messages ch ack? queue-name topic-entity))))))
 
+(defn- construct-queue-name
+  ([topic-entity]
+   (construct-queue-name topic-entity nil))
+  ([topic-entity channel]
+   (if (nil? channel)
+     (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :dead-letter :queue-name]))
+     (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name])))))
+
 (defn get-dead-set-messages-for-topic [ack? topic-entity count]
   (get-dead-set-messages* ack?
-                          (prefixed-queue-name topic-entity
-                                               (get-in-config [:rabbit-mq :dead-letter :queue-name]))
+                          (construct-queue-name topic-entity)
                           count
                           topic-entity))
 
 (defn get-dead-set-messages-for-channel [ack? topic-entity channel count]
   (get-dead-set-messages* ack?
-                          (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name]))
+                          (construct-queue-name topic-entity channel)
                           count
                           topic-entity))
 
