@@ -45,7 +45,6 @@
   [ch delivery-tag ^bytes payload topic-entity]
   (try
     (let [message (nippy/thaw payload)]
-      (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
       (convert-to-message-payload message topic-entity))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while decoding message")
@@ -63,7 +62,7 @@
   (let [delivery-tag (:delivery-tag meta)
         message      (convert-message ch delivery-tag payload topic-entity)]
     (when message
-      (log/debugf "Processing message [%s] from RabbitMQ " message)
+      (log/infof "Processing message [%s] from RabbitMQ " message)
       (try
         (processing-fn message)
         (ack-message ch delivery-tag)
@@ -71,7 +70,7 @@
           (sentry/report-error sentry-reporter e "Error while processing message from RabbitMQ")
           (lb/reject ch delivery-tag true))))))
 
-(defn- try-consuming-dead-set-messages [ch ack? queue-name topic-entity]
+(defn- read-dead-set-messages [ch ack? queue-name topic-entity]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
       (when (some? payload)
@@ -89,9 +88,9 @@
    it will not ack the message."
   [ack? queue-name count topic-entity]
   (remove nil?
-          (with-open [ch (lch/open connection)]
-            (doall (for [_ (range count)]
-                     (try-consuming-dead-set-messages ch ack? queue-name topic-entity))))))
+    (with-open [ch (lch/open connection)]
+      (doall (for [_ (range count)]
+               (read-dead-set-messages ch ack? queue-name topic-entity))))))
 
 (defn- construct-queue-name
   ([topic-entity]
@@ -102,13 +101,24 @@
      (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name])))))
 
 (defn get-dead-set-messages
+  "This method can be used to read and optionally ack messages in dead-letter queue, based on the value of `ack?`.
+
+   For example, this method can be used to delete messages from dead-letter queue if `ack?` is set to true."
   ([ack? topic-entity count]
     (get-dead-set-messages ack? topic-entity nil count))
   ([ack? topic-entity channel count]
-   (get-dead-set-messages* ack?
-                           (construct-queue-name topic-entity channel)
-                           count
-                           topic-entity)))
+   (get-dead-set-messages* ack? (construct-queue-name topic-entity channel) count topic-entity)))
+
+(defn process-dead-set-messages
+  ([topic-entity count processing-fn]
+   (process-dead-set-messages topic-entity nil count processing-fn))
+  ([topic-entity channel count processing-fn]
+    (with-open [ch (lch/open connection)]
+      (doall (for [_ (range count)]
+               (let [queue-name     (construct-queue-name topic-entity channel)
+                     [meta payload] (lb/get ch queue-name false)]
+                 (when (some? payload)
+                   (process-message ch meta payload topic-entity processing-fn))))))))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
