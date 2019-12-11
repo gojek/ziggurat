@@ -78,20 +78,6 @@
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
 
-(defn- get-dead-set-messages*
-  "Get the n(count) messages from the rabbitmq.
-
-   If ack is set to true,
-   then ack all the messages while consuming and make them unavailable to other subscribers.
-
-   If ack is false,
-   it will not ack the message."
-  [ack? queue-name count topic-entity]
-  (remove nil?
-    (with-open [ch (lch/open connection)]
-      (doall (for [_ (range count)]
-               (read-dead-set-messages ch ack? queue-name topic-entity))))))
-
 (defn- construct-queue-name
   ([topic-entity]
    (construct-queue-name topic-entity nil))
@@ -107,9 +93,14 @@
   ([ack? topic-entity count]
     (get-dead-set-messages ack? topic-entity nil count))
   ([ack? topic-entity channel count]
-   (get-dead-set-messages* ack? (construct-queue-name topic-entity channel) count topic-entity)))
+   (remove nil?
+           (with-open [ch (lch/open connection)]
+             (doall (for [_ (range count)]
+                      (read-dead-set-messages ch ack? (construct-queue-name topic-entity channel) topic-entity)))))))
 
 (defn process-dead-set-messages
+  "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
+   channel specified by `channel`. Executes `processing-fn` for every message read from the queue."
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
