@@ -75,18 +75,23 @@
   "Get exponential backoff enabled for specific channel from config."
   (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :exponential-backoff-enabled))
 
-(defn- get-backoff-exponent [retry-count message-payload]
-  "Get exponential-backoff value when exponential backoff is enabled. 
-  Max exponent currently is hardoced to 10. For retrial 10th and more will use same queue timeout."
-  (let [message-retry-count (:retry-count message-payload)
-        exponent (- retry-count message-retry-count)]
-    (if (< exponent 10)
-      exponent
-      10)))
+(defn- channel-retries-exponential-backoff-count [topic-entity channel]
+  "Get exponential backoff count for specific channel from config."
+  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :exponential-backoff-count))
 
-(defn- get-backoff-exponent-timeout-ms [retry-count message-payload queue-timeout-ms]
+(defn- get-backoff-exponent [retry-count message-payload exponential-backoff-count]
+  "Get exponential-backoff value when exponential backoff is enabled. 
+  Max exponent configured on ziggurat config. For retrial after exponential-backoff-count will use same queue timeout."
+  (let [message-retry-count (:retry-count message-payload)
+        exponent (- retry-count message-retry-count)
+        exponential-backoff-count (or exponential-backoff-count 10)]
+    (if (< exponent exponential-backoff-count)
+      exponent
+      exponential-backoff-count)))
+
+(defn- get-backoff-exponent-timeout-ms [retry-count message-payload queue-timeout-ms exponential-backoff-count]
   "Get queue timeout value when exponential backoff is enabled."
-  (let [exponential-backoff (get-backoff-exponent retry-count message-payload)]
+  (let [exponential-backoff (get-backoff-exponent retry-count message-payload exponential-backoff-count)]
     (int (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms))))
 
 (defn get-queue-timeout-ms [message-payload]
@@ -95,9 +100,10 @@
    _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
   (let [queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
         exponential-backoff-enabled (-> (ziggurat-config) :retry :exponential-backoff-enabled)
+        exponential-backoff-count (-> (ziggurat-config) :retry :exponential-backoff-count)
         retry-count (-> (ziggurat-config) :retry :count)]
     (if exponential-backoff-enabled
-      (get-backoff-exponent-timeout-ms retry-count message-payload queue-timeout-ms)
+      (get-backoff-exponent-timeout-ms retry-count message-payload queue-timeout-ms exponential-backoff-count)
       queue-timeout-ms)))
 
 (defn get-channel-queue-timeout-ms [topic-entity channel message-payload]
@@ -105,21 +111,23 @@
    If `exponential-backoff-enabled` is true, `queue-timeout-ms` will be exponential with formula `(2^n)-1`, where `n` is message retry-count.
    _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
   (let [exponential-backoff-enabled (channel-retries-exponential-backoff-enabled topic-entity channel)
+        exponential-backoff-count (channel-retries-exponential-backoff-count topic-entity channel)
         queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
         channel-queue-timeout-ms (get-channel-retry-queue-timeout-ms topic-entity channel)
         retry-count (-> (ziggurat-config) :retry :count)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
     (if exponential-backoff-enabled
-      (get-backoff-exponent-timeout-ms (or channel-retry-count retry-count) message-payload (or channel-queue-timeout-ms queue-timeout-ms))
+      (get-backoff-exponent-timeout-ms (or channel-retry-count retry-count) message-payload (or channel-queue-timeout-ms queue-timeout-ms) exponential-backoff-count)
       (or channel-queue-timeout-ms queue-timeout-ms))))
 
 (defn get-delay-exchange-name [topic-entity message-payload]
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
         exchange-name (prefixed-queue-name topic-entity exchange-name)
         exponential-backoff-enabled (-> (ziggurat-config) :retry :exponential-backoff-enabled)
+        exponential-backoff-count (-> (ziggurat-config) :retry :exponential-backoff-count)
         retry-count (-> (ziggurat-config) :retry :count)]
     (if exponential-backoff-enabled
-      (let [backoff-exponent (get-backoff-exponent retry-count message-payload)]
+      (let [backoff-exponent (get-backoff-exponent retry-count message-payload exponential-backoff-count)]
         (prefixed-queue-name exchange-name backoff-exponent))
       exchange-name)))
 
@@ -127,9 +135,10 @@
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)
         exponential-backoff-enabled (channel-retries-exponential-backoff-enabled topic-entity channel)
+        exponential-backoff-count (channel-retries-exponential-backoff-count topic-entity channel)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
     (if exponential-backoff-enabled
-      (let [exponential-backoff (get-backoff-exponent channel-retry-count message-payload)]
+      (let [exponential-backoff (get-backoff-exponent channel-retry-count message-payload exponential-backoff-count)]
         (str (name exchange-name) "_" exponential-backoff))
       exchange-name)))
 
