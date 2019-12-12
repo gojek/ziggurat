@@ -1,30 +1,29 @@
 (ns ziggurat.messaging.dead-set
   (:require [ziggurat.messaging.consumer :as consumer]
-            [ziggurat.messaging.producer :as producer]))
+            [ziggurat.messaging.producer :as producer]
+            [clojure.tools.logging :as log]))
 
 (defn replay
   "Gets the message from the queue and puts them to instant queue"
   [count-of-message topic-entity channel]
+  (log/debugf "Replaying %d number of messages from dead-letter-queue for topic [%s] and channel [%s]", count-of-message, topic-entity, channel)
   (if (nil? channel)
-    (doseq [message-payload (consumer/get-dead-set-messages-for-topic true topic-entity count-of-message)]
-      (producer/publish-to-instant-queue message-payload))
-    (doseq [message-payload (consumer/get-dead-set-messages-for-channel true topic-entity channel count-of-message)]
-      (producer/publish-to-channel-instant-queue channel message-payload))))
-
-(defn- get-messages
-  "Gets n messages from dead queue and gives the option to ack or un-ack them"
-  [count-of-message topic-entity channel ack?]
-  (if (nil? channel)
-    (consumer/get-dead-set-messages-for-topic ack? topic-entity count-of-message)
-    (consumer/get-dead-set-messages-for-channel ack? topic-entity channel count-of-message)))
+    (consumer/process-dead-set-messages topic-entity count-of-message
+                                        (fn [message-payload]
+                                          (producer/publish-to-instant-queue message-payload)))
+    (consumer/process-dead-set-messages topic-entity channel count-of-message
+                                        (fn [message-payload]
+                                          (producer/publish-to-channel-instant-queue channel message-payload)))))
 
 (defn view
   "Gets n number of messages from dead queue"
   [count-of-message topic-entity channel]
-  (get-messages count-of-message topic-entity channel false))
+  (log/debugf "Getting %d number of messages from dead-letter-queue for topic [%s] and channel [%s]", count-of-message, topic-entity, channel)
+  (consumer/get-dead-set-messages topic-entity channel count-of-message))
 
 (defn delete
   "Deletes n number of messages from dead queue"
   [count-of-message topic-entity channel]
-  (get-messages count-of-message topic-entity channel true))
+  (log/debugf "Deleting %d number of messages from dead-letter-queue for topic [%s] and channel [%s]", count-of-message, topic-entity, channel)
+  (consumer/process-dead-set-messages topic-entity channel count-of-message (fn [message-payload])))
 

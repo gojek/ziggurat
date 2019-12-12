@@ -21,6 +21,15 @@
       (catch NullPointerException e
         nil))))
 
+(defn- get-msg-from-rabbitmq-without-ack [queue-name topic-name]
+  (with-open [ch (lch/open connection)]
+    (try
+      (let [[meta payload] (lb/get ch queue-name false)]
+        (when (seq payload)
+          (consumer/convert-and-ack-message ch meta payload false (keyword topic-name))))
+      (catch NullPointerException e
+        nil))))
+
 (defn get-msg-from-delay-queue [topic-name]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         queue-name (producer/delay-queue-name topic-name queue-name)]
@@ -30,6 +39,11 @@
   (let [{:keys [queue-name]} (:dead-letter (rabbitmq-config))
         queue-name (str topic-name "_" queue-name)]
     (get-msg-from-rabbitmq queue-name topic-name)))
+
+(defn get-msg-from-dead-queue-without-ack [topic-name]
+  (let [{:keys [queue-name]} (:dead-letter (rabbitmq-config))
+        queue-name (str topic-name "_" queue-name)]
+    (get-msg-from-rabbitmq-without-ack queue-name topic-name)))
 
 (defn get-msg-from-channel-dead-queue [topic-name channel-name]
   (let [{:keys [queue-name]} (:dead-letter (rabbitmq-config))

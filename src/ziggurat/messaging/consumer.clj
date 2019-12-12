@@ -10,7 +10,8 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer :all]))
+            [ziggurat.messaging.util :refer :all]
+            [ziggurat.metrics :as metrics]))
 
 (defn- convert-to-message-payload
   "checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to message-payload to pass onto the mapper-fn.
@@ -25,59 +26,83 @@
         (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
-  "Take the ch metadata payload and ack? as parameter.
-   Decodes the payload the ack it if ack is enabled and returns the message"
+  "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
+  if `ack?` is true."
   [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
   (try
     (let [message (nippy/thaw payload)]
-      (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
       (when ack?
         (lb/ack ch delivery-tag))
       (convert-to-message-payload message topic-entity))
     (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while decoding message")
       (lb/reject ch delivery-tag false)
+      (sentry/report-error sentry-reporter e "Error while decoding message")
+      (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
       nil)))
 
-(defn- try-consuming-dead-set-messages [ch ack? queue-name topic-entity]
+(defn- ack-message
+  [ch delivery-tag]
+  (lb/ack ch delivery-tag))
+
+(defn process-message-from-queue [ch meta payload topic-entity processing-fn]
+  (let [delivery-tag (:delivery-tag meta)
+        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+    (when message-payload
+      (log/infof "Processing message [%s] from RabbitMQ " message-payload)
+      (try
+        (log/debug "Calling processor-fn with the message-payload - " message-payload " with retry count - " (:retry-count message-payload))
+        (processing-fn message-payload)
+        (ack-message ch delivery-tag)
+        (catch Exception e
+          (lb/reject ch delivery-tag true)
+          (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
+          (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
+
+(defn read-message-from-queue [ch queue-name topic-entity ack?]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
       (when (some? payload)
         (convert-and-ack-message ch meta payload ack? topic-entity)))
     (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
+      (sentry/report-error sentry-reporter e "Error while consuming the dead set message")
+      (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
 
-(defn- get-dead-set-messages*
-  "Get the n(count) messages from the rabbitmq.
+(defn- construct-queue-name
+  ([topic-entity]
+   (construct-queue-name topic-entity nil))
+  ([topic-entity channel]
+   (if (nil? channel)
+     (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :dead-letter :queue-name]))
+     (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name])))))
 
-   If ack is set to true,
-   then ack all the messages while consuming and make them unavailable to other subscribers.
+(defn get-dead-set-messages
+  "This method can be used to read and optionally ack messages in dead-letter queue, based on the value of `ack?`.
 
-   If ack is false,
-   it will not ack the message."
-  [ack? queue-name count topic-entity]
-  (remove nil?
-          (with-open [ch (lch/open connection)]
-            (doall (for [_ (range count)]
-                     (try-consuming-dead-set-messages ch ack? queue-name topic-entity))))))
+   For example, this method can be used to delete messages from dead-letter queue if `ack?` is set to true."
+  ([topic-entity count]
+   (get-dead-set-messages topic-entity nil count))
+  ([topic-entity channel count]
+   (remove nil?
+           (with-open [ch (lch/open connection)]
+             (doall (for [_ (range count)]
+                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity false)))))))
 
-(defn get-dead-set-messages-for-topic [ack? topic-entity count]
-  (get-dead-set-messages* ack?
-                          (prefixed-queue-name topic-entity
-                                               (get-in-config [:rabbit-mq :dead-letter :queue-name]))
-                          count
-                          topic-entity))
-
-(defn get-dead-set-messages-for-channel [ack? topic-entity channel count]
-  (get-dead-set-messages* ack?
-                          (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name]))
-                          count
-                          topic-entity))
+(defn process-dead-set-messages
+  "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
+   channel specified by `channel`. Executes `processing-fn` for every message read from the queue."
+  ([topic-entity count processing-fn]
+   (process-dead-set-messages topic-entity nil count processing-fn))
+  ([topic-entity channel count processing-fn]
+   (with-open [ch (lch/open connection)]
+     (doall (for [_ (range count)]
+              (let [queue-name     (construct-queue-name topic-entity channel)
+                    [meta payload] (lb/get ch queue-name false)]
+                (when (some? payload)
+                  (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
-    (if-let [message (convert-and-ack-message ch meta payload true topic-entity)]
-      (wrapped-mapper-fn message))))
+    (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)

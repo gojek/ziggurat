@@ -1,14 +1,16 @@
 (ns ziggurat.messaging.consumer-test
   (:require [clojure.test :refer :all])
   (:require [langohr.channel :as lch]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :refer :all]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.rabbitmq :as util]))
+            [ziggurat.util.rabbitmq :as util]
+            [langohr.basic :as lb]
+            [ziggurat.messaging.consumer :as consumer]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -18,47 +20,55 @@
 
 (def topic-entity :default)
 
-(deftest get-dead-set-messages-for-topic-test
+(deftest process-dead-set-messages-test
   (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
-    (testing "when ack is enabled, get the dead set messages and remove from dead set"
+    (testing "it maps the process-message-from-queue over all the messages fetched from the queue for a topic"
+      (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
+        (let [count             5
+              process-fn-called (atom 0)
+              processing-fn     (fn [message]
+                                  (when (= message message-payload)
+                                    (swap! process-fn-called inc)))
+              _                 (doseq [_ (range count)]
+                                  (producer/publish-to-dead-queue message-payload))]
+          (consumer/process-dead-set-messages topic-entity count processing-fn)
+          (is (= count @process-fn-called))
+          (is (empty? (get-dead-set-messages topic-entity count))))))
+    (testing "it maps the process-message-from-queue over all the messages fetched from the queue for a channel"
+      (fix/with-queues {topic-entity {:handler-fn (constantly nil)
+                                      :channel-1  (constantly nil)}}
+        (let [count             5
+              channel           "channel-1"
+              process-fn-called (atom 0)
+              processing-fn     (fn [message]
+                                  (when (= message message-payload)
+                                    (swap! process-fn-called inc)))
+              _                 (doseq [_ (range count)]
+                                  (producer/publish-to-channel-dead-queue channel message-payload))]
+          (consumer/process-dead-set-messages topic-entity channel count processing-fn)
+          (is (= count @process-fn-called))
+          (is (empty? (get-dead-set-messages topic-entity channel count))))))))
+
+(deftest get-dead-set-messages-test
+  (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
+    (testing "get the dead set messages from dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
         (let [count-of-messages 10
-              pushed-message    (doseq [_ (range count-of-messages)]
+              _                 (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (get-dead-set-messages-for-topic true topic-entity count-of-messages)]
+              dead-set-messages (get-dead-set-messages topic-entity count-of-messages)]
           (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (empty? (get-dead-set-messages-for-topic true topic-entity count-of-messages))))))
-
-    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-      (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-        (let [count-of-messages 10
-              pushed-message    (doseq [_ (range count-of-messages)]
-                                  (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
-
-(deftest get-dead-set-messages-from-channel-test
-  (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
-    (testing "when ack is enabled, get the dead set messages and remove from dead set"
+          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages topic-entity count-of-messages))))))
+    (testing "get the dead set messages from a channel dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)
                                       :channel-1  (constantly nil)}}
         (let [count-of-messages 10
               channel           "channel-1"
               pushed-message    (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-channel-dead-queue channel message-payload))
-              dead-set-messages (get-dead-set-messages-for-channel true topic-entity channel count-of-messages)]
+              dead-set-messages (get-dead-set-messages topic-entity channel count-of-messages)]
           (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (empty? (get-dead-set-messages-for-channel true topic-entity channel count-of-messages))))))
-
-    (testing "when ack is disabled, get the dead set messages and not remove from dead set"
-      (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-        (let [count-of-messages 10
-              pushed-message    (doseq [_ (range count-of-messages)]
-                                  (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (get-dead-set-messages-for-topic false topic-entity count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages-for-topic false topic-entity count-of-messages))))))))
+          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages topic-entity channel count-of-messages))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom
@@ -166,13 +176,13 @@
             (producer/retry (gen-message-payload topic-entity)))
 
           (block-and-retry-until (fn []
-                                   (let [dead-set-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs))]
+                                   (let [dead-set-msgs (count (get-dead-set-messages topic-entity no-of-msgs))]
                                      (if (< dead-set-msgs no-of-msgs)
                                        (throw (ex-info "Dead set messages were never populated"
                                                        {:dead-set-msgs dead-set-msgs}))))))
 
           (is (= (* retry-count no-of-msgs) @retry-counter))
-          (is (= no-of-msgs (count (get-dead-set-messages-for-topic false topic-entity no-of-msgs)))))
+          (is (= no-of-msgs (count (get-dead-set-messages topic-entity no-of-msgs)))))
         (util/close rmq-ch))))
 
   (testing "start subscribers should not call start-subscriber* when stream router is nil"
@@ -294,3 +304,68 @@
             (is (= "receive" (-> finished-spans
                                  (.get 1)
                                  (.operationName))))))))))
+
+(deftest process-message-test
+  (testing "process-message function should ack message after once processing finishes"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [message       (gen-message-payload topic-entity)
+            processing-fn (fn [message-arg]
+                            (is (= message-arg message)))
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open connection)]
+          (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                prefixed-queue-name (str topic-entity-name "_" queue-name)
+                [meta payload]      (lb/get ch prefixed-queue-name false)
+                _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
+                consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+            (is (= consumed-message nil)))))))
+  (testing "process-message function not process a message if convert-message returns nil"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [message       (gen-message-payload topic-entity)
+            processing-fn-called (atom false)
+            processing-fn (fn [message-arg]
+                            (if (nil? message-arg)
+                              (reset! processing-fn-called true)))
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-redefs [convert-and-ack-message (fn [_ _ _ _ _] nil)]
+          (with-open [ch (lch/open connection)]
+            (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                  prefixed-queue-name (str topic-entity-name "_" queue-name)
+                  [meta payload]      (lb/get ch prefixed-queue-name false)
+                  _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
+                  consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+              (is (= false @processing-fn-called))
+              (is (= consumed-message nil))))))))
+  (testing "process-message function should reject and re-queue a message if processing fails"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [message       (gen-message-payload topic-entity)
+            processing-fn (fn [message-arg]
+                            (is (= message-arg message))
+                            (throw (Exception. "exception message")))
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open connection)]
+          (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                prefixed-queue-name (str topic-entity-name "_" queue-name)
+                [meta payload]      (lb/get ch prefixed-queue-name false)
+                _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
+                consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+            (is (= consumed-message message))))))))
+
+(deftest convert-message-test
+  (testing "convert-message function should reject and discard a message if message conversion fails"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [message       (gen-message-payload topic-entity)
+            processing-fn (fn [_] ())
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open connection)]
+          (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
+            (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                  prefixed-queue-name (str topic-entity-name "_" queue-name)
+                  [meta payload]      (lb/get ch prefixed-queue-name false)
+                  _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
+                  consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+              (is (= consumed-message nil)))))))))
