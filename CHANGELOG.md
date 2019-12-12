@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.0-alpha.2 - 2019-12-12
+- Fixes [this bug](https://github.com/gojek/ziggurat/issues/115) in RabbitMQ message processing flow
+
 ## 3.2.0-alpha.1 - 2019-12-12
 - Adds support for exponential backoffs in channels and normal retry flow
 - exponential backoffs can be enabled from the config
