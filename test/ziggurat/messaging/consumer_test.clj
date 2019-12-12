@@ -24,30 +24,30 @@
   (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "it maps the process-message-from-queue over all the messages fetched from the queue for a topic"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-         (let [count             5
-               process-fn-called (atom 0)
-               processing-fn     (fn [message]
-                                   (when (= message message-payload)
-                                     (swap! process-fn-called inc)))
-               _                 (doseq [_ (range count)]
-                                   (producer/publish-to-dead-queue message-payload))]
-             (consumer/process-dead-set-messages topic-entity count processing-fn)
-             (is (= count @process-fn-called))
-             (is (empty? (get-dead-set-messages topic-entity count))))))
+        (let [count             5
+              process-fn-called (atom 0)
+              processing-fn     (fn [message]
+                                  (when (= message message-payload)
+                                    (swap! process-fn-called inc)))
+              _                 (doseq [_ (range count)]
+                                  (producer/publish-to-dead-queue message-payload))]
+          (consumer/process-dead-set-messages topic-entity count processing-fn)
+          (is (= count @process-fn-called))
+          (is (empty? (get-dead-set-messages topic-entity count))))))
     (testing "it maps the process-message-from-queue over all the messages fetched from the queue for a channel"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)
                                       :channel-1  (constantly nil)}}
-         (let [count             5
-               channel           "channel-1"
-               process-fn-called (atom 0)
-               processing-fn     (fn [message]
-                                   (when (= message message-payload)
-                                     (swap! process-fn-called inc)))
-               _                 (doseq [_ (range count)]
-                                   (producer/publish-to-channel-dead-queue channel message-payload))]
-             (consumer/process-dead-set-messages topic-entity channel count processing-fn)
-             (is (= count @process-fn-called))
-             (is (empty? (get-dead-set-messages topic-entity channel count))))))))
+        (let [count             5
+              channel           "channel-1"
+              process-fn-called (atom 0)
+              processing-fn     (fn [message]
+                                  (when (= message message-payload)
+                                    (swap! process-fn-called inc)))
+              _                 (doseq [_ (range count)]
+                                  (producer/publish-to-channel-dead-queue channel message-payload))]
+          (consumer/process-dead-set-messages topic-entity channel count processing-fn)
+          (is (= count @process-fn-called))
+          (is (empty? (get-dead-set-messages topic-entity channel count))))))))
 
 (deftest get-dead-set-messages-test
   (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]

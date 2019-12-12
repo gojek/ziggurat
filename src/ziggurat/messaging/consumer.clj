@@ -42,7 +42,7 @@
 
 (defn- ack-message
   [ch delivery-tag]
-    (lb/ack ch delivery-tag))
+  (lb/ack ch delivery-tag))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
   (let [delivery-tag (:delivery-tag meta)
