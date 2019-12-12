@@ -25,9 +25,15 @@
         (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
-  "Take the ch metadata payload and ack? as parameter.
-   Decodes the payload the ack it if ack is enabled and returns the message"
+  "Take the ch metadata payload and ack? as parameter. Decodes the payload the ack it if ack is enabled and returns the message
+
+   Deprecation Notice: This message will be removed in future versions of Ziggurat. It has been replaced by two
+   new functions [[process-message-from-queue]] and [[read-message-from-queue]]. The former can be used to execute
+   a function after reading a message. While, the latter simply returns a message read from the queue."
   [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
+  (log/warn "This message is DEPRECATED and will be removed in future versions of Ziggurat. It has been replaced by two new functions"
+            "process-message-from-queue and read-message-from-queue. The former can be used to execute a function after"
+            "reading a message. While, the latter simply returns a message read from the queue.")
   (try
     (let [message (nippy/thaw payload)]
       (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
@@ -40,8 +46,9 @@
       nil)))
 
 (defn convert-message
-  "Take the ch metadata payload and ack? as parameter.
-   Decodes the payload the ack it if ack is enabled and returns the message"
+  "Accepts Channel, `ch`, Message Metadata, `metadata`, Actual message, `payload` and `ack?` as parameter.
+
+   De-serializes the payload and acks the message if `ack?` is true."
   [ch delivery-tag ^bytes payload topic-entity]
   (try
     (let [message (nippy/thaw payload)]
@@ -52,13 +59,10 @@
       nil)))
 
 (defn- ack-message
-  ([ch delivery-tag]
-   (ack-message ch delivery-tag true))
-  ([ch delivery-tag ack?]
-   (when ack?
-     (lb/ack ch delivery-tag))))
+  [ch delivery-tag]
+    (lb/ack ch delivery-tag))
 
-(defn process-message [ch meta payload topic-entity processing-fn]
+(defn process-message-from-queue [ch meta payload topic-entity processing-fn]
   (let [delivery-tag (:delivery-tag meta)
         message      (convert-message ch delivery-tag payload topic-entity)]
     (when message
@@ -70,11 +74,11 @@
           (sentry/report-error sentry-reporter e "Error while processing message from RabbitMQ")
           (lb/reject ch delivery-tag true))))))
 
-(defn- read-dead-set-messages [ch ack? queue-name topic-entity]
+(defn read-message-from-queue [ch queue-name topic-entity]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
       (when (some? payload)
-        (convert-and-ack-message ch meta payload ack? topic-entity)))
+        (convert-message ch (:delivery-tag meta) payload topic-entity)))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
 
@@ -90,13 +94,13 @@
   "This method can be used to read and optionally ack messages in dead-letter queue, based on the value of `ack?`.
 
    For example, this method can be used to delete messages from dead-letter queue if `ack?` is set to true."
-  ([ack? topic-entity count]
-   (get-dead-set-messages ack? topic-entity nil count))
-  ([ack? topic-entity channel count]
+  ([topic-entity count]
+   (get-dead-set-messages topic-entity nil count))
+  ([topic-entity channel count]
    (remove nil?
            (with-open [ch (lch/open connection)]
              (doall (for [_ (range count)]
-                      (read-dead-set-messages ch ack? (construct-queue-name topic-entity channel) topic-entity)))))))
+                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity)))))))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
@@ -109,11 +113,11 @@
               (let [queue-name     (construct-queue-name topic-entity channel)
                     [meta payload] (lb/get ch queue-name false)]
                 (when (some? payload)
-                  (process-message ch meta payload topic-entity processing-fn))))))))
+                  (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
-    (process-message ch meta payload topic-entity wrapped-mapper-fn)))
+    (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)
