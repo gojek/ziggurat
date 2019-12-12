@@ -23,43 +23,43 @@
   (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "when ack is enabled, get the dead set messages and remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-                       (let [count-of-messages 10
+        (let [count-of-messages 10
               pushed-message    (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-dead-queue message-payload))
               dead-set-messages (get-dead-set-messages true topic-entity count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (empty? (get-dead-set-messages true topic-entity count-of-messages))))))
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (empty? (get-dead-set-messages true topic-entity count-of-messages))))))
 
     (testing "when ack is disabled, get the dead set messages and not remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-                       (let [count-of-messages 10
+        (let [count-of-messages 10
               pushed-message    (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-dead-queue message-payload))
               dead-set-messages (get-dead-set-messages false topic-entity count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (= (repeat count-of-messages message-payload) (get-dead-set-messages false topic-entity count-of-messages))))))))
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages false topic-entity count-of-messages))))))))
 
 (deftest get-dead-set-messages-from-channel-test
   (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "when ack is enabled, get the dead set messages and remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)
                                       :channel-1  (constantly nil)}}
-                       (let [count-of-messages 10
+        (let [count-of-messages 10
               channel           "channel-1"
               pushed-message    (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-channel-dead-queue channel message-payload))
               dead-set-messages (get-dead-set-messages true topic-entity channel count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (empty? (get-dead-set-messages true topic-entity channel count-of-messages))))))
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (empty? (get-dead-set-messages true topic-entity channel count-of-messages))))))
 
     (testing "when ack is disabled, get the dead set messages and not remove from dead set"
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-                       (let [count-of-messages 10
+        (let [count-of-messages 10
               pushed-message    (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-dead-queue message-payload))
               dead-set-messages (get-dead-set-messages false topic-entity count-of-messages)]
-                         (is (= (repeat count-of-messages message-payload) dead-set-messages))
-                         (is (= (repeat count-of-messages message-payload) (get-dead-set-messages false topic-entity count-of-messages))))))))
+          (is (= (repeat count-of-messages message-payload) dead-set-messages))
+          (is (= (repeat count-of-messages message-payload) (get-dead-set-messages false topic-entity count-of-messages))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom

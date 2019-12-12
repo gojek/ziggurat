@@ -91,7 +91,7 @@
 
    For example, this method can be used to delete messages from dead-letter queue if `ack?` is set to true."
   ([ack? topic-entity count]
-    (get-dead-set-messages ack? topic-entity nil count))
+   (get-dead-set-messages ack? topic-entity nil count))
   ([ack? topic-entity channel count]
    (remove nil?
            (with-open [ch (lch/open connection)]
@@ -104,12 +104,12 @@
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
-    (with-open [ch (lch/open connection)]
-      (doall (for [_ (range count)]
-               (let [queue-name     (construct-queue-name topic-entity channel)
-                     [meta payload] (lb/get ch queue-name false)]
-                 (when (some? payload)
-                   (process-message ch meta payload topic-entity processing-fn))))))))
+   (with-open [ch (lch/open connection)]
+     (doall (for [_ (range count)]
+              (let [queue-name     (construct-queue-name topic-entity channel)
+                    [meta payload] (lb/get ch queue-name false)]
+                (when (some? payload)
+                  (process-message ch meta payload topic-entity processing-fn))))))))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
