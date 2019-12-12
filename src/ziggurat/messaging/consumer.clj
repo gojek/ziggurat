@@ -45,26 +45,13 @@
       (lb/reject ch delivery-tag false)
       nil)))
 
-(defn convert-message
-  "Accepts Channel, `ch`, Message Metadata, `metadata`, Actual message, `payload` and `ack?` as parameter.
-
-   De-serializes the payload and acks the message if `ack?` is true."
-  [ch delivery-tag ^bytes payload topic-entity]
-  (try
-    (let [message (nippy/thaw payload)]
-      (convert-to-message-payload message topic-entity))
-    (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while decoding message")
-      (lb/reject ch delivery-tag false)
-      nil)))
-
 (defn- ack-message
   [ch delivery-tag]
     (lb/ack ch delivery-tag))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
   (let [delivery-tag (:delivery-tag meta)
-        message      (convert-message ch delivery-tag payload topic-entity)]
+        message      (convert-and-ack-message ch meta payload false topic-entity)]
     (when message
       (log/infof "Processing message [%s] from RabbitMQ " message)
       (try
@@ -74,11 +61,11 @@
           (sentry/report-error sentry-reporter e "Error while processing message from RabbitMQ")
           (lb/reject ch delivery-tag true))))))
 
-(defn read-message-from-queue [ch queue-name topic-entity]
+(defn read-message-from-queue [ch queue-name topic-entity ack?]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
       (when (some? payload)
-        (convert-message ch (:delivery-tag meta) payload topic-entity)))
+        (convert-and-ack-message ch meta payload ack? topic-entity)))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message"))))
 
@@ -100,7 +87,7 @@
    (remove nil?
            (with-open [ch (lch/open connection)]
              (doall (for [_ (range count)]
-                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity)))))))
+                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity false)))))))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and

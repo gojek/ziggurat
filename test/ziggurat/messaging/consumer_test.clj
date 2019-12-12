@@ -329,7 +329,7 @@
                               (reset! processing-fn-called true)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-redefs [convert-message (fn [_ _ _ _] nil)]
+        (with-redefs [convert-and-ack-message (fn [_ _ _ _ _] nil)]
           (with-open [ch (lch/open connection)]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
