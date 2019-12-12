@@ -25,18 +25,11 @@
         (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
-  "Take the ch metadata payload and ack? as parameter. Decodes the payload the ack it if ack is enabled and returns the message
-
-   Deprecation Notice: This message will be removed in future versions of Ziggurat. It has been replaced by two
-   new functions [[process-message-from-queue]] and [[read-message-from-queue]]. The former can be used to execute
-   a function after reading a message. While, the latter simply returns a message read from the queue."
+  "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
+  if `ack?` is true."
   [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
-  (log/warn "This message is DEPRECATED and will be removed in future versions of Ziggurat. It has been replaced by two new functions"
-            "process-message-from-queue and read-message-from-queue. The former can be used to execute a function after"
-            "reading a message. While, the latter simply returns a message read from the queue.")
   (try
     (let [message (nippy/thaw payload)]
-      (log/debug "Calling mapper fn with the message - " message " with retry count - " (:retry-count message))
       (when ack?
         (lb/ack ch delivery-tag))
       (convert-to-message-payload message topic-entity))
@@ -51,14 +44,15 @@
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
   (let [delivery-tag (:delivery-tag meta)
-        message      (convert-and-ack-message ch meta payload false topic-entity)]
-    (when message
-      (log/infof "Processing message [%s] from RabbitMQ " message)
+        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+    (when message-payload
+      (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
-        (processing-fn message)
+        (log/debug "Calling processor-fn with the message-payload - " message-payload " with retry count - " (:retry-count message-payload))
+        (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
-          (sentry/report-error sentry-reporter e "Error while processing message from RabbitMQ")
+          (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
           (lb/reject ch delivery-tag true))))))
 
 (defn read-message-from-queue [ch queue-name topic-entity ack?]
