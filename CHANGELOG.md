@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.0-alpha.1 - 2019-12-12
+- Adds support for exponential backoffs in channels and normal retry flow
+- exponential backoffs can be enabled from the config
+
 ## 3.1.0 - 2019-12-6
 - Adds tracing support. With [Jaeger](https://www.jaegertracing.io/) as the default tracer
 - Adds a JSON middleware to parse JSON serialized functions
