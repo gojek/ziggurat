@@ -14,8 +14,11 @@
             [ziggurat.metrics :as metrics]))
 
 (defn- convert-to-message-payload
-  "checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to message-payload to pass onto the mapper-fn.
-  This function is used for migration from Ziggurat Version 2.x to 3.x"
+  "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
+   message-payload to pass onto the mapper-fn.
+
+   If the `:retry-count` key is absent in the `message`, then it puts `0` as the value for `:retry-count` in `MessagePayload`.
+   It also converts the topic-entity into a keyword while constructing MessagePayload."
   [message topic-entity]
   (try
     (s/validate mpr/message-payload-schema message)
