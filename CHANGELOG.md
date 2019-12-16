@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.0-alpha.3 - 2019-12-16
+- Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from 2.x to 3.x .
+
 ## 3.2.0-alpha.2 - 2019-12-12
 - Fixes [this bug](https://github.com/gojek/ziggurat/issues/115) in RabbitMQ message processing flow
 
