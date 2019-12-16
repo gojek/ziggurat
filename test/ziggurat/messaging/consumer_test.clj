@@ -10,7 +10,9 @@
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as util]
             [langohr.basic :as lb]
-            [ziggurat.messaging.consumer :as consumer]))
+            [ziggurat.messaging.consumer :as consumer]
+            [ziggurat.mapper :as mpr]
+            [taoensso.nippy :as nippy]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -352,10 +354,8 @@
                 [meta payload]      (lb/get ch prefixed-queue-name false)
                 _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-            (is (= consumed-message message))))))))
-
-(deftest convert-message-test
-  (testing "convert-message function should reject and discard a message if message conversion fails"
+            (is (= consumed-message message)))))))
+  (testing "process-message function should reject and discard a message if message conversion fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [message       (gen-message-payload topic-entity)
             processing-fn (fn [_] ())
@@ -369,3 +369,15 @@
                   _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= consumed-message nil)))))))))
+
+(deftest convert-and-ack-message-test
+  (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
+    (let [message                   {:foo "bar"}
+          expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 0)
+          converted-message-payload (convert-and-ack-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false "default")]
+      (is (= converted-message-payload expected-message-payload))))
+  (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as it exists in the message"
+    (let [message                   {:foo "bar" :retry-count 4}
+          expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 4)
+          converted-message-payload (convert-and-ack-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false "default")]
+      (is (= converted-message-payload expected-message-payload)))))
