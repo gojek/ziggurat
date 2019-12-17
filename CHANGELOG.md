@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.0-alpha.4 - 2019-12-17
+- Fixes [issue](https://github.com/gojek/ziggurat/issues/129) by updating tools.nrepl dependency to nrepl/nrepl
+
 ## 3.2.0-alpha.3 - 2019-12-16
 - Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from 2.x to 3.x .
 
