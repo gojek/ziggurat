@@ -1,6 +1,6 @@
 (ns ziggurat.nrepl-server
   (:require [clojure.tools.logging :as log]
-            [clojure.tools.nrepl.server :as nrepl]
+            [nrepl.server :as nrepl]
             [mount.core :refer [defstate]]
             [ziggurat.config :refer [ziggurat-config]]))
 

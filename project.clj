@@ -30,7 +30,7 @@
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.12.1"]
                  [org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.logging "0.5.0"]
-                 [org.clojure/tools.nrepl "0.2.13"]
+                 [nrepl/nrepl "0.6.0"]
                  [org.flatland/protobuf "0.8.1"]
                  [prismatic/schema "1.1.12"]
                  [ring/ring "1.7.1"]
