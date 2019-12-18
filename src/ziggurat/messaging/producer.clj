@@ -198,14 +198,14 @@
     (cond
       (nil? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec (-> (ziggurat-config) :retry :count))))
       (pos? retry-count) (publish-to-delay-queue (assoc message-payload :retry-count (dec retry-count)))
-      (zero? retry-count) (publish-to-dead-queue message-payload))))
+      (zero? retry-count) (publish-to-dead-queue (assoc message-payload :retry-count (-> (ziggurat-config) :retry :count))))))
 
 (defn retry-for-channel [{:keys [retry-count topic-entity] :as message-payload} channel]
   (when (channel-retries-enabled topic-entity channel)
     (cond
       (nil? retry-count) (publish-to-channel-delay-queue channel (assoc message-payload :retry-count (dec (get-channel-retry-count topic-entity channel))))
       (pos? retry-count) (publish-to-channel-delay-queue channel (assoc message-payload :retry-count (dec retry-count)))
-      (zero? retry-count) (publish-to-channel-dead-queue channel message-payload))))
+      (zero? retry-count) (publish-to-channel-dead-queue channel (assoc message-payload :retry-count (get-channel-retry-count topic-entity channel))))))
 
 (defn- make-delay-queue [topic-entity]
   (let [{:keys [queue-name exchange-name dead-letter-exchange]} (:delay (rabbitmq-config))
