@@ -6,7 +6,7 @@
             [langohr.queue :as lq]
             [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
-            [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
+            [ziggurat.config :refer [ziggurat-config rabbitmq-config channel-retry-config]]
             [ziggurat.messaging.connection :refer [connection is-connection-required?]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
@@ -73,14 +73,14 @@
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
 
 (defn- get-channel-retry-count [topic-entity channel]
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :count))
+  (:count (channel-retry-config topic-entity channel)))
 
 (defn- get-channel-retry-queue-timeout-ms [topic-entity channel]
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :queue-timeout-ms))
+  (:queue-timeout-ms (channel-retry-config topic-entity channel)))
 
 (defn- channel-retries-exponential-backoff-config [topic-entity channel]
   "Get exponential backoff enabled for specific channel from config."
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :exponential-backoff))
+  (:exponential-backoff (channel-retry-config topic-entity channel)))
 
 (defn- get-backoff-exponent [retry-count message-retry-count exponential-backoff-count]
   "Calculates backoff exponent for the given message-retry-count (number of retries available for the message) and retry-count (number of max retries possible). Returns the min of calculated exponent and exponential-backoff-count"
