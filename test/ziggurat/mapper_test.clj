@@ -157,6 +157,22 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
+    (testing "message is skipped"
+      (fix/with-queues stream-routes
+        (let [unprocessed? (atom false)
+              expected-metric           "skip"]
+
+          (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
+                                                  (when (and (or (= metric-namespaces [service-name expected-topic-entity-name channel-name default-namespace])
+                                                                 (= metric-namespaces [default-namespace]))
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
+                                                    (reset! unprocessed? true)))]
+            ((channel-mapper-func (constantly :skip) topic channel) message)
+            (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
+              (is (= message-from-mq nil)))
+            (is @unprocessed?)))))
+
     (testing "message should raise exception"
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message :retry-count (dec (:count (:retry (ziggurat-config)))))
