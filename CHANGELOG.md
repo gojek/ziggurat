@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.7 - 2019-12-20
+- Reverting the alpha feature exponential backoff
+
 ## 2.12.6 - 2019-10-15
 - Support for custom channel delay and retries with exponential backoff
 
