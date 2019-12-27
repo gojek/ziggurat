@@ -79,6 +79,12 @@
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
 
+(defn- channel-retries-enabled [topic-entity channel]
+  (:enabled (channel-retry-config topic-entity channel)))
+
+(defn- channel-retry-type [topic-entity channel]
+  (:type (channel-retry-config topic-entity channel)))
+
 (defn- get-channel-retry-count [topic-entity channel]
   (:count (channel-retry-config topic-entity channel)))
 
@@ -130,7 +136,7 @@
         retry-count (-> (ziggurat-config) :retry :count)
         message-retry-count (:retry-count message-payload)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
-    (if (:enabled exponential-backoff-config)
+    (if (= :exponential (channel-retry-type topic-entity channel))
       (get-exponential-backoff-timeout-ms (or channel-retry-count retry-count) message-retry-count (or channel-queue-timeout-ms queue-timeout-ms) (:count exponential-backoff-config))
       (or channel-queue-timeout-ms queue-timeout-ms))))
 
@@ -152,7 +158,7 @@
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)
         exponential-backoff-config (channel-retries-exponential-backoff-config topic-entity channel)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
-    (if (:enabled exponential-backoff-config)
+    (if (= :exponential channel-retry-type)
       (let [message-retry-count (:retry-count message-payload)
             exponential-backoff (get-backoff-exponent channel-retry-count message-retry-count (:count exponential-backoff-config))]
         (str (name exchange-name) "_" exponential-backoff))
@@ -175,9 +181,6 @@
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
     (publish exchange-name message-payload)))
-
-(defn- channel-retries-enabled [topic-entity channel]
-  (-> (ziggurat-config) :stream-router topic-entity :channels channel :retry :enabled))
 
 (defn publish-to-channel-delay-queue [channel message-payload]
   (let [topic-entity  (:topic-entity message-payload)
@@ -247,10 +250,14 @@
     (make-channel-queue topic-entity channel :instant)
     (when (channel-retries-enabled topic-entity channel)
       (make-channel-queue topic-entity channel :dead-letter)
-      (let [exponential-backoff-config (channel-retries-exponential-backoff-config topic-entity channel)]
-        (if (:enabled exponential-backoff-config)
-          (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel) (:count exponential-backoff-config))
-          (make-channel-delay-queue topic-entity channel))))))
+      (cond
+        (= :exponential (channel-retry-type topic-entity channel)) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel) (get-channel-retry-count topic-entity channel))
+        (= :linear (channel-retry-type topic-entity channel)) (make-channel-delay-queue topic-entity channel)
+        :else (do
+                (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
+                          "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
+                          "Use :type to specify the type of retry mechanism in the channel config.")
+                (make-channel-delay-queue topic-entity channel))))))
 
 (defn make-queues [stream-routes]
   (when (is-connection-required?)

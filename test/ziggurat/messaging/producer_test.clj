@@ -15,7 +15,8 @@
             [ziggurat.mapper :refer [->MessagePayload]])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq]))
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging]))
 
 (def topic-entity :default)
 (def message-payload (->MessagePayload {:foo "bar"} topic-entity))
@@ -76,13 +77,12 @@
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
             (is (= expected-message-payload message-from-mq)))))))
 
-  (testing "message in channel will be retried with exponential timeout calculated fro channel specific queue-timeout-ms value"
+  (testing "message in channel will be retried with exponential timeout calculated from channel specific queue-timeout-ms value"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
                                                      :stream-router {:default {:channels {:exponential-retry {:retry {:count               5
                                                                                                                       :enabled             true
-                                                                                                                      :queue-timeout-ms    1000
-                                                                                                                      :exponential-backoff {:enabled true
-                                                                                                                                            :count   10}}}}}}))]
+                                                                                                                      :type                :exponential
+                                                                                                                      :queue-timeout-ms    1000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn        #(constantly nil)
                    :exponential-retry #(constantly nil)}}
@@ -103,8 +103,7 @@
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
                                                      :stream-router {:default {:channels {:channel-exponential-retry {:retry {:count               5
                                                                                                                               :enabled             true
-                                                                                                                              :exponential-backoff {:enabled true
-                                                                                                                                                    :count   10}}}}}}))]
+                                                                                                                              :type                :exponential}}}}}))]
       (fix/with-queues
         {:default {:handler-fn                #(constantly nil)
                    :channel-exponential-retry #(constantly nil)}}
@@ -452,22 +451,22 @@
       (let [channel :channel-no-retry-count]
         (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
                                                                 :stream-router {topic-entity {:channels {channel {:retry {:enabled             true
-                                                                                                                          :exponential-backoff {:enabled true :count 10}}}}}}))]
+                                                                                                                          :type                :exponential}}}}}))]
           (is (= 700 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
     (testing "when exponential backoff are enabled and channel queue timeout defined"
       (let [channel :exponential-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
                                                                 :stream-router {topic-entity {:channels {channel {:retry {:count               5
                                                                                                                           :enabled             true
-                                                                                                                          :queue-timeout-ms    1000
-                                                                                                                          :exponential-backoff {:enabled true :count 10}}}}}}))]
+                                                                                                                          :type                :exponential
+                                                                                                                          :queue-timeout-ms    1000}}}}}))]
           (is (= 7000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
     (testing "when exponential backoff are enabled and channel queue timeout not defined"
       (let [channel :channel-exponential-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
                                                                 :stream-router {topic-entity {:channels {channel {:retry {:count               5
                                                                                                                           :enabled             true
-                                                                                                                          :exponential-backoff {:enabled true}}}}}}))]
+                                                                                                                          :type                :exponential}}}}}))]
           (is (= 700 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))))
 
 (deftest get-queue-timeout-ms-test
