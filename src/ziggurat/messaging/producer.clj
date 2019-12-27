@@ -12,6 +12,13 @@
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
+
+(defn- is-retry-type-exponential? []
+  (= :exponential (-> (ziggurat-config) :retry :type)))
+
+(defn- is-retry-type-linear? []
+  (= :linear (-> (ziggurat-config) :retry :type)))
+
 (defn delay-queue-name [topic-entity queue-name]
   (prefixed-queue-name topic-entity queue-name))
 
@@ -84,11 +91,8 @@
 
 (defn- get-backoff-exponent [retry-count message-retry-count exponential-backoff-count]
   "Calculates backoff exponent for the given message-retry-count (number of retries available for the message) and retry-count (number of max retries possible). Returns the min of calculated exponent and exponential-backoff-count"
-  (let [exponent (- retry-count message-retry-count)
-        exponential-backoff-count (or exponential-backoff-count 10)]
-    (if (< exponent exponential-backoff-count)
-      exponent
-      exponential-backoff-count)))
+  (let [exponent (- retry-count message-retry-count)]
+    (max 1 (min exponent 10))))
 
 (defn- get-exponential-backoff-timeout-ms [retry-count message-retry-count queue-timeout-ms exponential-backoff-count]
   "Calculates the exponential timeout value from the number of max retries possible (retry-count), the number of retries available for a message (message-retry-count) and base timeout value (queue-timeout-ms). It uses this formula ((2^n)-1)*queue-timeout-ms, where n is the current message retry-count.
@@ -114,7 +118,7 @@
         exponential-backoff-config (-> (ziggurat-config) :retry :exponential-backoff)
         retry-count (-> (ziggurat-config) :retry :count)
         message-retry-count (:retry-count message-payload)]
-    (if (:enabled exponential-backoff-config)
+    (if (is-retry-type-exponential?)
       (get-exponential-backoff-timeout-ms retry-count message-retry-count queue-timeout-ms (:count exponential-backoff-config))
       queue-timeout-ms)))
 
@@ -136,7 +140,7 @@
         exchange-name (prefixed-queue-name topic-entity exchange-name)
         exponential-backoff-config (-> (ziggurat-config) :retry :exponential-backoff)
         retry-count (-> (ziggurat-config) :retry :count)]
-    (if (:enabled exponential-backoff-config)
+    (if (is-retry-type-exponential?)
       (let [message-retry-count (:retry-count message-payload)
             backoff-exponent (get-backoff-exponent retry-count message-retry-count (:count exponential-backoff-config))]
         (prefixed-queue-name exchange-name backoff-exponent))
@@ -256,7 +260,12 @@
         (when (-> (ziggurat-config) :retry :enabled)
           (make-queue topic-entity :instant)
           (make-queue topic-entity :dead-letter)
-          (if (-> (ziggurat-config) :retry :exponential-backoff :enabled)
-            (let [exponential-backoff-count (-> (ziggurat-config) :retry :exponential-backoff :count)]
-              (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count) exponential-backoff-count))
-            (make-delay-queue topic-entity)))))))
+          (cond
+            (is-retry-type-exponential?) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count) (-> (ziggurat-config) :retry :count))
+            (is-retry-type-linear?) (make-delay-queue topic-entity)
+            :else (do
+                    (log/warn "[Deprecation Notice]: Please note that the configuration for retries has changed."
+                              "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
+                              "Use :type to specify the type of retry mechanism in the config.")
+                    (make-delay-queue topic-entity))))))))
+

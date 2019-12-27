@@ -2,9 +2,10 @@ version: '3.3'
 
 services:
   rabbitmq:
-    image: 'rabbitmq'
+    image: 'rabbitmq:3.8.2-management-alpine'
     ports:
      - '5672:5672'
+     - '15672:15672'
     container_name: 'ziggurat_rabbitmq'
   zookeeper:
     image: 'bitnami/zookeeper:latest'

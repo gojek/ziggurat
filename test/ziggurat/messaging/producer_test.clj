@@ -15,8 +15,7 @@
             [ziggurat.mapper :refer [->MessagePayload]])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
-                                    fix/silence-logging]))
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq]))
 
 (def topic-entity :default)
 (def message-payload (->MessagePayload {:foo "bar"} topic-entity))
@@ -208,13 +207,30 @@
           (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
             (producer/retry message-from-mq)))
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= expected-message-payload message-from-mq)))))))
+          (is (= expected-message-payload message-from-mq))))))
+
+  (testing "[Backward Compatiblity] Messages will be retried even if retry type is not present in the config."
+    (with-redefs [ziggurat-config (constantly (update-in (ziggurat-config) [:retry] dissoc :type))]
+      (fix/with-queues
+        {:default {:handler-fn #(constantly nil)}}
+        (let [retry-count              (atom 2)
+              retry-message-payload    (assoc message-payload :retry-count @retry-count)
+              expected-message-payload (assoc message-payload :retry-count (retry-count-config))]
+          (producer/retry retry-message-payload)
+          (while (> @retry-count 0)
+            (swap! retry-count dec)
+            (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
+              (producer/retry message-from-mq)))
+          (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
+            (is (= expected-message-payload message-from-mq))))))))
 
 (deftest retry-with-exponential-backoff-test
   (testing "message will publish to delay with retry count queue when exponential backoff enabled"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                     :retry {:count 5 :enabled true :exponential-backoff {:enabled true :count 10}}))]
-      (testing "message with no retry count will publish to delay with retry count queue"
+                                                     :retry {:count 5
+                                                             :enabled true
+                                                             :type :exponential}))]
+      (testing "message with no retry count will publish to delay queue with suffix 1"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}
           (let [expected-message (assoc message-payload :retry-count 4)]
@@ -244,7 +260,8 @@
   (let [ziggurat-config (ziggurat-config)]
     (testing "When retries are enabled"
       (with-redefs [ziggurat-config (constantly (assoc ziggurat-config
-                                                       :retry {:enabled true}))]
+                                                       :retry {:enabled true
+                                                               :type :linear}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -459,5 +476,5 @@
       (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
                                                               :retry {:enabled             true
                                                                       :count               5
-                                                                      :exponential-backoff {:enabled true :count 10}}))]
+                                                                      :type                :exponential}))]
         (is (= 700 (producer/get-queue-timeout-ms message)))))))
