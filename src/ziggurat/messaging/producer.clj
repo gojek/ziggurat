@@ -118,14 +118,12 @@
 
 (defn get-channel-queue-timeout-ms [topic-entity channel message-payload]
   "Calculate queue timeout for channel delay queue. Use value from get-exponential-backoff-timeout-ms if exponential backoff enabled."
-  (let [queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
-        channel-queue-timeout-ms (get-channel-retry-queue-timeout-ms topic-entity channel)
-        retry-count (-> (ziggurat-config) :retry :count)
+  (let [channel-queue-timeout-ms (get-channel-retry-queue-timeout-ms topic-entity channel)
         message-retry-count (:retry-count message-payload)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
     (if (= :exponential (channel-retry-type topic-entity channel))
-      (get-exponential-backoff-timeout-ms (or channel-retry-count retry-count) message-retry-count (or channel-queue-timeout-ms queue-timeout-ms))
-      (or channel-queue-timeout-ms queue-timeout-ms))))
+      (get-exponential-backoff-timeout-ms channel-retry-count message-retry-count channel-queue-timeout-ms)
+      channel-queue-timeout-ms)))
 
 (defn get-delay-exchange-name [topic-entity message-payload]
   "This function return delay exchange name for retry when using flow without channel. It will return exchange name with retry count as suffix if exponential backoff enabled."
