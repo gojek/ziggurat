@@ -12,13 +12,6 @@
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
-
-(defn- is-retry-type-exponential? []
-  (= :exponential (-> (ziggurat-config) :retry :type)))
-
-(defn- is-retry-type-linear? []
-  (= :linear (-> (ziggurat-config) :retry :type)))
-
 (defn delay-queue-name [topic-entity queue-name]
   (prefixed-queue-name topic-entity queue-name))
 
@@ -119,7 +112,7 @@
   (let [queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
         retry-count (-> (ziggurat-config) :retry :count)
         message-retry-count (:retry-count message-payload)]
-    (if (is-retry-type-exponential?)
+    (if (= :exponential (-> (ziggurat-config) :retry :type))
       (get-exponential-backoff-timeout-ms retry-count message-retry-count queue-timeout-ms)
       queue-timeout-ms)))
 
@@ -139,7 +132,7 @@
   (let [{:keys [exchange-name]} (:delay (rabbitmq-config))
         exchange-name (prefixed-queue-name topic-entity exchange-name)
         retry-count (-> (ziggurat-config) :retry :count)]
-    (if (is-retry-type-exponential?)
+    (if (= :exponential (-> (ziggurat-config) :retry :type))
       (let [message-retry-count (:retry-count message-payload)
             backoff-exponent (get-backoff-exponent retry-count message-retry-count)]
         (prefixed-queue-name exchange-name backoff-exponent))
@@ -260,8 +253,8 @@
           (make-queue topic-entity :instant)
           (make-queue topic-entity :dead-letter)
           (cond
-            (is-retry-type-exponential?) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count) (-> (ziggurat-config) :retry :count))
-            (is-retry-type-linear?) (make-delay-queue topic-entity)
+            (= :exponential (-> (ziggurat-config) :retry :type)) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count) (-> (ziggurat-config) :retry :count))
+            (= :linear (-> (ziggurat-config) :retry :type))      (make-delay-queue topic-entity)
             :else (do
                     (log/warn "[Deprecation Notice]: Please note that the configuration for retries has changed."
                               "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
