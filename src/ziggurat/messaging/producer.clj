@@ -158,7 +158,7 @@
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)
         exponential-backoff-config (channel-retries-exponential-backoff-config topic-entity channel)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
-    (if (= :exponential channel-retry-type)
+    (if (= :exponential (channel-retry-type topic-entity channel))
       (let [message-retry-count (:retry-count message-payload)
             exponential-backoff (get-backoff-exponent channel-retry-count message-retry-count (:count exponential-backoff-config))]
         (str (name exchange-name) "_" exponential-backoff))
