@@ -453,7 +453,15 @@
                                                                                                                           :enabled             true
                                                                                                                           :type                :exponential
                                                                                                                           :queue-timeout-ms    1000}}}}}))]
-          (is (= 7000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))))
+          (is (= 7000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
+
+  (testing "when exponential backoff are enabled and channel queue timeout is not defined"
+    (let [channel :exponential-retry]
+      (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
+                                                         :stream-router {topic-entity {:channels {channel {:retry {:count               5
+                                                                                                                   :enabled             true
+                                                                                                                   :type                :exponential}}}}}))]
+        (is (= 700 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))))
 
 (deftest get-queue-timeout-ms-test
   (testing "when retries are enabled"
