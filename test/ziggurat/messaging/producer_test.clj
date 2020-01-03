@@ -58,23 +58,23 @@
 
   (testing "message in channel will be retried in delay queue with suffix 1 if message retry-count exceeds retry count in channel config"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router
-                                                {:default
-                                                 {:channels
-                                                  {:exponential-retry
-                                                   {:retry {:count 5
-                                                            :enabled          true
-                                                            :type             :exponential
-                                                            :queue-timeout-ms 1000}}}}}))]
-    (fix/with-queues
-      {:default {:handler-fn #(constantly nil)
-                 :exponential-retry  #(constantly nil)}}
-      (let [channel                  :exponential-retry
-            retry-message-payload    (assoc message-payload :retry-count 10)
-            expected-message-payload (assoc message-payload :retry-count 9)
-            _                        (producer/retry-for-channel retry-message-payload channel)
-            message-from-mq          (rmq/get-message-from-channel-retry-queue topic-entity channel 1)]
-        (is (= expected-message-payload message-from-mq))))))
+                                                     :stream-router
+                                                     {:default
+                                                      {:channels
+                                                       {:exponential-retry
+                                                        {:retry {:count 5
+                                                                 :enabled          true
+                                                                 :type             :exponential
+                                                                 :queue-timeout-ms 1000}}}}}))]
+      (fix/with-queues
+        {:default {:handler-fn #(constantly nil)
+                   :exponential-retry  #(constantly nil)}}
+        (let [channel                  :exponential-retry
+              retry-message-payload    (assoc message-payload :retry-count 10)
+              expected-message-payload (assoc message-payload :retry-count 9)
+              _                        (producer/retry-for-channel retry-message-payload channel)
+              message-from-mq          (rmq/get-message-from-channel-retry-queue topic-entity channel 1)]
+          (is (= expected-message-payload message-from-mq))))))
 
   (testing "message in channel will be retried with linear queue timeout"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)

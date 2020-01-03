@@ -81,13 +81,15 @@
 (defn- get-channel-retry-count [topic-entity channel]
   (:count (channel-retry-config topic-entity channel)))
 
-(defn- get-channel-retry-queue-timeout-ms [topic-entity channel]
-  (:queue-timeout-ms (channel-retry-config topic-entity channel)))
+(defn- get-channel-queue-timeout-or-default-timeout [topic-entity channel]
+  (let [channel-queue-timeout-ms (:queue-timeout-ms (channel-retry-config topic-entity channel))
+        queue-timeout-ms         (get-in (rabbitmq-config) [:delay :queue-timeout-ms])]
+    (or channel-queue-timeout-ms queue-timeout-ms)))
 
 (defn- get-backoff-exponent [retry-count message-retry-count]
   "Calculates backoff exponent for the given message-retry-count (number of retries available for the message) and retry-count (number of max retries possible). Returns the min of calculated exponent and exponential-backoff-count"
   (let [exponent (- retry-count message-retry-count)]
-    (max 1 (min exponent 10))))
+    (max 1 exponent)))
 
 (defn- get-exponential-backoff-timeout-ms [retry-count message-retry-count queue-timeout-ms]
   "Calculates the exponential timeout value from the number of max retries possible (retry-count), the number of retries available for a message (message-retry-count) and base timeout value (queue-timeout-ms). It uses this formula ((2^n)-1)*queue-timeout-ms, where n is the current message retry-count.
@@ -118,7 +120,7 @@
 
 (defn get-channel-queue-timeout-ms [topic-entity channel message-payload]
   "Calculate queue timeout for channel delay queue. Use value from get-exponential-backoff-timeout-ms if exponential backoff enabled."
-  (let [channel-queue-timeout-ms (get-channel-retry-queue-timeout-ms topic-entity channel)
+  (let [channel-queue-timeout-ms (get-channel-queue-timeout-or-default-timeout topic-entity channel)
         message-retry-count (:retry-count message-payload)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
     (if (= :exponential (channel-retry-type topic-entity channel))
@@ -204,17 +206,17 @@
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
     (create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
 
-(defn- make-delay-queue-with-retry-count [topic-entity retry-count exponential-backoff-count]
+(defn- make-delay-queue-with-retry-count [topic-entity retry-count]
   (let [{:keys [queue-name exchange-name dead-letter-exchange]} (:delay (rabbitmq-config))
         queue-name                (delay-queue-name topic-entity queue-name)
         exchange-name             (prefixed-queue-name topic-entity exchange-name)
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)
-        sequence                  (if (<= retry-count exponential-backoff-count) (inc retry-count) (inc exponential-backoff-count))]
+        sequence                  (inc retry-count)]
     (doseq [s (range 1 sequence)]
       (create-and-bind-queue (prefixed-queue-name queue-name s) (prefixed-queue-name exchange-name s) dead-letter-exchange-name))))
 
-(defn- make-channel-delay-queue-with-retry-count [topic-entity channel retry-count exponential-backoff-count]
-  (make-delay-queue-with-retry-count (with-channel-name topic-entity channel) retry-count exponential-backoff-count))
+(defn- make-channel-delay-queue-with-retry-count [topic-entity channel retry-count]
+  (make-delay-queue-with-retry-count (with-channel-name topic-entity channel) retry-count))
 
 (defn- make-channel-delay-queue [topic-entity channel]
   (make-delay-queue (with-channel-name topic-entity channel)))
@@ -234,7 +236,7 @@
     (when (channel-retries-enabled topic-entity channel)
       (make-channel-queue topic-entity channel :dead-letter)
       (cond
-        (= :exponential (channel-retry-type topic-entity channel)) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel) (get-channel-retry-count topic-entity channel))
+        (= :exponential (channel-retry-type topic-entity channel)) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel))
         (= :linear (channel-retry-type topic-entity channel)) (make-channel-delay-queue topic-entity channel)
         :else (do
                 (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
@@ -251,7 +253,7 @@
           (make-queue topic-entity :instant)
           (make-queue topic-entity :dead-letter)
           (cond
-            (= :exponential (-> (ziggurat-config) :retry :type)) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count) (-> (ziggurat-config) :retry :count))
+            (= :exponential (-> (ziggurat-config) :retry :type)) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count))
             (= :linear (-> (ziggurat-config) :retry :type))      (make-delay-queue topic-entity)
             :else (do
                     (log/warn "[Deprecation Notice]: Please note that the configuration for retries has changed."
