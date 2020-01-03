@@ -238,26 +238,33 @@
       (cond
         (= :exponential (channel-retry-type topic-entity channel)) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel))
         (= :linear (channel-retry-type topic-entity channel)) (make-channel-delay-queue topic-entity channel)
+        (nil? (channel-retry-type topic-entity channel)) (do
+                                                           (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
+                                                                     "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
+                                                                     "Use :type to specify the type of retry mechanism in the channel config.")
+                                                           (make-channel-delay-queue topic-entity channel))
         :else (do
-                (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
-                          "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
-                          "Use :type to specify the type of retry mechanism in the channel config.")
+                (log/warn "Incorrect keyword for type passed, falling back to linear backoff for channel: " channel)
                 (make-channel-delay-queue topic-entity channel))))))
 
 (defn make-queues [stream-routes]
   (when (is-connection-required?)
     (doseq [topic-entity (keys stream-routes)]
-      (let [channels (get-channel-names stream-routes topic-entity)]
+      (let [channels (get-channel-names stream-routes topic-entity)
+            retry-type (-> (ziggurat-config) :retry :type)]
         (make-channel-queues channels topic-entity)
         (when (-> (ziggurat-config) :retry :enabled)
           (make-queue topic-entity :instant)
           (make-queue topic-entity :dead-letter)
           (cond
-            (= :exponential (-> (ziggurat-config) :retry :type)) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count))
-            (= :linear (-> (ziggurat-config) :retry :type))      (make-delay-queue topic-entity)
+            (= :exponential retry-type) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count))
+            (= :linear retry-type)      (make-delay-queue topic-entity)
+            (nil? retry-type)           (do
+                                          (log/warn "[Deprecation Notice]: Please note that the configuration for retries has changed."
+                                                    "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
+                                                    "Use :type to specify the type of retry mechanism in the config.")
+                                          (make-delay-queue topic-entity))
             :else (do
-                    (log/warn "[Deprecation Notice]: Please note that the configuration for retries has changed."
-                              "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
-                              "Use :type to specify the type of retry mechanism in the config.")
+                    (log/warn "Incorrect keyword for type passed, falling back to linear backoff for topic Entity: " topic-entity)
                     (make-delay-queue topic-entity))))))))
 
