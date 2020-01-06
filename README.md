@@ -95,7 +95,6 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 * The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
     * :success - The message was successfuly processed and the stream should continue to the next message
-    * :failure - The message failed to be processed and it should be reported to sentry, it will not be retried.
     * :retry - The message failed to be processed and it should be retried.
     * :skip - The message should be skipped without reporting its failure or retrying the message
 * The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
