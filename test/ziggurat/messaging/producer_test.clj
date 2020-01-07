@@ -257,9 +257,9 @@
 (deftest make-queues-test
   (let [ziggurat-config (ziggurat-config)]
     (testing "When retries are enabled"
-      (with-redefs [ziggurat-config (constantly (assoc ziggurat-config
-                                                       :retry {:enabled true
-                                                               :type :linear}))]
+      (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
+                                                              :retry {:enabled true
+                                                                      :type :linear}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -355,7 +355,7 @@
                   (le/delete ch (exponential-delay-exchange-name s)))))))
         (testing "it creates delay queue for linear retries when retry type is not defined in the config"
           (let [make-delay-queue-called (atom false)
-                stream-routes          {:test  {:handler-fn #(constantly nil)}}]
+                stream-routes          {:default  {:handler-fn #(constantly nil)}}]
             (with-redefs [config/ziggurat-config (constantly (update-in ziggurat-config [:retry] dissoc :type))
                           producer/make-queue       (constantly nil)
                           producer/make-delay-queue (fn [topic]
@@ -364,7 +364,7 @@
               (producer/make-queues stream-routes))))
         (testing "it creates delay queue for linear retries when retry type is incorrectly defined in the config"
           (let [make-delay-queue-called (atom false)
-                stream-routes          {:test  {:handler-fn #(constantly nil)}}]
+                stream-routes          {:default  {:handler-fn #(constantly nil)}}]
             (with-redefs [config/ziggurat-config (constantly (assoc-in ziggurat-config [:retry :type] :incorrect))
                           producer/make-queue       (constantly nil)
                           producer/make-delay-queue (fn [topic]
@@ -373,22 +373,20 @@
               (producer/make-queues stream-routes))))
         (testing "it creates channel delay queue for linear retries when retry type is not defined in the channel config"
           (let [make-channel-delay-queue-called (atom false)
-                stream-routes          {:test       {:handler-fn #(constantly nil)}
-                                        :channel-1  {:handler-fn #(constantly nil)}}]
+                stream-routes          {:default {:handler-fn #(constantly nil) :channel-1  {:handler-fn #(constantly nil)}}}]
             (with-redefs [config/ziggurat-config    (constantly (update-in ziggurat-config [:stream-router :default :channels :channel-1 :retry] dissoc :type))
                           producer/make-channel-queue       (constantly nil)
-                          producer/make-channel-delay-queue (fn [topic]
-                                                              (if (= topic :test)
+                          producer/make-channel-delay-queue (fn [topic channel]
+                                                              (if (and (= channel :channel-1) (= topic :default))
                                                                 (reset! make-channel-delay-queue-called true)))]
               (producer/make-queues stream-routes))))
         (testing "it creates channel delay queue for linear retries when an incorrect retry type is defined in the channel config"
           (let [make-channel-delay-queue-called (atom false)
-                stream-routes          {:test       {:handler-fn #(constantly nil)}
-                                        :channel-1  {:handler-fn #(constantly nil)}}]
+                stream-routes          {:default {:handler-fn #(constantly nil) :channel-1  {:handler-fn #(constantly nil)}}}]
             (with-redefs [config/ziggurat-config    (constantly (assoc-in ziggurat-config [:stream-router :default :channels :channel-1 :retry :type] :incorrect))
                           producer/make-channel-queue       (constantly nil)
-                          producer/make-channel-delay-queue (fn [topic]
-                                                              (if (= topic :test)
+                          producer/make-channel-delay-queue (fn [topic channel]
+                                                              (if (and (= channel :channel-1) (= topic :default))
                                                                 (reset! make-channel-delay-queue-called true)))]
               (producer/make-queues stream-routes))))))
 
