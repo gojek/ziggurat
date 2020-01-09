@@ -576,8 +576,8 @@
   (testing "when exponential retries are enabled and retry-count exceeds 25, the max possible timeouts are calculated using 25 as the retry-count"
     (let [message (assoc message-payload :retry-count 20)]
       (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                         :retry {:enabled             true
-                                                                 :count               50
-                                                                 :type                :exponential}))]
+                                                              :retry {:enabled             true
+                                                                      :count               50
+                                                                      :type                :exponential}))]
         ;; For 25 max exponential retries, exponent comes to 25-20=5, which makes timeout = 100*(2^5-1) = 3100
         (is (= 3100 (producer/get-queue-timeout-ms message)))))))
