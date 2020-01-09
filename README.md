@@ -339,6 +339,40 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 * jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 * http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
 
+## Alpha (Experimental) Features
+The contract and interface for experimental features in Ziggurat can be changed as we iterate towards better designs for that feature.
+For all purposes these features should be considered unstable and should only be used after understanding their risks and implementations. 
+
+### Exponential Backoff based Retries
+In addition to linear retries, Ziggurat users can now use exponential backoff strategy for retries. This means that the message
+timeouts after every retry increase by a factor of 2. So, if your configured timeout is 100ms the backoffs will have timeouts as
+`200, 300, 700, 1500 ..`. These timeouts are calculated using the formula `(queue-timeout-ms * ((2**exponent) - 1))` where `exponent` falls in this range `[1,(min 25, configured-retry-count)]`.
+
+The number of retries possible in this case are capped at 25. The number of queues created in the RabbitMQ are equal to the configured-retry-count or 25, whichever is smaller.
+
+Exponential retries can be configured as described below.
+
+```$xslt
+:ziggurat {:stream-router {:default {:application-id "application_name"...}}}
+           :retry         {:type   [:exponential :keyword]
+                           :count  [10 :int]
+                           :enable [true :bool]} 
+
+```
+
+Exponential retries can be configured for channels too. Additionally, a user can specify a custom `queue-timeout-ms` value per channel. 
+Timeouts for exponential backoffs are calculated using `queue-timeout-ms`. This implies that each channel can have separate count of retries
+and different timeout values.
+
+```$xslt
+:ziggurat {:stream-router {:default {:application-id "application_name"...
+                                     :channels {:channel-1 .....
+                                                           :retry {:type   [:exponential :keyword]
+                                                                                      :count  [10 :int]
+                                                                                      :queue-timeout-ms 2000
+                                                                                      :enable [true :bool]}}}}} 
+```
+
 ## Contribution
 - For dev setup and contributions please refer to CONTRIBUTING.md
 

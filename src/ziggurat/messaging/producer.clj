@@ -249,7 +249,11 @@
       (make-channel-queue topic-entity channel :dead-letter)
       (let [channel-retry-type (channel-retry-type topic-entity channel)]
         (cond
-          (= :exponential channel-retry-type) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel))
+          (= :exponential channel-retry-type) (do
+                                                (log/warn "[Alpha Feature]: Exponential backoff based retries is an alpha feature."
+                                                          "Please use it only after understanding its risks and implications."
+                                                          "Its contract can change in the future releases of Ziggurat.")
+                                                (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel)))
           (= :linear channel-retry-type) (make-channel-delay-queue topic-entity channel)
           (nil? channel-retry-type) (do
                                       (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
@@ -270,7 +274,11 @@
           (make-queue topic-entity :instant)
           (make-queue topic-entity :dead-letter)
           (cond
-            (= :exponential retry-type) (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count))
+            (= :exponential retry-type) (do
+                                          (log/warn "[Alpha Feature]: Exponential backoff based retries is an alpha feature."
+                                                    "Please use it only after understanding its risks and implications."
+                                                    "Its contract can change in the future releases of Ziggurat.")
+                                          (make-delay-queue-with-retry-count topic-entity (-> (ziggurat-config) :retry :count)))
             (= :linear retry-type)      (make-delay-queue topic-entity)
             (nil? retry-type)           (do
                                           (log/warn "[Deprecation Notice]: Please note that the configuration for retries has changed."
