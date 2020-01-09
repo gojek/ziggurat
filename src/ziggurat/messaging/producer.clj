@@ -72,6 +72,9 @@
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
 
+(defn- retry-type []
+  (-> (ziggurat-config) :retry :type))
+
 (defn- channel-retries-enabled [topic-entity channel]
   (:enabled (channel-retry-config topic-entity channel)))
 
@@ -87,30 +90,35 @@
     (or channel-queue-timeout-ms queue-timeout-ms)))
 
 (defn- get-backoff-exponent [retry-count message-retry-count]
-  "Calculates backoff exponent for the given message-retry-count (number of retries available for the message) and retry-count (number of max retries possible). Returns the min of calculated exponent and exponential-backoff-count"
+  "Calculates the exponent using the formula `retry-count - message-retry-count`, where `retry-count` is the total retries
+   possible and `message-retry-count` is the count of retries available for the message.
+
+   Returns 1, if `message-retry-count` is higher than `retry-count`."
   (let [exponent (- retry-count message-retry-count)]
     (max 1 exponent)))
 
-(defn- get-exponential-backoff-timeout-ms [retry-count message-retry-count queue-timeout-ms]
-  "Calculates the exponential timeout value from the number of max retries possible (retry-count), the number of retries available for a message (message-retry-count) and base timeout value (queue-timeout-ms). It uses this formula ((2^n)-1)*queue-timeout-ms, where n is the current message retry-count.
-   
-   Sample config to use exponential backoff:  
+(defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),
+   the number of retries available for a message (`message-retry-count`) and base timeout value (`queue-timeout-ms`).
+   It uses this formula `((2^n)-1)*queue-timeout-ms`, where `n` is the current message retry-count.
+
+   Sample config to use exponential backoff:
    {:ziggurat {:retry {:enabled true
-                       :count 5
-                       :exponential-backoff {:enabled true :count 10}}}}
-   
+                       :count   5
+                       :type    :exponential}}}
+
    Sample config to use exponential backoff when using channel flow:
    {:ziggurat {:stream-router {topic-entity {:channels {channel {:retry {:count 5
                                                                          :enabled true
                                                                          :queue-timeout-ms 1000
-                                                                         :exponential-backoff {:enabled true :count 10}}}}}}}}
-   
+                                                                         :type :exponential}}}}}}}
+
    _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
+  [retry-count message-retry-count queue-timeout-ms]
   (let [exponential-backoff (get-backoff-exponent retry-count message-retry-count)]
     (int (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms))))
 
 (defn get-queue-timeout-ms [message-payload]
-  "Calculate queue timeout for delay queue. Use value from get-exponential-backoff-timeout-ms if exponential backoff enabled."
+  "Calculate queue timeout for delay queue. Uses the value from [[get-exponential-backoff-timeout-ms]] if exponential backoff enabled."
   (let [queue-timeout-ms (-> (rabbitmq-config) :delay :queue-timeout-ms)
         retry-count (-> (ziggurat-config) :retry :count)
         message-retry-count (:retry-count message-payload)]
@@ -119,7 +127,7 @@
       queue-timeout-ms)))
 
 (defn get-channel-queue-timeout-ms [topic-entity channel message-payload]
-  "Calculate queue timeout for channel delay queue. Use value from get-exponential-backoff-timeout-ms if exponential backoff enabled."
+  "Calculate queue timeout for channel delay queue. Uses the value from [[get-exponential-backoff-timeout-ms]] if exponential backoff enabled."
   (let [channel-queue-timeout-ms (get-channel-queue-timeout-or-default-timeout topic-entity channel)
         message-retry-count (:retry-count message-payload)
         channel-retry-count (get-channel-retry-count topic-entity channel)]
@@ -235,23 +243,24 @@
     (make-channel-queue topic-entity channel :instant)
     (when (channel-retries-enabled topic-entity channel)
       (make-channel-queue topic-entity channel :dead-letter)
-      (cond
-        (= :exponential (channel-retry-type topic-entity channel)) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel))
-        (= :linear (channel-retry-type topic-entity channel)) (make-channel-delay-queue topic-entity channel)
-        (nil? (channel-retry-type topic-entity channel)) (do
-                                                           (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
-                                                                     "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
-                                                                     "Use :type to specify the type of retry mechanism in the channel config.")
-                                                           (make-channel-delay-queue topic-entity channel))
-        :else (do
-                (log/warn "Incorrect keyword for type passed, falling back to linear backoff for channel: " channel)
-                (make-channel-delay-queue topic-entity channel))))))
+      (let [channel-retry-type (channel-retry-type topic-entity channel)]
+        (cond
+          (= :exponential channel-retry-type) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel))
+          (= :linear channel-retry-type) (make-channel-delay-queue topic-entity channel)
+          (nil? channel-retry-type) (do
+                         (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
+                                   "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
+                                   "Use :type to specify the type of retry mechanism in the channel config.")
+                         (make-channel-delay-queue topic-entity channel))
+          :else (do
+                  (log/warn "Incorrect keyword for type passed, falling back to linear backoff for channel: " channel)
+                  (make-channel-delay-queue topic-entity channel)))))))
 
 (defn make-queues [stream-routes]
   (when (is-connection-required?)
     (doseq [topic-entity (keys stream-routes)]
       (let [channels (get-channel-names stream-routes topic-entity)
-            retry-type (-> (ziggurat-config) :retry :type)]
+            retry-type (retry-type)]
         (make-channel-queues channels topic-entity)
         (when (-> (ziggurat-config) :retry :enabled)
           (make-queue topic-entity :instant)

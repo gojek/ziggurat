@@ -252,7 +252,16 @@
                 expected-message      (assoc message-payload :retry-count 0)]
             (producer/retry retry-message-payload)
             (let [message-from-mq (rmq/get-message-from-retry-queue "default" 5)]
-              (is (= message-from-mq expected-message)))))))))
+              (is (= message-from-mq expected-message))))))
+
+      (testing "message will be retried in delay queue with suffix 1 if message retry-count exceeds retry count in config"
+          (fix/with-queues
+            {:default {:handler-fn #(constantly nil)}}
+            (let [retry-message-payload    (assoc message-payload :retry-count 10)
+                  expected-message-payload (assoc message-payload :retry-count 9)]
+              (producer/retry retry-message-payload)
+              (let [message-from-mq (rmq/get-message-from-retry-queue "default" 1)]
+                (is (= message-from-mq expected-message-payload)))))))))
 
 (deftest make-queues-test
   (let [ziggurat-config (ziggurat-config)]
