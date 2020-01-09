@@ -12,6 +12,8 @@
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
+(def MAX_EXPONENTIAL_RETRIES 25)
+
 (defn delay-queue-name [topic-entity queue-name]
   (prefixed-queue-name topic-entity queue-name))
 
@@ -90,11 +92,13 @@
     (or channel-queue-timeout-ms queue-timeout-ms)))
 
 (defn- get-backoff-exponent [retry-count message-retry-count]
-  "Calculates the exponent using the formula `retry-count - message-retry-count`, where `retry-count` is the total retries
+  "Calculates the exponent using the formula `retry-count` and `message-retry-count`, where `retry-count` is the total retries
    possible and `message-retry-count` is the count of retries available for the message.
 
-   Returns 1, if `message-retry-count` is higher than `retry-count`."
-  (let [exponent (- retry-count message-retry-count)]
+   Caps the value of `retry-count` to MAX_EXPONENTIAL_RETRIES.
+
+   Returns 1, if `message-retry-count` is higher than `max(MAX_EXPONENTIAL_RETRIES, retry-count)`."
+  (let [exponent (- (min MAX_EXPONENTIAL_RETRIES retry-count) message-retry-count)]
     (max 1 exponent)))
 
 (defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),
@@ -219,7 +223,7 @@
         queue-name                (delay-queue-name topic-entity queue-name)
         exchange-name             (prefixed-queue-name topic-entity exchange-name)
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)
-        sequence                  (inc retry-count)]
+        sequence                  (min MAX_EXPONENTIAL_RETRIES (inc retry-count))]
     (doseq [s (range 1 sequence)]
       (create-and-bind-queue (prefixed-queue-name queue-name s) (prefixed-queue-name exchange-name s) dead-letter-exchange-name))))
 

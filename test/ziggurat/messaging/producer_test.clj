@@ -362,6 +362,34 @@
                   (is (= expected-queue-status (lq/status ch (exponential-delay-queue-name s))))
                   (lq/delete ch (exponential-delay-queue-name s))
                   (le/delete ch (exponential-delay-exchange-name s)))))))
+        (testing "it creates queues with suffixes in the range [1, 25] when exponential backoff is enabled and retry-count is more than 25"
+          (with-open [ch (lch/open connection)]
+            (let [stream-routes         {:default {:handler-fn #(constantly :success)}}
+                  instant-queue-name    (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
+                  instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
+                  delay-queue-name      (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
+                  delay-exchange-name   (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
+                  dead-queue-name       (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
+                  dead-exchange-name    (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
+                  expected-queue-status {:message-count 0 :consumer-count 0}
+                  exponential-delay-queue-name #(util/prefixed-queue-name delay-queue-name %)
+                  exponential-delay-exchange-name #(util/prefixed-queue-name delay-exchange-name %)]
+
+              (with-redefs [config/ziggurat-config (constantly (-> ziggurat-config
+                                                                   (assoc-in [:retry :type] :exponential)
+                                                                   (assoc-in [:retry :count] 50)))]
+                (producer/make-queues stream-routes)
+                (is (= expected-queue-status (lq/status ch dead-queue-name)))
+                (is (= expected-queue-status (lq/status ch instant-queue-name)))
+                (lq/delete ch instant-queue-name)
+                (lq/delete ch dead-queue-name)
+                (le/delete ch instant-exchange-name)
+                (le/delete ch dead-exchange-name)
+                ;; Verifying that delay queues with appropriate suffixes have been created
+                (doseq [s (range 1 25)]
+                  (is (= expected-queue-status (lq/status ch (exponential-delay-queue-name s))))
+                  (lq/delete ch (exponential-delay-queue-name s))
+                  (le/delete ch (exponential-delay-exchange-name s)))))))
         (testing "it creates delay queue for linear retries when retry type is not defined in the config"
           (let [make-delay-queue-called (atom false)
                 stream-routes          {:default  {:handler-fn #(constantly nil)}}]
@@ -538,10 +566,18 @@
           (is (= 700 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))))
 
 (deftest get-queue-timeout-ms-test
-  (testing "when retries are enabled"
+  (testing "when exponential retries are enabled"
     (let [message (assoc message-payload :retry-count 2)]
       (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
                                                               :retry {:enabled             true
                                                                       :count               5
                                                                       :type                :exponential}))]
-        (is (= 700 (producer/get-queue-timeout-ms message)))))))
+        (is (= 700 (producer/get-queue-timeout-ms message))))))
+  (testing "when exponential retries are enabled and retry-count exceeds 25, the max possible timeouts are calculated using 25 as the retry-count"
+    (let [message (assoc message-payload :retry-count 20)]
+      (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
+                                                         :retry {:enabled             true
+                                                                 :count               50
+                                                                 :type                :exponential}))]
+        ;; For 25 max exponential retries, exponent comes to 25-20=5, which makes timeout = 100*(2^5-1) = 3100
+        (is (= 3100 (producer/get-queue-timeout-ms message)))))))
