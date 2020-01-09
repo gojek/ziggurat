@@ -220,7 +220,7 @@
         (util/close ch)))))
 
 (deftest start-channels-subscriber-test
-  (testing "the mapper-fn for channel subscriber should be retried until return success when retry is enabled to for that channel"
+  (testing "the mapper-fn for channel subscriber should be retried until return success when retry is enabled for that channel"
     (let [retry-counter       (atom 0)
           call-counter        (atom 0)
           success-promise     (promise)

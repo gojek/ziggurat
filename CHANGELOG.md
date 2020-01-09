@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.0 - 2020-01-09
+- Changes Exponential backoff config contract.
+    - Adds a `:type` key to retry-config
+    - Adds a limit on the number of retries possible in exponential backoff
+    - Releasing exponential backoff as an alpha feature
+- Fixes [issue](https://github.com/gojek/ziggurat/issues/136) where dead-set replay doesn't send the message to the retry-flow
+- Fixes [issue](https://github.com/gojek/ziggurat/issues/129) by updating tools.nrepl dependency to nrepl/nrepl
+- Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from 2.x to 3.x .
+- Fixes [this bug](https://github.com/gojek/ziggurat/issues/115) in RabbitMQ message processing flow
+- Adds support for exponential backoffs in channels and normal retry flow
+- exponential backoffs can be enabled from the config
+
 ## 3.2.0-alpha.5 - 2019-12-17
 - Fixes [issue](https://github.com/gojek/ziggurat/issues/136) where dead-set replay doesn't send the message to the retry-flow
 
