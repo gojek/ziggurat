@@ -248,10 +248,10 @@
           (= :exponential channel-retry-type) (make-channel-delay-queue-with-retry-count topic-entity channel (get-channel-retry-count topic-entity channel))
           (= :linear channel-retry-type) (make-channel-delay-queue topic-entity channel)
           (nil? channel-retry-type) (do
-                         (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
-                                   "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
-                                   "Use :type to specify the type of retry mechanism in the channel config.")
-                         (make-channel-delay-queue topic-entity channel))
+                                      (log/warn "[Deprecation Notice]: Please note that the configuration for channel retries has changed."
+                                                "Please look at the upgrade guide for details: https://github.com/gojek/ziggurat/wiki/Upgrade-guide"
+                                                "Use :type to specify the type of retry mechanism in the channel config.")
+                                      (make-channel-delay-queue topic-entity channel))
           :else (do
                   (log/warn "Incorrect keyword for type passed, falling back to linear backoff for channel: " channel)
                   (make-channel-delay-queue topic-entity channel)))))))
