@@ -91,6 +91,15 @@
         queue-timeout-ms         (get-in (rabbitmq-config) [:delay :queue-timeout-ms])]
     (or channel-queue-timeout-ms queue-timeout-ms)))
 
+(defn- jitter-enabled []
+  (:enabled (-> (ziggurat-config) :retry :jitter)))
+
+(defn- jitter-range-percent []
+  (:range-as-percent-of-timeout (-> (ziggurat-config) :retry :jitter)))
+
+(defn- jitter-range-value []
+  (:range-value-ms (-> (ziggurat-config) :retry :jitter)))
+
 (defn- get-backoff-exponent [retry-count message-retry-count]
   "Calculates the exponent using the formula `retry-count` and `message-retry-count`, where `retry-count` is the total retries
    possible and `message-retry-count` is the count of retries available for the message.
@@ -100,6 +109,22 @@
    Returns 1, if `message-retry-count` is higher than `max(MAX_EXPONENTIAL_RETRIES, retry-count)`."
   (let [exponent (- (min MAX_EXPONENTIAL_RETRIES retry-count) message-retry-count)]
     (max 1 exponent)))
+
+(defn timeout-with-jitter [exponential-timeout]
+  (log/infof "Exponential timeout [%d]" exponential-timeout)
+  (if (jitter-enabled)
+    (let [jitter-percent (jitter-range-percent)
+          jitter-range   (jitter-range-value)
+          jitter-value   (or jitter-range (int (/ (* jitter-percent exponential-timeout) 100)))
+          ;; |jitter-min| = jitter-value/2
+          jitter-min     (- (int (/ jitter-value 2)))
+          ;; Below line generates a jitter in this range [-(jitter-value/2), +(jitter-value/2)]
+          jitter         (+ (rand-int jitter-value) jitter-min)
+          jitter-based-exponential-timeout (+ exponential-timeout jitter)]
+      (log/infof "jitter-value: [%d], random-jitter: [%d], jitter-based-timeout: [%d]"
+           jitter-value jitter jitter-based-exponential-timeout)
+      jitter-based-exponential-timeout)
+    exponential-timeout))
 
 (defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),
    the number of retries available for a message (`message-retry-count`) and base timeout value (`queue-timeout-ms`).
@@ -118,8 +143,9 @@
 
    _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
   [retry-count message-retry-count queue-timeout-ms]
-  (let [exponential-backoff (get-backoff-exponent retry-count message-retry-count)]
-    (int (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms))))
+  (let [exponential-backoff (get-backoff-exponent retry-count message-retry-count)
+        exponential-timeout (int (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms))]
+    (timeout-with-jitter exponential-timeout)))
 
 (defn get-queue-timeout-ms [message-payload]
   "Calculate queue timeout for delay queue. Uses the value from [[get-exponential-backoff-timeout-ms]] if exponential backoff enabled."
