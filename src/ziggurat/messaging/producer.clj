@@ -107,6 +107,9 @@
 (defn- jitter-range-percent-val [exponential-timeout]
   (int (/ (* (jitter-range-in-percent) exponential-timeout) 100)))
 
+(defn- non-nil-jitter-values? []
+  (or (some? (jitter-range-in-ms)) (some? (jitter-range-in-percent))))
+
 (defn- get-backoff-exponent [retry-count message-retry-count]
   "Calculates the exponent using the formula `retry-count` and `message-retry-count`, where `retry-count` is the total retries
    possible and `message-retry-count` is the count of retries available for the message.
@@ -118,13 +121,15 @@
     (max 1 exponent)))
 
 (defn timeout-with-jitter [exponential-timeout]
-  (if (jitter-enabled)
-    (let [jitter-value                               (or (jitter-range-in-ms) (jitter-range-percent-val exponential-timeout))
-          jitter-min                                 (- exponential-timeout jitter-value)
-          jittered-exponential-timeout               (+ (rand-int jitter-value) jitter-min)] ;; This line generates a jitter in this range [(exponential-timeout - jitter-value), exponential-timeout]
-      (log/infof "jitter-value: [%d], actual-timeout: [%d], jitter-based-timeout: [%d]"
-           jitter-value exponential-timeout jittered-exponential-timeout)
-      jittered-exponential-timeout)
+  (if (and (jitter-enabled) (non-nil-jitter-values?))
+    (let [jitter-value (or (jitter-range-in-ms) (jitter-range-percent-val exponential-timeout))]
+      (if (>= jitter-value exponential-timeout)
+        (do (log/warnf "Jitter is not used. Configured jitter value: [%d] is more than the current exponential timeout: [%d]" jitter-value exponential-timeout)
+            exponential-timeout)
+        (let [jitter-min                    (- exponential-timeout jitter-value)
+              jittered-exponential-timeout  (+ (rand-int jitter-value) jitter-min)] ;; This line generates a jitter in this range [(exponential-timeout - jitter-value), exponential-timeout]
+          (log/infof "jitter-value: [%d], actual-timeout: [%d], jitter-based-timeout: [%d]" jitter-value exponential-timeout jittered-exponential-timeout)
+      jittered-exponential-timeout)))
     exponential-timeout))
 
 (defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),
