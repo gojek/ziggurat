@@ -68,8 +68,12 @@
      (with-retry {:count      5
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
-       (with-open [ch (lch/open connection)]
-         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
+                 (with-open [ch (lch/open connection)]
+                   (let [publish-message (-> message-payload
+                                              (dissoc  :headers)
+                                              (assoc  :publish-time (java.time.LocalDateTime/now))
+                                              (assoc  :expiration expiration))]
+                     (lb/publish ch exchange "" (nippy/freeze publish-message) (properties-for-publish expiration (:headers message-payload))))))
      (catch Throwable e
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
@@ -94,11 +98,14 @@
 (defn- jitter-enabled []
   (:enabled (-> (ziggurat-config) :retry :jitter)))
 
-(defn- jitter-range-percent []
-  (:range-as-percent-of-timeout (-> (ziggurat-config) :retry :jitter)))
+(defn- jitter-range-in-percent []
+  (:range-in-percent (-> (ziggurat-config) :retry :jitter)))
 
-(defn- jitter-range-value []
-  (:range-value-ms (-> (ziggurat-config) :retry :jitter)))
+(defn- jitter-range-in-ms []
+  (:range-in-ms (-> (ziggurat-config) :retry :jitter)))
+
+(defn- jitter-range-percent-val [exponential-timeout]
+  (int (/ (* (jitter-range-in-percent) exponential-timeout) 100)))
 
 (defn- get-backoff-exponent [retry-count message-retry-count]
   "Calculates the exponent using the formula `retry-count` and `message-retry-count`, where `retry-count` is the total retries
@@ -111,19 +118,13 @@
     (max 1 exponent)))
 
 (defn timeout-with-jitter [exponential-timeout]
-  (log/infof "Exponential timeout [%d]" exponential-timeout)
   (if (jitter-enabled)
-    (let [jitter-percent (jitter-range-percent)
-          jitter-range   (jitter-range-value)
-          jitter-value   (or jitter-range (int (/ (* jitter-percent exponential-timeout) 100)))
-          ;; |jitter-min| = jitter-value/2
-          jitter-min     (- (int (/ jitter-value 2)))
-          ;; Below line generates a jitter in this range [-(jitter-value/2), +(jitter-value/2)]
-          jitter         (+ (rand-int jitter-value) jitter-min)
-          jitter-based-exponential-timeout (+ exponential-timeout jitter)]
-      (log/infof "jitter-value: [%d], random-jitter: [%d], jitter-based-timeout: [%d]"
-           jitter-value jitter jitter-based-exponential-timeout)
-      jitter-based-exponential-timeout)
+    (let [jitter-value                               (or (jitter-range-in-ms) (jitter-range-percent-val exponential-timeout))
+          jitter-min                                 (- exponential-timeout jitter-value)
+          jittered-exponential-timeout               (+ (rand-int jitter-value) jitter-min)] ;; This line generates a jitter in this range [(exponential-timeout - jitter-value), exponential-timeout]
+      (log/infof "jitter-value: [%d], actual-timeout: [%d], jitter-based-timeout: [%d]"
+           jitter-value exponential-timeout jittered-exponential-timeout)
+      jittered-exponential-timeout)
     exponential-timeout))
 
 (defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),

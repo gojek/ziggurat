@@ -34,6 +34,11 @@
   [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
   (try
     (let [message (nippy/thaw payload)]
+      (log/infof "Message [%s] published at [%s], with expiration: [%s], consumed after: [%s]"
+                 message
+                 (:publish-time message)
+                 (:expiration message)
+                 (.toMillis (java.time.Duration/between  (java.time.LocalDateTime/now) (:publish-time message))))
       (when ack?
         (lb/ack ch delivery-tag))
       (convert-to-message-payload message topic-entity))

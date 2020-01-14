@@ -33,7 +33,9 @@
                                                        :dead-letter {:queue-name    "%s_dead_letter_queue"
                                                                      :exchange-name "%s_dead_letter_exchange"}}
                                 :retry                {:count   5
-                                                       :enabled false}
+                                                       :enabled false
+                                                       :jitter  {:range-in-percent   30
+                                                                 :range-in-ms                5000}}
                                 :http-server          {:port         8080
                                                        :thread-count 100}}})
 
