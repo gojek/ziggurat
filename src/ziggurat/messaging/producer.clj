@@ -68,8 +68,8 @@
      (with-retry {:count      5
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
-                 (with-open [ch (lch/open connection)]
-                   (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
+       (with-open [ch (lch/open connection)]
+         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
        (sentry/report-error sentry-reporter e
                             "Pushing message to rabbitmq failed, data: " message-payload)))))
@@ -125,7 +125,7 @@
         (let [jitter-min                    (- exponential-timeout jitter-value)
               jittered-exponential-timeout  (+ (rand-int jitter-value) jitter-min)] ;; This line generates a jitter in this range [(exponential-timeout - jitter-value), exponential-timeout]
           (log/infof "jitter-value: [%d], actual-timeout: [%d], jitter-based-timeout: [%d]" jitter-value exponential-timeout jittered-exponential-timeout)
-      jittered-exponential-timeout)))
+          jittered-exponential-timeout)))
     exponential-timeout))
 
 (defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),
