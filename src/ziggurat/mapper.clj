@@ -95,6 +95,4 @@
   {:message                      s/Any
    :topic-entity                 s/Keyword
    (s/optional-key :retry-count) s/Int
-   (s/optional-key :headers)     s/Any
-   (s/optional-key :publish-time)     s/Any
-   (s/optional-key :expiration)     s/Any})
+   (s/optional-key :headers)     s/Any})
