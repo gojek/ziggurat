@@ -34,4 +34,5 @@
       (m/wrap-default-content-type-json)
       (wrap-newrelic-transaction)
       (m/wrap-errors)
+      (m/publish-metrics)
       (wrap-with-logger)))
