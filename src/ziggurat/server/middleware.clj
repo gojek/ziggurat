@@ -7,8 +7,8 @@
             [sentry-clj.async :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.util.map :as umap]
-            [clojure.tools.logging :as log]
-            [ziggurat.metrics :as metrics]))
+            [ziggurat.metrics :as metrics]
+            [ziggurat.config :refer [ziggurat-config]]))
 
 (defn wrap-default-content-type-json [handler]
   (fn [request]
@@ -37,7 +37,8 @@
 (defn publish-metrics [handler]
   (fn [request]
     (let [response (handler request)
-          request-uri (:uri request)
-          response-status   (:status response)]
-      (metrics/increment-count "ziggurat.http.stats" "count" {:request-uri request-uri :response-status response-status})
+          request-uri       (:uri request)
+          response-status   (:status response)
+          service-name      (:app-name (ziggurat-config))]
+      (metrics/increment-count [service-name "http" "stats"] "count" {:request-uri request-uri :response-status response-status})
       response)))
