@@ -13,11 +13,11 @@
           handler                (fn [request-arg] response)]
       (with-redefs [metrics/increment-count (fn [metrics-namespaces metrics additional-tags]
                                               (if (and
-                                                    (is (= "http-server" (first metrics-namespaces)))
-                                                    (is (= "requests-served" (second metrics-namespaces)))
-                                                    (is (= "count" metrics))
-                                                    (is (= request-uri (:request-uri additional-tags)))
-                                                    (is (= (str response-status) (:response-status additional-tags))))
+                                                   (is (= "http-server" (first metrics-namespaces)))
+                                                   (is (= "requests-served" (second metrics-namespaces)))
+                                                   (is (= "count" metrics))
+                                                   (is (= request-uri (:request-uri additional-tags)))
+                                                   (is (= (str response-status) (:response-status additional-tags))))
                                                 (swap! increment-count-called not)))]
         ((publish-metrics handler) request)
         (is (= @increment-count-called true))))))
