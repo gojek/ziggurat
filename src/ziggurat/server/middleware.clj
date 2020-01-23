@@ -35,7 +35,7 @@
 
 (defn publish-metrics [handler]
   (fn [request]
-    (let [response (handler request)
+    (let [response          (handler request)
           request-uri       (:uri request)
           response-status   (:status response)]
       (metrics/increment-count ["http-server" "requests-served"] "count" {:request-uri request-uri :response-status (str response-status)})
