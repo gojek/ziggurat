@@ -6,7 +6,8 @@
             [ring.util.response :as ring-resp]
             [sentry-clj.async :as sentry]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.util.map :as umap]))
+            [ziggurat.util.map :as umap]
+            [ziggurat.metrics :as metrics]))
 
 (defn wrap-default-content-type-json [handler]
   (fn [request]
@@ -31,3 +32,11 @@
       (catch Exception ex
         (sentry/report-error sentry-reporter ex "Uncaught error in server")
         {:status 500 :body (json/encode {:Error (st/pst-str ex)})}))))
+
+(defn publish-metrics [handler]
+  (fn [request]
+    (let [response          (handler request)
+          request-uri       (:uri request)
+          response-status   (:status response)]
+      (metrics/increment-count ["http-server" "requests-served"] "count" {:request-uri request-uri :response-status (str response-status)})
+      response)))
