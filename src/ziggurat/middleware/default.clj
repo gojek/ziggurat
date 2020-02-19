@@ -1,5 +1,5 @@
 (ns ziggurat.middleware.default
-  (:require [flatland.protobuf.core :as proto]
+  (:require [protobuf.impl.flatland.mapdef :as protodef]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.metrics :as metrics]
@@ -14,10 +14,10 @@
   [message proto-class topic-entity-name]
   (if-not (map? message)
     (try
-      (let [proto-klass  (proto/protodef proto-class)
-            loaded-proto (proto/protobuf-load proto-klass message)
+      (let [proto-klass (protodef/mapdef proto-class)
+            loaded-proto (protodef/parse proto-klass message)
             proto-keys   (-> proto-klass
-                             proto/protobuf-schema
+                             protodef/mapdef->schema
                              :fields
                              keys)]
         (select-keys loaded-proto proto-keys))

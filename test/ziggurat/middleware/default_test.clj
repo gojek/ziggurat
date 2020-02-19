@@ -1,7 +1,7 @@
 (ns ziggurat.middleware.default-test
   (:require [clojure.test :refer :all]
-            [flatland.protobuf.core :as proto]
             [sentry-clj.async :as sentry]
+            [protobuf.core :as proto]
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :refer :all])
@@ -17,7 +17,7 @@
                               :path "/photos/h2k3j4h9h23"}
           proto-class        Example$Photo
           topic-entity-name  "test"
-          proto-message      (proto/protobuf-dump (proto/protodef Example$Photo) message)
+          proto-message      (proto/->bytes (proto/create Example$Photo message))
           handler-fn         (fn [msg]
                                (if (= msg message)
                                  (reset! handler-fn-called? true)))]
