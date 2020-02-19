@@ -45,6 +45,8 @@
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
+            [camel-snake-kebab.core :as csk]
+            [clojure.spec.alpha :as spec]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.java-util :refer [get-key]])
   (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
@@ -55,27 +57,77 @@
    :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
               ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
-(defn- producer-properties-from-config [{:keys [bootstrap-servers
-                                                acks
-                                                key-serializer
-                                                value-serializer
-                                                enable-idempotence
-                                                retries-config
-                                                max-in-flight-requests-per-connection]}]
-  (doto (Properties.)
-    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
-    (.put ProducerConfig/ACKS_CONFIG acks)
-    (.put ProducerConfig/RETRIES_CONFIG (int retries-config))
-    (.put ProducerConfig/ENABLE_IDEMPOTENCE_CONFIG enable-idempotence)
-    (.put ProducerConfig/MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION (int max-in-flight-requests-per-connection))
-    (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG key-serializer)
-    (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG value-serializer)))
+(defn implements-serializer? [serializer-class]
+  (try
+    (contains? (set (.getInterfaces (Class/forName serializer-class)))
+               (Class/forName "org.apache.kafka.common.serialization.Serializer"))
+    (catch ClassNotFoundException e
+      false)))
+
+(spec/def ::key-serializer-class implements-serializer?)
+(spec/def ::value-serializer-class implements-serializer?)
+
+(spec/def ::config (spec/keys :req-un [::key-serializer-class
+                                       ::bootstrap-servers
+                                       ::value-serializer-class]
+                              :opt-un [::metadata-max-age
+                                       ::reconnect-backoff-ms
+                                       ::client-id
+                                       ::metric-num-samples
+                                       ::transaction-timeout
+                                       ::retries
+                                       ::retry-backoff-ms
+                                       ::receive-buffer
+                                       ::partitioner-class
+                                       ::max-block-ms
+                                       ::metrics-reporter-classes
+                                       ::compression-type
+                                       ::max-request-size
+                                       ::delivery-timeout-ms
+                                       ::metrics-sample-window-ms
+                                       ::request-timeout-ms
+                                       ::buffer-memory
+                                       ::interceptor-classes
+                                       ::linger-ms
+                                       ::connections-max-idle-ms
+                                       ::acks
+                                       ::enable-idempotence
+                                       ::metrics-recording-level
+                                       ::transactional-id
+                                       ::reconnect-backoff-max-ms
+                                       ::client-dns-lookup
+                                       ::max-in-flight-requests-per-connection
+                                       ::send-buffer
+                                       ::batch-size]))
+
+(def valid-configs? (partial spec/valid? ::config))
+
+(def explain-str (partial spec/explain-str ::config))
+
+(defn property->fn [field-name]
+  (let [raw-field-name (if (= field-name :max-in-flight-requests-per-connection)
+                         "org.apache.kafka.clients.producer.ProducerConfig/%s"
+                         "org.apache.kafka.clients.producer.ProducerConfig/%s_CONFIG")]
+    (->> field-name
+         csk/->SCREAMING_SNAKE_CASE_STRING
+         (format raw-field-name)
+         (read-string))))
+
+(defn producer-properties [config-map]
+  (if (valid-configs? config-map)
+    (let [props (Properties.)]
+      (doseq [config-key (keys config-map)]
+        (.setProperty props
+                      (eval (property->fn config-key))
+                      (str (get config-map config-key))))
+      props)
+    (throw (ex-info (explain-str config-map) config-map))))
 
 (defn producer-properties-map []
   (reduce (fn [producer-map [stream-config-key stream-config]]
             (let [producer-config (:producer stream-config)]
               (if (some? producer-config)
-                (assoc producer-map stream-config-key (producer-properties-from-config producer-config))
+                (assoc producer-map stream-config-key (producer-properties producer-config))
                 producer-map)))
           {}
           (seq (:stream-router (ziggurat-config)))))
@@ -98,7 +150,7 @@
                               (.flush)
                               (.close)))
                           (seq kafka-producers))))
-          (log/info "No producers found. Can not initiate stop.")))
+          (log/info "No producers found.n Can not initiate stop.")))
 
 (defn send
   "A wrapper around `org.apache.kafka.clients.producer.KafkaProducer#send` which enables
