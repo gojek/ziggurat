@@ -1,6 +1,6 @@
 (ns ziggurat.streams-test
   (:require [clojure.test :refer :all]
-            [flatland.protobuf.core :as proto]
+            [protobuf.core :as proto]
             [ziggurat.streams :refer [start-streams stop-streams]]
             [ziggurat.fixtures :as fix]
             [ziggurat.config :refer [ziggurat-config]]
@@ -38,8 +38,8 @@
 
 (def proto-class Example$Photo)
 
-(defn- create-photo []
-  (proto/protobuf-dump (proto/protodef proto-class) message))
+(defn create-photo []
+  (proto/->bytes (proto/create proto-class message)))
 
 (def message-key-value (KeyValue/pair (create-photo) (create-photo)))
 
