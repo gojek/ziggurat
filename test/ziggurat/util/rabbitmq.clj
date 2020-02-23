@@ -6,7 +6,7 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
-            [ziggurat.messaging.producer :as producer]
+            [ziggurat.messaging.producer :refer [delay-queue-name]]
             [ziggurat.messaging.util :as rutil]
             [ziggurat.tracer :refer [tracer]]
             [clojure.tools.logging :as log])
@@ -32,7 +32,7 @@
 
 (defn get-msg-from-delay-queue [topic-name]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
-        queue-name (producer/delay-queue-name topic-name queue-name)]
+        queue-name (delay-queue-name topic-name queue-name)]
     (get-msg-from-rabbitmq queue-name topic-name)))
 
 (defn get-msg-from-dead-queue [topic-name]
@@ -57,7 +57,7 @@
 
 (defn get-message-from-channel-delay-queue [topic channel]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
-        queue-name (producer/delay-queue-name (rutil/with-channel-name topic channel) queue-name)]
+        queue-name (delay-queue-name (rutil/with-channel-name topic channel) queue-name)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn get-message-from-channel-instant-queue [topic-name channel-name]
@@ -67,13 +67,13 @@
 
 (defn get-message-from-retry-queue [topic sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
-        delay-queue-name (producer/delay-queue-name topic queue-name)
+        delay-queue-name (delay-queue-name topic queue-name)
         queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn get-message-from-channel-retry-queue [topic channel sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
-        delay-queue-name (producer/delay-queue-name (rutil/with-channel-name topic channel) queue-name)
+        delay-queue-name (delay-queue-name (rutil/with-channel-name topic channel) queue-name)
         queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
