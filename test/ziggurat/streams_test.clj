@@ -6,7 +6,8 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.middleware.default :as default-middleware]
             [ziggurat.middleware.json :as json-middleware]
-            [ziggurat.tracer :refer [tracer]])
+            [ziggurat.tracer :refer [tracer]]
+            [ziggurat.messaging.producer :as producer])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
            [kafka.utils MockTime]
@@ -15,7 +16,8 @@
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
            [io.opentracing.tag Tags]))
 
-(use-fixtures :once fix/mount-config-with-tracer)
+(use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
+                                    fix/silence-logging]))
 
 (defn- props []
   (doto (Properties.)
@@ -58,17 +60,17 @@
   (str "test" "-" (rand-int 999999999)))
 
 (deftest start-streams-with-since-test
-  (let [message-received-count             (atom 0)
-        mapped-fn                          (get-mapped-fn message-received-count)
-        times                              6
-        oldest-processed-message-in-s      10
-        kvs                                (repeat times message-key-value)
-        handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        streams                            (start-streams {:default {:handler-fn handler-fn}}
-                                                          (-> (ziggurat-config)
-                                                              (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                              (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
-                                                              (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+  (let [message-received-count        (atom 0)
+        mapped-fn                     (get-mapped-fn message-received-count)
+        times                         6
+        oldest-processed-message-in-s 10
+        kvs                           (repeat times message-key-value)
+        handler-fn                    (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                       (start-streams {:default {:handler-fn handler-fn}}
+                                                     (-> (ziggurat-config)
+                                                         (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                         (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
+                                                         (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
     (Thread/sleep 10000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
@@ -79,15 +81,15 @@
     (is (= 0 @message-received-count))))
 
 (deftest start-streams-test
-  (let [message-received-count             (atom 0)
-        mapped-fn                          (get-mapped-fn message-received-count)
-        times                              6
-        kvs                                (repeat times message-key-value)
-        handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        streams                            (start-streams {:default {:handler-fn handler-fn}}
-                                                          (-> (ziggurat-config)
-                                                              (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                              (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count)
+        times                  6
+        kvs                    (repeat times message-key-value)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                (start-streams {:default {:handler-fn handler-fn}}
+                                              (-> (ziggurat-config)
+                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
     (Thread/sleep 10000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
@@ -98,15 +100,15 @@
     (is (= times @message-received-count))))
 
 (deftest start-streams-test-with-string-serde
-  (let [message-received-count             (atom 0)
-        mapped-fn                          (get-mapped-fn message-received-count json-message)
-        times                              6
-        kvs                                (repeat times string-key-value-message)
-        handler-fn                         (json-middleware/parse-json mapped-fn :using-string-serde)
-        streams                            (start-streams {:using-string-serde {:handler-fn handler-fn}}
-                                                          (-> (ziggurat-config)
-                                                              (assoc-in [:stream-router :using-string-serde :application-id] (rand-application-id))
-                                                              (assoc-in [:stream-router :using-string-serde :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count json-message)
+        times                  6
+        kvs                    (repeat times string-key-value-message)
+        handler-fn             (json-middleware/parse-json mapped-fn :using-string-serde)
+        streams                (start-streams {:using-string-serde {:handler-fn handler-fn}}
+                                              (-> (ziggurat-config)
+                                                  (assoc-in [:stream-router :using-string-serde :application-id] (rand-application-id))
+                                                  (assoc-in [:stream-router :using-string-serde :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
     (Thread/sleep 10000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :using-string-serde :origin-topic])
                                                         kvs
@@ -117,15 +119,15 @@
     (is (= times @message-received-count))))
 
 (deftest start-streams-test-with-tracer
-  (let [message-received-count             (atom 0)
-        mapped-fn                          (get-mapped-fn message-received-count)
-        times                              1
-        kvs                                (repeat times message-key-value)
-        handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        streams                            (start-streams {:default {:handler-fn handler-fn}}
-                                                          (-> (ziggurat-config)
-                                                              (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                              (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count)
+        times                  1
+        kvs                    (repeat times message-key-value)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                (start-streams {:default {:handler-fn handler-fn}}
+                                              (-> (ziggurat-config)
+                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
     (Thread/sleep 10000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
@@ -145,16 +147,16 @@
       (is (= {(.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER, (.getKey Tags/COMPONENT) "ziggurat"} tags)))))
 
 (deftest start-streams-test-when-tracer-is-not-configured
-  (let [message-received-count             (atom 0)
-        mapped-fn                          (get-mapped-fn message-received-count)
-        times                              1
-        kvs                                (repeat times message-key-value)
-        handler-fn                         (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        streams                            (start-streams {:default {:handler-fn handler-fn}}
-                                                          (-> (ziggurat-config)
-                                                              (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                              (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)
-                                                              (dissoc :tracer)))]
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count)
+        times                  1
+        kvs                    (repeat times message-key-value)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                (start-streams {:default {:handler-fn handler-fn}}
+                                              (-> (ziggurat-config)
+                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)
+                                                  (dissoc :tracer)))]
     (Thread/sleep 10000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
@@ -163,3 +165,28 @@
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
+
+(deftest stops-streams-when-exception-is-raised-from-mapper-fn-test
+  (let [stop-streams-called? (atom false)
+        mapped-fn            (fn [message]
+                               :retry)
+        times                1
+        kvs                  (repeat times message-key-value)
+        streams              (start-streams {:default {:handler-fn mapped-fn}}
+                                            (-> (ziggurat-config)
+                                                (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)
+                                                (dissoc :tracer)))]
+    (with-redefs [producer/retry                (fn [message-payload]
+                                                  (throw (ex-info "Streams test: rabbit retry error" {:type :rabbitmq-publish-failure
+                                                                                                      :e    (Exception. "Custom Error")})))
+                  ziggurat.streams/stop-streams (fn [kafka-stream]
+                                                  (reset! stop-streams-called? true))]
+      (Thread/sleep 10000)                                  ;;waiting for streams to start
+      (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (Thread/sleep 5000)                                   ;;wating for streams to consume messages
+      (is @stop-streams-called?))
+    (stop-streams streams)))
