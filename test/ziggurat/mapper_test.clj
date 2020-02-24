@@ -7,7 +7,8 @@
             [ziggurat.mapper :refer :all]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.rabbitmq :as rmq]))
+            [ziggurat.util.rabbitmq :as rmq]
+            [langohr.basic :as lb]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -83,7 +84,7 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
-    (testing "message should raise exception"
+    (testing "reports error to sentry, publishes message to retry queue if mapper-fn raises exception"
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
@@ -101,6 +102,24 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
             (is @sentry-report-fn-called?)))))
+
+    (testing "raises exception when rabbitMQ publishing fails"
+      (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
+            sentry-report-fn-called?  (atom false)
+            unsuccessfully-processed? (atom false)
+            expected-metric           "failure"]
+        (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+                      metrics/increment-count (fn [metric-namespace metric additional-tags]
+                                                (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
+                                                               (= metric-namespace [expected-metric-namespace]))
+                                                           (= metric expected-metric)
+                                                           (= additional-tags expected-additional-tags))
+                                                  (reset! unsuccessfully-processed? true)))
+                      lb/publish              (fn [_ _ _ _ _]
+                                                (throw (Exception. "publishing failure test")))]
+          (is (thrown? clojure.lang.ExceptionInfo ((mapper-func (constantly nil) []) message-payload)))
+          (is @unsuccessfully-processed?)
+          (is @sentry-report-fn-called?))))
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?  (atom false)
@@ -174,6 +193,25 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
             (is @sentry-report-fn-called?)))))
+
+    (testing "raises exception when rabbitMQ publishing fails"
+      (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
+            sentry-report-fn-called?  (atom false)
+            unsuccessfully-processed? (atom false)
+            expected-metric           "failure"]
+        (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+                      metrics/increment-count (fn [metric-namespace metric additional-tags]
+                                                (when (and (or (= metric-namespace expected-increment-count-namespaces)
+                                                               (= metric-namespace [increment-count-namespace]))
+                                                           (= metric expected-metric)
+                                                           (= additional-tags expected-additional-tags))
+                                                  (reset! unsuccessfully-processed? true)))
+                      lb/publish              (fn [_ _ _ _ _]
+                                                (throw (Exception. "publishing failure test")))]
+          (is (thrown? clojure.lang.ExceptionInfo ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) channel) message-payload)))
+          (is @unsuccessfully-processed?)
+          (is @sentry-report-fn-called?))))
+
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time? (atom false)
             execution-time-namespace "execution-time"
