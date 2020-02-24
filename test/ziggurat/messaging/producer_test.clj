@@ -147,7 +147,7 @@
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (swap! retry-count inc)
                                    (throw (Exception. "some exception")))]
-          (producer/retry retry-message-payload)
+          (is (thrown? clojure.lang.ExceptionInfo (producer/retry retry-message-payload)))
           (is (= 6 @retry-count))))))
 
   (testing "message with no retry count will publish to delay queue"
@@ -511,7 +511,7 @@
         (is (true? @publish-called?)))))
   (testing "An exception is raised, if publishing to RabbitMQ fails even after retries"
     (mount/stop #'ziggurat.messaging.connection/connection)
-    (is (thrown? Exception (producer/publish-to-instant-queue message-payload)))))
+    (is (thrown? clojure.lang.ExceptionInfo (producer/publish-to-instant-queue message-payload)))))
 
 (deftest publish-to-delay-queue-test
   (testing "creates a span when tracer is enabled"
