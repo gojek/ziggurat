@@ -138,6 +138,7 @@
 (declare stream)
 
 (defn stop-streams [streams]
+  (log/debug "Stopping Kafka streams")
   (doseq [stream streams]
     (.close stream)))
 
