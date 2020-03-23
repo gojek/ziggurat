@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.1 - 2020-03-23
+- Fixes bug for this [Issue](https://github.com/gojek/ziggurat/issues/131)
+- Releases metrics for http requests in a stable release
+
 ## 3.3.0-alpha.1 - 2020-01-24
 - Added metrics for recording http requests served
 
