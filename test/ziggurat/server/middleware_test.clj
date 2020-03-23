@@ -1,9 +1,9 @@
 (ns ziggurat.server.middleware-test
   (:require [clojure.test :refer :all])
-  (:require [ziggurat.server.middleware :refer [publish-metrics]]
+  (:require [ziggurat.server.middleware :refer [wrap-with-metrics]]
             [ziggurat.metrics :as metrics]))
 
-(deftest publish-metrics-test
+(deftest wrap-with-metrics-test
   (testing "should publish http-server metrics"
     (let [increment-count-called (atom false)
           request-uri            "/ping"
@@ -19,5 +19,5 @@
                                                    (is (= request-uri (:request-uri additional-tags)))
                                                    (is (= (str response-status) (:response-status additional-tags))))
                                                 (swap! increment-count-called not)))]
-        ((publish-metrics handler) request)
+        ((wrap-with-metrics handler) request)
         (is (= @increment-count-called true))))))

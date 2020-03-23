@@ -33,7 +33,7 @@
         (sentry/report-error sentry-reporter ex "Uncaught error in server")
         {:status 500 :body (json/encode {:Error (st/pst-str ex)})}))))
 
-(defn publish-metrics [handler]
+(defn wrap-with-metrics [handler]
   (fn [request]
     (let [response          (handler request)
           request-uri       (:uri request)
