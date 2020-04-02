@@ -13,14 +13,14 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
-            [ziggurat.util.java-util :as util]
-            [ziggurat.tracer :as tracer])
+            [ziggurat.tracer :as tracer]
+            [ziggurat.util.java-util :as util])
   (:gen-class
-   :name tech.gojek.ziggurat.internal.Init
-   :methods [^{:static true} [init [java.util.Map] void]]))
+   :methods [^{:static true} [init [java.util.Map] void]]
+   :name tech.gojek.ziggurat.internal.Init))
 
 (defstate statsd-reporter
-  :start (metrics/start-statsd-reporter (:datadog (ziggurat-config))
+  :start (metrics/start-statsd-reporter (config/statsd-config)
                                         (:env (ziggurat-config)))
   :stop (metrics/stop-statsd-reporter statsd-reporter))
 

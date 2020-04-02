@@ -109,7 +109,7 @@
    (report-histogram metric-namespaces val nil))
   ([metric-namespaces val additional-tags]
    (let [intercalated-metric-namespaces (get-metric-namespaces metric-namespaces)
-         make-histogram-for-namespace #(mk-histogram % "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+         make-histogram-for-namespace   #(mk-histogram % "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
      (doseq [metric-ns intercalated-metric-namespaces]
        (.update (make-histogram-for-namespace metric-ns) (get-int val))))))
 
@@ -143,16 +143,16 @@
                           (.withPort port)
                           (.build))
 
-            reporter  (-> (DatadogReporter/forRegistry metrics-registry)
-                          (.withTransport transport)
-                          (.withTags [(str env)])
-                          (.build))]
+            reporter (-> (DatadogReporter/forRegistry metrics-registry)
+                         (.withTransport transport)
+                         (.withTags [(str env)])
+                         (.build))]
         (log/info "Starting statsd reporter")
         (.start reporter 1 TimeUnit/SECONDS)
         {:reporter reporter :transport transport}))))
 
-(defn stop-statsd-reporter [datadog-reporter]
-  (when-let [{:keys [reporter transport]} datadog-reporter]
+(defn stop-statsd-reporter [statsd-reporter]
+  (when-let [{:keys [reporter transport]} statsd-reporter]
     (.stop ^DatadogReporter reporter)
     (.close ^UdpTransport transport)
     (log/info "Stopped statsd reporter")))
