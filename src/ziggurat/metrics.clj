@@ -3,7 +3,8 @@
             [clojure.tools.logging :as log]
             [clojure.walk :refer [stringify-keys]]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.util.java-util :as util])
+            [ziggurat.util.java-util :as util]
+            [mount.core :refer [defstate]])
   (:import com.gojek.metrics.datadog.DatadogReporter
            [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
@@ -156,6 +157,11 @@
     (.stop ^DatadogReporter reporter)
     (.close ^UdpTransport transport)
     (log/info "Stopped statsd reporter")))
+
+(defstate statsd-reporter
+          :start (start-statsd-reporter (:datadog (ziggurat-config))
+                                                (:env (ziggurat-config)))
+          :stop (stop-statsd-reporter statsd-reporter))
 
 (defn -incrementCount
   ([metric-namespace metric]

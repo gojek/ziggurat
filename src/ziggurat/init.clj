@@ -19,10 +19,6 @@
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
 
-(defstate statsd-reporter
-  :start (metrics/start-statsd-reporter (config/statsd-config)
-                                        (:env (ziggurat-config)))
-  :stop (metrics/stop-statsd-reporter statsd-reporter))
 
 (defn- start*
   ([states]
@@ -112,14 +108,14 @@
 
 (defn start-common-states []
   (start* #{#'config/config
-            #'statsd-reporter
+            #'metrics/statsd-reporter
             #'sentry-reporter
             #'nrepl-server/server
             #'tracer/tracer}))
 
 (defn stop-common-states []
   (mount/stop #'config/config
-              #'statsd-reporter
+              #'metrics/statsd-reporter
               #'messaging-connection/connection
               #'nrepl-server/server
               #'tracer/tracer))
