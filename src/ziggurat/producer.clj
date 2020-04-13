@@ -58,11 +58,8 @@
               ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
 (defn *implements-serializer?* [serializer-class]
-  (try
-    (contains? (set (.getInterfaces (Class/forName serializer-class)))
-               (Class/forName "org.apache.kafka.common.serialization.Serializer"))
-    (catch ClassNotFoundException e
-      false)))
+  (contains? (set (.getInterfaces (Class/forName serializer-class)))
+             (Class/forName "org.apache.kafka.common.serialization.Serializer")))
 
 (def implements-serializer? (s/pred *implements-serializer?* 'implements-serializer?))
 

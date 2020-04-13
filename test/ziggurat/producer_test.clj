@@ -128,6 +128,10 @@
   (testing "with incorrect config"
     (let [valid-config (assoc valid-config :linger-ms-foo "1")]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
+    (let [valid-config (update  valid-config :key-serializer-class (constantly  "java.time.Clock"))]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
+    (let [valid-config (update  valid-config :key-serializer-class (constantly  "java.foo.Bar"))]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
     (let [valid-config (dissoc valid-config :bootstrap-servers)]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))))
 
