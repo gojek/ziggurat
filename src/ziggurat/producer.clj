@@ -46,9 +46,9 @@
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
             [camel-snake-kebab.core :as csk]
-            [clojure.spec.alpha :as spec]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.java-util :refer [get-key]])
+            [ziggurat.util.java-util :refer [get-key]]
+            [schema.core :as s])
   (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
            (java.util Properties)
            (io.opentracing.contrib.kafka TracingKafkaProducer))
@@ -57,52 +57,51 @@
    :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
               ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
-(defn implements-serializer? [serializer-class]
+(defn *implements-serializer?* [serializer-class]
   (try
     (contains? (set (.getInterfaces (Class/forName serializer-class)))
                (Class/forName "org.apache.kafka.common.serialization.Serializer"))
     (catch ClassNotFoundException e
       false)))
 
-(spec/def ::key-serializer-class implements-serializer?)
-(spec/def ::value-serializer-class implements-serializer?)
+(def implements-serializer? (s/pred *implements-serializer?* 'implements-serializer?))
 
-(spec/def ::config (spec/keys :req-un [::key-serializer-class
-                                       ::bootstrap-servers
-                                       ::value-serializer-class]
-                              :opt-un [::metadata-max-age
-                                       ::reconnect-backoff-ms
-                                       ::client-id
-                                       ::metric-num-samples
-                                       ::transaction-timeout
-                                       ::retries
-                                       ::retry-backoff-ms
-                                       ::receive-buffer
-                                       ::partitioner-class
-                                       ::max-block-ms
-                                       ::metrics-reporter-classes
-                                       ::compression-type
-                                       ::max-request-size
-                                       ::delivery-timeout-ms
-                                       ::metrics-sample-window-ms
-                                       ::request-timeout-ms
-                                       ::buffer-memory
-                                       ::interceptor-classes
-                                       ::linger-ms
-                                       ::connections-max-idle-ms
-                                       ::acks
-                                       ::enable-idempotence
-                                       ::metrics-recording-level
-                                       ::transactional-id
-                                       ::reconnect-backoff-max-ms
-                                       ::client-dns-lookup
-                                       ::max-in-flight-requests-per-connection
-                                       ::send-buffer
-                                       ::batch-size]))
+(s/defschema ProducerConfigSchema {(s/required-key :key-serializer-class)                  implements-serializer?
+                                   (s/required-key :value-serializer-class)                implements-serializer?
+                                   (s/required-key :bootstrap-servers)                     s/Any
+                                   (s/optional-key :metadata-max-age)                      s/Any
+                                   (s/optional-key :reconnect-backoff-ms)                  s/Any
+                                   (s/optional-key :client-id)                             s/Any
+                                   (s/optional-key :metric-num-samples)                    s/Any
+                                   (s/optional-key :transaction-timeout)                   s/Any
+                                   (s/optional-key :retries)                               s/Any
+                                   (s/optional-key :retry-backoff-ms)                      s/Any
+                                   (s/optional-key :receive-buffer)                        s/Any
+                                   (s/optional-key :partitioner-class)                     s/Any
+                                   (s/optional-key :max-block-ms)                          s/Any
+                                   (s/optional-key :metrics-reporter-classes)              s/Any
+                                   (s/optional-key :compression-type)                      s/Any
+                                   (s/optional-key :max-request-size)                      s/Any
+                                   (s/optional-key :delivery-timeout-ms)                   s/Any
+                                   (s/optional-key :metrics-sample-window-ms)              s/Any
+                                   (s/optional-key :request-timeout-ms)                    s/Any
+                                   (s/optional-key :buffer-memory)                         s/Any
+                                   (s/optional-key :interceptor-classes)                   s/Any
+                                   (s/optional-key :linger-ms)                             s/Any
+                                   (s/optional-key :connections-max-idle-ms)               s/Any
+                                   (s/optional-key :acks)                                  s/Any
+                                   (s/optional-key :enable-idempotence)                    s/Any
+                                   (s/optional-key :metrics-recording-level)               s/Any
+                                   (s/optional-key :transactional-id)                      s/Any
+                                   (s/optional-key :reconnect-backoff-max-ms)              s/Any
+                                   (s/optional-key :client-dns-lookup)                     s/Any
+                                   (s/optional-key :max-in-flight-requests-per-connection) s/Any
+                                   (s/optional-key :send-buffer)                           s/Any
+                                   (s/optional-key :batch-size)                            s/Any})
 
-(def valid-configs? (partial spec/valid? ::config))
+(def valid-configs? (partial s/validate ProducerConfigSchema))
 
-(def explain-str (partial spec/explain-str ::config))
+(def explain-str (partial s/explain ProducerConfigSchema))
 
 (defn property->fn [field-name]
   (let [raw-field-name (if (= field-name :max-in-flight-requests-per-connection)

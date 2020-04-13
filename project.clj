@@ -1,7 +1,3 @@
-(require 'cemerick.pomegranate.aether)
-(cemerick.pomegranate.aether/register-wagon-factory!
- "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
-
 (defproject tech.gojek/ziggurat "3.3.0-alpha.1"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"

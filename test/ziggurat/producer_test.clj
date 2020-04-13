@@ -127,6 +127,8 @@
 
   (testing "with incorrect config"
     (let [valid-config (assoc valid-config :linger-ms-foo "1")]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
+    (let [valid-config (dissoc valid-config :bootstrap-servers)]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))))
 
 (deftest property->fn-test
