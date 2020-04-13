@@ -49,7 +49,7 @@
 
 (defn mk-histogram
   ([category metric]
-   (mk-histogram category metric nil))
+   (mk-histogram category metric {}))
   ([category metric tags]
    (let [namespace        (str category "." metric)
          metric-name      (MetricRegistry/name ^String namespace nil)

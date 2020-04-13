@@ -1,12 +1,10 @@
 (ns ziggurat.metrics
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
-            [clojure.walk :refer [stringify-keys]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
             [ziggurat.dropwizard-metrics-wrapper :as metrics-lib])
-  (:import [io.dropwizard.metrics5 Meter])
   (:gen-class
     :name tech.gojek.ziggurat.internal.Metrics
     :methods [^{:static true} [incrementCount [String String] void]
