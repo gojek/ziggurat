@@ -60,7 +60,7 @@
       (assoc props :expiration (str expiration))
       props)))
 
-(defn- publish
+(defn publish
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
