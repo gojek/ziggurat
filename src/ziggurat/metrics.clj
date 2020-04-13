@@ -29,6 +29,13 @@
   (let [topic-name (:topic_name additional-tags)]
     (dissoc additional-tags (when (some #(= % topic-name) ns) :topic_name))))
 
+(defn- get-all-tags
+  [additional-tags metric-namespaces]
+  (let [{:keys [app-name env]} (ziggurat-config)
+        default-tags {:actor (name app-name)
+                      :env   (name env)}]
+    (merge additional-tags default-tags)))
+
 (defn- get-metric-namespaces
   [metric-namespaces]
   (if (vector? metric-namespaces)
@@ -62,10 +69,11 @@
   ([sign metric-namespace metric n additional-tags]
    (inc-or-dec-count sign {:metric-namespace metric-namespace :metric metric :n n :additional-tags additional-tags}))
   ([sign {:keys [metric-namespace metric n additional-tags]}]
-   (let [metric-namespaces        (get-metric-namespaces metric-namespace)
-         make-meter-for-namespace #(metrics-lib/mk-meter % metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
+   (let [metric-namespaces (get-metric-namespaces metric-namespace)
+         tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
+         integer-value     (get-int n)]
      (doseq [metric-ns metric-namespaces]
-       (.mark ^Meter (make-meter-for-namespace metric-ns) (sign (get-int n)))))))
+       (metrics-lib/update-counter metric-ns metric tags sign integer-value)))))
 
 (def increment-count (partial inc-or-dec-count +))
 
@@ -80,10 +88,11 @@
    (report-histogram metric-namespaces val nil))
   ([metric-namespaces val additional-tags]
    (let [intercalated-metric-namespaces (get-metric-namespaces metric-namespaces)
-
-         make-histogram-for-namespace   #(metrics-lib/mk-histogram % "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+         tags                           (remove-topic-tag-for-old-namespace (get-all-tags additional-tags metric-namespaces) metric-namespaces)
+         make-histogram-for-namespace   #(metrics-lib/mk-histogram % "all" tags)
+         integer-value                  (get-int val)]
      (doseq [metric-ns intercalated-metric-namespaces]
-       (.update (make-histogram-for-namespace metric-ns) (get-int val))))))
+       (metrics-lib/update-histogram metric-ns tags integer-value)))))
 
 (defn report-time
   "This function is an alias for `report-histogram`.

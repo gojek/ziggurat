@@ -10,6 +10,9 @@
 
 (use-fixtures :once fix/mount-only-config)
 
+(def default-tags {:env "dev"
+                   :actor "application_name"})
+
 (deftest increment-count-test
   (let [metric                     "metric3"
         expected-topic-entity-name "expected-topic-entity-name"
@@ -19,7 +22,7 @@
       (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  {}]
+            expected-additional-tags  default-tags]
         (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
@@ -33,7 +36,7 @@
       (let [expected-metric-namespace ["metric" "ns"]
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  {}]
+            expected-additional-tags  default-tags]
         (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
@@ -47,7 +50,7 @@
       (let [expected-metric-namespace ["metric" "ns"]
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  {}]
+            expected-additional-tags  default-tags]
         (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
@@ -62,7 +65,7 @@
             actor-prefixed-metric-ns   (str (:app-name (ziggurat-config)) "." expected-metric-namespaces)
             mk-meter-args              (atom nil)
             meter                      (Meter.)
-            expected-additional-tags   input-additional-tags
+            expected-additional-tags   (merge input-additional-tags default-tags)
             expected-n                 2]
         (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (or (and (= metric-namespaces expected-metric-namespaces) (= 0 (.getCount meter)))
@@ -79,7 +82,7 @@
       (let [expected-metric-namespaces [expected-topic-entity-name "metric-ns"]
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  {}]
+            expected-additional-tags  default-tags]
         (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespaces
@@ -94,7 +97,7 @@
             actor-prefixed-metric-ns  (str (:app-name (ziggurat-config)) "." expected-metric-namespace)
             mk-meter-args             (atom nil)
             meter                     (Meter.)
-            expected-additional-tags  {}
+            expected-additional-tags  default-tags
             expected-n                2]
         (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (or (and (= metric-namespace expected-metric-namespace) (= 0 (.getCount meter)))
@@ -119,8 +122,7 @@
       (let [additional-tags (doto (java.util.HashMap.)
                               (.put ":foo" "bar")
                               (.put ":bar" "foo"))
-            expected-additional-tags {:foo "bar"
-                                      :bar "foo"}
+            expected-additional-tags {:foo "bar" :bar "foo"}
             increment-count-called? (atom false)
             metric-namespace "namespace"]
         (with-redefs [metrics/increment-count (fn [actual-namespace actual-metric actual-additional-tags]
@@ -139,7 +141,7 @@
         input-additional-tags {:topic_name expected-topic-name}
         expected-n            1]
     (testing "decreases count on the meter - vector as an argument"
-      (let [expected-additional-tags   {}
+      (let [expected-additional-tags   default-tags
             expected-metric-namespaces [expected-topic-name "metric-ns"]
             meter                      (Meter.)
             _                          (.mark meter expected-n)]
@@ -154,7 +156,7 @@
           (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter - string as an argument"
-      (let [expected-additional-tags   input-additional-tags
+      (let [expected-additional-tags   (merge default-tags input-additional-tags)
             expected-metric-namespaces "metric-ns"
             actor-prefixed-metric-ns   (str (:app-name (ziggurat-config)) "." expected-metric-namespaces)
             expected-n                 2
@@ -173,7 +175,7 @@
           (is (= actor-prefixed-metric-ns (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter - without topic name on the namespace"
-      (let [expected-additional-tags   input-additional-tags
+      (let [expected-additional-tags   (merge default-tags input-additional-tags)
             expected-metric-namespaces ["metric" "ns"]
             meter                      (Meter.)
             _                          (.mark meter expected-n)]
@@ -188,7 +190,7 @@
           (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
           (is (= metric (:metric @mk-meter-args))))))
     (testing "decreases count on the meter when additional-tags is nil"
-      (let [expected-additional-tags  {}
+      (let [expected-additional-tags  default-tags
             expected-metric-namespace "metric-ns"
             actor-prefixed-metric-ns  (str (:app-name (ziggurat-config)) "." expected-metric-namespace)
             expected-n                2
@@ -218,8 +220,7 @@
       (let [additional-tags (doto (java.util.HashMap.)
                               (.put ":foo" "bar")
                               (.put ":bar" "foo"))
-            expected-additional-tags {:foo "bar"
-                                      :bar "foo"}
+            expected-additional-tags {:foo "bar" :bar "foo"}
             decrement-count-called? (atom false)
             metric-namespace "namespace"]
         (with-redefs [metrics/decrement-count (fn [actual-namespace actual-metric actual-additional-tags]
@@ -239,7 +240,7 @@
             mk-histogram-args         (atom nil)
             reservoir                 (UniformReservoir.)
             histogram                 (Histogram. reservoir)
-            expected-additional-tags  {}]
+            expected-additional-tags  default-tags]
         (with-redefs [dw-metrics/mk-histogram (fn [metric-namespace metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
                                              (reset! mk-histogram-args {:metric-namespace metric-namespace
@@ -255,7 +256,7 @@
             mk-histogram-args          (atom nil)
             reservoir                  (UniformReservoir.)
             histogram                  (Histogram. reservoir)
-            expected-additional-tags   input-additional-tags
+            expected-additional-tags   (merge default-tags input-additional-tags)
             expected-n                 2]
         (with-redefs [dw-metrics/mk-histogram (fn [metric-namespaces metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
@@ -274,7 +275,7 @@
             actor-prefixed-metric-ns  (str (:app-name (ziggurat-config)) "." expected-metric-namespace)
             reservoir                 (UniformReservoir.)
             histogram                 (Histogram. reservoir)
-            expected-additional-tags  nil
+            expected-additional-tags  default-tags
             expected-n                2]
         (with-redefs [dw-metrics/mk-histogram (fn [metric-namespace metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
@@ -302,9 +303,10 @@
           additional-tags           (doto (java.util.HashMap.)
                                       (.put ":foo" "bar")
                                       (.put ":bar" "foo"))
-          expected-additional-tags {:foo "bar" :bar "foo"}
+          expected-additional-tags  {:foo "bar" :bar "foo"}
           report-histogram-called?       (atom false)]
       (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val actual-additional-tags]
+                                               (is (= actual-additional-tags expected-additional-tags))
                                                (if (and (= actual-metric-namespace expected-metric-namespace)
                                                         (= actual-time-val expected-time-val)
                                                         (= actual-additional-tags expected-additional-tags))
@@ -343,7 +345,7 @@
   (testing "multi-ns-increment-count calls increment-count for every namespace list passed"
     (let [metric-namespaces-list               [["test" "multi" "ns"] ["test-ns"]]
           expected-metric                      "test-metric"
-          expected-additional-tags             {:foo "bar"}
+          expected-additional-tags             (merge default-tags {:foo "bar"})
           increment-count-call-counts          (atom 0)
           expected-increment-count-call-counts 2]
       (with-redefs [metrics/increment-count (fn [metric-namespaces metric additional-tags]
@@ -358,7 +360,7 @@
   (testing "multi-ns-report-histogram calls report-histogram for every namespace list passed"
     (let [metric-namespaces-list                [["test" "multi" "ns"] ["test-ns"]]
           expected-metric                       "test-metric"
-          expected-additional-tags              {:foo "bar"}
+          expected-additional-tags              (merge default-tags {:foo "bar"})
           report-histogram-call-counts          (atom 0)
           expected-report-histogram-call-counts 2]
       (with-redefs [metrics/report-histogram (fn [metric-namespaces metric additional-tags]

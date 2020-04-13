@@ -33,15 +33,6 @@
     (.close ^UdpTransport transport)
     (log/info "Stopped statsd reporter")))
 
-
-;;TODO: remove this from here, we need to pass all the tags directly to the library instead of us constructing them here
-(defn- merge-tags
-  [additional-tags]
-  (let [{:keys [app-name env]} (ziggurat-config)
-        default-tags {"actor" app-name
-                      "env"   env}]
-    (merge default-tags (stringify-keys additional-tags))))
-
 (defn- get-tagged-metric
   [metric-name tags]
   (.tagged ^MetricName metric-name tags))
@@ -49,20 +40,29 @@
 (defn mk-meter
   ([category metric]
    (mk-meter category metric nil))
-  ([category metric additional-tags]
-   (let [namespace     (str category "." metric)
-         metric-name   (MetricRegistry/name ^String namespace nil)
-         tags          (merge-tags additional-tags)
-         tagged-metric (get-tagged-metric metric-name tags)]
+  ([category metric tags]
+   (let [namespace        (str category "." metric)
+         metric-name      (MetricRegistry/name ^String namespace nil)
+         stringified-tags (stringify-keys tags)
+         tagged-metric    (get-tagged-metric metric-name stringified-tags)]
      (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn mk-histogram
   ([category metric]
    (mk-histogram category metric nil))
-  ([category metric additional-tags]
-   (let [namespace     (str category "." metric)
-         metric-name   (MetricRegistry/name ^String namespace nil)
-         tags          (merge-tags additional-tags)
-         tagged-metric (.tagged ^MetricName metric-name tags)]
+  ([category metric tags]
+   (let [namespace        (str category "." metric)
+         metric-name      (MetricRegistry/name ^String namespace nil)
+         stringified-tags (stringify-keys tags)
+         tagged-metric    (.tagged ^MetricName metric-name stringified-tags)]
      (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
+(defn update-counter
+  [namespace metric tags sign value]
+  (let [meter (mk-meter namespace metric tags)]
+   (.mark ^Meter meter (sign value))))
+
+(defn update-histogram
+  [namespace tags value]
+  (let [histogram (mk-histogram namespace "all" tags)]
+    (.update ^Histogram histogram value)))

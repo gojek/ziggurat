@@ -41,3 +41,4 @@
                                                   (is (= tags expected-tags))
                                                   (.tagged metric-name tags))]
           (is (instance? Histogram (mk-histogram category metric additional-tags))))))))
+
