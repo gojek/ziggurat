@@ -4,46 +4,11 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
+            [ziggurat.dropwizard-metrics-wrapper :as dw-metrics]
             [clojure.tools.logging :as log])
   (:import (io.dropwizard.metrics5 Meter Histogram UniformReservoir MetricRegistry)))
 
 (use-fixtures :once fix/mount-only-config)
-
-(deftest mk-meter-test
-  (let [category     "category"
-        metric       "metric1"
-        service-name (:app-name (ziggurat-config))]
-    (testing "returns a meter"
-      (let [expected-tags {"actor" service-name}]
-        (with-redefs [metrics/get-tagged-metric (fn [metric-name tags]
-                                                  (is (= tags expected-tags))
-                                                  (.tagged metric-name tags))]
-          (is (instance? Meter (metrics/mk-meter category metric))))))
-    (testing "returns a meter - with additional-tags"
-      (let [additional-tags {:foo "bar"}
-            expected-tags   (merge {"actor" service-name} (stringify-keys additional-tags))]
-        (with-redefs [metrics/get-tagged-metric (fn [metric-name tags]
-                                                  (is (= tags expected-tags))
-                                                  (.tagged metric-name tags))]
-          (is (instance? Meter (metrics/mk-meter category metric additional-tags))))))))
-
-(deftest mk-histogram-test
-  (let [category     "category"
-        metric       "metric2"
-        service-name (:app-name (ziggurat-config))]
-    (testing "returns a histogram"
-      (let [expected-tags {"actor" service-name}]
-        (with-redefs [metrics/get-tagged-metric (fn [metric-name tags]
-                                                  (is (= tags expected-tags))
-                                                  (.tagged metric-name tags))]
-          (is (instance? Histogram (metrics/mk-histogram category metric))))))
-    (testing "returns a histogram - with additional-tags"
-      (let [additional-tags {:foo "bar"}
-            expected-tags   (merge {"actor" service-name} (stringify-keys additional-tags))]
-        (with-redefs [metrics/get-tagged-metric (fn [metric-name tags]
-                                                  (is (= tags expected-tags))
-                                                  (.tagged metric-name tags))]
-          (is (instance? Histogram (metrics/mk-histogram category metric additional-tags))))))))
 
 (deftest increment-count-test
   (let [metric                     "metric3"
@@ -55,7 +20,7 @@
             mk-meter-args             (atom nil)
             meter                     (Meter.)
             expected-additional-tags  {}]
-        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric           metric})
@@ -69,7 +34,7 @@
             mk-meter-args             (atom nil)
             meter                     (Meter.)
             expected-additional-tags  {}]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
@@ -83,7 +48,7 @@
             mk-meter-args             (atom nil)
             meter                     (Meter.)
             expected-additional-tags  {}]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespace
                                                                 :metric           metric})
@@ -99,7 +64,7 @@
             meter                      (Meter.)
             expected-additional-tags   input-additional-tags
             expected-n                 2]
-        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (or (and (= metric-namespaces expected-metric-namespaces) (= 0 (.getCount meter)))
                                                  (and (= metric-namespaces actor-prefixed-metric-ns) (= 1 (.getCount meter)))))
                                          (is (= additional-tags expected-additional-tags))
@@ -115,7 +80,7 @@
             mk-meter-args             (atom nil)
             meter                     (Meter.)
             expected-additional-tags  {}]
-        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespace metric-namespaces
                                                                 :metric           metric})
@@ -131,7 +96,7 @@
             meter                     (Meter.)
             expected-additional-tags  {}
             expected-n                2]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (or (and (= metric-namespace expected-metric-namespace) (= 0 (.getCount meter)))
                                                  (and (= metric-namespace actor-prefixed-metric-ns) (= 1 (.getCount meter)))))
                                          (is (= additional-tags expected-additional-tags))
@@ -178,7 +143,7 @@
             expected-metric-namespaces [expected-topic-name "metric-ns"]
             meter                      (Meter.)
             _                          (.mark meter expected-n)]
-        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric           metric})
@@ -195,7 +160,7 @@
             expected-n                 2
             meter                      (Meter.)
             _                          (.mark meter expected-n)]
-        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (is (or (and (= metric-namespaces expected-metric-namespaces) (= 2 (.getCount meter)))
                                                  (and (= metric-namespaces actor-prefixed-metric-ns) (= 1 (.getCount meter)))))
@@ -212,7 +177,7 @@
             expected-metric-namespaces ["metric" "ns"]
             meter                      (Meter.)
             _                          (.mark meter expected-n)]
-        (with-redefs [metrics/mk-meter (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (reset! mk-meter-args {:metric-namespaces metric-namespaces
                                                                 :metric            metric})
@@ -229,7 +194,7 @@
             expected-n                2
             meter                     (Meter.)
             _                         (.mark meter expected-n)]
-        (with-redefs [metrics/mk-meter (fn [metric-namespace metric additional-tags]
+        (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
                                          (is (= additional-tags expected-additional-tags))
                                          (is (or (and (= metric-namespace expected-metric-namespace) (= 2 (.getCount meter)))
                                                  (and (= metric-namespace actor-prefixed-metric-ns) (= 1 (.getCount meter)))))
@@ -275,7 +240,7 @@
             reservoir                 (UniformReservoir.)
             histogram                 (Histogram. reservoir)
             expected-additional-tags  {}]
-        (with-redefs [metrics/mk-histogram (fn [metric-namespace metric additional-tags]
+        (with-redefs [dw-metrics/mk-histogram (fn [metric-namespace metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
                                              (reset! mk-histogram-args {:metric-namespace metric-namespace
                                                                         :metric           metric})
@@ -292,7 +257,7 @@
             histogram                  (Histogram. reservoir)
             expected-additional-tags   input-additional-tags
             expected-n                 2]
-        (with-redefs [metrics/mk-histogram (fn [metric-namespaces metric additional-tags]
+        (with-redefs [dw-metrics/mk-histogram (fn [metric-namespaces metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
                                              (is (or (and (= metric-namespaces expected-metric-namespaces) (= 0 (.getCount histogram)))
                                                      (and (= metric-namespaces actor-prefixed-metric-ns) (= 1 (.getCount histogram)))))
@@ -311,7 +276,7 @@
             histogram                 (Histogram. reservoir)
             expected-additional-tags  nil
             expected-n                2]
-        (with-redefs [metrics/mk-histogram (fn [metric-namespace metric additional-tags]
+        (with-redefs [dw-metrics/mk-histogram (fn [metric-namespace metric additional-tags]
                                              (is (= additional-tags expected-additional-tags))
                                              (is (or (and (= metric-namespace expected-metric-namespace) (= 0 (.getCount histogram)))
                                                      (and (= metric-namespace actor-prefixed-metric-ns) (= 1 (.getCount histogram)))))

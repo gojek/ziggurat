@@ -4,51 +4,21 @@
             [clojure.walk :refer [stringify-keys]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.util.java-util :as util]
-            [mount.core :refer [defstate]])
-  (:import com.gojek.metrics.datadog.DatadogReporter
-           [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
-           [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
-           java.util.concurrent.TimeUnit)
+            [mount.core :refer [defstate]]
+            [ziggurat.dropwizard-metrics-wrapper :as metrics-lib])
+  (:import [io.dropwizard.metrics5 Meter])
   (:gen-class
-   :name tech.gojek.ziggurat.internal.Metrics
-   :methods [^{:static true} [incrementCount [String String] void]
-             ^{:static true} [incrementCount [String String java.util.Map] void]
-             ^{:static true} [decrementCount [String String] void]
-             ^{:static true} [decrementCount [String String java.util.Map] void]
-             ^{:static true} [reportTime [String long] void]
-             ^{:static true} [reportTime [String long java.util.Map] void]]))
+    :name tech.gojek.ziggurat.internal.Metrics
+    :methods [^{:static true} [incrementCount [String String] void]
+              ^{:static true} [incrementCount [String String java.util.Map] void]
+              ^{:static true} [decrementCount [String String] void]
+              ^{:static true} [decrementCount [String String java.util.Map] void]
+              ^{:static true} [reportTime [String long] void]
+              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
-(defonce metrics-registry
-  (MetricRegistry.))
-
-(defn- merge-tags
-  [additional-tags]
-  (let [default-tags {"actor" (:app-name (ziggurat-config))}]
-    (merge default-tags (stringify-keys additional-tags))))
-
-(defn- get-tagged-metric
-  [metric-name tags]
-  (.tagged ^MetricName metric-name tags))
-
-(defn mk-meter
-  ([category metric]
-   (mk-meter category metric nil))
-  ([category metric additional-tags]
-   (let [namespace     (str category "." metric)
-         metric-name   (MetricRegistry/name ^String namespace nil)
-         tags          (merge-tags additional-tags)
-         tagged-metric (get-tagged-metric metric-name tags)]
-     (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
-
-(defn mk-histogram
-  ([category metric]
-   (mk-histogram category metric nil))
-  ([category metric additional-tags]
-   (let [namespace     (str category "." metric)
-         metric-name   (MetricRegistry/name ^String namespace nil)
-         tags          (merge-tags additional-tags)
-         tagged-metric (.tagged ^MetricName metric-name tags)]
-     (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
+(defstate statsd-reporter
+          :start (metrics-lib/initialize (:datadog (ziggurat-config)))
+          :stop (metrics-lib/terminate statsd-reporter))
 
 (defn intercalate-dot
   [names]
@@ -93,7 +63,7 @@
    (inc-or-dec-count sign {:metric-namespace metric-namespace :metric metric :n n :additional-tags additional-tags}))
   ([sign {:keys [metric-namespace metric n additional-tags]}]
    (let [metric-namespaces        (get-metric-namespaces metric-namespace)
-         make-meter-for-namespace #(mk-meter % metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
+         make-meter-for-namespace #(metrics-lib/mk-meter % metric (remove-topic-tag-for-old-namespace (get-map additional-tags) metric-namespace))]
      (doseq [metric-ns metric-namespaces]
        (.mark ^Meter (make-meter-for-namespace metric-ns) (sign (get-int n)))))))
 
@@ -110,7 +80,8 @@
    (report-histogram metric-namespaces val nil))
   ([metric-namespaces val additional-tags]
    (let [intercalated-metric-namespaces (get-metric-namespaces metric-namespaces)
-         make-histogram-for-namespace   #(mk-histogram % "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
+
+         make-histogram-for-namespace   #(metrics-lib/mk-histogram % "all" (remove-topic-tag-for-old-namespace additional-tags metric-namespaces))]
      (doseq [metric-ns intercalated-metric-namespaces]
        (.update (make-histogram-for-namespace metric-ns) (get-int val))))))
 
@@ -136,32 +107,6 @@
   (log/warn "Deprecation Notice: This function is deprecated in favour of ziggurat.metrics/multi-ns-report-histogram. Both functions have the same interface, so please use that function. It will be removed in future releases.")
   (multi-ns-report-histogram nss time-val additional-tags))
 
-(defn start-statsd-reporter [statsd-config env]
-  (let [{:keys [enabled host port]} statsd-config]
-    (when enabled
-      (let [transport (-> (UdpTransport$Builder.)
-                          (.withStatsdHost host)
-                          (.withPort port)
-                          (.build))
-
-            reporter (-> (DatadogReporter/forRegistry metrics-registry)
-                         (.withTransport transport)
-                         (.withTags [(str env)])
-                         (.build))]
-        (log/info "Starting statsd reporter")
-        (.start reporter 1 TimeUnit/SECONDS)
-        {:reporter reporter :transport transport}))))
-
-(defn stop-statsd-reporter [statsd-reporter]
-  (when-let [{:keys [reporter transport]} statsd-reporter]
-    (.stop ^DatadogReporter reporter)
-    (.close ^UdpTransport transport)
-    (log/info "Stopped statsd reporter")))
-
-(defstate statsd-reporter
-          :start (start-statsd-reporter (:datadog (ziggurat-config))
-                                                (:env (ziggurat-config)))
-          :stop (stop-statsd-reporter statsd-reporter))
 
 (defn -incrementCount
   ([metric-namespace metric]
