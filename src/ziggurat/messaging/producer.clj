@@ -72,7 +72,9 @@
          (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
        (sentry/report-error sentry-reporter e
-                            "Pushing message to rabbitmq failed, data: " message-payload)))))
+                            "Pushing message to rabbitmq failed, data: " message-payload)
+       (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type :rabbitmq-publish-failure
+                                                                                   :error e}))))))
 
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))

@@ -30,6 +30,7 @@
    :auto-offset-reset-config           "latest"
    :oldest-processed-message-in-s      604800
    :changelog-topic-replication-factor 3
+   :session-timeout-ms-config          60000
    :default-key-serde                  "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"
    :default-value-serde                "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"})
 
@@ -72,7 +73,8 @@
                            default-value-serde
                            key-deserializer-encoding
                            value-deserializer-encoding
-                           deserializer-encoding]}]
+                           deserializer-encoding
+                           session-timeout-ms-config]}]
   (validate-auto-offset-reset-config auto-offset-reset-config)
   (doto (Properties.)
     (.put StreamsConfig/APPLICATION_ID_CONFIG application-id)
@@ -85,6 +87,7 @@
     (.put StreamsConfig/COMMIT_INTERVAL_MS_CONFIG commit-interval-ms)
     (.put StreamsConfig/REPLICATION_FACTOR_CONFIG (int changelog-topic-replication-factor))
     (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG auto-offset-reset-config)
+    (.put ConsumerConfig/SESSION_TIMEOUT_MS_CONFIG (int session-timeout-ms-config))
     (set-upgrade-from-config upgrade-from)
     (set-encoding-config key-deserializer-encoding value-deserializer-encoding deserializer-encoding)))
 
@@ -132,6 +135,13 @@
 (defn- header-transform-values [stream-builder]
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
 
+(declare stream)
+
+(defn stop-streams [streams]
+  (log/debug "Stopping Kafka streams")
+  (doseq [stream streams]
+    (.close stream)))
+
 (defn- traced-handler-fn [handler-fn channels message topic-entity]
   (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message) tracer)
         span (as-> tracer t
@@ -144,6 +154,9 @@
                (.start t))]
     (try
       ((mapper-func handler-fn channels) (assoc (->MessagePayload (:value message) topic-entity) :headers (:headers message)))
+      (catch Exception e
+        (log/error "Stopping Kafka Streams due to error: " e)
+        (stop-streams stream))
       (finally
         (.finish span)))))
 
@@ -180,10 +193,6 @@
                (conj streams stream)))
            []
            stream-routes)))
-
-(defn stop-streams [streams]
-  (doseq [stream streams]
-    (.close stream)))
 
 (defstate stream
   :start (do (log/info "Starting Kafka stream")

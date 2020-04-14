@@ -2,6 +2,9 @@
             :env                  [:dev :keyword]
             :nrepl-server         {:port [7011 :int]}
             :datadog              {:host    "localhost"
+                                   :port    [8126 :int]
+                                   :enabled [false :bool]}
+            :statsd               {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
             :sentry               {:enabled                   [false :bool]

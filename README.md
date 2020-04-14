@@ -285,6 +285,9 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
             :datadog              {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
+            :statsd               {:host    "localhost"
+                                   :port    [8125 :int]
+                                   :enabled [false :bool]}
             :sentry               {:enabled                   [false :bool]
                                    :dsn                       "dummy"
                                    :worker-count              [5 :int]
@@ -331,6 +334,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
             * enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
 
 * datadog - The statsd host and port that metrics should be sent to, although the key name is datadog, it supports statsd as well to send metrics.
+* statsd - Same as datadog but with a more appropriate name, the :datadog key will be deprecated in the future.
 * sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
 * rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
 * rabbit-mq - The queues that are part of the retry mechanism
@@ -371,6 +375,10 @@ and different timeout values.
                                                                                       :queue-timeout-ms 2000
                                                                                       :enable [true :bool]}}}}} 
 ```
+
+## Deprecation Notice
+- Please note that the :datadog key inside the config file will be removed (sometime in the future) in favor of :statsd. Both contents are thesame though, it's just the key name was changed.
+  The reason for this is to avoid confusion with our users. We would still have backward compatibility for the :datadog key.
 
 ## Contribution
 - For dev setup and contributions please refer to CONTRIBUTING.md
