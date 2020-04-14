@@ -29,7 +29,7 @@
                                                   (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name expected-n input-tags))))
-    (testing "increases count on the meter - 3rd argument is a number"
+    (testing "calls update-counter with correct args - 3rd argument is a number"
       (let [metric-namespaces  ["metric" "ns"]
             expected-namespace "metric.ns"
             expected-tags      default-tags]
@@ -40,7 +40,7 @@
                                                   (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name expected-n))))
-    (testing "increases count on the meter - 3rd argument is a map"
+    (testing "calls update-counter with correct args - 3rd argument is a map"
       (let [metric-namespaces  ["metric" "ns"]
             expected-namespace "metric.ns"
             expected-tags      default-tags]
@@ -51,7 +51,7 @@
                                                   (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name expected-tags))))
-    (testing "increases count on the meter - string as an argument"
+    (testing "calls update-counter with correct args - string as an argument"
       (let [metric-namespace         "metric-ns"
             actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
             passed-tags              (merge input-tags default-tags)
@@ -59,11 +59,14 @@
         (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
                                                   (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                         (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                  (is (= tags passed-tags)))]
+                                                  (is (= tags passed-tags))
+                                                  (is (= metric passed-metric-name))
+                                                  (is (= sign +))
+                                                  (is (= value expected-n)))]
           (metrics/increment-count metric-namespace passed-metric-name 1 passed-tags)
           (is (some #{metric-namespace} @metric-namespaces-called))
           (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
-    (testing "increases count on the meter - w/o additional-tags argument"
+    (testing "calls update-counter with correct args - w/o additional-tags argument"
       (let [metric-namespaces  [expected-topic-entity-name "metric-ns"]
             expected-namespace (str expected-topic-entity-name ".metric-ns")
             expected-tags      default-tags]
@@ -74,7 +77,7 @@
                                                   (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name))))
-    (testing "increases count on the meter when additional-tags is nil"
+    (testing "calls update-counter with correct args - additional-tags is nil"
       (let [metric-namespace         "metric-ns"
             actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
             metric-namespaces-called (atom [])
@@ -82,7 +85,10 @@
         (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
                                                   (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                         (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                  (is (= tags expected-tags)))]
+                                                  (is (= tags expected-tags))
+                                                  (is (= metric passed-metric-name))
+                                                  (is (= sign +))
+                                                  (is (= value expected-n)))]
           (metrics/increment-count metric-namespace passed-metric-name 1 nil)
           (is (some #{metric-namespace} @metric-namespaces-called))
           (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
@@ -110,101 +116,84 @@
           (is (true? @increment-count-called?)))))))
 
 (deftest decrement-count-test
-  (let [expected-topic-name   "expected-topic-name"
-        metric                "metric3"
-        mk-meter-args         (atom nil)
-        meter                 (Meter.)
-        input-additional-tags {:topic_name expected-topic-name}
-        expected-n            1]
-    (testing "decreases count on the meter - vector as an argument"
-      (let [expected-additional-tags   default-tags
+  (let [expected-topic-name "expected-topic-name"
+        passed-metric-name  "metric3"
+        input-tags          {:topic_name expected-topic-name}
+        expected-n          1]
+    (testing "calls metrics library update-counter with the correct args - vector as an argument"
+      (let [expected-tags              default-tags
             expected-metric-namespaces [expected-topic-name "metric-ns"]
-            meter                      (Meter.)
-            _                          (.mark meter expected-n)]
-        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
-                                            (is (= additional-tags expected-additional-tags))
-                                            (reset! mk-meter-args {:metric-namespaces metric-namespaces
-                                                                   :metric            metric})
-                                            meter)]
-          (is (= expected-n (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespaces metric expected-n input-additional-tags)
-          (is (zero? (.getCount meter)))
-          (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))
-    (testing "decreases count on the meter - string as an argument"
-      (let [expected-additional-tags   (merge default-tags input-additional-tags)
-            expected-metric-namespaces "metric-ns"
-            actor-prefixed-metric-ns   (str (:app-name (ziggurat-config)) "." expected-metric-namespaces)
-            expected-n                 2
-            meter                      (Meter.)
-            _                          (.mark meter expected-n)]
-        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
-                                            (is (= additional-tags expected-additional-tags))
-                                            (is (or (and (= metric-namespaces expected-metric-namespaces) (= 2 (.getCount meter)))
-                                                    (and (= metric-namespaces actor-prefixed-metric-ns) (= 1 (.getCount meter)))))
-                                            (reset! mk-meter-args {:metric-namespaces metric-namespaces
-                                                                   :metric            metric})
-                                            meter)]
-          (is (= expected-n (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespaces metric 1 input-additional-tags)
-          (is (zero? (.getCount meter)))
-          (is (= actor-prefixed-metric-ns (:metric-namespaces @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))
-    (testing "decreases count on the meter - without topic name on the namespace"
-      (let [expected-additional-tags   (merge default-tags input-additional-tags)
-            expected-metric-namespaces ["metric" "ns"]
-            meter                      (Meter.)
-            _                          (.mark meter expected-n)]
-        (with-redefs [dw-metrics/mk-meter (fn [metric-namespaces metric additional-tags]
-                                            (is (= additional-tags expected-additional-tags))
-                                            (reset! mk-meter-args {:metric-namespaces metric-namespaces
-                                                                   :metric            metric})
-                                            meter)]
-          (is (= expected-n (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespaces metric expected-n input-additional-tags)
-          (is (zero? (.getCount meter)))
-          (is (= (metrics/intercalate-dot expected-metric-namespaces) (:metric-namespaces @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))
-    (testing "decreases count on the meter when additional-tags is nil"
-      (let [expected-additional-tags  default-tags
-            expected-metric-namespace "metric-ns"
-            actor-prefixed-metric-ns  (str (:app-name (ziggurat-config)) "." expected-metric-namespace)
-            expected-n                2
-            meter                     (Meter.)
-            _                         (.mark meter expected-n)]
-        (with-redefs [dw-metrics/mk-meter (fn [metric-namespace metric additional-tags]
-                                            (is (= additional-tags expected-additional-tags))
-                                            (is (or (and (= metric-namespace expected-metric-namespace) (= 2 (.getCount meter)))
-                                                    (and (= metric-namespace actor-prefixed-metric-ns) (= 1 (.getCount meter)))))
-                                            (reset! mk-meter-args {:metric-namespace metric-namespace
-                                                                   :metric           metric})
-                                            meter)]
-          (is (= expected-n (.getCount meter)))
-          (metrics/decrement-count expected-metric-namespace metric 1 nil)
-          (is (zero? (.getCount meter)))
-          (is (= actor-prefixed-metric-ns (:metric-namespace @mk-meter-args)))
-          (is (= metric (:metric @mk-meter-args))))))
+            expected-namespace         (str expected-topic-name ".metric-ns")]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+                                                  (is (= namespace expected-namespace))
+                                                  (is (= metric passed-metric-name))
+                                                  (is (= tags expected-tags))
+                                                  (is (= sign -))
+                                                  (is (= value expected-n)))]
+          (metrics/decrement-count expected-metric-namespaces passed-metric-name expected-n input-tags))))
+    (testing "calls metrics library update-counter with the correct args - string as an argument"
+      (let [expected-tags   (merge default-tags input-tags)
+            metric-namespace "metric-ns"
+            actor-prefixed-metric-ns   (str (:app-name (ziggurat-config)) "." metric-namespace)
+            metric-namespaces-called     (atom [])]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+                                                  (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
+                                                        (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
+                                                  (is (= tags expected-tags))
+                                                  (is (= metric passed-metric-name))
+                                                  (is (= sign -))
+                                                  (is (= value expected-n)))]
+          (metrics/decrement-count metric-namespace passed-metric-name 1 input-tags)
+          (is (some #{metric-namespace} @metric-namespaces-called))
+          (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
+    (testing "calls metrics library update-counter with the correct args - without topic name on the namespace"
+      (let [expected-additional-tags   (merge default-tags input-tags)
+            metric-namespaces ["metric" "ns"]
+            expected-namespace "metric.ns"
+            expected-tags     (merge default-tags input-tags)]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+                                                  (is (= namespace expected-namespace))
+                                                  (is (= metric passed-metric-name))
+                                                  (is (= tags expected-tags))
+                                                  (is (= sign -))
+                                                  (is (= value expected-n)))]
+          (metrics/decrement-count metric-namespaces passed-metric-name expected-n input-tags))))
+    (testing "calls metrics library update-counter with the correct args - additional-tags is nil"
+      (let [expected-tags  default-tags
+            metric-namespace "metric-ns"
+            actor-prefixed-metric-ns  (str (:app-name (ziggurat-config)) "." metric-namespace)
+            metric-namespaces-called  (atom [])]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+                                                  (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
+                                                        (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
+                                                  (is (= tags expected-tags))
+                                                  (is (= metric passed-metric-name))
+                                                  (is (= sign -))
+                                                  (is (= value expected-n)))]
+          (metrics/decrement-count metric-namespace passed-metric-name 1 nil)
+          (is (some #{metric-namespace} @metric-namespaces-called))
+          (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
     (testing "-decrementCount passes the correct arguments to decrement-count"
       (let [metric-namespace        "namespace"
             decrement-count-called? (atom false)]
         (with-redefs [metrics/decrement-count (fn [actual-metric-namespace actual-metric]
                                                 (if (and (= actual-metric-namespace metric-namespace)
-                                                         (= actual-metric metric))
+                                                         (= actual-metric passed-metric-name))
                                                   (reset! decrement-count-called? true)))]
-          (metrics/-decrementCount metric-namespace metric)
+          (metrics/-decrementCount metric-namespace passed-metric-name)
           (is (true? @decrement-count-called?))))
-      (let [additional-tags          (doto (java.util.HashMap.)
-                                       (.put ":foo" "bar")
-                                       (.put ":bar" "foo"))
-            expected-additional-tags {:foo "bar" :bar "foo"}
+      (let [tags          (doto (java.util.HashMap.)
+                            (.put ":foo" "bar")
+                            (.put ":bar" "foo"))
+            expected-tags {:foo "bar" :bar "foo"}
             decrement-count-called?  (atom false)
             metric-namespace         "namespace"]
         (with-redefs [metrics/decrement-count (fn [actual-namespace actual-metric actual-additional-tags]
                                                 (if (and (= actual-namespace metric-namespace)
-                                                         (= actual-metric metric)
-                                                         (= actual-additional-tags expected-additional-tags))
+                                                         (= actual-metric passed-metric-name)
+                                                         (= actual-additional-tags expected-tags))
                                                   (reset! decrement-count-called? true)))]
-          (metrics/-decrementCount metric-namespace metric additional-tags)
+          (metrics/-decrementCount metric-namespace passed-metric-name tags)
           (is (true? @decrement-count-called?)))))))
 
 (deftest report-histogram-test
