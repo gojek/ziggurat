@@ -5,14 +5,14 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:gen-class
-   :name tech.gojek.ziggurat.internal.Config
    :methods [^{:static true} [get [String] Object]
-             ^{:static true} [getIn [java.lang.Iterable] Object]]))
+             ^{:static true} [getIn [java.lang.Iterable] Object]]
+   :name tech.gojek.ziggurat.internal.Config))
 
 (def config-file "config.edn")
 
 (def default-config {:ziggurat {:nrepl-server         {:port 70171}
-                                :datadog              {:port    8125
+                                :datadog              {:port    8125 ;; TODO: :datadog key will be removed in the future, will be replaced by the :statsd key
                                                        :enabled false}
                                 :sentry               {:enabled                   false
                                                        :worker-count              10
@@ -66,7 +66,7 @@
 
 (defstate config
   :start (let [config-values-from-env (config-from-env config-file)
-               app-name (-> config-values-from-env :ziggurat :app-name)]
+               app-name               (-> config-values-from-env :ziggurat :app-name)]
            (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
@@ -74,6 +74,10 @@
 
 (defn rabbitmq-config []
   (get (ziggurat-config) :rabbit-mq))
+
+(defn statsd-config []
+  (let [cfg (ziggurat-config)]
+    (get cfg :statsd (:datadog cfg)))) ;; TODO: remove datadog in the future
 
 (defn get-in-config [ks]
   (get-in (ziggurat-config) ks))
@@ -97,4 +101,3 @@
 (defn -get [^String key]
   (let [config-vals (get config (keyword key))]
     (java-response config-vals)))
-
