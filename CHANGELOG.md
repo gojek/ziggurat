@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.2.2 - 2020-04-14
+- Fixes bug [Issue](https://github.com/gojek/ziggurat/issues/28)
+  to avoid confusion between datadog and statsd
+
 ## 3.2.1 - 2020-03-23
 - Fixes bug for this [Issue](https://github.com/gojek/ziggurat/issues/131)
 - Releases metrics for http requests in a stable release
