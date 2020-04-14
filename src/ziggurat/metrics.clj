@@ -6,17 +6,17 @@
             [mount.core :refer [defstate]]
             [ziggurat.dropwizard-metrics-wrapper :as metrics-lib])
   (:gen-class
-    :name tech.gojek.ziggurat.internal.Metrics
-    :methods [^{:static true} [incrementCount [String String] void]
-              ^{:static true} [incrementCount [String String java.util.Map] void]
-              ^{:static true} [decrementCount [String String] void]
-              ^{:static true} [decrementCount [String String java.util.Map] void]
-              ^{:static true} [reportTime [String long] void]
-              ^{:static true} [reportTime [String long java.util.Map] void]]))
+   :name tech.gojek.ziggurat.internal.Metrics
+   :methods [^{:static true} [incrementCount [String String] void]
+             ^{:static true} [incrementCount [String String java.util.Map] void]
+             ^{:static true} [decrementCount [String String] void]
+             ^{:static true} [decrementCount [String String java.util.Map] void]
+             ^{:static true} [reportTime [String long] void]
+             ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (defstate statsd-reporter
-          :start (metrics-lib/initialize (:datadog (ziggurat-config)))
-          :stop (metrics-lib/terminate statsd-reporter))
+  :start (metrics-lib/initialize (:datadog (ziggurat-config)))
+  :stop (metrics-lib/terminate statsd-reporter))
 
 (defn intercalate-dot
   [names]

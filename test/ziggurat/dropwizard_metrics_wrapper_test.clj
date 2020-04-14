@@ -5,7 +5,6 @@
             [clojure.walk :refer [stringify-keys]])
   (:import [io.dropwizard.metrics5 Meter Histogram]))
 
-
 (deftest mk-meter-test
   (let [category     "category"
         metric       "metric1"
@@ -13,15 +12,15 @@
     (testing "returns a meter"
       (let [expected-tags {}]
         (with-redefs [dw-metrics/get-tagged-metric (fn [metric-name tags]
-                                          (is (= tags expected-tags))
-                                          (.tagged metric-name tags))]
+                                                     (is (= tags expected-tags))
+                                                     (.tagged metric-name tags))]
           (is (instance? Meter (mk-meter category metric))))))
     (testing "returns a meter - with additional-tags"
       (let [additional-tags {:foo "bar"}
             expected-tags   (stringify-keys additional-tags)]
         (with-redefs [dw-metrics/get-tagged-metric (fn [metric-name tags]
-                                          (is (= tags expected-tags))
-                                          (.tagged metric-name tags))]
+                                                     (is (= tags expected-tags))
+                                                     (.tagged metric-name tags))]
           (is (instance? Meter (mk-meter category metric additional-tags))))))))
 
 (deftest mk-histogram-test
@@ -31,14 +30,14 @@
     (testing "returns a histogram"
       (let [expected-tags {}]
         (with-redefs [dw-metrics/get-tagged-metric (fn [metric-name tags]
-                                                  (is (= tags expected-tags))
-                                                  (.tagged metric-name tags))]
+                                                     (is (= tags expected-tags))
+                                                     (.tagged metric-name tags))]
           (is (instance? Histogram (mk-histogram category metric))))))
     (testing "returns a histogram - with additional-tags"
       (let [additional-tags {:foo "bar"}
             expected-tags   (stringify-keys additional-tags)]
         (with-redefs [dw-metrics/get-tagged-metric (fn [metric-name tags]
-                                                  (is (= tags expected-tags))
-                                                  (.tagged metric-name tags))]
+                                                     (is (= tags expected-tags))
+                                                     (.tagged metric-name tags))]
           (is (instance? Histogram (mk-histogram category metric additional-tags))))))))
 

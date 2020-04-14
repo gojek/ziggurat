@@ -19,7 +19,6 @@
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
 
-
 (defn- start*
   ([states]
    (start* states nil))

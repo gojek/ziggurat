@@ -8,9 +8,8 @@
            [java.util.concurrent TimeUnit]
            [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]))
 
-
 (defonce metrics-registry
-         (MetricRegistry.))
+  (MetricRegistry.))
 
 (defn initialize [statsd-config]
   (let [{:keys [enabled host port]} statsd-config]
@@ -60,7 +59,7 @@
 (defn update-counter
   [namespace metric tags sign value]
   (let [meter (mk-meter namespace metric tags)]
-   (.mark ^Meter meter (sign value))))
+    (.mark ^Meter meter (sign value))))
 
 (defn update-histogram
   [namespace tags value]
