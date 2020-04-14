@@ -114,7 +114,6 @@
   (log/warn "Deprecation Notice: This function is deprecated in favour of ziggurat.metrics/multi-ns-report-histogram. Both functions have the same interface, so please use that function. It will be removed in future releases.")
   (multi-ns-report-histogram nss time-val additional-tags))
 
-
 (defn -incrementCount
   ([metric-namespace metric]
    (increment-count metric-namespace metric))
