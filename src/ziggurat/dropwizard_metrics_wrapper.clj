@@ -38,7 +38,7 @@
 
 (defn mk-meter
   ([category metric]
-   (mk-meter category metric nil))
+   (mk-meter category metric {}))
   ([category metric tags]
    (let [namespace        (str category "." metric)
          metric-name      (MetricRegistry/name ^String namespace nil)
