@@ -11,6 +11,8 @@
 (defonce metrics-registry
   (MetricRegistry.))
 
+(def reporter-and-transport-state (atom nil))
+
 (defn initialize [statsd-config]
   (let [{:keys [enabled host port]} statsd-config]
     (when enabled
@@ -24,12 +26,13 @@
                           (.build))]
         (log/info "Starting statsd reporter")
         (.start reporter 1 TimeUnit/SECONDS)
-        {:reporter reporter :transport transport}))))
+        (reset! reporter-and-transport-state {:reporter reporter :transport transport})))))
 
-(defn terminate [datadog-reporter]
-  (when-let [{:keys [reporter transport]} datadog-reporter]
+(defn terminate []
+  (when-let [{:keys [reporter transport]} @reporter-and-transport-state]
     (.stop ^DatadogReporter reporter)
     (.close ^UdpTransport transport)
+    (reset! reporter-and-transport-state nil)
     (log/info "Stopped statsd reporter")))
 
 (defn- get-tagged-metric

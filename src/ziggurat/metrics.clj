@@ -1,7 +1,7 @@
 (ns ziggurat.metrics
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
             [ziggurat.dropwizard-metrics-wrapper :as metrics-lib])
@@ -15,8 +15,10 @@
              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (defstate statsd-reporter
-  :start (metrics-lib/initialize (:statsd (ziggurat-config)))
-  :stop (metrics-lib/terminate statsd-reporter))
+  :start (do (log/info "Initializing Metrics")
+             (metrics-lib/initialize statsd-config))
+  :stop (do (log/info "Terminating Metrics")
+            (metrics-lib/terminate)))
 
 (defn intercalate-dot
   [names]

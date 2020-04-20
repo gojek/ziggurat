@@ -48,11 +48,15 @@
 (deftest initialize-test
   (let [statsd-config {:host "localhost" :port 8125 :enabled true}]
     (testing "It initializes the metrics transport and reporter and returns a map when enabled"
-      (let [{:keys [transport reporter]} (dw-metrics/initialize statsd-config)]
+      (let [_ (dw-metrics/initialize statsd-config)
+            {:keys [transport reporter]} @dw-metrics/reporter-and-transport-state]
         (is (instance? UdpTransport transport))
-        (is (instance? DatadogReporter reporter))))
+        (is (instance? DatadogReporter reporter))
+        (dw-metrics/terminate)))
     (testing "It does not initialize the transport and reporter when disabled"
       (let [statsd-config (assoc statsd-config :enabled false)
-            result (dw-metrics/initialize statsd-config)]
-        (is (nil? result))))))
+            _ (dw-metrics/initialize statsd-config)
+            result @dw-metrics/reporter-and-transport-state]
+        (is (nil? result))
+        (dw-metrics/terminate)))))
 
