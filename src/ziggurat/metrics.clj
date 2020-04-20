@@ -15,7 +15,7 @@
              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (defstate statsd-reporter
-  :start (metrics-lib/initialize (:datadog (ziggurat-config)))
+  :start (metrics-lib/initialize (:statsd (ziggurat-config)))
   :stop (metrics-lib/terminate statsd-reporter))
 
 (defn intercalate-dot
