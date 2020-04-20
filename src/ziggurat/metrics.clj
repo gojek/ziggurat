@@ -89,7 +89,6 @@
   ([metric-namespaces val additional-tags]
    (let [intercalated-metric-namespaces (get-metric-namespaces metric-namespaces)
          tags                           (remove-topic-tag-for-old-namespace (get-all-tags additional-tags metric-namespaces) metric-namespaces)
-         make-histogram-for-namespace   #(metrics-lib/mk-histogram % "all" tags)
          integer-value                  (get-int val)]
      (doseq [metric-ns intercalated-metric-namespaces]
        (metrics-lib/update-histogram metric-ns tags integer-value)))))
