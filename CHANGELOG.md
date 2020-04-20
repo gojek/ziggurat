@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.2 - 2020-04-21
+- Refactors Metrics.clj
+- Moves dropwizard metrics logic to its own namespace
+- Moves statsd state (transport and reporter) to dropwizard namespace
+
 ## 3.2.2 - 2020-04-14
 - Fixes bug [Issue](https://github.com/gojek/ziggurat/issues/28)
   to avoid confusion between datadog and statsd
