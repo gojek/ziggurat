@@ -16,7 +16,7 @@
 
 (defstate statsd-reporter
   :start (do (log/info "Initializing Metrics")
-             (metrics-lib/initialize statsd-config))
+             (metrics-lib/initialize (statsd-config)))
   :stop (do (log/info "Terminating Metrics")
             (metrics-lib/terminate)))
 
