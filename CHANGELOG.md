@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.3 - 2020-04-22
+- Fixes metrics initialization
+
 ## 3.3.0-alpha.2 - 2020-04-21
 - Refactors Metrics.clj
 - Moves dropwizard metrics logic to its own namespace
