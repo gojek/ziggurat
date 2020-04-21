@@ -40,4 +40,4 @@ jobs:
     script: lein deploy clojars
     branches:
       only:
-      - 2.x
+      - http-server-metric-fix
