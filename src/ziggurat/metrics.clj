@@ -4,8 +4,8 @@
             [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
-            [ziggurat.metrics-interface :as metrics-interface])
-  (:import (ziggurat.dropwizard_metrics_wrapper DropwizardMetrics))
+            [ziggurat.metrics-interface :as metrics-interface]
+            [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
    :name tech.gojek.ziggurat.internal.Metrics
    :methods [^{:static true} [incrementCount [String String] void]
@@ -15,7 +15,7 @@
              ^{:static true} [reportTime [String long] void]
              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
-(defonce metric-impl  (DropwizardMetrics.))
+(defonce metric-impl (->DropwizardMetrics))
 
 (defstate statsd-reporter
   :start (do (log/info "Initializing Metrics")
