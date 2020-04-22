@@ -74,9 +74,9 @@
   ([sign {:keys [metric-namespace metric n additional-tags]}]
    (let [metric-namespaces (get-metric-namespaces metric-namespace)
          tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
-         integer-value     (get-int n)]
+         signed-int-value   (sign (get-int n))]
      (doseq [metric-ns metric-namespaces]
-       (metrics-interface/update-counter metric-impl metric-ns metric tags sign integer-value)))))
+       (metrics-interface/update-counter metric-impl metric-ns metric tags signed-int-value)))))
 
 (def increment-count (partial inc-or-dec-count +))
 

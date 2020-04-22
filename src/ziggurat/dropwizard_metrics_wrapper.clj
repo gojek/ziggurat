@@ -61,9 +61,9 @@
      (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn update-counter
-  [namespace metric tags sign value]
+  [namespace metric tags value]
   (let [meter (mk-meter namespace metric tags)]
-    (.mark ^Meter meter (sign value))))
+    (.mark ^Meter meter value)))
 
 (defn update-histogram
   [namespace tags value]
@@ -74,5 +74,5 @@
   MetricsLib
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
-  (update-counter [this namespace metric tags sign value] (update-counter namespace metric tags sign value))
+  (update-counter [this namespace metric tags value] (update-counter namespace metric tags value))
   (update-histogram [this namespace metric tags value] (update-histogram namespace tags value)))
