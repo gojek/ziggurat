@@ -1,6 +1,6 @@
 (ns ziggurat.clj-statsd-metrics-wrapper-test
   (:require [clojure.test :refer :all]
-            [ziggurat.clj-statsd-metrics-wrapper :refer :all]
+            [ziggurat.clj-statsd-metrics-wrapper :refer :all :as clj-statsd-wrapper]
             [clj-statsd :as statsd]))
 
 (def passed-host "localhost")
@@ -10,7 +10,7 @@
 
 (deftest initialise-test
   (testing "it calls the setup library function when enabled is true"
-    (let [setup-called?  (atom false)]
+    (let [setup-called? (atom false)]
       (with-redefs [statsd/setup (fn [host port]
                                    (is (= host passed-host))
                                    (is (= port passed-port))
@@ -34,3 +34,21 @@
       (terminate)
       (is (nil? @statsd/cfg))
       (is (nil? (await statsd/sockagt))))))
+
+(deftest update-counter-test
+  (testing "it calls statsd/increment with the correctly formatted arguments"
+    (let [namespace        "namespace"
+          metric           "metric"
+          expected-metric  "namespace.metric"
+          tags             {:key :val :foo "bar" :foobar 2}
+          expected-tags    ["key:val" "foo:bar" "foobar:2"]
+          value            -1
+          increment-called (atom false)]
+      (with-redefs [statsd/increment (fn [k v rate tags]
+                                       (is (= expected-metric k))
+                                       (is (= value v))
+                                       (is (= clj-statsd-wrapper/rate rate))
+                                       (is (= expected-tags tags))
+                                       (reset! increment-called true))]
+        (update-counter namespace metric tags value)
+        (is (true? @increment-called))))))
