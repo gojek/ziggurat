@@ -35,20 +35,33 @@
       (is (nil? @statsd/cfg))
       (is (nil? (await statsd/sockagt))))))
 
-(deftest update-counter-test
-  (testing "it calls statsd/increment with the correctly formatted arguments"
-    (let [namespace        "namespace"
-          metric           "metric"
-          expected-metric  "namespace.metric"
-          tags             {:key :val :foo "bar" :foobar 2}
-          expected-tags    ["key:val" "foo:bar" "foobar:2"]
-          value            -1
-          increment-called (atom false)]
-      (with-redefs [statsd/increment (fn [k v rate tags]
-                                       (is (= expected-metric k))
-                                       (is (= value v))
-                                       (is (= clj-statsd-wrapper/rate rate))
-                                       (is (= expected-tags tags))
-                                       (reset! increment-called true))]
-        (update-counter namespace metric tags value)
-        (is (true? @increment-called))))))
+(let [namespace        "namespace"
+      metric           "metric"
+      expected-metric  "namespace.metric"
+      tags             {:key :val :foo "bar" :foobar 2}
+      expected-tags    ["key:val" "foo:bar" "foobar:2"]]
+  (deftest update-counter-test
+    (testing "it calls statsd/increment with the correctly formatted arguments"
+      (let [value            -1
+            increment-called (atom false)]
+        (with-redefs [statsd/increment (fn [k v rate tags]
+                                         (is (= expected-metric k))
+                                         (is (= value v))
+                                         (is (= clj-statsd-wrapper/rate rate))
+                                         (is (= expected-tags tags))
+                                         (reset! increment-called true))]
+          (update-counter namespace metric tags value)
+          (is (true? @increment-called))))))
+
+  (deftest update-histogram-test
+    (testing "it calls statsd/timing with the correctly formatted arguments"
+      (let [value 100
+            timing-called (atom false)]
+        (with-redefs [statsd/timing (fn [k v rate tags]
+                                      (is (= expected-metric k))
+                                      (is (= value v))
+                                      (is (= clj-statsd-wrapper/rate rate))
+                                      (is (= expected-tags tags))
+                                      (reset! timing-called true))]
+          (update-histogram namespace metric tags value)
+          (is (true? @timing-called)))))))
