@@ -22,33 +22,30 @@
       (let [metric-namespaces  [expected-topic-entity-name "metric-ns"]
             expected-namespace (str expected-topic-entity-name ".metric-ns")
             expected-tags      default-tags]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (is (= namespace expected-namespace))
                                                   (is (= metric passed-metric-name))
                                                   (is (= tags expected-tags))
-                                                  (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name expected-n input-tags))))
     (testing "calls update-counter with correct args - 3rd argument is a number"
       (let [metric-namespaces  ["metric" "ns"]
             expected-namespace "metric.ns"
             expected-tags      default-tags]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (is (= namespace expected-namespace))
                                                   (is (= metric passed-metric-name))
                                                   (is (= tags expected-tags))
-                                                  (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name expected-n))))
     (testing "calls update-counter with correct args - 3rd argument is a map"
       (let [metric-namespaces  ["metric" "ns"]
             expected-namespace "metric.ns"
             expected-tags      default-tags]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (is (= namespace expected-namespace))
                                                   (is (= metric passed-metric-name))
                                                   (is (= tags expected-tags))
-                                                  (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name expected-tags))))
     (testing "calls update-counter with correct args - string as an argument"
@@ -56,12 +53,11 @@
             actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
             passed-tags              (merge input-tags default-tags)
             metric-namespaces-called (atom [])]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                         (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
                                                   (is (= tags passed-tags))
                                                   (is (= metric passed-metric-name))
-                                                  (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespace passed-metric-name 1 passed-tags)
           (is (some #{metric-namespace} @metric-namespaces-called))
@@ -70,11 +66,10 @@
       (let [metric-namespaces  [expected-topic-entity-name "metric-ns"]
             expected-namespace (str expected-topic-entity-name ".metric-ns")
             expected-tags      default-tags]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (is (= namespace expected-namespace))
                                                   (is (= metric passed-metric-name))
                                                   (is (= tags expected-tags))
-                                                  (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespaces passed-metric-name))))
     (testing "calls update-counter with correct args - additional-tags is nil"
@@ -82,12 +77,11 @@
             actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
             metric-namespaces-called (atom [])
             expected-tags            default-tags]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                         (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
                                                   (is (= tags expected-tags))
                                                   (is (= metric passed-metric-name))
-                                                  (is (= sign +))
                                                   (is (= value expected-n)))]
           (metrics/increment-count metric-namespace passed-metric-name 1 nil)
           (is (some #{metric-namespace} @metric-namespaces-called))
@@ -119,31 +113,30 @@
   (let [expected-topic-name "expected-topic-name"
         passed-metric-name  "metric3"
         input-tags          {:topic_name expected-topic-name}
-        expected-n          1]
+        expected-n          -1
+        n                   1]
     (testing "calls metrics library update-counter with the correct args - vector as an argument"
       (let [expected-tags              default-tags
             expected-metric-namespaces [expected-topic-name "metric-ns"]
             expected-namespace         (str expected-topic-name ".metric-ns")]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (is (= namespace expected-namespace))
                                                   (is (= metric passed-metric-name))
                                                   (is (= tags expected-tags))
-                                                  (is (= sign -))
                                                   (is (= value expected-n)))]
-          (metrics/decrement-count expected-metric-namespaces passed-metric-name expected-n input-tags))))
+          (metrics/decrement-count expected-metric-namespaces passed-metric-name n input-tags))))
     (testing "calls metrics library update-counter with the correct args - string as an argument"
       (let [expected-tags            (merge default-tags input-tags)
             metric-namespace         "metric-ns"
             actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
             metric-namespaces-called (atom [])]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                         (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
                                                   (is (= tags expected-tags))
                                                   (is (= metric passed-metric-name))
-                                                  (is (= sign -))
                                                   (is (= value expected-n)))]
-          (metrics/decrement-count metric-namespace passed-metric-name 1 input-tags)
+          (metrics/decrement-count metric-namespace passed-metric-name n input-tags)
           (is (some #{metric-namespace} @metric-namespaces-called))
           (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
     (testing "calls metrics library update-counter with the correct args - without topic name on the namespace"
@@ -151,26 +144,24 @@
             metric-namespaces        ["metric" "ns"]
             expected-namespace       "metric.ns"
             expected-tags            (merge default-tags input-tags)]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (is (= namespace expected-namespace))
                                                   (is (= metric passed-metric-name))
                                                   (is (= tags expected-tags))
-                                                  (is (= sign -))
                                                   (is (= value expected-n)))]
-          (metrics/decrement-count metric-namespaces passed-metric-name expected-n input-tags))))
+          (metrics/decrement-count metric-namespaces passed-metric-name n input-tags))))
     (testing "calls metrics library update-counter with the correct args - additional-tags is nil"
       (let [expected-tags            default-tags
             metric-namespace         "metric-ns"
             actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
             metric-namespaces-called (atom [])]
-        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags sign value]
+        (with-redefs [dw-metrics/update-counter (fn [namespace metric tags value]
                                                   (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                         (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
                                                   (is (= tags expected-tags))
                                                   (is (= metric passed-metric-name))
-                                                  (is (= sign -))
                                                   (is (= value expected-n)))]
-          (metrics/decrement-count metric-namespace passed-metric-name 1 nil)
+          (metrics/decrement-count metric-namespace passed-metric-name n nil)
           (is (some #{metric-namespace} @metric-namespaces-called))
           (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
     (testing "-decrementCount passes the correct arguments to decrement-count"

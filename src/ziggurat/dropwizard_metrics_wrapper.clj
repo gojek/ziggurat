@@ -1,7 +1,8 @@
 (ns ziggurat.dropwizard-metrics-wrapper
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer [ziggurat-config]]
-            [clojure.walk :refer [stringify-keys]])
+            [clojure.walk :refer [stringify-keys]]
+            [ziggurat.metrics-interface :refer [MetricsLib]])
   (:import [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 MetricRegistry]
            [com.gojek.metrics.datadog DatadogReporter]
@@ -60,11 +61,18 @@
      (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn update-counter
-  [namespace metric tags sign value]
+  [namespace metric tags value]
   (let [meter (mk-meter namespace metric tags)]
-    (.mark ^Meter meter (sign value))))
+    (.mark ^Meter meter value)))
 
 (defn update-histogram
   [namespace tags value]
   (let [histogram (mk-histogram namespace "all" tags)]
     (.update ^Histogram histogram value)))
+
+(deftype DropwizardMetrics []
+  MetricsLib
+  (initialize [this statsd-config] (initialize statsd-config))
+  (terminate [this] (terminate))
+  (update-counter [this namespace metric tags value] (update-counter namespace metric tags value))
+  (update-histogram [this namespace metric tags value] (update-histogram namespace tags value)))

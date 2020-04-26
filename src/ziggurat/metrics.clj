@@ -4,7 +4,8 @@
             [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
-            [ziggurat.dropwizard-metrics-wrapper :as metrics-lib])
+            [ziggurat.metrics-interface :as metrics-interface]
+            [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
    :name tech.gojek.ziggurat.internal.Metrics
    :methods [^{:static true} [incrementCount [String String] void]
@@ -14,11 +15,13 @@
              ^{:static true} [reportTime [String long] void]
              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
+(defonce metric-impl (->DropwizardMetrics))
+
 (defstate statsd-reporter
   :start (do (log/info "Initializing Metrics")
-             (metrics-lib/initialize (statsd-config)))
+             (metrics-interface/initialize metric-impl (statsd-config)))
   :stop (do (log/info "Terminating Metrics")
-            (metrics-lib/terminate)))
+            (metrics-interface/terminate metric-impl)))
 
 (defn intercalate-dot
   [names]
@@ -71,9 +74,9 @@
   ([sign {:keys [metric-namespace metric n additional-tags]}]
    (let [metric-namespaces (get-metric-namespaces metric-namespace)
          tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
-         integer-value     (get-int n)]
+         signed-int-value   (sign (get-int n))]
      (doseq [metric-ns metric-namespaces]
-       (metrics-lib/update-counter metric-ns metric tags sign integer-value)))))
+       (metrics-interface/update-counter metric-impl metric-ns metric tags signed-int-value)))))
 
 (def increment-count (partial inc-or-dec-count +))
 
@@ -91,7 +94,7 @@
          tags                           (remove-topic-tag-for-old-namespace (get-all-tags additional-tags metric-namespaces) metric-namespaces)
          integer-value                  (get-int val)]
      (doseq [metric-ns intercalated-metric-namespaces]
-       (metrics-lib/update-histogram metric-ns tags integer-value)))))
+       (metrics-interface/update-histogram metric-impl metric-ns nil tags integer-value)))))
 
 (defn report-time
   "This function is an alias for `report-histogram`.
