@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.4 - 2020-04-26
+- Defines an interface for metrics.
+- Changes the dropwizard implementation to use the metrics interface
+- Adds a metrics interface implementation for clj-statsd library.
+
 ## 3.3.0-alpha.3 - 2020-04-22
 - Fixes metrics initialization
 
