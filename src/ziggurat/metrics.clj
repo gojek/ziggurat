@@ -15,13 +15,26 @@
              ^{:static true} [reportTime [String long] void]
              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
-(defonce metric-impl (->DropwizardMetrics))
+(def metric-impl (atom nil))
+
+(defn get-metrics-implementor-constructor []
+  (if-let [configured-metrics-class-constructor (get-in (ziggurat-config) [:metrics :implementation])]
+    (let [configured-constructor-symbol (symbol configured-metrics-class-constructor)
+          constructor-namespace         (namespace configured-constructor-symbol)
+          _                             (require [(symbol constructor-namespace)])]
+      (resolve configured-constructor-symbol))
+    ->DropwizardMetrics))
+
+(defn initialise-metrics-library []
+  (let [metrics-impl-constructor (get-metrics-implementor-constructor)]
+    (reset! metric-impl (metrics-impl-constructor))))
 
 (defstate statsd-reporter
   :start (do (log/info "Initializing Metrics")
-             (metrics-interface/initialize metric-impl (statsd-config)))
+             (initialise-metrics-library)
+             (metrics-interface/initialize @metric-impl (statsd-config)))
   :stop (do (log/info "Terminating Metrics")
-            (metrics-interface/terminate metric-impl)))
+            (metrics-interface/terminate @metric-impl)))
 
 (defn intercalate-dot
   [names]
@@ -74,9 +87,9 @@
   ([sign {:keys [metric-namespace metric n additional-tags]}]
    (let [metric-namespaces (get-metric-namespaces metric-namespace)
          tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
-         signed-int-value   (sign (get-int n))]
+         signed-int-value  (sign (get-int n))]
      (doseq [metric-ns metric-namespaces]
-       (metrics-interface/update-counter metric-impl metric-ns metric tags signed-int-value)))))
+       (metrics-interface/update-counter @metric-impl metric-ns metric tags signed-int-value)))))
 
 (def increment-count (partial inc-or-dec-count +))
 
@@ -94,7 +107,7 @@
          tags                           (remove-topic-tag-for-old-namespace (get-all-tags additional-tags metric-namespaces) metric-namespaces)
          integer-value                  (get-int val)]
      (doseq [metric-ns intercalated-metric-namespaces]
-       (metrics-interface/update-histogram metric-impl metric-ns nil tags integer-value)))))
+       (metrics-interface/update-histogram @metric-impl metric-ns nil tags integer-value)))))
 
 (defn report-time
   "This function is an alias for `report-histogram`.

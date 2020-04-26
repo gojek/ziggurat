@@ -8,7 +8,8 @@
             [clojure.tools.logging :as log])
   (:import (io.dropwizard.metrics5 Meter Histogram UniformReservoir MetricRegistry)))
 
-(use-fixtures :once fix/mount-only-config)
+(use-fixtures :once (join-fixtures [fix/mount-only-config
+                                    fix/mount-metrics]))
 
 (def default-tags {:env   "dev"
                    :actor "application_name"})
