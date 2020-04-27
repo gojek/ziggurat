@@ -20,8 +20,8 @@
 (defn get-metrics-implementor-constructor []
   (if-let [configured-metrics-class-constructor (get-in (ziggurat-config) [:metrics :implementation])]
     (let [configured-constructor-symbol (symbol configured-metrics-class-constructor)
-          constructor-namespace         (namespace configured-constructor-symbol)
-          _                             (require [(symbol constructor-namespace)])]
+          constructor-namespace         (namespace configured-constructor-symbol)]
+      (require [(symbol constructor-namespace)])
       (resolve configured-constructor-symbol))
     ->DropwizardMetrics))
 
