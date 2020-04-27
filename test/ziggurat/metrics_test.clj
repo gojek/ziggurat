@@ -18,7 +18,7 @@
                    :actor "application_name"})
 
 (deftest increment-count-test
-  (with-redefs [config (assoc-in config [:ziggurat :metrics :implementation] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
+  (with-redefs [config (assoc-in config [:ziggurat :metrics :constructor] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
     (mount/start (mount/only [#'metrics/statsd-reporter]))
     (let [passed-metric-name         "metric3"
           expected-topic-entity-name "expected-topic-entity-name"
@@ -117,7 +117,7 @@
     (mount/stop #'metrics/statsd-reporter)))
 
 (deftest decrement-count-test
-  (with-redefs [config (assoc-in config [:ziggurat :metrics :implementation] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
+  (with-redefs [config (assoc-in config [:ziggurat :metrics :constructor] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
     (mount/start (mount/only [#'metrics/statsd-reporter]))
     (let [expected-topic-name "expected-topic-name"
           passed-metric-name  "metric3"
@@ -198,7 +198,7 @@
     (mount/stop #'metrics/statsd-reporter)))
 
 (deftest report-histogram-test
-  (with-redefs [config (assoc-in config [:ziggurat :metrics :implementation] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
+  (with-redefs [config (assoc-in config [:ziggurat :metrics :constructor] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
     (mount/start (mount/only [#'metrics/statsd-reporter]))
     (let [topic-entity-name "expected-topic-entity-name"
           input-tags        {:topic_name topic-entity-name}
@@ -324,14 +324,14 @@
         (is (= expected-report-histogram-call-counts @report-histogram-call-counts))))))
 
 (deftest initialise-metrics-library-test
-  (testing "It sets the implementation object to default (dropwizard) when no value is passed in configuration"
-    (with-redefs [ziggurat-config (constantly {:metrics {:implementation nil}})]
+  (testing "It sets the constructor object to default (dropwizard) when no value is passed in configuration"
+    (with-redefs [ziggurat-config (constantly {:metrics {:constructor nil}})]
       (metrics/initialise-metrics-library)
       (is (instance? DropwizardMetrics (deref metrics/metric-impl)))))
-  (testing "It sets the implementation object to the configured constructor's return value"
-    (with-redefs [ziggurat-config (constantly {:metrics {:implementation "ziggurat.clj-statsd-metrics-wrapper/->CljStatsd"}})]
+  (testing "It sets the constructor object to the configured constructor's return value"
+    (with-redefs [ziggurat-config (constantly {:metrics {:constructor "ziggurat.clj-statsd-metrics-wrapper/->CljStatsd"}})]
       (metrics/initialise-metrics-library)
       (is (instance? CljStatsd (deref metrics/metric-impl)))))
   (testing "It raises an exception when incorrect constructor has been configured"
-    (with-redefs [ziggurat-config (constantly {:metrics {:implementation "incorrect-constructor"}})]
+    (with-redefs [ziggurat-config (constantly {:metrics {:constructor "incorrect-constructor"}})]
       (is (thrown? RuntimeException (metrics/initialise-metrics-library))))))
