@@ -6,8 +6,11 @@
             [ziggurat.metrics :as metrics]
             [ziggurat.util.mock-metrics-implementation :as mock-metrics]
             [clojure.tools.logging :as log]
-            [mount.core :as mount])
-  (:import (io.dropwizard.metrics5 Meter Histogram UniformReservoir MetricRegistry)))
+            [mount.core :as mount]
+            [ziggurat.clj-statsd-metrics-wrapper])
+  (:import (io.dropwizard.metrics5 Meter Histogram UniformReservoir MetricRegistry)
+           (ziggurat.dropwizard_metrics_wrapper DropwizardMetrics)
+           (ziggurat.clj_statsd_metrics_wrapper CljStatsd)))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config]))
 
@@ -319,3 +322,16 @@
                                                  (swap! report-histogram-call-counts inc)))]
         (metrics/multi-ns-report-histogram metric-namespaces-list expected-metric expected-tags)
         (is (= expected-report-histogram-call-counts @report-histogram-call-counts))))))
+
+(deftest initialise-metrics-library-test
+  (testing "It sets the implementation object to default (dropwizard) when no value is passed in configuration"
+    (with-redefs [ziggurat-config (constantly {:metrics {:implementation nil}})]
+      (metrics/initialise-metrics-library)
+      (is (instance? DropwizardMetrics (deref metrics/metric-impl)))))
+  (testing "It sets the implementation object to the configured constructor's return value"
+    (with-redefs [ziggurat-config (constantly {:metrics {:implementation "ziggurat.clj-statsd-metrics-wrapper/->CljStatsd"}})]
+      (metrics/initialise-metrics-library)
+      (is (instance? CljStatsd (deref metrics/metric-impl)))))
+  (testing "It raises an exception when incorrect constructor has been configured"
+    (with-redefs [ziggurat-config (constantly {:metrics {:implementation "incorrect-constructor"}})]
+      (is (thrown? RuntimeException (metrics/initialise-metrics-library))))))

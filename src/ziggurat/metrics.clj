@@ -7,22 +7,26 @@
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
-   :name tech.gojek.ziggurat.internal.Metrics
-   :methods [^{:static true} [incrementCount [String String] void]
-             ^{:static true} [incrementCount [String String java.util.Map] void]
-             ^{:static true} [decrementCount [String String] void]
-             ^{:static true} [decrementCount [String String java.util.Map] void]
-             ^{:static true} [reportTime [String long] void]
-             ^{:static true} [reportTime [String long java.util.Map] void]]))
+    :name tech.gojek.ziggurat.internal.Metrics
+    :methods [^{:static true} [incrementCount [String String] void]
+              ^{:static true} [incrementCount [String String java.util.Map] void]
+              ^{:static true} [decrementCount [String String] void]
+              ^{:static true} [decrementCount [String String java.util.Map] void]
+              ^{:static true} [reportTime [String long] void]
+              ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (def metric-impl (atom nil))
 
-(defn get-metrics-implementor-constructor []
+(defn- get-metrics-implementor-constructor []
   (if-let [configured-metrics-class-constructor (get-in (ziggurat-config) [:metrics :implementation])]
     (let [configured-constructor-symbol (symbol configured-metrics-class-constructor)
-          constructor-namespace         (namespace configured-constructor-symbol)]
-      (require [(symbol constructor-namespace)])
-      (resolve configured-constructor-symbol))
+          constructor-namespace         (namespace configured-constructor-symbol)
+          _                             (require [(symbol constructor-namespace)])
+          metric-constructor            (resolve configured-constructor-symbol)]
+
+      (if (nil? metric-constructor)
+        (throw (ex-info "Incorrect metrics_interface implementation constructor configured. Please fix it." {:constructor-configured configured-constructor-symbol}))
+        metric-constructor))
     ->DropwizardMetrics))
 
 (defn initialise-metrics-library []
@@ -30,11 +34,11 @@
     (reset! metric-impl (metrics-impl-constructor))))
 
 (defstate statsd-reporter
-  :start (do (log/info "Initializing Metrics")
-             (initialise-metrics-library)
-             (metrics-interface/initialize @metric-impl (statsd-config)))
-  :stop (do (log/info "Terminating Metrics")
-            (metrics-interface/terminate @metric-impl)))
+          :start (do (log/info "Initializing Metrics")
+                     (initialise-metrics-library)
+                     (metrics-interface/initialize @metric-impl (statsd-config)))
+          :stop (do (log/info "Terminating Metrics")
+                    (metrics-interface/terminate @metric-impl)))
 
 (defn intercalate-dot
   [names]
