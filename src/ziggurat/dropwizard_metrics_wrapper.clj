@@ -2,12 +2,13 @@
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer [ziggurat-config]]
             [clojure.walk :refer [stringify-keys]]
-            [ziggurat.metrics-interface :refer [MetricsLib]])
+            [ziggurat.metrics-interface])
   (:import [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            [io.dropwizard.metrics5 MetricRegistry]
            [com.gojek.metrics.datadog DatadogReporter]
            [java.util.concurrent TimeUnit]
-           [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]))
+           [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
+           (ziggurat.metrics_interface MetricsProtocol)))
 
 (defonce metrics-registry
   (MetricRegistry.))
@@ -71,7 +72,7 @@
     (.update ^Histogram histogram value)))
 
 (deftype DropwizardMetrics []
-  MetricsLib
+  MetricsProtocol
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags value] (update-counter namespace metric tags value))

@@ -1,6 +1,7 @@
 (ns ziggurat.clj-statsd-metrics-wrapper
   (:require [clj-statsd :as statsd]
-            [ziggurat.metrics-interface :refer [MetricsLib]]))
+            [ziggurat.metrics-interface])
+  (:import (ziggurat.metrics_interface MetricsProtocol)))
 
 (def rate 1.0)
 
@@ -36,7 +37,7 @@
     (statsd/timing final-metric value rate final-tags)))
 
 (deftype CljStatsd []
-  MetricsLib
+  MetricsProtocol
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags signed-val] (update-counter namespace metric tags signed-val))

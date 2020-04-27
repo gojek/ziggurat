@@ -1,6 +1,6 @@
 (ns ziggurat.util.mock-metrics-implementation
   (:require [clojure.test :refer :all])
-  (:import (ziggurat.metrics_interface MetricsLib)))
+  (:import (ziggurat.metrics_interface MetricsProtocol)))
 
 (defn initialize [statsd-config]
   nil)
@@ -15,7 +15,7 @@
   nil)
 
 (deftype MockImpl []
-  MetricsLib
+  MetricsProtocol
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags signed-val] (update-counter namespace metric tags signed-val))

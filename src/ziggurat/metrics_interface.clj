@@ -1,6 +1,6 @@
 (ns ziggurat.metrics-interface)
 
-(defprotocol MetricsLib
+(defprotocol MetricsProtocol
   (initialize [impl statsd-config])
   (terminate  [impl])
   (update-counter [impl namespace metric tags signed-val])

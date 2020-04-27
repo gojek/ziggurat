@@ -7,13 +7,13 @@
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
-    :name tech.gojek.ziggurat.internal.Metrics
-    :methods [^{:static true} [incrementCount [String String] void]
-              ^{:static true} [incrementCount [String String java.util.Map] void]
-              ^{:static true} [decrementCount [String String] void]
-              ^{:static true} [decrementCount [String String java.util.Map] void]
-              ^{:static true} [reportTime [String long] void]
-              ^{:static true} [reportTime [String long java.util.Map] void]]))
+   :name tech.gojek.ziggurat.internal.Metrics
+   :methods [^{:static true} [incrementCount [String String] void]
+             ^{:static true} [incrementCount [String String java.util.Map] void]
+             ^{:static true} [decrementCount [String String] void]
+             ^{:static true} [decrementCount [String String java.util.Map] void]
+             ^{:static true} [reportTime [String long] void]
+             ^{:static true} [reportTime [String long java.util.Map] void]]))
 
 (def metric-impl (atom nil))
 
@@ -34,11 +34,11 @@
     (reset! metric-impl (metrics-impl-constructor))))
 
 (defstate statsd-reporter
-          :start (do (log/info "Initializing Metrics")
-                     (initialise-metrics-library)
-                     (metrics-interface/initialize @metric-impl (statsd-config)))
-          :stop (do (log/info "Terminating Metrics")
-                    (metrics-interface/terminate @metric-impl)))
+  :start (do (log/info "Initializing Metrics")
+             (initialise-metrics-library)
+             (metrics-interface/initialize @metric-impl (statsd-config)))
+  :stop (do (log/info "Terminating Metrics")
+            (metrics-interface/terminate @metric-impl)))
 
 (defn intercalate-dot
   [names]
