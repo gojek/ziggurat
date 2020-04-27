@@ -75,4 +75,4 @@
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags value] (update-counter namespace metric tags value))
-  (update-histogram [this namespace metric tags value] (update-histogram namespace tags value)))
+  (update-timing [this namespace metric tags value] (update-histogram namespace tags value)))

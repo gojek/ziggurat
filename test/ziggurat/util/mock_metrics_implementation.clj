@@ -8,7 +8,7 @@
 (defn update-counter [namespace metric tags signed-val]
   nil)
 
-(defn update-timing  [namespace metric tags signed-val]
+(defn update-timing  [namespace metric tags val]
   nil)
 
 (defn terminate []
@@ -19,4 +19,4 @@
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags signed-val] (update-counter namespace metric tags signed-val))
-  (update-histogram [this namespace metric tags signed-val] (update-timing namespace metric tags signed-val)))
+  (update-timing [this namespace metric tags val] (update-timing namespace metric tags val)))

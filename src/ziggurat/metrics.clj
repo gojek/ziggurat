@@ -107,7 +107,7 @@
          tags                           (remove-topic-tag-for-old-namespace (get-all-tags additional-tags metric-namespaces) metric-namespaces)
          integer-value                  (get-int val)]
      (doseq [metric-ns intercalated-metric-namespaces]
-       (metrics-interface/update-histogram @metric-impl metric-ns nil tags integer-value)))))
+       (metrics-interface/update-timing @metric-impl metric-ns nil tags integer-value)))))
 
 (defn report-time
   "This function is an alias for `report-histogram`.

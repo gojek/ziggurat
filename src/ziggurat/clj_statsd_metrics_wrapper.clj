@@ -30,7 +30,7 @@
         final-metric (str namespace "." metric)]
     (statsd/increment final-metric value rate final-tags)))
 
-(defn update-histogram [namespace metric tags value]
+(defn update-timing [namespace metric tags value]
   (let [final-tags (build-tags tags)
         final-metric (str namespace "." metric)]
     (statsd/timing final-metric value rate final-tags)))
@@ -40,4 +40,4 @@
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags signed-val] (update-counter namespace metric tags signed-val))
-  (update-histogram [this namespace metric tags value] (update-histogram namespace metric tags value)))
+  (update-timing [this namespace metric tags value] (update-timing namespace metric tags value)))

@@ -26,30 +26,30 @@
               expected-namespace (str expected-topic-entity-name ".metric-ns")
               expected-tags      default-tags]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
-                                                    (is (= namespace expected-namespace))
-                                                    (is (= metric passed-metric-name))
-                                                    (is (= tags expected-tags))
-                                                    (is (= value expected-n)))]
+                                                      (is (= namespace expected-namespace))
+                                                      (is (= metric passed-metric-name))
+                                                      (is (= tags expected-tags))
+                                                      (is (= value expected-n)))]
             (metrics/increment-count metric-namespaces passed-metric-name expected-n input-tags))))
       (testing "calls update-counter with correct args - 3rd argument is a number"
         (let [metric-namespaces  ["metric" "ns"]
               expected-namespace "metric.ns"
               expected-tags      default-tags]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
-                                                    (is (= namespace expected-namespace))
-                                                    (is (= metric passed-metric-name))
-                                                    (is (= tags expected-tags))
-                                                    (is (= value expected-n)))]
+                                                      (is (= namespace expected-namespace))
+                                                      (is (= metric passed-metric-name))
+                                                      (is (= tags expected-tags))
+                                                      (is (= value expected-n)))]
             (metrics/increment-count metric-namespaces passed-metric-name expected-n))))
       (testing "calls update-counter with correct args - 3rd argument is a map"
         (let [metric-namespaces  ["metric" "ns"]
               expected-namespace "metric.ns"
               expected-tags      default-tags]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
-                                                    (is (= namespace expected-namespace))
-                                                    (is (= metric passed-metric-name))
-                                                    (is (= tags expected-tags))
-                                                    (is (= value expected-n)))]
+                                                      (is (= namespace expected-namespace))
+                                                      (is (= metric passed-metric-name))
+                                                      (is (= tags expected-tags))
+                                                      (is (= value expected-n)))]
             (metrics/increment-count metric-namespaces passed-metric-name expected-tags))))
       (testing "calls update-counter with correct args - string as an argument"
         (let [metric-namespace         "metric-ns"
@@ -57,11 +57,11 @@
               passed-tags              (merge input-tags default-tags)
               metric-namespaces-called (atom [])]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
-                                                    (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
-                                                          (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                    (is (= tags passed-tags))
-                                                    (is (= metric passed-metric-name))
-                                                    (is (= value expected-n)))]
+                                                      (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
+                                                            (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
+                                                      (is (= tags passed-tags))
+                                                      (is (= metric passed-metric-name))
+                                                      (is (= value expected-n)))]
             (metrics/increment-count metric-namespace passed-metric-name 1 passed-tags)
             (is (some #{metric-namespace} @metric-namespaces-called))
             (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
@@ -70,10 +70,10 @@
               expected-namespace (str expected-topic-entity-name ".metric-ns")
               expected-tags      default-tags]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
-                                                    (is (= namespace expected-namespace))
-                                                    (is (= metric passed-metric-name))
-                                                    (is (= tags expected-tags))
-                                                    (is (= value expected-n)))]
+                                                      (is (= namespace expected-namespace))
+                                                      (is (= metric passed-metric-name))
+                                                      (is (= tags expected-tags))
+                                                      (is (= value expected-n)))]
             (metrics/increment-count metric-namespaces passed-metric-name))))
       (testing "calls update-counter with correct args - additional-tags is nil"
         (let [metric-namespace         "metric-ns"
@@ -81,11 +81,11 @@
               metric-namespaces-called (atom [])
               expected-tags            default-tags]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
-                                                    (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
-                                                          (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                    (is (= tags expected-tags))
-                                                    (is (= metric passed-metric-name))
-                                                    (is (= value expected-n)))]
+                                                      (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
+                                                            (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
+                                                      (is (= tags expected-tags))
+                                                      (is (= metric passed-metric-name))
+                                                      (is (= value expected-n)))]
             (metrics/increment-count metric-namespace passed-metric-name 1 nil)
             (is (some #{metric-namespace} @metric-namespaces-called))
             (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
@@ -204,21 +204,23 @@
         (let [metric-namespaces         [topic-entity-name "message-received-delay-histogram"]
               expected-metric-namespace (str topic-entity-name ".message-received-delay-histogram")
               expected-tags             default-tags]
-          (with-redefs [mock-metrics/update-timing (fn [namespace tags value]
-                                                        (is (= namespace expected-metric-namespace))
-                                                        (is (= tags expected-tags))
-                                                        (is (= value time-val)))]
+          (with-redefs [mock-metrics/update-timing (fn [namespace metric tags value]
+                                                     (is (= namespace expected-metric-namespace))
+                                                     (is (nil? metric))
+                                                     (is (= tags expected-tags))
+                                                     (is (= value time-val)))]
             (metrics/report-histogram metric-namespaces time-val input-tags))))
       (testing "calls update-histogram with the correct arguments - string as an argument"
         (let [metric-namespace         "message-received-delay-histogram"
               actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
               expected-tags            (merge default-tags input-tags)
               metric-namespaces-called (atom [])]
-          (with-redefs [mock-metrics/update-timing (fn [namespace tags value]
-                                                        (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
-                                                              (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                        (is (= tags expected-tags))
-                                                        (is (= value time-val)))]
+          (with-redefs [mock-metrics/update-timing (fn [namespace metric tags value]
+                                                     (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
+                                                           (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
+                                                     (is (nil? metric))
+                                                     (is (= tags expected-tags))
+                                                     (is (= value time-val)))]
             (metrics/report-histogram metric-namespace time-val input-tags)
             (is (some #{metric-namespace} @metric-namespaces-called))
             (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
@@ -227,11 +229,12 @@
               actor-prefixed-metric-ns (str (:app-name (ziggurat-config)) "." metric-namespace)
               expected-tags            default-tags
               metric-namespaces-called (atom [])]
-          (with-redefs [mock-metrics/update-timing (fn [namespace tags value]
-                                                        (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
-                                                              (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                        (is (= tags expected-tags))
-                                                        (is (= value time-val)))]
+          (with-redefs [mock-metrics/update-timing (fn [namespace metric tags value]
+                                                     (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
+                                                           (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
+                                                     (is (nil? metric))
+                                                     (is (= tags expected-tags))
+                                                     (is (= value time-val)))]
             (metrics/report-histogram metric-namespace time-val)
             (is (some #{metric-namespace} @metric-namespaces-called))
             (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
