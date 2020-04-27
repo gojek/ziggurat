@@ -58,7 +58,7 @@
    (let [namespace        (str category "." metric)
          metric-name      (MetricRegistry/name ^String namespace nil)
          stringified-tags (stringify-keys tags)
-         tagged-metric    (.tagged ^MetricName metric-name stringified-tags)]
+         tagged-metric    (get-tagged-metric metric-name stringified-tags)]
      (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
 
 (defn update-counter
@@ -67,8 +67,8 @@
     (.mark ^Meter meter value)))
 
 (defn update-histogram
-  [namespace tags value]
-  (let [histogram (mk-histogram namespace "all" tags)]
+  [namespace metric tags value]
+  (let [histogram (mk-histogram namespace metric tags)]
     (.update ^Histogram histogram value)))
 
 (deftype DropwizardMetrics []
@@ -76,4 +76,4 @@
   (initialize [this statsd-config] (initialize statsd-config))
   (terminate [this] (terminate))
   (update-counter [this namespace metric tags value] (update-counter namespace metric tags value))
-  (update-timing [this namespace metric tags value] (update-histogram namespace tags value)))
+  (update-timing [this namespace metric tags value] (update-histogram namespace metric tags value)))

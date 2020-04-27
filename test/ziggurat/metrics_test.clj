@@ -202,14 +202,15 @@
     (mount/start (mount/only [#'metrics/statsd-reporter]))
     (let [topic-entity-name "expected-topic-entity-name"
           input-tags        {:topic_name topic-entity-name}
-          time-val          10]
+          time-val          10
+          expected-metric   "all"]
       (testing "calls update-histogram with the correct arguments - vector as an argument"
         (let [metric-namespaces         [topic-entity-name "message-received-delay-histogram"]
               expected-metric-namespace (str topic-entity-name ".message-received-delay-histogram")
               expected-tags             default-tags]
           (with-redefs [mock-metrics/update-timing (fn [namespace metric tags value]
                                                      (is (= namespace expected-metric-namespace))
-                                                     (is (nil? metric))
+                                                     (is (= metric expected-metric))
                                                      (is (= tags expected-tags))
                                                      (is (= value time-val)))]
             (metrics/report-histogram metric-namespaces time-val input-tags))))
@@ -221,7 +222,7 @@
           (with-redefs [mock-metrics/update-timing (fn [namespace metric tags value]
                                                      (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                            (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                     (is (nil? metric))
+                                                     (is (= metric expected-metric))
                                                      (is (= tags expected-tags))
                                                      (is (= value time-val)))]
             (metrics/report-histogram metric-namespace time-val input-tags)
@@ -235,7 +236,7 @@
           (with-redefs [mock-metrics/update-timing (fn [namespace metric tags value]
                                                      (cond (= namespace metric-namespace) (swap! metric-namespaces-called conj namespace)
                                                            (= namespace actor-prefixed-metric-ns) (swap! metric-namespaces-called conj namespace))
-                                                     (is (nil? metric))
+                                                     (is (= metric expected-metric))
                                                      (is (= tags expected-tags))
                                                      (is (= value time-val)))]
             (metrics/report-histogram metric-namespace time-val)
