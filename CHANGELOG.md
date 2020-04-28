@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.5 - 2020-04-28
+- Makes metrics implementation configurable
+- passes "all" metric-name to update timing for all metrics
+- Adds docs for MetricsProtocol
+
 ## 3.3.0-alpha.4 - 2020-04-26
 - Defines an interface for metrics.
 - Changes the dropwizard implementation to use the metrics interface
