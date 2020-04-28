@@ -33,6 +33,11 @@
   (f)
   (mount/stop))
 
+(defn mount-metrics [f]
+  (mount/start (mount/only [#'ziggurat.metrics/statsd-reporter]))
+  (f)
+  (mount/stop #'ziggurat.metrics/statsd-reporter))
+
 (defn mount-tracer []
   (with-redefs [tracer/create-tracer (fn [] (MockTracer.))]
     (-> (mount/only [#'tracer/tracer])

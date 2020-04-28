@@ -53,7 +53,7 @@
           (update-counter namespace metric tags value)
           (is (true? @increment-called))))))
 
-  (deftest update-histogram-test
+  (deftest update-timing-test
     (testing "it calls statsd/timing with the correctly formatted arguments"
       (let [value 100
             timing-called (atom false)]
@@ -63,5 +63,5 @@
                                       (is (= clj-statsd-wrapper/rate rate))
                                       (is (= expected-tags tags))
                                       (reset! timing-called true))]
-          (update-histogram namespace metric tags value)
+          (update-timing namespace metric tags value)
           (is (true? @timing-called)))))))
