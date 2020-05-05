@@ -14,22 +14,21 @@
     If the message is of type map, the function just returns the map as it is. In older versions of Ziggurat (< 3.0) we stored
     the messages in deserialized formats in RabbitMQ and those messages can be processed by this function. So we have this logic here."
   [message proto-class topic-entity-name]
-  (println "Actual deserialize called")
   (if-not (map? message)
     (try
-      (let [proto-klass (protodef/mapdef proto-class)
+      (let [proto-klass  (protodef/mapdef proto-class)
             loaded-proto (protodef/parse proto-klass message)
-            proto-keys (-> proto-klass
-                           protodef/mapdef->schema
-                           :fields
-                           keys)]
+            proto-keys   (-> proto-klass
+                             protodef/mapdef->schema
+                             :fields
+                             keys)]
         (select-keys loaded-proto proto-keys))
       (catch Throwable e
-        (let [service-name (:app-name (ziggurat-config))
-              additional-tags {:topic_name topic-entity-name}
+        (let [service-name      (:app-name (ziggurat-config))
+              additional-tags   {:topic_name topic-entity-name}
               default-namespace "message-parsing"
               metric-namespaces [service-name topic-entity-name default-namespace]
-              multi-namespaces [metric-namespaces [default-namespace]]]
+              multi-namespaces  [metric-namespaces [default-namespace]]]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
           (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
           nil)))
@@ -45,19 +44,19 @@
   [message proto-class topic-entity-name]
   (if-not (map? message)
     (try
-      (let [proto-klass (proto/protodef proto-class)
+      (let [proto-klass  (proto/protodef proto-class)
             loaded-proto (proto/protobuf-load proto-klass message)
-            proto-keys (-> proto-klass
-                           proto/protobuf-schema
-                           :fields
-                           keys)]
+            proto-keys   (-> proto-klass
+                             proto/protobuf-schema
+                             :fields
+                             keys)]
         (select-keys loaded-proto proto-keys))
       (catch Throwable e
-        (let [service-name (:app-name (ziggurat-config))
-              additional-tags {:topic_name topic-entity-name}
+        (let [service-name      (:app-name (ziggurat-config))
+              additional-tags   {:topic_name topic-entity-name}
               default-namespace "message-parsing"
               metric-namespaces [service-name topic-entity-name default-namespace]
-              multi-namespaces [metric-namespaces [default-namespace]]]
+              multi-namespaces  [metric-namespaces [default-namespace]]]
           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
           (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
           nil)))
@@ -67,12 +66,7 @@
 (defn protobuf->hash
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
-  (println "Alpha feature value: " (config/get-in-config [:alpha-features :protobuf-middleware :enabled]))
   (if (config/get-in-config [:alpha-features :protobuf-middleware :enabled])
     (fn [message] (handler-fn (deserialise-message message proto-class topic-entity-name)))
     (fn [message] (handler-fn (deserialise-message-deprecated message proto-class topic-entity-name)))))
-
-
-
-
 
