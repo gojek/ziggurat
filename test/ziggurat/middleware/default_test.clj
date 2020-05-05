@@ -51,6 +51,7 @@
           deserialise-message-deprecated-called? (atom false)
           topic-entity-name                      "test"]
       (with-redefs [mw/deserialise-message            (fn [_ _ _] (reset! deserialise-message-called? true))
+                    ziggurat.config/ziggurat-config   (fn [] {:alpha-features {:protobuf-middleware {:enabled true}}})
                     mw/deserialise-message-deprecated (fn [_ _ _] (reset! deserialise-message-deprecated-called? true))]
         ((protobuf->hash (constantly nil) Example$Photo topic-entity-name) nil)
         (is (true? @deserialise-message-called?))
@@ -65,3 +66,7 @@
         ((protobuf->hash (constantly nil) Example$Photo topic-entity-name) nil)
         (is (true? @deserialise-message-deprecated-called?))
         (is (false? @deserialise-message-called?))))))
+
+(deftest protobuf->hash-test-deprecated
+  (with-redefs [ziggurat.config/ziggurat-config (fn [] {:alpha-features {:protobuf-middleware {:enabled false}}})]
+    (protobuf->hash-test)))
