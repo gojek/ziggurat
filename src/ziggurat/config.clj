@@ -4,16 +4,9 @@
             [clonfig.core :as clonfig]
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
-  (:gen-class
-    <<<<<<< HEAD
-    :methods [^{:static true} [get [String] Object]
+  (:gen-class [^{:static true} [get [String] Object]
               ^{:static true} [getIn [java.lang.Iterable] Object]]
     :name tech.gojek.ziggurat.internal.Config))
-=======
-:name tech.gojek.ziggurat.internal.Config
-:methods [^{:static true} [get [String] Object]
-          ^{:static true} [getIn [java.lang.Iterable] Object]] ) )
->>>>>>> add config for alpha features
 
 (def config-file "config.edn")
 
