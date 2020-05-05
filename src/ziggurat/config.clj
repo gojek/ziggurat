@@ -5,8 +5,8 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:gen-class [^{:static true} [get [String] Object]
-              ^{:static true} [getIn [java.lang.Iterable] Object]]
-    :name tech.gojek.ziggurat.internal.Config))
+               ^{:static true} [getIn [java.lang.Iterable] Object]]
+              :name tech.gojek.ziggurat.internal.Config))
 
 (def config-file "config.edn")
 
@@ -65,9 +65,9 @@
   (clonfig/read-config (edn-config config-file)))
 
 (defstate config
-          :start (let [config-values-from-env (config-from-env config-file)
-                       app-name               (-> config-values-from-env :ziggurat :app-name)]
-                   (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
+  :start (let [config-values-from-env (config-from-env config-file)
+               app-name               (-> config-values-from-env :ziggurat :app-name)]
+           (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
   (get config :ziggurat))

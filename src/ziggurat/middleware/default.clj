@@ -34,7 +34,6 @@
           nil)))
     message))
 
-
 (defn- deserialise-message-deprecated
   "This function takes in the message(proto Byte Array) and the proto-class and deserializes the proto ByteArray into a
   Clojure PersistentHashMap.
@@ -61,7 +60,6 @@
           (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
           nil)))
     message))
-
 
 (defn protobuf->hash
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
