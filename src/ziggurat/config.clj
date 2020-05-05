@@ -5,9 +5,15 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:gen-class
-   :methods [^{:static true} [get [String] Object]
-             ^{:static true} [getIn [java.lang.Iterable] Object]]
-   :name tech.gojek.ziggurat.internal.Config))
+    <<<<<<< HEAD
+    :methods [^{:static true} [get [String] Object]
+              ^{:static true} [getIn [java.lang.Iterable] Object]]
+    :name tech.gojek.ziggurat.internal.Config))
+=======
+:name tech.gojek.ziggurat.internal.Config
+:methods [^{:static true} [get [String] Object]
+          ^{:static true} [getIn [java.lang.Iterable] Object]] ) )
+>>>>>>> add config for alpha features
 
 (def config-file "config.edn")
 
@@ -18,6 +24,7 @@
                                                        :worker-count              10
                                                        :queue-size                10
                                                        :thread-termination-wait-s 1}
+                                :alpha-features       {:protobuf-middleware {:enabled false}}
                                 :rabbit-mq-connection {:port            5672
                                                        :username        "guest"
                                                        :password        "guest"
@@ -65,9 +72,9 @@
   (clonfig/read-config (edn-config config-file)))
 
 (defstate config
-  :start (let [config-values-from-env (config-from-env config-file)
-               app-name               (-> config-values-from-env :ziggurat :app-name)]
-           (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
+          :start (let [config-values-from-env (config-from-env config-file)
+                       app-name               (-> config-values-from-env :ziggurat :app-name)]
+                   (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
   (get config :ziggurat))
@@ -77,7 +84,7 @@
 
 (defn statsd-config []
   (let [cfg (ziggurat-config)]
-    (get cfg :statsd (:datadog cfg)))) ;; TODO: remove datadog in the future
+    (get cfg :statsd (:datadog cfg))))                      ;; TODO: remove datadog in the future
 
 (defn get-in-config [ks]
   (get-in (ziggurat-config) ks))
