@@ -10,7 +10,7 @@
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
 
-(deftest protobuf->hash-test
+(deftest common-protobuf->hash-test
   (testing "Given a serialised object and corresponding proto-class it deserialises the object into a clojure map and calls the handler-fn with that message"
     (let [handler-fn-called? (atom false)
           message            {:id   7
@@ -45,28 +45,30 @@
                                (if (= msg message)
                                  (reset! handler-fn-called? true)))]
       ((protobuf->hash handler-fn proto-class topic-entity-name) message)
-      (is (true? @handler-fn-called?))))
-  (testing "When alpha feature is enabled use the new deserializer function"
-    (let [deserialise-message-called?            (atom false)
-          deserialise-message-deprecated-called? (atom false)
-          topic-entity-name                      "test"]
-      (with-redefs [mw/deserialise-message            (fn [_ _ _] (reset! deserialise-message-called? true))
-                    ziggurat.config/ziggurat-config   (fn [] {:alpha-features {:protobuf-middleware {:enabled true}}})
-                    mw/deserialise-message-deprecated (fn [_ _ _] (reset! deserialise-message-deprecated-called? true))]
-        ((protobuf->hash (constantly nil) Example$Photo topic-entity-name) nil)
-        (is (true? @deserialise-message-called?))
-        (is (false? @deserialise-message-deprecated-called?)))))
-  (testing "When alpha feature is disabled use the old deserializer function"
-    (let [deserialise-message-called?            (atom false)
-          deserialise-message-deprecated-called? (atom false)
-          topic-entity-name                      "test"]
-      (with-redefs [mw/deserialise-message            (fn [_ _ _] (reset! deserialise-message-called? true))
-                    ziggurat.config/ziggurat-config   (fn [] {:alpha-features {:protobuf-middleware {:enabled false}}})
-                    mw/deserialise-message-deprecated (fn [_ _ _] (reset! deserialise-message-deprecated-called? true))]
-        ((protobuf->hash (constantly nil) Example$Photo topic-entity-name) nil)
-        (is (true? @deserialise-message-deprecated-called?))
-        (is (false? @deserialise-message-called?))))))
+      (is (true? @handler-fn-called?)))))
 
-(deftest protobuf->hash-test-deprecated
-  (with-redefs [ziggurat.config/ziggurat-config (fn [] {:alpha-features {:protobuf-middleware {:enabled false}}})]
-    (protobuf->hash-test)))
+(deftest protobuf->hash-test-alpha-and-deprecated
+  (testing "Deprecated protobuf deserializer"
+    (with-redefs [ziggurat.config/ziggurat-config (fn [] {:alpha-features {:protobuf-middleware {:enabled false}}})]
+      (common-protobuf->hash-test)
+      (testing "When alpha feature is disabled use the old deserializer function"
+        (let [deserialise-message-called?            (atom false)
+              deserialise-message-deprecated-called? (atom false)
+              topic-entity-name                      "test"]
+          (with-redefs [mw/deserialise-message            (fn [_ _ _] (reset! deserialise-message-called? true))
+                        mw/deserialise-message-deprecated (fn [_ _ _] (reset! deserialise-message-deprecated-called? true))]
+            ((protobuf->hash (constantly nil) Example$Photo topic-entity-name) nil)
+            (is (true? @deserialise-message-deprecated-called?))
+            (is (false? @deserialise-message-called?)))))))
+  (testing "Alpha protobuf deserializer"
+    (with-redefs [ziggurat.config/ziggurat-config (fn [] {:alpha-features {:protobuf-middleware {:enabled true}}})]
+      (common-protobuf->hash-test)
+      (testing "When alpha feature is enabled use the new deserializer function"
+        (let [deserialise-message-called?            (atom false)
+              deserialise-message-deprecated-called? (atom false)
+              topic-entity-name                      "test"]
+          (with-redefs [mw/deserialise-message            (fn [_ _ _] (reset! deserialise-message-called? true))
+                        mw/deserialise-message-deprecated (fn [_ _ _] (reset! deserialise-message-deprecated-called? true))]
+            ((protobuf->hash (constantly nil) Example$Photo topic-entity-name) nil)
+            (is (true? @deserialise-message-called?))
+            (is (false? @deserialise-message-deprecated-called?))))))))
