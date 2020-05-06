@@ -7,6 +7,7 @@
             :statsd               {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
+            :alpha-features       {:protobuf-middleware {:enabled false}}
             :sentry               {:enabled                   [false :bool]
                                    :dsn                       "dummy"
                                    :worker-count              [10 :int]

@@ -18,6 +18,7 @@
                                                        :worker-count              10
                                                        :queue-size                10
                                                        :thread-termination-wait-s 1}
+                                :alpha-features       {:protobuf-middleware {:enabled false}}
                                 :rabbit-mq-connection {:port            5672
                                                        :username        "guest"
                                                        :password        "guest"
@@ -77,7 +78,7 @@
 
 (defn statsd-config []
   (let [cfg (ziggurat-config)]
-    (get cfg :statsd (:datadog cfg)))) ;; TODO: remove datadog in the future
+    (get cfg :statsd (:datadog cfg))))                      ;; TODO: remove datadog in the future
 
 (defn get-in-config [ks]
   (get-in (ziggurat-config) ks))

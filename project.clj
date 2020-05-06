@@ -31,6 +31,7 @@
                  [org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.logging "0.5.0"]
                  [nrepl/nrepl "0.6.0"]
+                 [clojusc/protobuf "3.5.1-v1.1"]
                  [org.flatland/protobuf "0.8.1"]
                  [prismatic/schema "1.1.12"]
                  [clj-statsd "0.4.0"]
@@ -61,6 +62,7 @@
                                       [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
                                       [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
+                                      [org.flatland/protobuf "0.8.1"]
                                       [org.clojure/test.check "0.10.0"]]
                        :plugins      [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
