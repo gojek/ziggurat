@@ -61,10 +61,13 @@
           nil)))
     message))
 
+(defn get-deserializer []
+  (if (config/get-in-config [:alpha-features :protobuf-middleware :enabled])
+    deserialise-message
+    deserialise-message-deprecated))
+
 (defn protobuf->hash
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
-  (if (config/get-in-config [:alpha-features :protobuf-middleware :enabled])
-    (fn [message] (handler-fn (deserialise-message message proto-class topic-entity-name)))
-    (fn [message] (handler-fn (deserialise-message-deprecated message proto-class topic-entity-name)))))
+  (fn [message] (handler-fn ((get-deserializer) message proto-class topic-entity-name))))
 
