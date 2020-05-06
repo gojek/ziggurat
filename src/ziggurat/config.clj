@@ -4,9 +4,10 @@
             [clonfig.core :as clonfig]
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
-  (:gen-class [^{:static true} [get [String] Object]
-               ^{:static true} [getIn [java.lang.Iterable] Object]]
-              :name tech.gojek.ziggurat.internal.Config))
+  (:gen-class
+   :methods [^{:static true} [get [String] Object]
+             ^{:static true} [getIn [java.lang.Iterable] Object]]
+   :name tech.gojek.ziggurat.internal.Config))
 
 (def config-file "config.edn")
 
