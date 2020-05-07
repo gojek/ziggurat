@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.7 - 2020-05-07
+- Remove `[org.flatland/protobuf "0.8.1"]` from test dependencies
+
 ## 3.3.0-alpha.6 - 2020-05-07
 - Fixes [Issue](https://github.com/gojek/ziggurat/issues/144)
 - Adds alpha feature flags
