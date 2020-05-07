@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.6 - 2020-05-07
+- Fixes [Issue](https://github.com/gojek/ziggurat/issues/144)
+- Adds alpha feature flags
+
 ## 3.3.0-alpha.5 - 2020-04-28
 - Makes metrics implementation configurable
 - passes "all" metric-name to update timing for all metrics
