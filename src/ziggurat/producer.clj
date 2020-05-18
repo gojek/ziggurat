@@ -63,9 +63,12 @@
 
 (def implements-serializer? (s/pred *implements-serializer?* 'implements-serializer?))
 
-(s/defschema ProducerConfigSchema {(s/required-key :key-serializer-class)                  implements-serializer?
-                                   (s/required-key :value-serializer-class)                implements-serializer?
-                                   (s/required-key :bootstrap-servers)                     s/Any
+(s/defschema ProducerConfigSchema {(s/required-key :bootstrap-servers)                     s/Any
+                                   (s/optional-key :key-serializer-class)                  implements-serializer?
+                                   (s/optional-key :value-serializer-class)                implements-serializer?
+                                   (s/optional-key :key-serializer)                        implements-serializer?
+                                   (s/optional-key :value-serializer)                      implements-serializer?
+                                   (s/optional-key :retries-config)                        s/Any
                                    (s/optional-key :metadata-max-age)                      s/Any
                                    (s/optional-key :reconnect-backoff-ms)                  s/Any
                                    (s/optional-key :client-id)                             s/Any
@@ -101,8 +104,11 @@
 (def explain-str (partial s/explain ProducerConfigSchema))
 
 (defn property->fn [field-name]
-  (let [raw-field-name (if (= field-name :max-in-flight-requests-per-connection)
-                         "org.apache.kafka.clients.producer.ProducerConfig/%s"
+  (let [raw-field-name (condp = field-name
+                         :max-in-flight-requests-per-connection "org.apache.kafka.clients.producer.ProducerConfig/%s"
+                         :retries-config "org.apache.kafka.clients.producer.ProducerConfig/RETRIES_CONFIG"
+                         :key-serializer "org.apache.kafka.clients.producer.ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG"
+                         :value-serializer "org.apache.kafka.clients.producer.ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG"
                          "org.apache.kafka.clients.producer.ProducerConfig/%s_CONFIG")]
     (->> field-name
          csk/->SCREAMING_SNAKE_CASE_STRING
@@ -133,7 +139,11 @@
            (do (log/info "Starting Kafka producers ...")
                (reduce (fn [producers [stream-config-key properties]]
                          (do (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
-                             (assoc producers stream-config-key (TracingKafkaProducer. (KafkaProducer. properties) tracer))))
+                             (let [_ (println properties)
+                                   kp  (KafkaProducer. properties)
+                                   _   (println kp)
+                                   tkp (TracingKafkaProducer. kp tracer)]
+                             (assoc producers stream-config-key tkp))))
                        {}
                        (seq (producer-properties-map))))
            (log/info "No producers found. Can not initiate start."))

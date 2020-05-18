@@ -170,14 +170,17 @@
                                 "compression.type"
                                 "metric.reporters"}
           configs             [:key-serializer-class
-                               :bootstrap-servers
+                               :key-serializer
                                :value-serializer-class
+                               :value-serializer
+                               :retries
+                               :retries-config
+                               :bootstrap-servers
                                :metadata-max-age
                                :reconnect-backoff-ms
                                :client-id
                                :metrics-num-samples
                                :transaction-timeout
-                               :retries
                                :retry-backoff-ms
                                :receive-buffer
                                :partitioner-class
