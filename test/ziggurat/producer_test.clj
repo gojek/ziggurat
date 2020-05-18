@@ -170,11 +170,8 @@
                                 "compression.type"
                                 "metric.reporters"}
           configs             [:key-serializer-class
-                               :key-serializer
                                :value-serializer-class
-                               :value-serializer
                                :retries
-                               :retries-config
                                :bootstrap-servers
                                :metadata-max-age
                                :reconnect-backoff-ms
@@ -204,6 +201,19 @@
                                :max-in-flight-requests-per-connection
                                :send-buffer
                                :batch-size]
+          response            (set (for [config configs]
+                                     (eval (property->fn config))))]
+      (is (= response
+             expected-properties)))))
+
+(deftest backward-compatibility-of-producer-configs
+  (testing "should allow key-serializer, value-serializer and retries-config attributes of kafka producer"
+    (let [expected-properties #{"value.serializer"
+                                "retries"
+                                "key.serializer"}
+          configs             [:key-serializer
+                               :value-serializer
+                               :retries-config]
           response            (set (for [config configs]
                                      (eval (property->fn config))))]
       (is (= response
