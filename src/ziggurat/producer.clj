@@ -45,8 +45,10 @@
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
+            [camel-snake-kebab.core :as csk]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.java-util :refer [get-key]])
+            [ziggurat.util.java-util :refer [get-key]]
+            [schema.core :as s])
   (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
            (java.util Properties)
            (io.opentracing.contrib.kafka TracingKafkaProducer))
@@ -55,27 +57,79 @@
    :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
               ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
-(defn- producer-properties-from-config [{:keys [bootstrap-servers
-                                                acks
-                                                key-serializer
-                                                value-serializer
-                                                enable-idempotence
-                                                retries-config
-                                                max-in-flight-requests-per-connection]}]
-  (doto (Properties.)
-    (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG bootstrap-servers)
-    (.put ProducerConfig/ACKS_CONFIG acks)
-    (.put ProducerConfig/RETRIES_CONFIG (int retries-config))
-    (.put ProducerConfig/ENABLE_IDEMPOTENCE_CONFIG enable-idempotence)
-    (.put ProducerConfig/MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION (int max-in-flight-requests-per-connection))
-    (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG key-serializer)
-    (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG value-serializer)))
+(defn *implements-serializer?* [serializer-class]
+  (contains? (set (.getInterfaces (Class/forName serializer-class)))
+             (Class/forName "org.apache.kafka.common.serialization.Serializer")))
+
+(def implements-serializer? (s/pred *implements-serializer?* 'implements-serializer?))
+
+(s/defschema ProducerConfigSchema {(s/required-key :bootstrap-servers)                     s/Any
+                                   (s/optional-key :key-serializer-class)                  implements-serializer?
+                                   (s/optional-key :value-serializer-class)                implements-serializer?
+                                   (s/optional-key :key-serializer)                        implements-serializer?
+                                   (s/optional-key :value-serializer)                      implements-serializer?
+                                   (s/optional-key :retries-config)                        s/Any
+                                   (s/optional-key :metadata-max-age)                      s/Any
+                                   (s/optional-key :reconnect-backoff-ms)                  s/Any
+                                   (s/optional-key :client-id)                             s/Any
+                                   (s/optional-key :metric-num-samples)                    s/Any
+                                   (s/optional-key :transaction-timeout)                   s/Any
+                                   (s/optional-key :retries)                               s/Any
+                                   (s/optional-key :retry-backoff-ms)                      s/Any
+                                   (s/optional-key :receive-buffer)                        s/Any
+                                   (s/optional-key :partitioner-class)                     s/Any
+                                   (s/optional-key :max-block-ms)                          s/Any
+                                   (s/optional-key :metrics-reporter-classes)              s/Any
+                                   (s/optional-key :compression-type)                      s/Any
+                                   (s/optional-key :max-request-size)                      s/Any
+                                   (s/optional-key :delivery-timeout-ms)                   s/Any
+                                   (s/optional-key :metrics-sample-window-ms)              s/Any
+                                   (s/optional-key :request-timeout-ms)                    s/Any
+                                   (s/optional-key :buffer-memory)                         s/Any
+                                   (s/optional-key :interceptor-classes)                   s/Any
+                                   (s/optional-key :linger-ms)                             s/Any
+                                   (s/optional-key :connections-max-idle-ms)               s/Any
+                                   (s/optional-key :acks)                                  s/Any
+                                   (s/optional-key :enable-idempotence)                    s/Any
+                                   (s/optional-key :metrics-recording-level)               s/Any
+                                   (s/optional-key :transactional-id)                      s/Any
+                                   (s/optional-key :reconnect-backoff-max-ms)              s/Any
+                                   (s/optional-key :client-dns-lookup)                     s/Any
+                                   (s/optional-key :max-in-flight-requests-per-connection) s/Any
+                                   (s/optional-key :send-buffer)                           s/Any
+                                   (s/optional-key :batch-size)                            s/Any})
+
+(def valid-configs? (partial s/validate ProducerConfigSchema))
+
+(def explain-str (partial s/explain ProducerConfigSchema))
+
+(defn property->fn [field-name]
+  (let [raw-field-name (condp = field-name
+                         :max-in-flight-requests-per-connection "org.apache.kafka.clients.producer.ProducerConfig/%s"
+                         :retries-config "org.apache.kafka.clients.producer.ProducerConfig/RETRIES_CONFIG"
+                         :key-serializer "org.apache.kafka.clients.producer.ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG"
+                         :value-serializer "org.apache.kafka.clients.producer.ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG"
+                         "org.apache.kafka.clients.producer.ProducerConfig/%s_CONFIG")]
+    (->> field-name
+         csk/->SCREAMING_SNAKE_CASE_STRING
+         (format raw-field-name)
+         (read-string))))
+
+(defn producer-properties [config-map]
+  (if (valid-configs? config-map)
+    (let [props (Properties.)]
+      (doseq [config-key (keys config-map)]
+        (.setProperty props
+                      (eval (property->fn config-key))
+                      (str (get config-map config-key))))
+      props)
+    (throw (ex-info (explain-str config-map) config-map))))
 
 (defn producer-properties-map []
   (reduce (fn [producer-map [stream-config-key stream-config]]
             (let [producer-config (:producer stream-config)]
               (if (some? producer-config)
-                (assoc producer-map stream-config-key (producer-properties-from-config producer-config))
+                (assoc producer-map stream-config-key (producer-properties producer-config))
                 producer-map)))
           {}
           (seq (:stream-router (ziggurat-config)))))
@@ -85,7 +139,11 @@
            (do (log/info "Starting Kafka producers ...")
                (reduce (fn [producers [stream-config-key properties]]
                          (do (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
-                             (assoc producers stream-config-key (TracingKafkaProducer. (KafkaProducer. properties) tracer))))
+                             (let [_ (println properties)
+                                   kp  (KafkaProducer. properties)
+                                   _   (println kp)
+                                   tkp (TracingKafkaProducer. kp tracer)]
+                               (assoc producers stream-config-key tkp))))
                        {}
                        (seq (producer-properties-map))))
            (log/info "No producers found. Can not initiate start."))
@@ -98,7 +156,7 @@
                               (.flush)
                               (.close)))
                           (seq kafka-producers))))
-          (log/info "No producers found. Can not initiate stop.")))
+          (log/info "No producers found.n Can not initiate stop.")))
 
 (defn send
   "A wrapper around `org.apache.kafka.clients.producer.KafkaProducer#send` which enables

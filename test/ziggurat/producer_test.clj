@@ -4,14 +4,19 @@
             [clojure.test.check.generators :as gen]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix :refer [*producer-properties* *consumer-properties*]]
-            [ziggurat.producer :refer [producer-properties-map send kafka-producers -send]]
+            [ziggurat.producer :refer [producer-properties-map send kafka-producers
+                                       property->fn -send producer-properties]]
             [ziggurat.streams :refer [start-streams stop-streams]]
             [ziggurat.tracer :refer [tracer]])
-  (:import [org.apache.kafka.clients.producer KafkaProducer]
+  (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord ProducerConfig)
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
            [io.opentracing.contrib.kafka TracingKafkaProducer]))
 
 (use-fixtures :once fix/mount-producer-with-config-and-tracer)
+
+(def valid-config {:key-serializer-class   "org.apache.kafka.common.serialization.StringSerializer"
+                   :value-serializer-class "org.apache.kafka.common.serialization.StringSerializer"
+                   :bootstrap-servers      "localhost:8000"})
 
 (defn stream-router-config-without-producer [])
 (:stream-router {:default {:application-id       "test"
@@ -106,3 +111,110 @@
                              (reset! send-with-partition-called? true)))]
         (-send stream-config-key topic partition key value)
         (is (true? @send-with-partition-called?))))))
+
+(deftest producer-properties-test
+  (testing "with correct config"
+    (let [valid-config (assoc valid-config :linger-ms "1")
+          props        (producer-properties valid-config)]
+      (is (= (.getProperty props ProducerConfig/LINGER_MS_CONFIG)
+             "1"))
+      (is (= (.getProperty props ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG)
+             (:key-serializer-class valid-config)))
+      (is (= (.getProperty props ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG)
+             (:value-serializer-class valid-config)))
+      (is (= (.getProperty props ProducerConfig/BOOTSTRAP_SERVERS_CONFIG)
+             (:bootstrap-servers valid-config)))))
+
+  (testing "with incorrect config"
+    (let [valid-config (assoc valid-config :linger-ms-foo "1")]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
+    (let [valid-config (update  valid-config :key-serializer-class (constantly  "java.time.Clock"))]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
+    (let [valid-config (update  valid-config :key-serializer-class (constantly  "java.foo.Bar"))]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
+    (let [valid-config (dissoc valid-config :bootstrap-servers)]
+      (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))))
+
+(deftest property->fn-test
+  (testing "should return the producer property for a given config"
+    (let [expected-properties #{"send.buffer.bytes"
+                                "metrics.sample.window.ms"
+                                "receive.buffer.bytes"
+                                "client.dns.lookup"
+                                "reconnect.backoff.ms"
+                                "transactional.id"
+                                "interceptor.classes"
+                                "bootstrap.servers"
+                                "request.timeout.ms"
+                                "connections.max.idle.ms"
+                                "metrics.num.samples"
+                                "retry.backoff.ms"
+                                "linger.ms"
+                                "enable.idempotence"
+                                "client.id"
+                                "metadata.max.age.ms"
+                                "max.block.ms"
+                                "value.serializer"
+                                "retries"
+                                "key.serializer"
+                                "reconnect.backoff.max.ms"
+                                "metrics.recording.level"
+                                "batch.size"
+                                "delivery.timeout.ms"
+                                "buffer.memory"
+                                "max.in.flight.requests.per.connection"
+                                "partitioner.class"
+                                "acks"
+                                "max.request.size"
+                                "transaction.timeout.ms"
+                                "compression.type"
+                                "metric.reporters"}
+          configs             [:key-serializer-class
+                               :value-serializer-class
+                               :retries
+                               :bootstrap-servers
+                               :metadata-max-age
+                               :reconnect-backoff-ms
+                               :client-id
+                               :metrics-num-samples
+                               :transaction-timeout
+                               :retry-backoff-ms
+                               :receive-buffer
+                               :partitioner-class
+                               :max-block-ms
+                               :metric-reporter-classes
+                               :compression-type
+                               :max-request-size
+                               :delivery-timeout-ms
+                               :metrics-sample-window-ms
+                               :request-timeout-ms
+                               :buffer-memory
+                               :interceptor-classes
+                               :linger-ms
+                               :connections-max-idle-ms
+                               :acks
+                               :enable-idempotence
+                               :metrics-recording-level
+                               :transactional-id
+                               :reconnect-backoff-max-ms
+                               :client-dns-lookup
+                               :max-in-flight-requests-per-connection
+                               :send-buffer
+                               :batch-size]
+          response            (set (for [config configs]
+                                     (eval (property->fn config))))]
+      (is (= response
+             expected-properties)))))
+
+(deftest backward-compatibility-of-producer-configs
+  (testing "should allow key-serializer, value-serializer and retries-config attributes of kafka producer"
+    (let [expected-properties #{"value.serializer"
+                                "retries"
+                                "key.serializer"}
+          configs             [:key-serializer
+                               :value-serializer
+                               :retries-config]
+          response            (set (for [config configs]
+                                     (eval (property->fn config))))]
+      (is (= response
+             expected-properties)))))

@@ -43,18 +43,18 @@
                  [ring-logger "0.7.7"]
                  [tech.gojek/sentry-clj.async "1.0.0" :exclusions [org.clojure/clojure]]
                  [yleisradio/new-reliquary "1.1.0" :exclusions [org.clojure/clojure]]]
-  :deploy-repositories [["clojars" {:url "https://clojars.org/repo"
-                                      :username :env/clojars_username
-                                      :password :env/clojars_password
-                                      :sign-releases false}]]
+  :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
+                                    :username      :env/clojars_username
+                                    :password      :env/clojars_password
+                                    :sign-releases false}]]
   :pedantic? :warn
   :java-source-paths ["src/com"]
-  :aliases {"test-all"                   ["with-profile" "default:+1.8:+1.9" "test"]
-            "code-coverage"              ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
+  :aliases {"test-all"      ["with-profile" "default:+1.8:+1.9" "test"]
+            "code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
   :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.fixtures]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
-                       :pedantic? :abort}
+                       :pedantic?   :abort}
              :test    {:jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
                        :dependencies [[com.google.protobuf/protobuf-java "3.9.1"]
                                       [io.confluent/kafka-schema-registry "4.1.1" :exclusions [javax.ws.rs/javax.ws.rs-api com.fasterxml.jackson.core/jackson-annotations]]

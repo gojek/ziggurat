@@ -45,11 +45,11 @@
                                                                                                           :enabled [true :bool]}}}
                                                         :producer             {:bootstrap-servers                     "localhost:9092"
                                                                                :acks                                  "all"
-                                                                               :retries-config                        5
+                                                                               :retries                               5
                                                                                :max-in-flight-requests-per-connection 5
                                                                                :enable-idempotence                    false
-                                                                               :value-serializer                      "org.apache.kafka.common.serialization.StringSerializer"
-                                                                               :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}
+                                                                               :value-serializer-class                "org.apache.kafka.common.serialization.StringSerializer"
+                                                                               :key-serializer-class                  "org.apache.kafka.common.serialization.StringSerializer"}}
                                    :using-string-serde {:application-id              "test"
                                                         :bootstrap-servers           "localhost:9092"
                                                         :stream-threads-count        [1 :int]
