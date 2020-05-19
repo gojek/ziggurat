@@ -143,7 +143,7 @@
                                    kp  (KafkaProducer. properties)
                                    _   (println kp)
                                    tkp (TracingKafkaProducer. kp tracer)]
-                             (assoc producers stream-config-key tkp))))
+                               (assoc producers stream-config-key tkp))))
                        {}
                        (seq (producer-properties-map))))
            (log/info "No producers found. Can not initiate start."))
