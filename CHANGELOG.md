@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0-alpha.8 - 2020-05-19
+- Adding support for all configurations supported by Kafka Producer
+
 ## 3.3.0-alpha.7 - 2020-05-07
 - Remove `[org.flatland/protobuf "0.8.1"]` from test dependencies
 
