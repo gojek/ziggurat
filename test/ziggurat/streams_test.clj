@@ -1,5 +1,5 @@
 (ns ziggurat.streams-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
             [protobuf.core :as proto]
             [ziggurat.streams :refer [start-streams stop-streams]]
             [ziggurat.fixtures :as fix]
@@ -99,6 +99,83 @@
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
+
+(deftest start-stream-joins-test
+  (testing "stream joins using inner join"
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count {:topic {:id 7, :path "/photos/h2k3j4h9h23"}, :another-test-topic {:id 7, :path "/photos/h2k3j4h9h23"}})
+          times                  1
+          kvs                    (repeat times message-key-value)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          streams                (start-streams {:default {:handler-fn handler-fn}}
+                                                (-> (ziggurat-config)
+                                                    (assoc-in [:stream-router :default :consumer-type] :stream-joins)
+                                                    (assoc-in [:stream-router :default :input-topics] {:topic {:name "topic"} :another-test-topic {:name "another-test-topic"}})
+                                                    (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 5000 :join-type :inner}})
+                                                    (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                    (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+      (Thread/sleep 10000) ;;waiting for streams to start
+      (IntegrationTestUtils/produceKeyValuesSynchronously "topic"
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (IntegrationTestUtils/produceKeyValuesSynchronously "another-test-topic"
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (Thread/sleep 5000) ;;wating for streams to consume messages
+      (stop-streams streams)
+      (is (= times @message-received-count))))
+  (testing "stream joins using left join"
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count {:topic {:id 7, :path "/photos/h2k3j4h9h23"}, :another-test-topic {:id 7, :path "/photos/h2k3j4h9h23"}})
+          times                  1
+          kvs                    (repeat times message-key-value)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          streams                (start-streams {:default {:handler-fn handler-fn}}
+                                                (-> (ziggurat-config)
+                                                    (assoc-in [:stream-router :default :consumer-type] :stream-joins)
+                                                    (assoc-in [:stream-router :default :input-topics] {:topic {:name "topic"} :another-test-topic {:name "another-test-topic"}})
+                                                    (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 5000 :join-type :left}})
+                                                    (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                    (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+      (Thread/sleep 10000) ;;waiting for streams to start
+      (IntegrationTestUtils/produceKeyValuesSynchronously "topic"
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (IntegrationTestUtils/produceKeyValuesSynchronously "another-test-topic"
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (Thread/sleep 5000) ;;wating for streams to consume messages
+      (stop-streams streams)
+      (is (= times @message-received-count))))
+  (testing "stream joins using outer join"
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count {:topic {:id 7, :path "/photos/h2k3j4h9h23"}, :another-test-topic {:id 7, :path "/photos/h2k3j4h9h23"}})
+          times                  1
+          kvs                    (repeat times message-key-value)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          streams                (start-streams {:default {:handler-fn handler-fn}}
+                                                (-> (ziggurat-config)
+                                                    (assoc-in [:stream-router :default :consumer-type] :stream-joins)
+                                                    (assoc-in [:stream-router :default :input-topics] {:topic {:name "topic"} :another-test-topic {:name "another-test-topic"}})
+                                                    (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 5000 :join-type :outer}})
+                                                    (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                    (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+      (Thread/sleep 10000) ;;waiting for streams to start
+      (IntegrationTestUtils/produceKeyValuesSynchronously "topic"
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (IntegrationTestUtils/produceKeyValuesSynchronously "another-test-topic"
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (Thread/sleep 5000) ;;wating for streams to consume messages
+      (stop-streams streams)
+      (is (= times @message-received-count)))))
 
 (deftest start-streams-test-with-string-serde
   (let [message-received-count (atom 0)

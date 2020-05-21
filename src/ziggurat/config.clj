@@ -65,6 +65,8 @@
 (defn config-from-env [config-file]
   (clonfig/read-config (edn-config config-file)))
 
+(declare config)
+
 (defstate config
   :start (let [config-values-from-env (config-from-env config-file)
                app-name               (-> config-values-from-env :ziggurat :app-name)]
@@ -80,8 +82,11 @@
   (let [cfg (ziggurat-config)]
     (get cfg :statsd (:datadog cfg))))                      ;; TODO: remove datadog in the future
 
-(defn get-in-config [ks]
-  (get-in (ziggurat-config) ks))
+(defn get-in-config
+  ([ks]
+   (get-in (ziggurat-config) ks))
+  ([ks default]
+   (get-in (ziggurat-config) ks default)))
 
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
