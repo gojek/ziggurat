@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.0 - 2020-05-26
+- Makes metrics library configurable, exposes a metrics interface and provides an 
+implementation for clj-statsd library.
+- Updates dependency of flatland/protobuf and puts the change behind a alpha-features configuration flag
+- Adds support for all configurations of kafka-producer.
+
+*(for a more details list of changes look at the changelogs of 3.3.0-alpha. entries)*
+
 ## 3.3.0-alpha.8 - 2020-05-19
 - Adding support for all configurations supported by Kafka Producer
 
