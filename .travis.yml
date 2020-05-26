@@ -38,6 +38,3 @@ jobs:
 
   - stage: deploy
     script: lein deploy clojars
-    branches:
-      only:
-      - 2.x
