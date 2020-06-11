@@ -17,10 +17,10 @@
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :channel-1)
                                          :channel-1  (constantly :success)}}]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! rmq-connect-called? true)
-                                  (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! rmq-connect-called? true)
+                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -29,7 +29,7 @@
         (-> (mount/only #{#'rmqw/connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'rmqw/connection)
         (is (= @thread-count 14))
         (is @rmq-connect-called?))))
 
@@ -38,9 +38,9 @@
           orig-rmq-connect    rmq/connect
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! rmq-connect-called? true)
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! rmq-connect-called? true)
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled true}
                                                               :tracer {:enabled false}))]
@@ -55,9 +55,9 @@
           orig-rmq-connect    rmq/connect
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! rmq-connect-called? true)
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! rmq-connect-called? true)
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (-> ziggurat-config
                                                            (assoc :retry {:enabled false})
                                                            (dissoc :tracer)))]
@@ -75,9 +75,9 @@
                                            :channel-1  (constantly :success)}
                                :default-1 {:handler-fn (constantly :channel-3)
                                            :channel-3  (constantly :success)}}]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! rmq-connect-called? true)
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! rmq-connect-called? true)
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}
                                                               :tracer {:enabled false}))]
@@ -92,9 +92,9 @@
           orig-rmq-connect rmq/connect
           ziggurat-config  (config/ziggurat-config)
           stream-routes    {:default {:handler-fn (constantly :success)}}]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -111,9 +111,9 @@
     (let [thread-count     (atom 0)
           orig-rmq-connect rmq/connect
           ziggurat-config  (config/ziggurat-config)]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -127,9 +127,9 @@
     (let [thread-count     (atom 0)
           orig-rmq-connect rmq/connect
           ziggurat-config  (config/ziggurat-config)]
-      (with-redefs [rmq/connect (fn [provided-config]
-                                  (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                  (orig-rmq-connect provided-config))
+      (with-redefs [rmq/connect            (fn [provided-config]
+                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                             (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -148,7 +148,7 @@
           ziggurat-config        (config/ziggurat-config)
           stream-routes          {:default {:handler-fn (constantly :channel-1)
                                             :channel-1  (constantly :success)}}]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! create-connect-called? true)
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
@@ -168,7 +168,7 @@
           orig-create-conn       rmqw/create-connection
           ziggurat-config        (config/ziggurat-config)
           stream-routes          {:default {:handler-fn (constantly :success)}}]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
@@ -184,7 +184,7 @@
           orig-create-conn       rmqw/create-connection
           ziggurat-config        (config/ziggurat-config)
           stream-routes          {:default {:handler-fn (constantly :success)}}]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
@@ -203,7 +203,7 @@
                                               :channel-1  (constantly :success)}
                                   :default-1 {:handler-fn (constantly :channel-3)
                                               :channel-3  (constantly :success)}}]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
@@ -216,10 +216,10 @@
 
   (testing "should provide the correct number of threads for the thread pool for multiple channels"
     (let [thread-count     (atom 0)
-          orig-create-conn mc/create-connection
+          orig-create-conn rmqw/create-connection
           ziggurat-config  (config/ziggurat-config)
           stream-routes    {:default {:handler-fn (constantly :success)}}]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
@@ -237,7 +237,7 @@
     (let [thread-count     (atom 0)
           orig-create-conn rmqw/create-connection
           ziggurat-config  (config/ziggurat-config)]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
@@ -252,7 +252,7 @@
     (let [thread-count     (atom 0)
           orig-create-conn rmqw/create-connection
           ziggurat-config  (config/ziggurat-config)]
-      (with-redefs [rmqw/create-connection   (fn [provided-config tracer-enabled]
+      (with-redefs [rmqw/create-connection (fn [provided-config tracer-enabled]
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
