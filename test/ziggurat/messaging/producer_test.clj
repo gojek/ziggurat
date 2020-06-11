@@ -5,7 +5,7 @@
             [langohr.queue :as lq]
             [ziggurat.config :refer [rabbitmq-config ziggurat-config channel-retry-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
@@ -285,7 +285,7 @@
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?)))))
   (testing "An exception is raised, if publishing to RabbitMQ fails even after retries"
-    (mount/stop #'ziggurat.messaging.connection/connection)
+    (mount/stop #'rmqw/connection)
     (is (thrown? clojure.lang.ExceptionInfo (producer/publish-to-instant-queue message-payload)))))
 
 (deftest publish-to-delay-queue-test
