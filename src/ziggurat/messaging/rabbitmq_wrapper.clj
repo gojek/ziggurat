@@ -53,11 +53,11 @@
 
     (rmq/connect config)))
 
-(defn- start-connection [ziggurat-config]
+(defn- start-connection [ziggurat-config stream-routes]
   (log/info "Connecting to RabbitMQ")
-  (when (is-connection-required?)
+  (when (is-connection-required? ziggurat-config stream-routes)
     (try
-      (let [connection (create-connection (get-config-for-rabbitmq) (get-in ziggurat-config [:tracer :enabled]))]
+      (let [connection (create-connection (get-config-for-rabbitmq ziggurat-config) (get-in ziggurat-config [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
@@ -68,8 +68,8 @@
         (sentry/report-error sentry-reporter e "Error while starting RabbitMQ connection")
         (throw e)))))
 
-(defn- stop-connection [conn]
-  (when (is-connection-required?)
+(defn- stop-connection [conn ziggurat-config stream-routes]
+  (when (is-connection-required? ziggurat-config stream-routes)
     (if (get-in (ziggurat-config) [:tracer :enabled])
       (.close conn)
       (rmq/close conn))
@@ -81,9 +81,11 @@
           {}
           record-headers))
 
+;;End of connection namespace
+
 (defstate connection
-  :start (start-connection)
-  :stop (stop-connection connection))
+  :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
+  :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
 
 (defn- properties-for-publish
   [expiration headers]
@@ -94,7 +96,6 @@
       (assoc props :expiration (str expiration))
       props)))
 
-;;End of connection namespace
 
 (defn publish
   ([exchange message-payload]
