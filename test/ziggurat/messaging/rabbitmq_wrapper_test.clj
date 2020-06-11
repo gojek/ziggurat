@@ -4,7 +4,7 @@
             [ziggurat.fixtures :as fix]
             [langohr.core :as rmq]
             [mount.core :as mount]
-            [ziggurat.config :as config]
+            [ziggurat.config :as config :refer [ziggurat-config]]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]))
 
 (use-fixtures :once fix/mount-config-with-tracer)
@@ -263,3 +263,4 @@
         (mount/start (mount/only [#'rmqw/connection]))
         (mount/stop #'rmqw/connection)
         (is (= @thread-count 26))))))
+
