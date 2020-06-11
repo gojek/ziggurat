@@ -202,7 +202,7 @@
                   (make-channel-delay-queue topic-entity channel)))))))
 
 (defn make-queues [stream-routes]
-  (when (is-connection-required?)
+  (when (rmqw/is-connection-required?)
     (doseq [topic-entity (keys stream-routes)]
       (let [channels (get-channel-names stream-routes topic-entity)
             retry-type (retry-type)]

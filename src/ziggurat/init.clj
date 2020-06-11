@@ -4,7 +4,7 @@
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
             [ziggurat.config :refer [ziggurat-config] :as config]
-            [ziggurat.messaging.connection :as messaging-connection]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
@@ -28,7 +28,7 @@
        (mount/start))))
 
 (defn- start-rabbitmq-connection [args]
-  (start* #{#'messaging-connection/connection} args))
+  (start* #{#'rmqw/connection} args))
 
 (defn- start-rabbitmq-consumers [args]
   (start-rabbitmq-connection args)
@@ -63,7 +63,7 @@
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
-  (mount/stop #'messaging-connection/connection))
+  (mount/stop #'rmqw/connection))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))
@@ -115,7 +115,7 @@
 (defn stop-common-states []
   (mount/stop #'config/config
               #'metrics/statsd-reporter
-              #'messaging-connection/connection
+              #'rmqw/connection
               #'nrepl-server/server
               #'tracer/tracer))
 

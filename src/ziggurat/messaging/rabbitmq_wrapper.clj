@@ -5,8 +5,8 @@
             [sentry-clj.async :as sentry]
             [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
+            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.retry :refer [with-retry]]
-            [ziggurat.mapper :as mpr]
             [clojure.tools.logging :as log]
             [schema.core :as s]
             [ziggurat.messaging.util :refer :all]
@@ -19,12 +19,10 @@
             [langohr.exchange :as le]
             [langohr.core :as rmq]
             [mount.core :as mount])
-  (:import (ziggurat.mapper MessagePayload)
-           (io.opentracing.contrib.rabbitmq TracingConnectionFactory)
+  (:import (io.opentracing.contrib.rabbitmq TracingConnectionFactory)
            (com.rabbitmq.client ListAddressResolver Address ShutdownListener)
            (com.rabbitmq.client.impl DefaultCredentialsProvider)
            (java.util.concurrent ExecutorService Executors)))
-
 
 (defn is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
@@ -56,7 +54,6 @@
 
     (rmq/connect config)))
 
-
 (defn- start-connection []
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
@@ -64,10 +61,10 @@
       (let [connection (create-connection (get-config-for-rabbitmq) (get-in (ziggurat-config) [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
-            (reify ShutdownListener
-              (shutdownCompleted [_ cause]
-                (when-not (.isInitiatedByApplication cause)
-                  (log/error cause "RabbitMQ connection shut down due to error")))))))
+           (reify ShutdownListener
+             (shutdownCompleted [_ cause]
+               (when-not (.isInitiatedByApplication cause)
+                 (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
         (sentry/report-error sentry-reporter e "Error while starting RabbitMQ connection")
         (throw e)))))
@@ -86,8 +83,8 @@
           record-headers))
 
 (defstate connection
-          :start (start-connection)
-          :stop (stop-connection connection))
+  :start (start-connection)
+  :stop (stop-connection connection))
 
 (defn- properties-for-publish
   [expiration headers]
@@ -126,7 +123,7 @@
   (lq/bind ch queue exchange)
   (log/info "Bound queue %s to exchange %s" queue exchange))
 
-(defn- create-and-bind-queue
+(defn create-and-bind-queue
   ([queue-name exchange]
    (create-and-bind-queue queue-name exchange nil))
   ([queue-name exchange-name dead-letter-exchange]
@@ -142,43 +139,28 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
-(defn- convert-to-message-payload
-  "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
-   message-payload to pass onto the mapper-fn.
-
-   If the `:retry-count` key is absent in the `message`, then it puts `0` as the value for `:retry-count` in `MessagePayload`.
-   It also converts the topic-entity into a keyword while constructing MessagePayload."
-  [message topic-entity]
-  (try
-    (s/validate mpr/message-payload-schema message)
-    (catch Exception e
-      (log/info "old message format read, converting to message-payload: " message)
-      (let [retry-count (or (:retry-count message) 0)
-            message-payload (mpr/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
-        (assoc message-payload :retry-count retry-count)))))
 
 (defn- ack-message
   [ch delivery-tag]
   (lb/ack ch delivery-tag))
 
-(defn convert-and-ack-message
+(defn consume-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
   if `ack?` is true."
-  [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
+  [ch {:keys [delivery-tag]} ^bytes payload ack?]
   (try
     (let [message (nippy/thaw payload)]
       (when ack?
         (lb/ack ch delivery-tag))
-      (convert-to-message-payload message topic-entity))
+      message)
     (catch Exception e
       (lb/reject ch delivery-tag false)
-      (sentry/report-error sentry-reporter e "Error while decoding message")
-      (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
+      (log/error "error fetching the message from rabbitmq " e)
       nil)))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
   (let [delivery-tag (:delivery-tag meta)
-        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+        message-payload      (consume-message ch meta payload false)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
