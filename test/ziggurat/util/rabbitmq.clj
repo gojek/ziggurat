@@ -3,7 +3,7 @@
             [langohr.channel :as lch]
             [langohr.basic :as lb]
             [ziggurat.config :refer [rabbitmq-config]]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :refer [delay-queue-name]]
