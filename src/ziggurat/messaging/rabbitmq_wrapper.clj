@@ -95,6 +95,8 @@
       (assoc props :expiration (str expiration))
       props)))
 
+;;End of connection namespace
+
 (defn publish
   ([exchange message-payload]
    (publish exchange message-payload nil))
@@ -139,6 +141,7 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
+;; End of publish namespace
 
 (defn- ack-message
   [ch delivery-tag]
@@ -185,4 +188,6 @@
                                                                     (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                                        :handle-consume-ok-fn      (fn [consumer_tag]
                                                                     (log/info "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
+
+;; End of consumer namespace
 
