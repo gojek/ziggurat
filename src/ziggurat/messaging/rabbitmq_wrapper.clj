@@ -70,7 +70,7 @@
 
 (defn- stop-connection [conn ziggurat-config stream-routes]
   (when (is-connection-required? ziggurat-config stream-routes)
-    (if (get-in (ziggurat-config) [:tracer :enabled])
+    (if (get-in  ziggurat-config [:tracer :enabled])
       (.close conn)
       (rmq/close conn))
     (log/info "Disconnected from RabbitMQ")))
@@ -95,7 +95,6 @@
     (if expiration
       (assoc props :expiration (str expiration))
       props)))
-
 
 (defn publish
   ([exchange message-payload]
