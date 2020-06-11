@@ -3,7 +3,7 @@
   (:require [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
             [ziggurat.messaging.consumer :refer :all]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
