@@ -24,27 +24,26 @@
            (com.rabbitmq.client.impl DefaultCredentialsProvider)
            (java.util.concurrent ExecutorService Executors)))
 
-(defn is-connection-required? []
-  (let [stream-routes (:stream-routes (mount/args))
-        all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
+(defn is-connection-required? [ziggurat-config stream-routes]
+  (let [all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
                                 (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
                               []
                               stream-routes)]
     (or (pos? (count all-channels))
-        (-> (ziggurat-config) :retry :enabled))))
+        (-> ziggurat-config :retry :enabled))))
 
 (defn- channel-threads [channels]
   (reduce (fn [sum [_ channel-config]]
             (+ sum (:worker-count channel-config))) 0 channels))
 
-(defn- total-thread-count []
-  (let [stream-routes (:stream-router (ziggurat-config))
-        worker-count  (get-in (ziggurat-config) [:jobs :instant :worker-count])]
+(defn- total-thread-count [ziggurat-config]
+  (let [stream-routes (:stream-router  ziggurat-config)
+        worker-count  (get-in  ziggurat-config [:jobs :instant :worker-count])]
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
-(defn- get-config-for-rabbitmq []
-  (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))))
+(defn- get-config-for-rabbitmq [ziggurat-config]
+  (assoc (:rabbit-mq-connection ziggurat-config) :executor (Executors/newFixedThreadPool (total-thread-count ziggurat-config))))
 
 (defn create-connection [config tracer-enabled]
   (if tracer-enabled
@@ -54,11 +53,11 @@
 
     (rmq/connect config)))
 
-(defn- start-connection []
+(defn- start-connection [ziggurat-config]
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
     (try
-      (let [connection (create-connection (get-config-for-rabbitmq) (get-in (ziggurat-config) [:tracer :enabled]))]
+      (let [connection (create-connection (get-config-for-rabbitmq) (get-in ziggurat-config [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
