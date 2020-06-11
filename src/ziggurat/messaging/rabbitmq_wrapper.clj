@@ -81,11 +81,12 @@
           {}
           record-headers))
 
-;;End of connection namespace
 
 (defstate connection
   :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
   :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
+
+;;End of connection namespace
 
 (defn- properties-for-publish
   [expiration headers]
@@ -140,7 +141,7 @@
        (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
-;; End of publish namespace
+;; End of producer namespace
 
 (defn- ack-message
   [ch delivery-tag]
