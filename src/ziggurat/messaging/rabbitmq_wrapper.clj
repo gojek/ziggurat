@@ -81,7 +81,6 @@
           {}
           record-headers))
 
-
 (defstate connection
   :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
   :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
@@ -188,6 +187,10 @@
                                                                     (log/info "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                                        :handle-consume-ok-fn      (fn [consumer_tag]
                                                                     (log/info "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
+
+(defn get-message-from-queue [queue-name]
+  (let [ch (lch/open connection)]
+    (lb/get ch queue-name false)))
 
 ;; End of consumer namespace
 
