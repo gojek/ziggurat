@@ -178,9 +178,10 @@
   (fn [ch meta ^bytes payload]
     (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
 
-(defn start-subscriber [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
-  (lb/qos ch prefetch-count)
-  (let [consumer-tag (lcons/subscribe ch
+(defn start-subscriber [prefetch-count queue-name wrapped-mapper-fn topic-entity]
+  (let [ch (lch/open connection)
+        _ (lb/qos ch prefetch-count)
+        consumer-tag (lcons/subscribe ch
                                       queue-name
                                       (message-handler wrapped-mapper-fn topic-entity)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
