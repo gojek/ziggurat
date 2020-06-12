@@ -189,9 +189,9 @@
                                        :handle-consume-ok-fn      (fn [consumer_tag]
                                                                     (log/info "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
 
-(defn get-message-from-queue [queue-name]
+(defn fetch-message-from-queue [queue-name ack?]
   (let [ch (lch/open connection)]
-    (lb/get ch queue-name false)))
+    (lb/get ch queue-name ack?)))
 
 ;; End of consumer namespace
 
