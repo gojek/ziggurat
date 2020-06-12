@@ -88,10 +88,12 @@
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
     (let [message                   {:foo "bar"}
           expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 0)
-          converted-message-payload (rmqw/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)]
+          consumed-message (rmqw/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
+          converted-message-payload (convert-to-message-payload consumed-message "default")]
       (is (= converted-message-payload expected-message-payload))))
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as it exists in the message"
     (let [message                   {:foo "bar" :retry-count 4}
           expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 4)
-          converted-message-payload (rmqw/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)]
+          consumed-message (rmqw/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
+          converted-message-payload (convert-to-message-payload consumed-message "default")]
       (is (= converted-message-payload expected-message-payload)))))
