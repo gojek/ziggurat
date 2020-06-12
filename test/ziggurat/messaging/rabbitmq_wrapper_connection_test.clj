@@ -1,4 +1,4 @@
-(ns ziggurat.messaging.rabbitmq-wrapper-test
+(ns ziggurat.messaging.rabbitmq-wrapper-connection-test
   (:require [clojure.test :refer :all]
             [clojure.test :refer :all]
             [ziggurat.fixtures :as fix]
