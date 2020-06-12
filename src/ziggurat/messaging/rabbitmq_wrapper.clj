@@ -122,7 +122,7 @@
 
 (defn- bind-queue-to-exchange [ch queue exchange]
   (lq/bind ch queue exchange)
-  (log/info "Bound queue %s to exchange %s" queue exchange))
+  (log/infof "Bound queue %s to exchange %s" queue exchange))
 
 (defn create-and-bind-queue
   ([queue-name exchange]
@@ -185,13 +185,11 @@
                                       queue-name
                                       (message-handler wrapped-mapper-fn topic-entity)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
-                                                                    (log/info "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
+                                                                    (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                                        :handle-consume-ok-fn      (fn [consumer_tag]
-                                                                    (log/info "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
+                                                                    (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
 
-(defn fetch-message-from-queue [queue-name ack?]
-  (let [ch (lch/open connection)]
-    (lb/get ch queue-name ack?)))
+
 
 ;; End of consumer namespace
 
