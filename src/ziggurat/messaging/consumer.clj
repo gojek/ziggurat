@@ -74,8 +74,7 @@
 (defn start-retry-subscriber* [mapper-fn topic-entity channels]
   (when (get-in-config [:retry :enabled])
     (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
-      (rmqw/start-subscriber (lch/open rmqw/connection)
-                             (get-in-config [:jobs :instant :prefetch-count])
+      (rmqw/start-subscriber (get-in-config [:jobs :instant :prefetch-count])
                              (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
                              (mpr/mapper-func mapper-fn channels)
                              topic-entity))))
@@ -85,8 +84,7 @@
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
-        (rmqw/start-subscriber (lch/open rmqw/connection)
-                               1
+        (rmqw/start-subscriber 1
                                (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
                                (mpr/channel-mapper-func channel-handler-fn channel-key)
                                topic-entity)))))
