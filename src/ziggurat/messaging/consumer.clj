@@ -11,7 +11,7 @@
             [clojure.tools.logging :as log]
             [schema.core :as s]))
 
-(defn- convert-to-message-payload
+(defn convert-to-message-payload
   "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
    message-payload to pass onto the mapper-fn.
 
