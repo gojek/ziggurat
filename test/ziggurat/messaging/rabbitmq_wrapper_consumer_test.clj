@@ -11,6 +11,10 @@
             [ziggurat.mapper :as mpr]
             [taoensso.nippy :as nippy]))
 
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging
+                                    fix/mount-metrics]))
+
 (defn- gen-message-payload [topic-entity]
   {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
    :topic-entity topic-entity})
@@ -25,7 +29,7 @@
                             (is (= message-arg message)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open connection)]
+        (with-open [ch (lch/open rmqw/connection)]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload]      (lb/get ch prefixed-queue-name false)
@@ -41,8 +45,8 @@
                               (reset! processing-fn-called true)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-redefs [read-message-from-queue (fn [_ _ _ _ ] nil)]
-          (with-open [ch (lch/open connection)]
+        (with-redefs [read-message-from-queue (fn [_ _ _ _] nil)]
+          (with-open [ch (lch/open rmqw/connection)]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
@@ -58,7 +62,7 @@
                             (throw (Exception. "exception message")))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open connection)]
+        (with-open [ch (lch/open rmqw/connection)]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload]      (lb/get ch prefixed-queue-name false)
@@ -71,7 +75,7 @@
             processing-fn (fn [_] ())
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open connection)]
+        (with-open [ch (lch/open rmqw/connection)]
           (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
