@@ -84,7 +84,7 @@
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= consumed-message nil)))))))))
 
-(deftest convert-and-ack-message-test
+(deftest ack-and-convert-message
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
     (let [message                   {:foo "bar"}
           expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 0)
