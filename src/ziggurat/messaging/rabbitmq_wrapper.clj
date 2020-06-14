@@ -147,7 +147,7 @@
   (lb/ack ch delivery-tag))
 
 (defn consume-message
-  "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
+  "De-serializes the message payload (`payload`) using `nippy/thaw` and acks the message
   if `ack?` is true."
   [ch {:keys [delivery-tag]} ^bytes payload ack?]
   (try
@@ -159,6 +159,11 @@
       (lb/reject ch delivery-tag false)
       (log/error "error fetching the message from rabbitmq " e)
       nil)))
+
+(defn get-msg-from-queue [ch queue-name ack?]
+  (let [[meta payload] (lb/get ch queue-name false)]
+    (when (some? payload)
+      (consume-message ch meta payload ack?))))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
   (let [delivery-tag (:delivery-tag meta)
@@ -188,8 +193,6 @@
                                                                     (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                                        :handle-consume-ok-fn      (fn [consumer_tag]
                                                                     (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
-
-
 
 ;; End of consumer namespace
 

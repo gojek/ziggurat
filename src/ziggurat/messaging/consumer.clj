@@ -28,12 +28,10 @@
 
 (defn read-message-from-queue [ch queue-name topic-entity ack?]
   (try
-    (let [[meta payload] (lb/get ch queue-name false)]
-      (when (some? payload)
-        (let [message (rmqw/consume-message ch meta payload ack?)]
-          (if-not (nil? message)
-            (convert-to-message-payload message topic-entity)
-            (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})))))
+    (let [message (rmqw/get-msg-from-queue ch queue-name ack?)]
+      (if-not (nil? message)
+        (convert-to-message-payload message topic-entity)
+        (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message")
       (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
