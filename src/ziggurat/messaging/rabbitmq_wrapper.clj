@@ -175,6 +175,9 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
+          (println "Inside catch => ")
+          ;TODO fix this error
+          ; Channels get closed by the client if there is an exception. We are going to restart the channel to reject the message
           (lb/reject ch delivery-tag true)
           (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
@@ -199,7 +202,10 @@
   ([queue-name ack? count]
    (with-open [ch (lch/open connection)]
      (doall (for [_ (range count)]
-              (get-message-from-queue ch queue-name ack?))))))
+              (try
+                (get-message-from-queue ch queue-name ack?)
+                (catch Exception e
+                  (log/error e))))))))
 
 ;; End of consumer namespace
 
