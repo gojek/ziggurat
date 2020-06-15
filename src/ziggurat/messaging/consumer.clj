@@ -26,12 +26,13 @@
             message-payload (mpr/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
         (assoc message-payload :retry-count retry-count)))))
 
-(defn read-message-from-queue [ch queue-name topic-entity ack?]
+(defn read-messages-from-queue [queue-name topic-entity ack? count]
   (try
-    (let [message (rmqw/get-msg-from-queue ch queue-name ack?)]
-      (if-not (nil? message)
-        (convert-to-message-payload message topic-entity)
-        (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})))
+    (let [messages (rmqw/get-messages-from-queue queue-name ack? count)]
+      (for [message messages]
+        (if-not (nil? message)
+          (convert-to-message-payload message topic-entity)
+          (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)}))))
     (catch Exception e
       (sentry/report-error sentry-reporter e "Error while consuming the dead set message")
       (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
@@ -52,9 +53,7 @@
    (get-dead-set-messages topic-entity nil count))
   ([topic-entity channel count]
    (remove nil?
-           (with-open [ch (lch/open rmqw/connection)]
-             (doall (for [_ (range count)]
-                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity false)))))))
+           (doall (read-messages-from-queue (construct-queue-name topic-entity channel) topic-entity false count)))))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
