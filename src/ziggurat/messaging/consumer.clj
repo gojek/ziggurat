@@ -1,10 +1,7 @@
 (ns ziggurat.messaging.consumer
-  (:require [langohr.basic :as lb]
-            [langohr.channel :as lch]
-            [sentry-clj.async :as sentry]
-            [ziggurat.config :refer [get-in-config]]
-            [ziggurat.mapper :as mpr]
+  (:require [ziggurat.mapper :as mpr]
             [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.config :refer [ziggurat-config get-in-config]]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]
@@ -60,12 +57,7 @@
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
-   (with-open [ch (lch/open rmqw/connection)]
-     (doall (for [_ (range count)]
-              (let [queue-name (construct-queue-name topic-entity channel)
-                    [meta payload] (lb/get ch queue-name false)]
-                (when (some? payload)
-                  (rmqw/process-message-from-queue ch meta payload topic-entity processing-fn))))))))
+   (rmqw/process-messages-from-queue (construct-queue-name topic-entity channel) topic-entity count processing-fn)))
 
 (defn start-retry-subscriber* [mapper-fn topic-entity channels]
   (when (get-in-config [:retry :enabled])
@@ -73,7 +65,8 @@
       (rmqw/start-subscriber (get-in-config [:jobs :instant :prefetch-count])
                              (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
                              (mpr/mapper-func mapper-fn channels)
-                             topic-entity))))
+                             topic-entity
+                             (ziggurat-config)))))
 
 (defn start-channels-subscriber [channels topic-entity]
   (doseq [channel channels]
@@ -83,7 +76,8 @@
         (rmqw/start-subscriber 1
                                (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
                                (mpr/channel-mapper-func channel-handler-fn channel-key)
-                               topic-entity)))))
+                               topic-entity
+                               (ziggurat-config))))))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
