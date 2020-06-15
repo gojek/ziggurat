@@ -175,18 +175,17 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
-          (println "Inside catch => ")
           ;TODO fix this error
           ; Channels get closed by the client if there is an exception. We are going to restart the channel to reject the message
           (lb/reject ch delivery-tag true)
-          (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
+          ;(sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
     (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
 
-(defn start-subscriber [prefetch-count queue-name wrapped-mapper-fn topic-entity]
+(defn start-subscriber [prefetch-count queue-name wrapped-mapper-fn topic-entity ziggurat-config]
   (let [ch (lch/open connection)
         _ (lb/qos ch prefetch-count)
         consumer-tag (lcons/subscribe ch
@@ -201,11 +200,20 @@
   ([queue-name ack?] (get-messages-from-queue queue-name ack? 1))
   ([queue-name ack? count]
    (with-open [ch (lch/open connection)]
-     (doall (for [_ (range count)]
-              (try
-                (get-message-from-queue ch queue-name ack?)
-                (catch Exception e
-                  (log/error e))))))))
+     (doall
+      (for [_ (range count)]
+        (try
+          (get-message-from-queue ch queue-name ack?)
+          (catch Exception e
+            (log/error e))))))))
+
+(defn process-messages-from-queue [queue-name topic-entity count processing-fn]
+  (with-open [ch (lch/open connection)]
+    (doall
+      (for [_ (range count)]
+        (let [[meta payload] (lb/get ch queue-name false)]
+          (when (some? payload)
+            (process-message-from-queue ch meta payload topic-entity processing-fn)))))))
 
 ;; End of consumer namespace
 
