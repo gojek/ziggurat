@@ -25,6 +25,7 @@
                                                        :channel-timeout 2000}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}
+                                :swagger              {:enabled false}
                                 :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"
                                                                      :exchange-name        "%s_delay_exchange"
                                                                      :dead-letter-exchange "%s_instant_exchange"

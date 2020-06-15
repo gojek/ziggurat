@@ -64,4 +64,5 @@
                                                                                                   :retry        {:count   [5 :int]
                                                                                                                  :enabled [true :bool]}}}}}
             :tracer               {:enabled         [true :bool]
-                                   :custom-provider ""}}}
+                                   :custom-provider ""}
+            :swagger              {:enabled false}}}
