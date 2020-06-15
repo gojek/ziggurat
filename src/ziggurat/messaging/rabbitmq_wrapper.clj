@@ -160,7 +160,7 @@
       (log/error "error fetching the message from rabbitmq " e)
       nil)))
 
-(defn get-msg-from-queue [ch queue-name ack?]
+(defn get-message-from-queue [ch queue-name ack?]
   (let [[meta payload] (lb/get ch queue-name false)]
     (when (some? payload)
       (consume-message ch meta payload ack?))))
@@ -198,10 +198,8 @@
   ([queue-name ack?] (get-messages-from-queue queue-name ack? 1))
   ([queue-name ack? count]
    (with-open [ch (lch/open connection)]
-     (when (> count 1)
-       (doall (for [_ (range count)]
-                (get-msg-from-queue ch queue-name ack?)))
-       (get-msg-from-queue ch queue-name ack?)))))
+     (doall (for [_ (range count)]
+              (get-message-from-queue ch queue-name ack?))))))
 
 ;; End of consumer namespace
 
