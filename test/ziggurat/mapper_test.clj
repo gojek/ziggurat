@@ -5,7 +5,7 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]))
