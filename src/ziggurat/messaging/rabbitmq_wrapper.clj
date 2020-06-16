@@ -1,16 +1,14 @@
 (ns ziggurat.messaging.rabbitmq-wrapper
   (:require [ziggurat.config :refer [get-in-config]]
             [mount.core :refer [defstate]]
-            [ziggurat.metrics :as metrics]
             [sentry-clj.async :as sentry]
             [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.retry :refer [with-retry]]
             [clojure.tools.logging :as log]
-            [schema.core :as s]
             [ziggurat.messaging.util :refer :all]
-            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.tracer :refer [tracer]]
             [langohr.consumers :as lcons]
             [langohr.channel :as lch]
@@ -65,7 +63,7 @@
                (when-not (.isInitiatedByApplication cause)
                  (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
-        (sentry/report-error sentry-reporter e "Error while starting RabbitMQ connection")
+        (log/error e "Error while starting RabbitMQ connection")
         (throw e)))))
 
 (defn- stop-connection [conn ziggurat-config stream-routes]
@@ -107,8 +105,7 @@
        (with-open [ch (lch/open connection)]
          (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
-       (sentry/report-error sentry-reporter e
-                            "Pushing message to rabbitmq failed, data: " message-payload)
+       (log/error e "Pushing message to rabbitmq failed, data: " message-payload)
        (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type :rabbitmq-publish-failure
                                                                                    :error e}))))))
 
@@ -137,7 +134,7 @@
          (declare-exchange ch exchange-name)
          (bind-queue-to-exchange ch queue-name exchange-name)))
      (catch Exception e
-       (sentry/report-error sentry-reporter e "Error while declaring RabbitMQ queues")
+       (log/error e "Error while declaring RabbitMQ queues")
        (throw e)))))
 
 ;; End of producer namespace
