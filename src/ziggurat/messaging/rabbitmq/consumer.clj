@@ -2,6 +2,7 @@
   (:require [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
             [clojure.tools.logging :as log]
+            [ziggurat.retry :refer [with-retry]]
             [langohr.channel :as lch]
             [ziggurat.messaging.rabbitmq.connection :refer [connection]]
             [langohr.consumers :as lcons]))
@@ -15,7 +16,6 @@
 (defn prefixed-channel-name [topic-entity channel-name value]
   (prefixed-queue-name (with-channel-name topic-entity channel-name)
                        value))
-
 ;; end of util ns
 
 (defn- ack-message
