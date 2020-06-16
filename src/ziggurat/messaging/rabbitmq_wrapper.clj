@@ -185,8 +185,19 @@
   (fn [ch meta ^bytes payload]
     (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
 
-(defn start-subscriber [prefetch-count queue-name wrapped-mapper-fn topic-entity ziggurat-config]
+(defn- get-instant-queue-name [topic-entity ziggurat-config]
+  (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
+    (prefixed-queue-name topic-entity instant-queue-name)))
+
+(defn- get-channel-instant-queue-name [topic-entity channel-key ziggurat-config]
+  (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
+    (prefixed-channel-name topic-entity channel-key instant-queue-name)))
+
+(defn start-subscriber [prefetch-count wrapped-mapper-fn topic-entity channel-key ziggurat-config]
   (let [ch (lch/open connection)
+        queue-name (if (some? channel-key)
+                     (get-channel-instant-queue-name topic-entity channel-key ziggurat-config)
+                     (get-instant-queue-name topic-entity ziggurat-config))
         _ (lb/qos ch prefetch-count)
         consumer-tag (lcons/subscribe ch
                                       queue-name
