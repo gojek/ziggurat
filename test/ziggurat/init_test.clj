@@ -69,7 +69,7 @@
           expected-stream-routes  {:default {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
-                    messaging-consumer/start-subscribers (fn [stream-routes]
+                    messaging-consumer/start-subscribers (fn [stream-routes _]
                                                            (swap! start-subscriber-called + 1)
                                                            (is (= stream-routes expected-stream-routes)))
                     messaging-producer/make-queues       (constantly nil)
