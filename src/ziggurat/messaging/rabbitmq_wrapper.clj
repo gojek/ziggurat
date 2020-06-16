@@ -193,6 +193,14 @@
   (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
     (prefixed-channel-name topic-entity channel-key instant-queue-name)))
 
+(defn get-dead-set-queue-name
+  ([topic-entity ziggurat-config]
+   (get-dead-set-queue-name topic-entity ziggurat-config nil))
+  ([topic-entity ziggurat-config channel]
+   (if (nil? channel)
+     (prefixed-queue-name topic-entity (get-in ziggurat-config [:rabbit-mq :dead-letter :queue-name]))
+     (prefixed-channel-name topic-entity channel (get-in ziggurat-config [:rabbit-mq :dead-letter :queue-name])))))
+
 (defn start-subscriber [prefetch-count wrapped-mapper-fn topic-entity channel-key ziggurat-config]
   (let [ch (lch/open connection)
         queue-name (if (some? channel-key)
