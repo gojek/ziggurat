@@ -33,23 +33,14 @@
   ;(sentry/report-error sentry-reporter e "Error while consuming the dead set message")
 )
 
-(defn- construct-queue-name
-  ([topic-entity]
-   (construct-queue-name topic-entity nil))
-  ([topic-entity channel]
-   (if (nil? channel)
-     (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :dead-letter :queue-name]))
-     (prefixed-channel-name topic-entity channel (get-in-config [:rabbit-mq :dead-letter :queue-name])))))
-
 (defn get-dead-set-messages
   "This method can be used to read and optionally ack messages in dead-letter queue, based on the value of `ack?`.
-
    For example, this method can be used to delete messages from dead-letter queue if `ack?` is set to true."
   ([topic-entity count]
    (get-dead-set-messages topic-entity nil count))
   ([topic-entity channel count]
    (remove nil?
-           (read-messages-from-queue (construct-queue-name topic-entity channel) topic-entity false count))))
+           (read-messages-from-queue (rmqw/get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity false count))))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
@@ -57,7 +48,7 @@
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
-   (rmqw/process-messages-from-queue (construct-queue-name topic-entity channel) topic-entity count processing-fn)))
+   (rmqw/process-messages-from-queue (rmqw/get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity count processing-fn)))
 
 (defn start-retry-subscriber* [mapper-fn topic-entity channels ziggurat-config]
   (when (get-in ziggurat-config [:retry :enabled])
