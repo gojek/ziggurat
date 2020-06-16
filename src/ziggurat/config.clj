@@ -25,7 +25,6 @@
                                                        :channel-timeout 2000}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}
-                                :swagger              {:enabled false}
                                 :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"
                                                                      :exchange-name        "%s_delay_exchange"
                                                                      :dead-letter-exchange "%s_instant_exchange"
@@ -36,7 +35,8 @@
                                                                      :exchange-name "%s_dead_letter_exchange"}}
                                 :retry                {:count   5
                                                        :enabled false}
-                                :http-server          {:port         8080
+                                :http-server          {:middlewares  {:swagger {:enabled false}}
+                                                       :port         8080
                                                        :thread-count 100}}})
 
 (defn- interpolate-val [val app-name]
