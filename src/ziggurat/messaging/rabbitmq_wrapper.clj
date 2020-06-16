@@ -174,12 +174,13 @@
         (log/debug "Calling processor-fn with the message-payload - " message-payload " with retry count - " (:retry-count message-payload))
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
+        :success
         (catch Exception e
           ;TODO fix this error
           ; Channels get closed by the client if there is an exception. We are going to restart the channel to reject the message
           (lb/reject ch delivery-tag true)
           ;(sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
-          (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
+          :failed)))))
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
@@ -229,10 +230,9 @@
 (defn process-messages-from-queue [queue-name topic-entity count processing-fn]
   (with-open [ch (lch/open connection)]
     (doall
-      (for [_ (range count)]
-        (let [[meta payload] (lb/get ch queue-name false)]
-          (when (some? payload)
-            (process-message-from-queue ch meta payload topic-entity processing-fn)))))))
+     (for [_ (range count)]
+       (let [[meta payload] (lb/get ch queue-name false)]
+         (process-message-from-queue ch meta payload topic-entity processing-fn))))))
 
 ;; End of consumer namespace
 
