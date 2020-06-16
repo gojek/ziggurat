@@ -59,32 +59,34 @@
   ([topic-entity channel count processing-fn]
    (rmqw/process-messages-from-queue (construct-queue-name topic-entity channel) topic-entity count processing-fn)))
 
-(defn start-retry-subscriber* [mapper-fn topic-entity channels]
-  (when (get-in-config [:retry :enabled])
-    (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
-      (rmqw/start-subscriber (get-in-config [:jobs :instant :prefetch-count])
-                             (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
+(defn start-retry-subscriber* [mapper-fn topic-entity channels ziggurat-config]
+  (when (get-in ziggurat-config [:retry :enabled])
+    (dotimes [_ (get-in ziggurat-config [:jobs :instant :worker-count])]
+      (rmqw/start-subscriber (get-in ziggurat-config [:jobs :instant :prefetch-count])
                              (mpr/mapper-func mapper-fn channels)
                              topic-entity
-                             (ziggurat-config)))))
+                             nil
+                             ziggurat-config))))
 
-(defn start-channels-subscriber [channels topic-entity]
+(defn start-channels-subscriber [channels topic-entity ziggurat-config]
   (doseq [channel channels]
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
         (rmqw/start-subscriber 1
-                               (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
                                (mpr/channel-mapper-func channel-handler-fn channel-key)
                                topic-entity
-                               (ziggurat-config))))))
+                               channel-key
+                               ziggurat-config)))))
+
+; extract this and pass ziggurat config stream routes and mapper-fn as args
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
-  [stream-routes]
+  [stream-routes ziggurat-config]
   (doseq [stream-route stream-routes]
     (let [topic-entity  (first stream-route)
           topic-handler (-> stream-route second :handler-fn)
           channels      (-> stream-route second (dissoc :handler-fn))]
-      (start-channels-subscriber channels topic-entity)
-      (start-retry-subscriber* topic-handler topic-entity (keys channels)))))
+      (start-channels-subscriber channels topic-entity ziggurat-config)
+      (start-retry-subscriber* topic-handler topic-entity (keys channels) ziggurat-config))))
