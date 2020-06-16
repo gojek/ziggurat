@@ -32,7 +32,7 @@
 
 (defn- start-rabbitmq-consumers [args]
   (start-rabbitmq-connection args)
-  (messaging-consumer/start-subscribers (get args :stream-routes)))
+  (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
 
 (defn- start-rabbitmq-producers [args]
   (start-rabbitmq-connection args)
