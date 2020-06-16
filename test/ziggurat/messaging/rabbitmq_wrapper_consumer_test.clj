@@ -33,7 +33,7 @@
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload]      (lb/get ch prefixed-queue-name false)
-                _                   (rmqw/process-message-from-queue ch meta payload topic-entity processing-fn)
+                _                   (rmqw/process-message-from-queue ch meta payload processing-fn)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message nil)))))))
   (testing "process-message function not process a message if convert-message returns nil"
@@ -50,7 +50,7 @@
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
-                  _                   (rmqw/process-message-from-queue ch meta payload topic-entity processing-fn)
+                  _                   (rmqw/process-message-from-queue ch meta payload processing-fn)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= false @processing-fn-called))
               (is (= consumed-message nil))))))))
@@ -66,7 +66,7 @@
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload]      (lb/get ch prefixed-queue-name false)
-                _                   (rmqw/process-message-from-queue ch meta payload topic-entity processing-fn)
+                _                   (rmqw/process-message-from-queue ch meta payload processing-fn)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message message)))))))
   (testing "process-message function should reject and discard a message if message conversion fails"
@@ -80,7 +80,7 @@
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
-                  _                   (rmqw/process-message-from-queue ch meta payload topic-entity processing-fn)
+                  _                   (rmqw/process-message-from-queue ch meta payload processing-fn)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= consumed-message nil)))))))))
 

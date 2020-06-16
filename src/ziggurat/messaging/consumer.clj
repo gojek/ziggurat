@@ -42,7 +42,7 @@
            (read-messages-from-queue (rmqw/get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity false count))))
 
 (defn process-messages-from-queue [queue-name topic-entity count processing-fn]
-  (doseq [return-code (rmqw/process-messages-from-queue queue-name topic-entity count processing-fn)]
+  (doseq [return-code (rmqw/process-messages-from-queue queue-name count processing-fn)]
     (when (= return-code :failed)
       (log/error "Error while processing message-payload")
       (metrics/increment-count ["message" "process"] "failure" {:topic_name (name topic-entity)}))))

@@ -165,7 +165,7 @@
     (when (some? payload)
       (consume-message ch meta payload ack?))))
 
-(defn process-message-from-queue [ch meta payload topic-entity processing-fn]
+(defn process-message-from-queue [ch meta payload processing-fn]
   (let [delivery-tag (:delivery-tag meta)
         message-payload      (consume-message ch meta payload false)]
     (when message-payload
@@ -182,9 +182,9 @@
           ;(sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
           :failed)))))
 
-(defn- message-handler [wrapped-mapper-fn topic-entity]
+(defn- message-handler [wrapped-mapper-fn]
   (fn [ch meta ^bytes payload]
-    (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
+    (process-message-from-queue ch meta payload wrapped-mapper-fn)))
 
 (defn- get-instant-queue-name [topic-entity ziggurat-config]
   (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
@@ -210,7 +210,7 @@
         _ (lb/qos ch prefetch-count)
         consumer-tag (lcons/subscribe ch
                                       queue-name
-                                      (message-handler wrapped-mapper-fn topic-entity)
+                                      (message-handler wrapped-mapper-fn)
                                       {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                                     (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                                        :handle-consume-ok-fn      (fn [consumer_tag]
@@ -227,12 +227,12 @@
           (catch Exception e
             (log/error e))))))))
 
-(defn process-messages-from-queue [queue-name topic-entity count processing-fn]
+(defn process-messages-from-queue [queue-name count processing-fn]
   (with-open [ch (lch/open connection)]
     (doall
      (for [_ (range count)]
        (let [[meta payload] (lb/get ch queue-name false)]
-         (process-message-from-queue ch meta payload topic-entity processing-fn))))))
+         (process-message-from-queue ch meta payload processing-fn))))))
 
 ;; End of consumer namespace
 
