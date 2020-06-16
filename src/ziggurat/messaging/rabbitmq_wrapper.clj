@@ -73,17 +73,18 @@
       (rmq/close conn))
     (log/info "Disconnected from RabbitMQ")))
 
-(defn- record-headers->map [record-headers]
-  (reduce (fn [header-map record-header]
-            (assoc header-map (.key record-header) (String. (.value record-header))))
-          {}
-          record-headers))
 
 (defstate connection
   :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
   :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
 
 ;;End of connection namespace
+
+(defn- record-headers->map [record-headers]
+  (reduce (fn [header-map record-header]
+            (assoc header-map (.key record-header) (String. (.value record-header))))
+          {}
+          record-headers))
 
 (defn- properties-for-publish
   [expiration headers]
