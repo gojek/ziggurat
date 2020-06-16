@@ -114,7 +114,7 @@
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
                                                     :retry-limit        2
-                                                    :success-promise    success-promise}) topic-entity [])
+                                                    :success-promise    success-promise}) topic-entity [] (ziggurat-config))
 
           (producer/publish-to-delay-queue message-payload)
 
@@ -143,7 +143,7 @@
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
                                                     :skip-promise       skip-promise
-                                                    :retry-limit        -1}) topic-entity [])
+                                                    :retry-limit        -1}) topic-entity [] (ziggurat-config))
 
           (producer/publish-to-delay-queue message-payload)
 
@@ -170,7 +170,7 @@
 
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
-                                                    :retry-limit        (* no-of-msgs 10)}) topic-entity [])
+                                                    :retry-limit        (* no-of-msgs 10)}) topic-entity [] (ziggurat-config))
 
           (dotimes [_ no-of-msgs]
             (producer/retry (gen-message-payload topic-entity)))
@@ -197,7 +197,7 @@
                                                          (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
                       start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
 
-          (start-subscribers nil)
+          (start-subscribers nil (ziggurat-config))
 
           (is (= 0 @counter))
           (util/close ch)))))
@@ -212,8 +212,8 @@
       (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
                                                        (update-in [:retry :enabled] (constantly true))
                                                        (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                    start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
-        (start-subscribers stream-routes)
+                    start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
+        (start-subscribers stream-routes (ziggurat-config))
         (is (= (count stream-routes) @counter))
         (util/close ch)))))
 
@@ -238,7 +238,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly true))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (with-redefs [lch/open (fn [_] rmq-ch)]
-            (start-channels-subscriber {channel channel-fn} topic-entity))
+            (start-channels-subscriber {channel channel-fn} topic-entity (ziggurat-config)))
           (producer/retry-for-channel message-payload channel)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -263,7 +263,7 @@
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
-          (start-channels-subscriber {channel channel-fn} topic-entity)
+          (start-channels-subscriber {channel channel-fn} topic-entity (ziggurat-config))
           (producer/publish-to-channel-instant-queue channel message-payload)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
@@ -288,7 +288,7 @@
           (start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
                                                     :call-counter-atom  call-counter
                                                     :retry-limit        0
-                                                    :success-promise    success-promise}) topic-entity [])
+                                                    :success-promise    success-promise}) topic-entity [] (ziggurat-config))
 
           (producer/publish-to-delay-queue message-payload)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
