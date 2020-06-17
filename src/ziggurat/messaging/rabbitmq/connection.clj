@@ -2,23 +2,19 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.tracer :refer [tracer]]
+            [ziggurat.channel :refer [get-keys-for-topic]]
             [langohr.core :as rmq])
   (:import (java.util.concurrent ExecutorService Executors)
            (com.rabbitmq.client ListAddressResolver ShutdownListener Address)
            (com.rabbitmq.client.impl DefaultCredentialsProvider)
            (io.opentracing.contrib.rabbitmq TracingConnectionFactory)))
 
-(defn- get-keys-for-topic [stream-routes topic-entity]
-  (-> stream-routes
-      (get topic-entity)
-      (dissoc :handler-fn)
-      keys))
-
 (defn is-connection-required? [ziggurat-config stream-routes]
-  (let [all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
-                                (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
-                              []
-                              stream-routes)]
+  (let [all-channels (reduce (fn [all-channel-vec [topic-entity _]]
+                               (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
+                             []
+                             stream-routes)]
     (or (pos? (count all-channels))
         (-> ziggurat-config :retry :enabled))))
 
@@ -27,8 +23,8 @@
             (+ sum (:worker-count channel-config))) 0 channels))
 
 (defn- total-thread-count [ziggurat-config]
-  (let [stream-routes (:stream-router  ziggurat-config)
-        worker-count  (get-in  ziggurat-config [:jobs :instant :worker-count])]
+  (let [stream-routes (:stream-router ziggurat-config)
+        worker-count  (get-in ziggurat-config [:jobs :instant :worker-count])]
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
@@ -40,31 +36,27 @@
     (let [connection-factory (TracingConnectionFactory. tracer)]
       (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
       (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (list (Address. (:host config) (:port config))))))
-
     (rmq/connect config)))
 
-(defn- start-connection [ziggurat-config stream-routes]
+(defn start-connection [ziggurat-config stream-routes]
   (log/info "Connecting to RabbitMQ")
-  (when (is-connection-required? ziggurat-config stream-routes)
+  (when (is-connection-required? (:ziggurat ziggurat-config) stream-routes)
     (try
-      (let [connection (create-connection (get-config-for-rabbitmq ziggurat-config) (get-in ziggurat-config [:tracer :enabled]))]
+      (let [connection (create-connection (get-config-for-rabbitmq (:ziggurat ziggurat-config)) (get-in (:ziggurat ziggurat-config) [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
-           (reify ShutdownListener
-             (shutdownCompleted [_ cause]
-               (when-not (.isInitiatedByApplication cause)
-                 (log/error cause "RabbitMQ connection shut down due to error")))))))
+            (reify ShutdownListener
+              (shutdownCompleted [_ cause]
+                (when-not (.isInitiatedByApplication cause)
+                  (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
         (log/error e "Error while starting RabbitMQ connection")
         (throw e)))))
 
-(defn- stop-connection [conn ziggurat-config stream-routes]
-  (when (is-connection-required? ziggurat-config stream-routes)
-    (if (get-in  ziggurat-config [:tracer :enabled])
+(defn stop-connection [conn ziggurat-config stream-routes]
+  (when (is-connection-required? (:ziggurat ziggurat-config) stream-routes)
+    (if (get-in ziggurat-config [:ziggurat :tracer :enabled])
       (.close conn)
       (rmq/close conn))
     (log/info "Disconnected from RabbitMQ")))
 
-(defstate connection
-  :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
-  :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
