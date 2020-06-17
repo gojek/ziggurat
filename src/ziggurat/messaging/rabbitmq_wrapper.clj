@@ -24,23 +24,30 @@
            (com.rabbitmq.client.impl DefaultCredentialsProvider)
            (java.util.concurrent ExecutorService Executors)))
 
+(defn start-connection [config stream-routes]
+  (rmq-connection/start-connection config stream-routes))
+
+(defn stop-connection [connection config stream-routes]
+  (rmq-connection/stop-connection connection config stream-routes))
+
+
 
 (defstate connection
-          :start (rmq-connection/start-connection ziggurat.config/config (:stream-routes (mount/args)))
-          :stop (rmq-connection/stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
+          :start (start-connection ziggurat.config/config (:stream-routes (mount/args)))
+          :stop (stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
 
 
 (defn publish
   ([exchange message-payload]
     (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-    (rmq-producer/publish exchange message-payload expiration)))
+    (rmq-producer/publish connection exchange message-payload expiration)))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
     (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange]
-    (rmq-producer/create-and-bind-queue queue-name exchange-name dead-letter-exchange)))
+    (rmq-producer/create-and-bind-queue connection queue-name exchange-name dead-letter-exchange)))
 
 
 (defn- ack-message

@@ -4,7 +4,6 @@
             [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
             [langohr.exchange :as le]
-            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
             [ziggurat.messaging.rabbitmq.retry :refer :all]
             [langohr.queue :as lq]
             [clojure.set :as set]))
@@ -38,7 +37,7 @@
       props)))
 
 (defn publish
-  ([exchange message-payload expiration]
+  ([connection exchange message-payload expiration]
    (try
      (with-retry {:count      5
                   :wait       100
@@ -64,7 +63,7 @@
   (log/infof "Bound queue %s to exchange %s" queue exchange))
 
 (defn create-and-bind-queue
-  ([queue-name exchange-name dead-letter-exchange]
+  ([connection queue-name exchange-name dead-letter-exchange]
    (try
      (let [props (if dead-letter-exchange
                    {"x-dead-letter-exchange" dead-letter-exchange}
