@@ -3,7 +3,7 @@
             [ziggurat.config :refer [ziggurat-config rabbitmq-config channel-retry-config]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
-            [ziggurat.messaging.rabbitmq.producer :as rm-prod]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.rabbitmq.connection :as rm-conn]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
@@ -103,37 +103,37 @@
   (let [topic-entity  (:topic-entity message-payload)
         exchange-name (get-delay-exchange-name topic-entity message-payload)
         queue-timeout-ms (get-queue-timeout-ms message-payload)]
-    (rm-prod/publish exchange-name message-payload queue-timeout-ms)))
+    (ziggurat.messaging.rabbitmq-wrapper/publish exchange-name message-payload queue-timeout-ms)))
 
 (defn publish-to-dead-queue [message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
-    (rm-prod/publish exchange-name message-payload)))
+    (rmqw/publish exchange-name message-payload)))
 
 (defn publish-to-instant-queue [message-payload]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-queue-name topic-entity exchange-name)]
-    (rm-prod/publish exchange-name message-payload)))
+    (rmqw/publish exchange-name message-payload)))
 
 (defn publish-to-channel-delay-queue [channel message-payload]
   (let [topic-entity  (:topic-entity message-payload)
         exchange-name (get-channel-delay-exchange-name topic-entity channel message-payload)
         queue-timeout-ms (get-channel-queue-timeout-ms topic-entity channel message-payload)]
-    (rm-prod/publish exchange-name message-payload queue-timeout-ms)))
+    (rmqw/publish exchange-name message-payload queue-timeout-ms)))
 
 (defn publish-to-channel-dead-queue [channel message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
         topic-entity  (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
-    (rm-prod/publish exchange-name message-payload)))
+    (rmqw/publish exchange-name message-payload)))
 
 (defn publish-to-channel-instant-queue [channel message-payload]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
         topic-entity (:topic-entity message-payload)
         exchange-name (prefixed-channel-name topic-entity channel exchange-name)]
-    (rm-prod/publish exchange-name message-payload)))
+    (rmqw/publish exchange-name message-payload)))
 
 (defn retry [{:keys [retry-count topic-entity] :as message-payload}]
   (when (-> (ziggurat-config) :retry :enabled)
@@ -154,7 +154,7 @@
         queue-name                (delay-queue-name topic-entity queue-name)
         exchange-name             (prefixed-queue-name topic-entity exchange-name)
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)]
-    (rm-prod/create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
+    (rmqw/create-and-bind-queue queue-name exchange-name dead-letter-exchange-name)))
 
 (defn- make-delay-queue-with-retry-count [topic-entity retry-count]
   (let [{:keys [queue-name exchange-name dead-letter-exchange]} (:delay (rabbitmq-config))
@@ -163,7 +163,7 @@
         dead-letter-exchange-name (prefixed-queue-name topic-entity dead-letter-exchange)
         sequence                  (min MAX_EXPONENTIAL_RETRIES (inc retry-count))]
     (doseq [s (range 1 sequence)]
-      (rm-prod/create-and-bind-queue (prefixed-queue-name queue-name s) (prefixed-queue-name exchange-name s) dead-letter-exchange-name))))
+      (rmqw/create-and-bind-queue (prefixed-queue-name queue-name s) (prefixed-queue-name exchange-name s) dead-letter-exchange-name))))
 
 (defn- make-channel-delay-queue-with-retry-count [topic-entity channel retry-count]
   (make-delay-queue-with-retry-count (with-channel-name topic-entity channel) retry-count))
@@ -175,7 +175,7 @@
   (let [{:keys [queue-name exchange-name]} (queue-type (rabbitmq-config))
         queue-name    (prefixed-queue-name topic-identifier queue-name)
         exchange-name (prefixed-queue-name topic-identifier exchange-name)]
-    (rm-prod/create-and-bind-queue queue-name exchange-name)))
+    (rmqw/create-and-bind-queue queue-name exchange-name)))
 
 (defn- make-channel-queue [topic-entity channel-name queue-type]
   (make-queue (with-channel-name topic-entity channel-name) queue-type))

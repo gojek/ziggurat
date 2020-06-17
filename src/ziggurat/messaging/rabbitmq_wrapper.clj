@@ -14,6 +14,7 @@
             [langohr.consumers :as lcons]
             [langohr.channel :as lch]
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
+            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
             [langohr.queue :as lq]
             [langohr.exchange :as le]
             [langohr.core :as rmq]
@@ -29,7 +30,18 @@
           :stop (rmq-connection/stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
 
 
-;; End of producer namespace
+(defn publish
+  ([exchange message-payload]
+    (publish exchange message-payload nil))
+  ([exchange message-payload expiration]
+    (rmq-producer/publish exchange message-payload expiration)))
+
+(defn create-and-bind-queue
+  ([queue-name exchange-name]
+    (create-and-bind-queue queue-name exchange-name nil))
+  ([queue-name exchange-name dead-letter-exchange]
+    (rmq-producer/create-and-bind-queue queue-name exchange-name dead-letter-exchange)))
+
 
 (defn- ack-message
   [ch delivery-tag]

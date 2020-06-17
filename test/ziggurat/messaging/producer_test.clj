@@ -13,8 +13,7 @@
             [ziggurat.config :as config]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.mapper :refer [->MessagePayload]]
-            [mount.core :as mount]
-            [ziggurat.messaging.rabbitmq.producer :as rm-prod])
+            [mount.core :as mount])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
@@ -278,7 +277,7 @@
                                                         (= exchange expected-exchange-name))
                                                  (reset! prefixed-queue-name-called? true))
                                                expected-exchange-name)
-                    rm-prod/publish          (fn [exchange message]
+                    rmqw/publish          (fn [exchange message]
                                                (if (and (= exchange expected-exchange-name)
                                                         (= message retry-message-payload))
                                                  (reset! publish-called? true)))]

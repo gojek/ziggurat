@@ -38,19 +38,17 @@
       props)))
 
 (defn publish
-  ([exchange message-payload]
-   (publish exchange message-payload nil))
   ([exchange message-payload expiration]
    (try
      (with-retry {:count      5
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
-       (with-open [ch (lch/open connection)]
-         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
-                     (properties-for-publish expiration (:headers message-payload)))))
+                 (with-open [ch (lch/open connection)]
+                   (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
+                               (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
        (log/error e "Pushing message to rabbitmq failed, data: " message-payload)
-       (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type :rabbitmq-publish-failure
+       (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type  :rabbitmq-publish-failure
                                                                                    :error e}))))))
 
 (defn- declare-exchange [ch exchange]
@@ -66,8 +64,6 @@
   (log/infof "Bound queue %s to exchange %s" queue exchange))
 
 (defn create-and-bind-queue
-  ([queue-name exchange]
-   (create-and-bind-queue queue-name exchange nil))
   ([queue-name exchange-name dead-letter-exchange]
    (try
      (let [props (if dead-letter-exchange
