@@ -30,8 +30,8 @@
      (with-retry {:count      5
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
-                 (with-open [ch (lch/open connection)]
-                   (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
+       (with-open [ch (lch/open connection)]
+         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
        (log/error e "Pushing message to rabbitmq failed, data: " message-payload)
        (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type :rabbitmq-publish-failure

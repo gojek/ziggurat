@@ -50,10 +50,10 @@
       (let [connection (create-connection (get-config-for-rabbitmq ziggurat-config) (get-in ziggurat-config [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
-            (reify ShutdownListener
-              (shutdownCompleted [_ cause]
-                (when-not (.isInitiatedByApplication cause)
-                  (log/error cause "RabbitMQ connection shut down due to error")))))))
+           (reify ShutdownListener
+             (shutdownCompleted [_ cause]
+               (when-not (.isInitiatedByApplication cause)
+                 (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
         (log/error e "Error while starting RabbitMQ connection")
         (throw e)))))
@@ -66,5 +66,5 @@
     (log/info "Disconnected from RabbitMQ")))
 
 (defstate connection
-          :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
-          :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
+  :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
+  :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))

@@ -30,7 +30,7 @@
         (convert-to-message-payload message topic-entity)
         (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
   ;(sentry/report-error sentry-reporter e "Error while consuming the dead set message")
-)
+  )
 
 (defn get-dead-set-messages
   "This method can be used to read and optionally ack messages in dead-letter queue, based on the value of `ack?`.

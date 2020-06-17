@@ -9,6 +9,7 @@
             [ziggurat.retry :refer [with-retry]]
             [clojure.tools.logging :as log]
             [ziggurat.messaging.util :refer :all]
+            [clojure.pprint]
             [ziggurat.tracer :refer [tracer]]
             [langohr.consumers :as lcons]
             [langohr.channel :as lch]
@@ -48,14 +49,13 @@
     (let [connection-factory (TracingConnectionFactory. tracer)]
       (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
       (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (list (Address. (:host config) (:port config))))))
-
     (rmq/connect config)))
 
 (defn- start-connection [ziggurat-config stream-routes]
   (log/info "Connecting to RabbitMQ")
-  (when (is-connection-required? ziggurat-config stream-routes)
+  (when (is-connection-required? (:ziggurat ziggurat-config) stream-routes)
     (try
-      (let [connection (create-connection (get-config-for-rabbitmq ziggurat-config) (get-in ziggurat-config [:tracer :enabled]))]
+      (let [connection (create-connection (get-config-for-rabbitmq (:ziggurat ziggurat-config)) (get-in (:ziggurat ziggurat-config) [:tracer :enabled]))]
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
@@ -67,16 +67,15 @@
         (throw e)))))
 
 (defn- stop-connection [conn ziggurat-config stream-routes]
-  (when (is-connection-required? ziggurat-config stream-routes)
-    (if (get-in  ziggurat-config [:tracer :enabled])
+  (when (is-connection-required? (:ziggurat ziggurat-config) stream-routes)
+    (if (get-in  ziggurat-config [:ziggurat :tracer :enabled])
       (.close conn)
       (rmq/close conn))
     (log/info "Disconnected from RabbitMQ")))
 
-
 (defstate connection
-  :start (start-connection (ziggurat-config) (:stream-routes (mount/args)))
-  :stop (stop-connection connection (ziggurat-config) (:stream-routes (mount/args))))
+  :start (start-connection ziggurat.config/config (:stream-routes (mount/args)))
+  :stop (stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
 
 ;;End of connection namespace
 
