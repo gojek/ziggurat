@@ -4,8 +4,23 @@
             [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
             [langohr.exchange :as le]
-            [ziggurat.messaging.rabbitmq.connection :refer [connection]]
-            [langohr.queue :as lq]))
+            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
+            [ziggurat.messaging.rabbitmq.retry :refer :all]
+            [langohr.queue :as lq]
+            [clojure.set :as set]))
+
+(def valid-with-retry-args #{:count
+                             :wait
+                             :on-failure})
+
+(defmacro with-retry [{:keys [count wait on-failure] :as opts} & body]
+  (let [arg-diff (set/difference (set (keys opts))
+                                 valid-with-retry-args)]
+    (assert (= #{} arg-diff) (str "Valid args: " (vec valid-with-retry-args))))
+  `(with-retry* {:count         (or ~count default-retry)
+                 :wait          (or ~wait default-wait)
+                 :fn-to-retry   (fn [] ~@body)
+                 :fn-on-failure ~on-failure}))
 
 (defn- record-headers->map [record-headers]
   (reduce (fn [header-map record-header]
@@ -31,7 +46,8 @@
                   :wait       100
                   :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
        (with-open [ch (lch/open connection)]
-         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers)) (properties-for-publish expiration (:headers message-payload)))))
+         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
+                     (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
        (log/error e "Pushing message to rabbitmq failed, data: " message-payload)
        (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type :rabbitmq-publish-failure
