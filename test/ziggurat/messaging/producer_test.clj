@@ -278,9 +278,9 @@
                                                  (reset! prefixed-queue-name-called? true))
                                                expected-exchange-name)
                     rmqw/publish         (fn [exchange message]
-                                               (if (and (= exchange expected-exchange-name)
-                                                        (= message retry-message-payload))
-                                                 (reset! publish-called? true)))]
+                                           (if (and (= exchange expected-exchange-name)
+                                                    (= message retry-message-payload))
+                                             (reset! publish-called? true)))]
         (producer/publish-to-instant-queue retry-message-payload)
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?)))))
