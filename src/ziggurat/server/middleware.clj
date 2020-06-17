@@ -44,9 +44,9 @@
       response)))
 
 (defn- swagger-enabled? []
-  (get-in-config [:http-server :middlewares :swagger :enabled]))
+  (true? (get-in-config [:http-server :middlewares :swagger :enabled])))
 
-(defn enable-swagger [handler]
+(defn wrap-swagger [handler]
   (if (swagger-enabled?)
     (rsui/wrap-swagger-ui handler {:path "/swagger-ui"})
     handler))
