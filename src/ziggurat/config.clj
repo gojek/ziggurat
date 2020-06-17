@@ -35,7 +35,8 @@
                                                                      :exchange-name "%s_dead_letter_exchange"}}
                                 :retry                {:count   5
                                                        :enabled false}
-                                :http-server          {:port         8080
+                                :http-server          {:middlewares  {:swagger {:enabled false}}
+                                                       :port         8080
                                                        :thread-count 100}}})
 
 (defn- interpolate-val [val app-name]
