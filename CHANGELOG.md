@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1 - 2020-06-17
+- Itroduces a swagger middleware on the HTTP server. 
+
 ## 3.3.0 - 2020-05-26
 - Makes metrics library configurable, exposes a metrics interface and provides an 
 implementation for clj-statsd library.
