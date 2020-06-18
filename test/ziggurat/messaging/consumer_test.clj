@@ -1,6 +1,6 @@
 (ns ziggurat.messaging.consumer-test
-  (:require [clojure.test :refer :all])
-  (:require [langohr.channel :as lch]
+  (:require [clojure.test :refer :all]
+            [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]

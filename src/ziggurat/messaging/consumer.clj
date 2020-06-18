@@ -8,6 +8,24 @@
             [clojure.tools.logging :as log]
             [schema.core :as s]))
 
+(defn get-dead-set-queue-name
+  ([topic-entity ziggurat-config]
+   (get-dead-set-queue-name topic-entity ziggurat-config nil))
+  ([topic-entity ziggurat-config channel]
+   (if (nil? channel)
+     (prefixed-queue-name topic-entity (get-in ziggurat-config [:rabbit-mq :dead-letter :queue-name]))
+     (prefixed-channel-name topic-entity channel (get-in ziggurat-config [:rabbit-mq :dead-letter :queue-name])))))
+
+(defn- get-instant-queue-name [topic-entity ziggurat-config]
+  (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
+    (prefixed-queue-name topic-entity instant-queue-name)))
+
+(defn- get-channel-instant-queue-name [topic-entity channel-key ziggurat-config]
+  (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
+    (prefixed-channel-name topic-entity channel-key instant-queue-name)))
+
+
+
 (defn convert-to-message-payload
   "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
    message-payload to pass onto the mapper-fn.
@@ -39,7 +57,7 @@
    (get-dead-set-messages topic-entity nil count))
   ([topic-entity channel count]
    (remove nil?
-           (read-messages-from-queue (rmqw/get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity false count))))
+           (read-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity false count))))
 
 (defn process-messages-from-queue [queue-name topic-entity count processing-fn]
   (doseq [return-code (rmqw/process-messages-from-queue queue-name count processing-fn)]
@@ -53,27 +71,25 @@
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
-   (process-messages-from-queue (rmqw/get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity count processing-fn)))
+   (process-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity count processing-fn)))
 
 (defn start-retry-subscriber* [mapper-fn topic-entity channels ziggurat-config]
   (when (get-in ziggurat-config [:retry :enabled])
     (dotimes [_ (get-in ziggurat-config [:jobs :instant :worker-count])]
-      (rmqw/start-subscriber (get-in ziggurat-config [:jobs :instant :prefetch-count])
-                             (mpr/mapper-func mapper-fn channels)
-                             topic-entity
-                             nil
-                             ziggurat-config))))
+      (let [queue-name (get-instant-queue-name topic-entity ziggurat-config)]
+        (rmqw/start-subscriber (get-in ziggurat-config [:jobs :instant :prefetch-count])
+                               (mpr/mapper-func mapper-fn channels)
+                               queue-name)))))
 
 (defn start-channels-subscriber [channels topic-entity ziggurat-config]
   (doseq [channel channels]
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
-        (rmqw/start-subscriber 1
-                               (mpr/channel-mapper-func channel-handler-fn channel-key)
-                               topic-entity
-                               channel-key
-                               ziggurat-config)))))
+        (let [queue-name (get-channel-instant-queue-name topic-entity channel-key ziggurat-config)]
+          (rmqw/start-subscriber 1
+                                 (mpr/channel-mapper-func channel-handler-fn channel-key)
+                                 queue-name))))))
 
 ; extract this and pass ziggurat config stream routes and mapper-fn as args
 

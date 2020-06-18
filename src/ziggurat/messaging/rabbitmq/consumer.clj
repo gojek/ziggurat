@@ -4,19 +4,7 @@
             [clojure.tools.logging :as log]
             [ziggurat.retry :refer [with-retry]]
             [langohr.channel :as lch]
-            [ziggurat.messaging.rabbitmq.connection :refer [connection]]
             [langohr.consumers :as lcons]))
-
-(defn prefixed-queue-name [topic-entity value]
-  (str (name topic-entity) "_" value))
-
-(defn with-channel-name [topic-entity channel]
-  (str (name topic-entity) "_channel_" (name channel)))
-
-(defn prefixed-channel-name [topic-entity channel-name value]
-  (prefixed-queue-name (with-channel-name topic-entity channel-name)
-                       value))
-;; end of util ns
 
 (defn- ack-message
   [ch delivery-tag]
@@ -36,14 +24,14 @@
       (log/error "error fetching the message from rabbitmq " e)
       nil)))
 
-(defn get-message-from-queue [ch queue-name ack?]
+(defn- get-message-from-queue [ch queue-name ack?]
   (let [[meta payload] (lb/get ch queue-name false)]
     (when (some? payload)
       (consume-message ch meta payload ack?))))
 
-(defn process-message-from-queue [ch meta payload processing-fn]
-  (let [delivery-tag (:delivery-tag meta)
-        message-payload      (consume-message ch meta payload false)]
+(defn- process-message-from-queue [ch meta payload processing-fn]
+  (let [delivery-tag    (:delivery-tag meta)
+        message-payload (consume-message ch meta payload false)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
@@ -62,28 +50,9 @@
   (fn [ch meta ^bytes payload]
     (process-message-from-queue ch meta payload wrapped-mapper-fn)))
 
-(defn- get-instant-queue-name [topic-entity ziggurat-config]
-  (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
-    (prefixed-queue-name topic-entity instant-queue-name)))
-
-(defn- get-channel-instant-queue-name [topic-entity channel-key ziggurat-config]
-  (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
-    (prefixed-channel-name topic-entity channel-key instant-queue-name)))
-
-(defn get-dead-set-queue-name
-  ([topic-entity ziggurat-config]
-   (get-dead-set-queue-name topic-entity ziggurat-config nil))
-  ([topic-entity ziggurat-config channel]
-   (if (nil? channel)
-     (prefixed-queue-name topic-entity (get-in ziggurat-config [:rabbit-mq :dead-letter :queue-name]))
-     (prefixed-channel-name topic-entity channel (get-in ziggurat-config [:rabbit-mq :dead-letter :queue-name])))))
-
-(defn start-subscriber [prefetch-count wrapped-mapper-fn topic-entity channel-key ziggurat-config]
-  (let [ch (lch/open connection)
-        queue-name (if (some? channel-key)
-                     (get-channel-instant-queue-name topic-entity channel-key ziggurat-config)
-                     (get-instant-queue-name topic-entity ziggurat-config))
-        _ (lb/qos ch prefetch-count)
+(defn start-subscriber [connection prefetch-count wrapped-mapper-fn queue-name]
+  (let [ch           (lch/open connection)
+        _            (lb/qos ch prefetch-count)
         consumer-tag (lcons/subscribe ch
                                       queue-name
                                       (message-handler wrapped-mapper-fn)
@@ -92,20 +61,18 @@
                                        :handle-consume-ok-fn      (fn [consumer_tag]
                                                                     (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
 
-(defn get-messages-from-queue
-  ([queue-name ack?] (get-messages-from-queue queue-name ack? 1))
-  ([queue-name ack? count]
-   (with-open [ch (lch/open connection)]
-     (doall
+(defn get-messages-from-queue [connection queue-name ack? count]
+  (with-open [ch (lch/open connection)]
+    (doall
       (for [_ (range count)]
         (try
           (get-message-from-queue ch queue-name ack?)
           (catch Exception e
-            (log/error e))))))))
+            (log/error e)))))))
 
-(defn process-messages-from-queue [queue-name count processing-fn]
+(defn process-messages-from-queue [connection queue-name count processing-fn]
   (with-open [ch (lch/open connection)]
     (doall
-     (for [_ (range count)]
-       (let [[meta payload] (lb/get ch queue-name false)]
-         (process-message-from-queue ch meta payload processing-fn))))))
+      (for [_ (range count)]
+        (let [[meta payload] (lb/get ch queue-name false)]
+          (process-message-from-queue ch meta payload processing-fn))))))
