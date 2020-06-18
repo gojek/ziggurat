@@ -8,7 +8,7 @@
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.retry :refer [with-retry]]
             [clojure.tools.logging :as log]
-            [ziggurat.messaging.util :refer :all]
+            [ziggurat.messaging.util :refer [is-connection-required?]]
             [clojure.pprint]
             [ziggurat.tracer :refer [tracer]]
             [langohr.consumers :as lcons]
@@ -26,10 +26,12 @@
            (java.util.concurrent ExecutorService Executors)))
 
 (defn start-connection [config stream-routes]
-  (rmq-connection/start-connection config stream-routes))
+  (when (is-connection-required? (:ziggurat config) stream-routes)
+    (rmq-connection/start-connection config)))
 
 (defn stop-connection [connection config stream-routes]
-  (rmq-connection/stop-connection connection config stream-routes))
+  (when (is-connection-required? (:ziggurat config) stream-routes)
+    (rmq-connection/stop-connection connection config)))
 
 
 

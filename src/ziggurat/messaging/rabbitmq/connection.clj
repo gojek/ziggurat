@@ -28,7 +28,7 @@
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
-(defn- get-config-for-rabbitmq [ziggurat-config]
+(defn- get-config-for-rabbitmq [{ziggurat-config :ziggurat}]
   (assoc (:rabbit-mq-connection ziggurat-config) :executor (Executors/newFixedThreadPool (total-thread-count ziggurat-config))))
 
 (defn create-connection [config tracer-enabled]
@@ -38,25 +38,23 @@
       (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (list (Address. (:host config) (:port config))))))
     (rmq/connect config)))
 
-(defn start-connection [ziggurat-config stream-routes]
+(defn start-connection [config]
   (log/info "Connecting to RabbitMQ")
-  (when (is-connection-required? (:ziggurat ziggurat-config) stream-routes)
-    (try
-      (let [connection (create-connection (get-config-for-rabbitmq (:ziggurat ziggurat-config)) (get-in (:ziggurat ziggurat-config) [:tracer :enabled]))]
-        (doto connection
-          (.addShutdownListener
-            (reify ShutdownListener
-              (shutdownCompleted [_ cause]
-                (when-not (.isInitiatedByApplication cause)
-                  (log/error cause "RabbitMQ connection shut down due to error")))))))
-      (catch Exception e
-        (log/error e "Error while starting RabbitMQ connection")
-        (throw e)))))
+  (try
+    (let [connection (create-connection (get-config-for-rabbitmq config) (get-in config [:tracer :enabled]))]
+      (doto connection
+        (.addShutdownListener
+          (reify ShutdownListener
+            (shutdownCompleted [_ cause]
+              (when-not (.isInitiatedByApplication cause)
+                (log/error cause "RabbitMQ connection shut down due to error")))))))
+    (catch Exception e
+      (log/error e "Error while starting RabbitMQ connection")
+      (throw e))))
 
-(defn stop-connection [conn ziggurat-config stream-routes]
-  (when (is-connection-required? (:ziggurat ziggurat-config) stream-routes)
-    (if (get-in ziggurat-config [:ziggurat :tracer :enabled])
-      (.close conn)
-      (rmq/close conn))
-    (log/info "Disconnected from RabbitMQ")))
+(defn stop-connection [conn ziggurat-config]
+  (if (get-in ziggurat-config [:ziggurat :tracer :enabled])
+    (.close conn)
+    (rmq/close conn))
+  (log/info "Disconnected from RabbitMQ"))
 
