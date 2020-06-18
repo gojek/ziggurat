@@ -64,15 +64,15 @@
 (defn get-messages-from-queue [connection queue-name ack? count]
   (with-open [ch (lch/open connection)]
     (doall
-      (for [_ (range count)]
-        (try
-          (get-message-from-queue ch queue-name ack?)
-          (catch Exception e
-            (log/error e)))))))
+     (for [_ (range count)]
+       (try
+         (get-message-from-queue ch queue-name ack?)
+         (catch Exception e
+           (log/error e)))))))
 
 (defn process-messages-from-queue [connection queue-name count processing-fn]
   (with-open [ch (lch/open connection)]
     (doall
-      (for [_ (range count)]
-        (let [[meta payload] (lb/get ch queue-name false)]
-          (process-message-from-queue ch meta payload processing-fn))))))
+     (for [_ (range count)]
+       (let [[meta payload] (lb/get ch queue-name false)]
+         (process-message-from-queue ch meta payload processing-fn))))))
