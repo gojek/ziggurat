@@ -10,7 +10,7 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer :all]
+            [ziggurat.messaging.util :refer [prefixed-channel-name prefixed-queue-name]]
             [ziggurat.metrics :as metrics]))
 
 (defn- convert-to-message-payload
@@ -24,14 +24,14 @@
     (s/validate mpr/message-payload-schema message)
     (catch Exception e
       (log/info "old message format read, converting to message-payload: " message)
-      (let [retry-count (or (:retry-count message) 0)
+      (let [retry-count     (or (:retry-count message) 0)
             message-payload (mpr/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
         (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
   if `ack?` is true."
-  [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
+  [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity]
   (try
     (let [message (nippy/thaw payload)]
       (when ack?
@@ -48,8 +48,8 @@
   (lb/ack ch delivery-tag))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
-  (let [delivery-tag (:delivery-tag meta)
-        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+  (let [delivery-tag    (:delivery-tag meta)
+        message-payload (convert-and-ack-message ch meta payload false topic-entity)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
@@ -109,13 +109,13 @@
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)
-  (let [consumer-tag (lcons/subscribe ch
-                                      queue-name
-                                      (message-handler wrapped-mapper-fn topic-entity)
-                                      {:handle-shutdown-signal-fn (fn [consumer_tag reason]
-                                                                    (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
-                                       :handle-consume-ok-fn      (fn [consumer_tag]
-                                                                    (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
+  (lcons/subscribe ch
+                   queue-name
+                   (message-handler wrapped-mapper-fn topic-entity)
+                   {:handle-shutdown-signal-fn (fn [consumer_tag reason]
+                                                 (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
+                    :handle-consume-ok-fn      (fn [consumer_tag]
+                                                 (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))}))
 
 (defn start-retry-subscriber* [mapper-fn topic-entity channels]
   (when (get-in-config [:retry :enabled])
@@ -129,8 +129,9 @@
 (defn start-channels-subscriber [channels topic-entity]
   (doseq [channel channels]
     (let [channel-key        (first channel)
-          channel-handler-fn (second channel)]
-      (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
+          channel-handler-fn (second channel)
+          worker-count       (get-in-config [:stream-router topic-entity :channels channel-key :worker-count] 0)]
+      (dotimes [_ worker-count]
         (start-subscriber* (lch/open connection)
                            1
                            (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))

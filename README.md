@@ -80,7 +80,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
     [message]
     (println message)
     :success)
-    
+
 (def handler-fn
     (-> main-fn
       (middleware/protobuf->hash ProtoClass :stream-id)))
@@ -88,7 +88,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
-_NOTE: this example assumes that the message is serialized in Protobuf format_ 
+_NOTE: this example assumes that the message is serialized in Protobuf format_
 
 Please refer the [Middleware section](#middleware-in-ziggurat) for understanding `handler-fn` here.
 
@@ -129,7 +129,7 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
     [message]
     (println message)
     :success)
-    
+
 (def handler-fn
     (-> main-fn
       (middleware/protobuf->hash ProtoClass :stream-id)))
@@ -137,7 +137,7 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}} routes)
 
 ```
-_NOTE: this example assumes that the message is serialized in Protobuf format_ 
+_NOTE: this example assumes that the message is serialized in Protobuf format_
 
 Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
 how you can pass in your own route.
@@ -211,9 +211,9 @@ It can be used like this.
       (parse-json :stream-route-config)))
 ```
 
-Here, `message-handler-fn` calls `parse-json` with a message handler function 
-`actual-message-handler-function` as the first argument and the key of a stream-route 
-config (as defined in `config.edn`) as the second argument. 
+Here, `message-handler-fn` calls `parse-json` with a message handler function
+`actual-message-handler-function` as the first argument and the key of a stream-route
+config (as defined in `config.edn`) as the second argument.
 
 ## Publishing data to Kafka Topics in Ziggurat
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
@@ -245,8 +245,8 @@ Tracing has been added to the following flows:
 3. Produce to rabbitmq channel
 4. Produce to another kafka topic
 
-By default, tracing is done via [Jaeger](https://www.jaegertracing.io/) based on the env configs. Please refer [Jaeger Configuration](https://github.com/jaegertracing/jaeger-client-java/tree/master/jaeger-core#configuration-via-environment) 
-and [Jaeger Architecture](https://www.jaegertracing.io/docs/1.13/architecture/) to set the respective env variables. 
+By default, tracing is done via [Jaeger](https://www.jaegertracing.io/) based on the env configs. Please refer [Jaeger Configuration](https://github.com/jaegertracing/jaeger-client-java/tree/master/jaeger-core#configuration-via-environment)
+and [Jaeger Architecture](https://www.jaegertracing.io/docs/1.13/architecture/) to set the respective env variables.
 To enable custom tracer, a custom tracer provider function name can be set in `:custom-provider`. The corresponding function will be executed in runtime to create a tracer. In the event of any errors while executing the custom tracer provider, a Noop tracer will be created.
 
 To enable tracing, the following config needs to be added to the `config.edn` under `:ziggurat` key.
@@ -261,6 +261,34 @@ Example Jaeger Env Config:
 JAEGER_SERVICE_NAME: "service-name"
 JAEGER_AGENT_HOST: "localhost"
 JAEGER_AGENT_PORT: 6831
+```
+
+## Stream Joins
+This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
+```clojure
+{:ziggurat  {:stream-router        {:stream-id            {
+    :consumer-type        :stream-joins
+    :input-topics         {:topic-1-key {:name "topic-1"} :topic-2-key {:name "topic-2"}}
+    :join-cfg             {:topic-1-and-topic-2 {:join-window-ms 5000 :join-type :inner}}
+}}}
+```
+* consumer-type - enables stream joins if `:stream-joins` key is provided, other possible value is `:default` which is the default actor behavior
+* input-topics - a map of topics in which you want to use for joining
+* join-cfg - a map of configurations which you define the join-window-ms and the join-type (`:inner`, `:left` or `:outer`)
+
+And your actor's handler function be like
+```clojure
+(def handler-func
+  (-> main-func
+      (mw/protobuf->hash [com.gojek.esb.booking.BookingLogMessage com.gojek.esb.booking.BookingLogMessage] :booking)))
+```
+
+`Please take note of the vector containing the proto classes`
+
+Your handler function will receive a message in the following format/structure
+
+```clojure
+{:topic-1-key "message-from-1st-topic" :topic-2-key "message-from-2nd-topic"}
 ```
 
 ## Configuration
@@ -344,7 +372,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 ## Alpha (Experimental) Features
 The contract and interface for experimental features in Ziggurat can be changed as we iterate towards better designs for that feature.
-For all purposes these features should be considered unstable and should only be used after understanding their risks and implementations. 
+For all purposes these features should be considered unstable and should only be used after understanding their risks and implementations.
 
 ### Exponential Backoff based Retries
 In addition to linear retries, Ziggurat users can now use exponential backoff strategy for retries. This means that the message
@@ -359,11 +387,11 @@ Exponential retries can be configured as described below.
 :ziggurat {:stream-router {:default {:application-id "application_name"...}}}
            :retry         {:type   [:exponential :keyword]
                            :count  [10 :int]
-                           :enable [true :bool]} 
+                           :enable [true :bool]}
 
 ```
 
-Exponential retries can be configured for channels too. Additionally, a user can specify a custom `queue-timeout-ms` value per channel. 
+Exponential retries can be configured for channels too. Additionally, a user can specify a custom `queue-timeout-ms` value per channel.
 Timeouts for exponential backoffs are calculated using `queue-timeout-ms`. This implies that each channel can have separate count of retries
 and different timeout values.
 
@@ -373,7 +401,7 @@ and different timeout values.
                                                            :retry {:type   [:exponential :keyword]
                                                                                       :count  [10 :int]
                                                                                       :queue-timeout-ms 2000
-                                                                                      :enable [true :bool]}}}}} 
+                                                                                      :enable [true :bool]}}}}}
 ```
 
 ## Deprecation Notice

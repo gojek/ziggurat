@@ -1,8 +1,16 @@
 (ns ziggurat.config-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is testing]]
             [clonfig.core :as clonfig]
             [mount.core :as mount]
-            [ziggurat.config :refer :all])
+            [ziggurat.config :refer [-get
+                                     -getIn
+                                     channel-retry-config
+                                     config config-file
+                                     config-from-env
+                                     default-config get-in-config
+                                     rabbitmq-config
+                                     statsd-config
+                                     ziggurat-config]])
   (:import (java.util ArrayList)))
 
 (deftest config-from-env-test
@@ -94,6 +102,15 @@
                     config-file     config-filename]
         (mount/start #'config)
         (is (= (-> config-values-from-env :ziggurat :http-server :port) (get-in-config [:http-server :port])))
+        (mount/stop))))
+  (testing "returns config for key passed with default"
+    (let [config-filename        "config.test.edn"
+          config-values-from-env (config-from-env config-filename)
+          default                "test"]
+      (with-redefs [config-from-env (fn [_] config-values-from-env)
+                    config-file     config-filename]
+        (mount/start #'config)
+        (is (= default (get-in-config [:invalid :value] default)))
         (mount/stop)))))
 
 (deftest channel-retry-config-test
