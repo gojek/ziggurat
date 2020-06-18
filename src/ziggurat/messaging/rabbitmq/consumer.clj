@@ -50,7 +50,7 @@
           ;TODO fix this error
           ; Channels get closed by the client if there is an exception. We are going to restart the channel to reject the message
           (reject-message ch delivery-tag true)
-          ;(sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
+          (log/error "Error while processing message-payload from RabbitMQ" (str "\nError: " e))
           nil)))))
 
 (defn- message-handler [wrapped-mapper-fn]
