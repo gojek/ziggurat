@@ -7,8 +7,16 @@
             [langohr.consumers :as lcons]))
 
 (defn- ack-message
+  "created this to mock lb/ack methods in test, we are not able to directly mock out lb/ack because of type annotations in the fn definition"
+  ; TODO: try to figure out a way to mock lb/ack to remove this fn.
   [ch delivery-tag]
   (lb/ack ch delivery-tag))
+
+(defn- reject-message
+  "created this to mock lb/reject methods in test, we are not able to directly mock out lb/reject because of type annotations in the fn definition"
+  ; TODO: try to figure out a way to mock lb/reject to remove this fn.
+  [ch delivery-tag requeue]
+  (lb/reject ch delivery-tag requeue))
 
 (defn consume-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and acks the message
@@ -17,10 +25,10 @@
   (try
     (let [message (nippy/thaw payload)]
       (when ack?
-        (lb/ack ch delivery-tag))
+        (ack-message ch delivery-tag))
       message)
     (catch Exception e
-      (lb/reject ch delivery-tag false)
+      (reject-message ch delivery-tag false)
       (log/error "error fetching the message from rabbitmq " e)
       nil)))
 
@@ -38,13 +46,12 @@
         (log/debug "Calling processor-fn with the message-payload - " message-payload " with retry count - " (:retry-count message-payload))
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
-        :success
         (catch Exception e
           ;TODO fix this error
           ; Channels get closed by the client if there is an exception. We are going to restart the channel to reject the message
-          (lb/reject ch delivery-tag true)
+          (reject-message ch delivery-tag true)
           ;(sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
-          :failed)))))
+          nil)))))
 
 (defn- message-handler [wrapped-mapper-fn]
   (fn [ch meta ^bytes payload]
