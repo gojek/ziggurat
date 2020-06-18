@@ -113,7 +113,6 @@
 
   (testing "It should call the lb/reject function when the processing function throws an exception"
     (let [count                5
-          has-processed?       (atom true)
           reject-fn-call-count (atom 0)
           processing-fn        (fn [_] (throw (Exception. "message processing error")))]
       (with-redefs [lb/get                   (fn [^Channel _ ^String _ ^Boolean _]
