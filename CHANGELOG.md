@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.1 - 2020-06-18
+- Support for Kafka Stream KStream-KStream Join
+
 ## 3.3.1 - 2020-06-17
 - Itroduces a swagger middleware on the HTTP server. 
 
