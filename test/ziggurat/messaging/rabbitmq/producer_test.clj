@@ -105,7 +105,7 @@
       (is (true? @nippy-called?)))))
 
 (deftest create-and-bind-queue-test
-  (testing "it should create a queue,exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
+  (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
     (let [default-props {:durable true :auto-delete false}
           default-props-with-arguments (assoc default-props :arguments {})
           queue-name "test-queue"
@@ -127,6 +127,33 @@
                                          (= exchange exchange-name))
                                 (reset! bind-called? true)))]
         (rm-prod/create-and-bind-queue nil queue-name exchange-name nil))
+      (is (true? @bind-called?))
+      (is (true? @exchange-declare-called?))
+      (is (true? @queue-declare-called?))))
+
+  (testing "it should create a queue, an exchange, bind the queue to the exchange and tag it with dead-letter-exchange"
+    (let [default-props {:durable true :auto-delete false}
+          dead-letter-exchange-name "test-dead-letter-exchange"
+          queue-name "test-queue"
+          exchange-name "test-exchange"
+          default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
+          exchange-declare-called? (atom false)
+          queue-declare-called? (atom false)
+          bind-called? (atom false)]
+      (with-redefs [lch/open (fn [^Connection _] (create-mock-channel))
+                    lq/declare (fn [^Channel _ ^String queue props]
+                                 (when (and (= props default-props-with-arguments)
+                                            (= queue-name queue))
+                                   (reset! queue-declare-called? true)))
+                    le/declare (fn [^Channel _ ^String name ^String type props]
+                                 (when (and (= name exchange-name)
+                                            (= props default-props))
+                                   (reset! exchange-declare-called? true)))
+                    lq/bind (fn [^Channel _ ^String queue ^String exchange]
+                              (when (and (= queue queue-name)
+                                         (= exchange exchange-name))
+                                (reset! bind-called? true)))]
+        (rm-prod/create-and-bind-queue nil queue-name exchange-name dead-letter-exchange-name))
       (is (true? @bind-called?))
       (is (true? @exchange-declare-called?))
       (is (true? @queue-declare-called?)))))
