@@ -78,7 +78,7 @@
   (doseq [channel channels]
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
-      (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
+      (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count] 0)]
         (let [queue-name (get-channel-instant-queue-name topic-entity channel-key ziggurat-config)]
           (rmqw/start-subscriber 1
                                  (mpr/channel-mapper-func channel-handler-fn channel-key)
