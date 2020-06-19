@@ -1,7 +1,6 @@
 (ns ziggurat.messaging.util
   (:require [ziggurat.channel :refer [get-keys-for-topic]]))
 
-
 (defn is-connection-required? [ziggurat-config stream-routes]
   (let [all-channels (reduce (fn [all-channel-vec [topic-entity _]]
                                (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
