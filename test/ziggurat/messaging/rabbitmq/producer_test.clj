@@ -4,12 +4,17 @@
             [langohr.channel :as lch]
             [ziggurat.fixtures :as fix]
             [langohr.basic :as lb]
-            [taoensso.nippy :as nippy])
+            [taoensso.nippy :as nippy]
+            [langohr.queue :as lq]
+            [langohr.exchange :as le])
   (:import (com.rabbitmq.client Channel Connection)
            (org.apache.kafka.common.header Header)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
+
+(defn- create-mock-channel [] (reify Channel
+                                (close [_] nil)))
 
 (deftest producer-test
   (testing "it should publish a message without expiry"
@@ -98,4 +103,31 @@
                                    serialized-message)]
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))
       (is (true? @nippy-called?)))))
+
+(deftest create-and-bind-queue-test
+  (testing "it should create a queue,exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
+    (let [default-props {:durable true :auto-delete false}
+          default-props-with-arguments (assoc default-props :arguments {})
+          queue-name "test-queue"
+          exchange-name "test-exchange"
+          exchange-declare-called? (atom false)
+          queue-declare-called? (atom false)
+          bind-called? (atom false)]
+      (with-redefs [lch/open (fn [^Connection _] (create-mock-channel))
+                    lq/declare (fn [^Channel _ ^String queue props]
+                                 (when (and (= props default-props-with-arguments)
+                                            (= queue-name queue))
+                                   (reset! queue-declare-called? true)))
+                    le/declare (fn [^Channel _ ^String name ^String type props]
+                                 (when (and (= name exchange-name)
+                                            (= props default-props))
+                                   (reset! exchange-declare-called? true)))
+                    lq/bind (fn [^Channel _ ^String queue ^String exchange]
+                              (when (and (= queue queue-name)
+                                         (= exchange exchange-name))
+                                (reset! bind-called? true)))]
+        (rm-prod/create-and-bind-queue nil queue-name exchange-name nil))
+      (is (true? @bind-called?))
+      (is (true? @exchange-declare-called?))
+      (is (true? @queue-declare-called?)))))
 
