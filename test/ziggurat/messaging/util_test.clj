@@ -13,14 +13,14 @@
 (deftest is-connection-required?-test
   (testing "when retry is enabled and channels are not provided it should return true"
     (let [orig-ziggurat-config (ziggurat-config)
-          stream-routes {:test-topic {:handler-fn #(%)}}]
+          stream-routes {:test-topic {:handler-fn (constantly nil)}}]
       (with-redefs [ziggurat.config/ziggurat-config (fn [] (assoc orig-ziggurat-config
                                                                   :retry {:enabled true}))]
         (is (true? (is-connection-required? (ziggurat.config/ziggurat-config) stream-routes))))))
 
   (testing "when retry is disabled and channels are not provided it should return false"
     (let [orig-ziggurat-config (ziggurat-config)
-          stream-routes {:test-topic {:handler-fn #(%)}}]
+          stream-routes {:test-topic {:handler-fn (constantly nil)}}]
       (with-redefs [ziggurat.config/ziggurat-config (fn [] (assoc orig-ziggurat-config
                                                                   :retry {:enabled false}))]
         (is (false? (is-connection-required? (ziggurat.config/ziggurat-config) stream-routes))))))
@@ -28,7 +28,7 @@
   (testing "when retry is disabled and channels are not provided in stream routes it should return false"
     (let [orig-ziggurat-config (ziggurat-config)
           stream-router-config {:test-topic {:channels {:test-channel {:worker-count 10}}}}
-          stream-routes {:test-topic {:handler-fn #(%)}}]
+          stream-routes {:test-topic {:handler-fn (constantly nil)}}]
       (with-redefs [ziggurat.config/ziggurat-config (fn [] (assoc orig-ziggurat-config
                                                                   :stream-router stream-router-config
                                                                   :retry {:enabled false}))]
