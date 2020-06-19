@@ -4,6 +4,7 @@
             [ziggurat.messaging.util :refer :all]
             [ziggurat.retry :refer [with-retry]]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
+            [ziggurat.messaging.util :as util]
             [ziggurat.messaging.rabbitmq.connection :as rm-conn]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
@@ -203,7 +204,7 @@
                   (make-channel-delay-queue topic-entity channel)))))))
 
 (defn make-queues [stream-routes]
-  (when (rm-conn/is-connection-required? (ziggurat-config) stream-routes)
+  (when (util/is-connection-required? (ziggurat-config) stream-routes)
     (doseq [topic-entity (keys stream-routes)]
       (let [channels (get-channel-names stream-routes topic-entity)
             retry-type (retry-type)]
