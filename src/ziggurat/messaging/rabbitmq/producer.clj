@@ -9,19 +9,6 @@
             [clojure.set :as set])
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
-(def valid-with-retry-args #{:count
-                             :wait
-                             :on-failure})
-
-(defmacro with-retry [{:keys [count wait on-failure] :as opts} & body]
-  (let [arg-diff (set/difference (set (keys opts))
-                                 valid-with-retry-args)]
-    (assert (= #{} arg-diff) (str "Valid args: " (vec valid-with-retry-args))))
-  `(with-retry* {:count         (or ~count default-retry)
-                 :wait          (or ~wait default-wait)
-                 :fn-to-retry   (fn [] ~@body)
-                 :fn-on-failure ~on-failure}))
-
 (defn- record-headers->map [record-headers]
   (reduce (fn [header-map record-header]
             (assoc header-map (.key record-header) (String. (.value record-header))))

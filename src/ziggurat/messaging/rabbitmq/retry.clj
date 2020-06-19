@@ -1,4 +1,5 @@
-(ns ziggurat.messaging.rabbitmq.retry)
+(ns ziggurat.messaging.rabbitmq.retry
+  (:require [clojure.set :as set]))
 
 (def default-wait 100)
 (def default-retry 2)
@@ -21,3 +22,16 @@
                 :fn-to-retry   fn-to-retry
                 :fn-on-failure fn-on-failure}))
       res)))
+
+(def valid-with-retry-args #{:count
+                             :wait
+                             :on-failure})
+
+(defmacro with-retry [{:keys [count wait on-failure] :as opts} & body]
+  (let [arg-diff (set/difference (set (keys opts))
+                                 valid-with-retry-args)]
+    (assert (= #{} arg-diff) (str "Valid args: " (vec valid-with-retry-args))))
+  `(with-retry* {:count         (or ~count default-retry)
+                 :wait          (or ~wait default-wait)
+                 :fn-to-retry   (fn [] ~@body)
+                 :fn-on-failure ~on-failure}))
