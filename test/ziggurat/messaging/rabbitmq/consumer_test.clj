@@ -15,6 +15,9 @@
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
 
+(defn- create-mock-channel [] (reify Channel
+                                (close [_] nil)))
+
 (def message-payload {:foo "bar"})
 
 (deftest ^:integration start-subscriber-test
@@ -77,8 +80,7 @@
           messages (repeat count message-payload)]
       (with-redefs [lb/get                   (fn [^Channel _ ^String _ ^Boolean _]
                                                [1 message-payload])
-                    lch/open                 (fn [^Connection _] (reify Channel
-                                                                   (close [this] nil)))
+                    lch/open                 (fn [^Connection _] (create-mock-channel))
                     rmq-cons/consume-message (fn [_ _ ^bytes _ _] message-payload)]
         (let [consumed-messages (rmq-cons/get-messages-from-queue nil "test-queue" true count)]
           (is (= consumed-messages messages))))))
@@ -88,8 +90,7 @@
           messages (repeat count nil)]
       (with-redefs [lb/get                   (fn [^Channel _ ^String _ ^Boolean _]
                                                [1 nil])
-                    lch/open                 (fn [^Connection _] (reify Channel
-                                                                   (close [this] nil)))
+                    lch/open                 (fn [^Connection _] (create-mock-channel))
                     rmq-cons/consume-message (fn [_ _ ^bytes _ _] message-payload)]
         (let [consumed-messages (rmq-cons/get-messages-from-queue nil "test-queue" true count)]
           (is (= consumed-messages messages)))))))
@@ -103,8 +104,7 @@
                                                      (swap! times-processing-fn-called inc)))]
       (with-redefs [lb/get                   (fn [^Channel _ ^String _ ^Boolean _]
                                                [1 message-payload])
-                    lch/open                 (fn [^Connection _] (reify Channel
-                                                                   (close [this] nil)))
+                    lch/open                 (fn [^Connection _] (create-mock-channel))
                     rmq-cons/consume-message (fn [_ _ ^bytes payload _] payload)
                     rmq-cons/ack-message     (fn [_ _] (swap! times-ack-called inc))]
         (rmq-cons/process-messages-from-queue nil "test-queue" count processing-fn))
@@ -117,8 +117,7 @@
           processing-fn        (fn [_] (throw (Exception. "message processing error")))]
       (with-redefs [lb/get                   (fn [^Channel _ ^String _ ^Boolean _]
                                                [1 message-payload])
-                    lch/open                 (fn [^Connection _] (reify Channel
-                                                                   (close [this] nil)))
+                    lch/open                 (fn [^Connection _] (create-mock-channel))
                     rmq-cons/reject-message  (fn [_ _ _] (swap! reject-fn-call-count inc))
                     rmq-cons/consume-message (fn [_ _ ^bytes payload _] payload)
                     rmq-cons/ack-message     (fn [_ _] nil)]
