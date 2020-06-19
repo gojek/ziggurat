@@ -157,5 +157,33 @@
         (rm-prod/create-and-bind-queue nil queue-name exchange-name dead-letter-exchange-name))
       (is (true? @bind-called?))
       (is (true? @exchange-declare-called?))
-      (is (true? @queue-declare-called?)))))
+      (is (true? @queue-declare-called?))))
+
+  (testing "it should catch an exception when create queue raises an exception"
+    (let [dead-letter-exchange-name "test-dead-letter-exchange"
+          queue-name "test-queue"
+          exchange-name "test-exchange"]
+      (with-redefs [lch/open (fn [^Connection _] (create-mock-channel))
+                    lq/declare (fn [^Channel _ ^String _ _] (throw (Exception. "error creating a queue")))]
+        (is (thrown? Exception (rm-prod/create-and-bind-queue nil queue-name exchange-name dead-letter-exchange-name))))))
+
+  (testing "it should catch an exception when declare exchange raises an exception"
+    (let [dead-letter-exchange-name "test-dead-letter-exchange"
+          queue-name "test-queue"
+          exchange-name "test-exchange"]
+      (with-redefs [lch/open (fn [^Connection _] (create-mock-channel))
+                    lq/declare (fn [^Channel _ ^String _ _] nil)
+                    le/declare (fn [^Channel _ ^String name ^String type props]
+                                 (throw (Exception. "error declaring an exchange")))]
+        (is (thrown? Exception (rm-prod/create-and-bind-queue nil queue-name exchange-name dead-letter-exchange-name))))))
+
+  (testing "it should catch an exception when bind queue to exchange raises an exception"
+    (let [dead-letter-exchange-name "test-dead-letter-exchange"
+          queue-name "test-queue"
+          exchange-name "test-exchange"]
+      (with-redefs [lch/open (fn [^Connection _] (create-mock-channel))
+                    lq/declare (fn [^Channel _ ^String _ _] nil)
+                    le/declare (fn [^Channel _ ^String name ^String type props] nil)
+                    lq/bind (fn [^Channel _ ^String queue ^String exchange] (throw (Exception. "error binding the queue to exchange")))]
+        (is (thrown? Exception (rm-prod/create-and-bind-queue nil queue-name exchange-name dead-letter-exchange-name)))))))
 
