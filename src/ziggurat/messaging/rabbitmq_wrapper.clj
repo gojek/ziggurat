@@ -33,31 +33,27 @@
   (when (is-connection-required? (:ziggurat config) stream-routes)
     (rmq-connection/stop-connection connection config)))
 
-
-
 (defstate connection
-          :start (start-connection ziggurat.config/config (:stream-routes (mount/args)))
-          :stop (stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
-
+  :start (start-connection ziggurat.config/config (:stream-routes (mount/args)))
+  :stop (stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
 
 (defn publish
   ([exchange message-payload]
-    (publish exchange message-payload nil))
+   (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-    (rmq-producer/publish connection exchange message-payload expiration)))
+   (rmq-producer/publish connection exchange message-payload expiration)))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
-    (create-and-bind-queue queue-name exchange-name nil))
+   (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange]
-    (rmq-producer/create-and-bind-queue connection queue-name exchange-name dead-letter-exchange)))
-
+   (rmq-producer/create-and-bind-queue connection queue-name exchange-name dead-letter-exchange)))
 
 (defn get-messages-from-queue
   ([queue-name ack?]
    (get-messages-from-queue queue-name ack? 1))
   ([queue-name ack? count]
-    (rmq-consumer/get-messages-from-queue connection queue-name ack? count)))
+   (rmq-consumer/get-messages-from-queue connection queue-name ack? count)))
 
 (defn process-messages-from-queue [queue-name count processing-fn]
   (rmq-consumer/process-messages-from-queue connection queue-name count processing-fn))
