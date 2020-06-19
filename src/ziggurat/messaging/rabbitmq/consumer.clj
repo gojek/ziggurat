@@ -37,7 +37,7 @@
     (when (some? payload)
       (consume-message ch meta payload ack?))))
 
-(defn- process-message-from-queue [ch meta payload processing-fn]
+(defn process-message-from-queue [ch meta payload processing-fn]
   (let [delivery-tag    (:delivery-tag meta)
         message-payload (consume-message ch meta payload false)]
     (when message-payload
