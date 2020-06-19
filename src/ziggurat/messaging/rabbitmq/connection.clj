@@ -41,13 +41,13 @@
 (defn start-connection [config]
   (log/info "Connecting to RabbitMQ")
   (try
-    (let [connection (create-connection (get-config-for-rabbitmq config) (get-in config [:tracer :enabled]))]
+    (let [connection (create-connection (get-config-for-rabbitmq config) (get-in config [:ziggurat :tracer :enabled]))]
       (doto connection
         (.addShutdownListener
-          (reify ShutdownListener
-            (shutdownCompleted [_ cause]
-              (when-not (.isInitiatedByApplication cause)
-                (log/error cause "RabbitMQ connection shut down due to error")))))))
+         (reify ShutdownListener
+           (shutdownCompleted [_ cause]
+             (when-not (.isInitiatedByApplication cause)
+               (log/error cause "RabbitMQ connection shut down due to error")))))))
     (catch Exception e
       (log/error e "Error while starting RabbitMQ connection")
       (throw e))))
