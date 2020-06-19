@@ -55,11 +55,8 @@
    (remove nil?
            (read-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity false count))))
 
-(defn process-messages-from-queue [queue-name topic-entity count processing-fn]
-  (doseq [return-code (rmqw/process-messages-from-queue queue-name count processing-fn)]
-    (when (= return-code :failed)
-      (log/error "Error while processing message-payload")
-      (metrics/increment-count ["message" "process"] "failure" {:topic_name (name topic-entity)}))))
+(defn process-messages-from-queue [queue-name count processing-fn]
+  (rmqw/process-messages-from-queue queue-name count processing-fn))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
@@ -67,7 +64,7 @@
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
-   (process-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity count processing-fn)))
+   (process-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) count processing-fn)))
 
 (defn start-retry-subscriber* [mapper-fn topic-entity channels ziggurat-config]
   (when (get-in ziggurat-config [:retry :enabled])
