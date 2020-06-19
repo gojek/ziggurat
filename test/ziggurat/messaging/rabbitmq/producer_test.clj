@@ -34,8 +34,7 @@
           message-payload-without-headers (dissoc message-payload :headers)
           serialized-message (byte-array 1234)
           expiration         nil]
-      (with-redefs [lch/open     (fn [^Connection _] (reify Channel
-                                                       (close [_] nil)))
+      (with-redefs [lch/open     (fn [^Connection _] (create-mock-channel))
                     lb/publish   (fn [^Channel _ ^String _ ^String _ payload
                                       props]
                                    (when (and (= payload serialized-message)
@@ -67,8 +66,7 @@
           message-payload-without-headers (dissoc message-payload :headers)
           serialized-message (byte-array 1234)
           expiration         10]
-      (with-redefs [lch/open     (fn [^Connection _] (reify Channel
-                                                       (close [_] nil)))
+      (with-redefs [lch/open     (fn [^Connection _] (create-mock-channel))
                     lb/publish   (fn [^Channel _ ^String _ ^String _ payload props]
                                    (when (and (= payload serialized-message)
                                               (= props props-for-publish))
@@ -93,8 +91,7 @@
           message-payload-without-headers (dissoc message-payload :headers)
           serialized-message              (byte-array 1234)
           expiration                      nil]
-      (with-redefs [lch/open     (fn [^Connection _] (reify Channel
-                                                       (close [_] nil)))
+      (with-redefs [lch/open     (fn [^Connection _] (create-mock-channel))
                     lb/publish   (fn [^Channel _ ^String _ ^String _ _ _]
                                    (throw (Exception. "publish error")))
                     nippy/freeze (fn [payload]
@@ -108,6 +105,7 @@
   (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
     (let [default-props {:durable true :auto-delete false}
           default-props-with-arguments (assoc default-props :arguments {})
+          exchange-type "fanout"
           queue-name "test-queue"
           exchange-name "test-exchange"
           exchange-declare-called? (atom false)
@@ -120,7 +118,8 @@
                                    (reset! queue-declare-called? true)))
                     le/declare (fn [^Channel _ ^String name ^String type props]
                                  (when (and (= name exchange-name)
-                                            (= props default-props))
+                                            (= props default-props)
+                                            (= exchange-type type))
                                    (reset! exchange-declare-called? true)))
                     lq/bind (fn [^Channel _ ^String queue ^String exchange]
                               (when (and (= queue queue-name)
@@ -136,6 +135,7 @@
           dead-letter-exchange-name "test-dead-letter-exchange"
           queue-name "test-queue"
           exchange-name "test-exchange"
+          exchange-type "fanout"
           default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
           exchange-declare-called? (atom false)
           queue-declare-called? (atom false)
@@ -147,7 +147,8 @@
                                    (reset! queue-declare-called? true)))
                     le/declare (fn [^Channel _ ^String name ^String type props]
                                  (when (and (= name exchange-name)
-                                            (= props default-props))
+                                            (= props default-props)
+                                            (= type exchange-type))
                                    (reset! exchange-declare-called? true)))
                     lq/bind (fn [^Channel _ ^String queue ^String exchange]
                               (when (and (= queue queue-name)
