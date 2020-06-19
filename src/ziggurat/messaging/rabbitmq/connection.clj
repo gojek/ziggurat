@@ -10,14 +10,6 @@
            (com.rabbitmq.client.impl DefaultCredentialsProvider)
            (io.opentracing.contrib.rabbitmq TracingConnectionFactory)))
 
-(defn is-connection-required? [ziggurat-config stream-routes]
-  (let [all-channels (reduce (fn [all-channel-vec [topic-entity _]]
-                               (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
-                             []
-                             stream-routes)]
-    (or (pos? (count all-channels))
-        (-> ziggurat-config :retry :enabled))))
-
 (defn- channel-threads [channels]
   (reduce (fn [sum [_ channel-config]]
             (+ sum (:worker-count channel-config))) 0 channels))
