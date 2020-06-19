@@ -11,7 +11,7 @@
             [ziggurat.messaging.consumer :as consumer]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
-                                    ;fix/silence-logging
+                                    fix/silence-logging
                                     fix/mount-metrics]))
 (defn- gen-message-payload [topic-entity]
   {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
