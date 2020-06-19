@@ -47,8 +47,7 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
-          ;TODO fix this error
-          ; Channels get closed by the client if there is an exception. We are going to restart the channel to reject the message
+          ;TODO Channels get closed by the client if there is an exception. Channel has to be re-opened to reject the msg
           (reject-message ch delivery-tag true)
           (log/error "Error while processing message-payload from RabbitMQ" (str "\nError: " e))
           nil)))))
