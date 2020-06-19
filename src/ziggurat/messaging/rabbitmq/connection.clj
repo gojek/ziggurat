@@ -52,8 +52,8 @@
       (log/error e "Error while starting RabbitMQ connection")
       (throw e))))
 
-(defn stop-connection [conn ziggurat-config]
-  (if (get-in ziggurat-config [:ziggurat :tracer :enabled])
+(defn stop-connection [conn config]
+  (if (get-in config [:ziggurat :tracer :enabled])
     (.close conn)
     (rmq/close conn))
   (log/info "Disconnected from RabbitMQ"))
