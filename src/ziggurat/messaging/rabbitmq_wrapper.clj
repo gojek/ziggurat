@@ -1,29 +1,15 @@
 (ns ziggurat.messaging.rabbitmq-wrapper
   (:require [ziggurat.config :refer [get-in-config]]
             [mount.core :refer [defstate]]
-            [sentry-clj.async :as sentry]
-            [langohr.basic :as lb]
-            [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.retry :refer [with-retry]]
-            [clojure.tools.logging :as log]
             [ziggurat.messaging.util :refer [is-connection-required?]]
-            [clojure.pprint]
             [ziggurat.tracer :refer [tracer]]
-            [langohr.consumers :as lcons]
-            [langohr.channel :as lch]
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
-            [langohr.queue :as lq]
-            [langohr.exchange :as le]
-            [langohr.core :as rmq]
-            [mount.core :as mount])
-  (:import (io.opentracing.contrib.rabbitmq TracingConnectionFactory)
-           (com.rabbitmq.client ListAddressResolver Address)
-           (com.rabbitmq.client.impl DefaultCredentialsProvider)
-           (java.util.concurrent ExecutorService Executors)))
+            [mount.core :as mount]))
 
 (defn start-connection [config stream-routes]
   (when (is-connection-required? (:ziggurat config) stream-routes)
