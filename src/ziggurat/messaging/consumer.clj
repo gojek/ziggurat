@@ -24,8 +24,6 @@
   (let [instant-queue-name (get-in ziggurat-config [:rabbit-mq :instant :queue-name])]
     (prefixed-channel-name topic-entity channel-key instant-queue-name)))
 
-
-
 (defn convert-to-message-payload
   "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
    message-payload to pass onto the mapper-fn.
@@ -46,9 +44,7 @@
     (for [message messages]
       (if-not (nil? message)
         (convert-to-message-payload message topic-entity)
-        (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
-  ;(sentry/report-error sentry-reporter e "Error while consuming the dead set message")
-  )
+        (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)})))))
 
 (defn get-dead-set-messages
   "This method can be used to read and optionally ack messages in dead-letter queue, based on the value of `ack?`.
@@ -90,8 +86,6 @@
           (rmqw/start-subscriber 1
                                  (mpr/channel-mapper-func channel-handler-fn channel-key)
                                  queue-name))))))
-
-; extract this and pass ziggurat config stream routes and mapper-fn as args
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"

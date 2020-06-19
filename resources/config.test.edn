@@ -32,13 +32,15 @@
             :retry                {:count   [5 :int]
                                    :type    [:linear :keyword]
                                    :enabled [true :bool]}
-            :http-server          {:port         [8010 :int]
+            :http-server          {:middlewares  {:swagger {:enabled false}}
+                                   :port         [8010 :int]
                                    :thread-count [100 :int]}
             :stream-router        {:default            {:application-id       "test"
                                                         :bootstrap-servers    "localhost:9092"
                                                         :stream-threads-count [1 :int]
                                                         :origin-topic         "topic"
                                                         :upgrade-from         "1.1"
+                                                        :consumer-type        :default
                                                         :channels             {:channel-1 {:worker-count [10 :int]
                                                                                            :retry        {:type    [:linear :keyword]
                                                                                                           :count   [5 :int]

@@ -27,6 +27,7 @@
       (conj (vec (concat actor-routes (get-routes))))
       (bidi/make-handler)
       (m/wrap-hyphenate)
+      (m/wrap-swagger)
       (ring-defaults/wrap-defaults ring-defaults/api-defaults)
       (wrap-json-params)
       (wrap-multipart-params)

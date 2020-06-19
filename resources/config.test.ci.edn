@@ -31,7 +31,8 @@
             :retry                {:type    [:linear :keyword]
                                    :count   [5 :int]
                                    :enabled [true :bool]}
-            :http-server          {:port         [8010 :int]
+            :http-server          {:middlewares  {:swagger {:enabled false}}
+                                   :port         [8010 :int]
                                    :thread-count [100 :int]}
             :stream-router        {:default            {:application-id       "test"
                                                         :bootstrap-servers    "localhost:9092"
