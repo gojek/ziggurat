@@ -104,7 +104,7 @@
   (let [topic-entity  (:topic-entity message-payload)
         exchange-name (get-delay-exchange-name topic-entity message-payload)
         queue-timeout-ms (get-queue-timeout-ms message-payload)]
-    (ziggurat.messaging.rabbitmq-wrapper/publish exchange-name message-payload queue-timeout-ms)))
+    (rmqw/publish exchange-name message-payload queue-timeout-ms)))
 
 (defn publish-to-dead-queue [message-payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
