@@ -3,11 +3,16 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.2 - 2020-06-23
+- Refactors rabbitmq specific logic to the messaging.rabbitmq package 
+- Adds unit tests for rabbitmq specific namespaces
+- Adds test annotations to messaging integration tests
+
 ## 3.3.1-alpha.1 - 2020-06-18
 - Support for Kafka Stream KStream-KStream Join
 
 ## 3.3.1 - 2020-06-17
-- Itroduces a swagger middleware on the HTTP server. 
+- Introduces a swagger middleware on the HTTP server. 
 
 ## 3.3.0 - 2020-05-26
 - Makes metrics library configurable, exposes a metrics interface and provides an 
