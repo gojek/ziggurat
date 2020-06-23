@@ -3,7 +3,7 @@
             [mount.core :refer [defstate] :as mount]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
-            [ziggurat.messaging.connection :as rmqc]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams :refer [stream]]
@@ -16,8 +16,8 @@
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (fn [_ _] (reset! result (* @result 2)))
                     streams/stop-streams  (constantly nil)
-                    rmqc/start-connection (fn [] (reset! result (* @result 2)))
-                    rmqc/stop-connection  (constantly nil)
+                    rmqw/start-connection (fn [_ _] (reset! result (* @result 2)))
+                    rmqw/stop-connection  (constantly nil)
                     config/config-file    "config.test.edn"
                     tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #(reset! result (+ @result 3)) {} [] nil)
@@ -40,7 +40,7 @@
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (constantly nil)
-                    rmqc/stop-connection (fn [_] (reset! result (* @result 2)))
+                    rmqw/stop-connection  (fn [_ _ _] (reset! result (* @result 2)))
                     config/config-file    "config.test.edn"
                     tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #() {} [] nil)
@@ -69,7 +69,7 @@
           expected-stream-routes  {:default {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
-                    messaging-consumer/start-subscribers (fn [stream-routes]
+                    messaging-consumer/start-subscribers (fn [stream-routes _]
                                                            (swap! start-subscriber-called + 1)
                                                            (is (= stream-routes expected-stream-routes)))
                     messaging-producer/make-queues       (constantly nil)

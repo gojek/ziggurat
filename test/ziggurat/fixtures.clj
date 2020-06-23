@@ -5,7 +5,7 @@
             [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.messaging.util :as util]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.producer :as producer]

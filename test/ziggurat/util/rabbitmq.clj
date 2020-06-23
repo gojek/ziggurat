@@ -3,8 +3,7 @@
             [langohr.channel :as lch]
             [langohr.basic :as lb]
             [ziggurat.config :refer [rabbitmq-config]]
-            [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.consumer :as consumer]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw :refer [connection]]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :refer [delay-queue-name]]
             [ziggurat.messaging.util :as rutil]
@@ -17,7 +16,7 @@
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
-          (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))
+          (rmqw/consume-message ch meta payload true)))
       (catch NullPointerException e
         nil))))
 
@@ -26,7 +25,7 @@
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
-          (consumer/convert-and-ack-message ch meta payload false (keyword topic-name))))
+          (rmqw/consume-message ch meta payload false)))
       (catch NullPointerException e
         nil))))
 
