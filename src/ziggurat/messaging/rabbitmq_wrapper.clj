@@ -20,7 +20,8 @@
     (reset! connection (rmq-connection/start-connection config))))
 
 (defn stop-connection [config stream-routes]
-  (when (is-connection-required? (:ziggurat config) stream-routes)
+  (when (and (is-connection-required? (:ziggurat config) stream-routes)
+             (not (nil? @connection)))
     (rmq-connection/stop-connection @connection config)
     (reset! connection nil)))
 
