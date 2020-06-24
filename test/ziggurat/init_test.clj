@@ -40,7 +40,7 @@
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (constantly nil)
-                    rmqw/stop-connection  (fn [_ _ _] (reset! result (* @result 2)))
+                    rmqw/stop-connection  (fn [_ _] (reset! result (* @result 2)))
                     config/config-file    "config.test.edn"
                     tracer/create-tracer  (fn [] (MockTracer.))]
         (init/start #() {} [] nil)
@@ -58,7 +58,7 @@
                                                            (is (= stream-routes expected-stream-routes)))
                     messaging-consumer/start-subscribers (constantly nil)
                     config/config-file                   "config.test.edn"
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+                    tracer/create-tracer                 (fn [] (MockTracer.))]
         (init/start #() expected-stream-routes [] nil)
         (init/stop #() nil)
         (is (= 2 @make-queues-called))))))
@@ -74,7 +74,7 @@
                                                            (is (= stream-routes expected-stream-routes)))
                     messaging-producer/make-queues       (constantly nil)
                     config/config-file                   "config.test.edn"
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+                    tracer/create-tracer                 (fn [] (MockTracer.))]
         (init/start #() expected-stream-routes [] nil)
         (init/stop #() nil)
         (is (= 1 @start-subscriber-called))))))
@@ -175,11 +175,11 @@
       (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes))))))
 
 (deftest kafka-producers-should-start
-  (let [args {:actor-routes  []
-              :stream-routes []}
+  (let [args                 {:actor-routes  []
+                              :stream-routes []}
         producer-has-started (atom false)]
     (with-redefs [init/start-kafka-producers (fn [] (reset! producer-has-started true))
-                  init/start-kafka-streams (constantly nil)]
+                  init/start-kafka-streams   (constantly nil)]
       (testing "Starting the streams should start kafka-producers as well"
         (init/start-stream args)
         (is (= true @producer-has-started)))
@@ -191,7 +191,7 @@
 (deftest kafka-producers-should-stop
   (let [producer-has-stopped (atom false)]
     (with-redefs [init/stop-kafka-producers (fn [] (reset! producer-has-stopped true))
-                  init/stop-kafka-streams (constantly nil)]
+                  init/stop-kafka-streams   (constantly nil)]
       (testing "Stopping the streams should stop kafka-producers as well"
         (init/stop-stream)
         (is (= true @producer-has-stopped)))
