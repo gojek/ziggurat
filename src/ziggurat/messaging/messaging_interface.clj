@@ -62,15 +62,18 @@
     - payload: the message payload in byte-array format as fetched from the queue
     - ack?: a boolean flag which indicates if the message will be acknowledged upon consumption, ack-ing the message should discard it from the queue preventing a re-consumption.
  "
-  
+
   (start-connection [impl config stream-routes])
   (stop-connection [impl connection config stream-routes])
-  (publish [impl exchange message-payload])
-  (publish [impl exchange message-payload expiration])
-  (create-and-bind-queue [impl queue-name exchange-name])
-  (create-and-bind-queue [impl queue-name exchange-name dead-letter-exchange])
-  (get-messages-from-queue [impl queue-name ack?])
-  (get-messages-from-queue [impl queue-name ack? count])
+  (publish
+    [impl exchange message-payload]
+    [impl exchange message-payload expiration])
+  (create-and-bind-queue
+    [impl queue-name exchange-name]
+    [impl queue-name exchange-name dead-letter-exchange])
+  (get-messages-from-queue
+    [impl queue-name ack?]
+    [impl queue-name ack? count])
   (process-messages-from-queue [impl queue-name count processing-fn])
   (start-subscriber [impl prefetch-count wrapped-mapper-fn queue-name])
   (consume-message [impl ch meta payload ack?]))
