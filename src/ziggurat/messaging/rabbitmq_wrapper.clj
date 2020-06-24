@@ -44,10 +44,10 @@
   ([queue-name ack?]
    (get-messages-from-queue queue-name ack? 1))
   ([queue-name ack? count]
-   (rmq-consumer/get-messages-from-queue connection queue-name ack? count)))
+   (rmq-consumer/get-messages-from-queue @connection queue-name ack? count)))
 
 (defn process-messages-from-queue [queue-name count processing-fn]
-  (rmq-consumer/process-messages-from-queue connection queue-name count processing-fn))
+  (rmq-consumer/process-messages-from-queue @connection queue-name count processing-fn))
 
 (defn start-subscriber [prefetch-count wrapped-mapper-fn queue-name]
   (rmq-consumer/start-subscriber @connection prefetch-count wrapped-mapper-fn queue-name))
