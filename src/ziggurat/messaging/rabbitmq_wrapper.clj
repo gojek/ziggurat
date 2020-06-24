@@ -12,13 +12,21 @@
             [mount.core :as mount]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]))
 
+
+(def connection (atom nil))
+
 (defn start-connection [config stream-routes]
   (when (is-connection-required? (:ziggurat config) stream-routes)
-    (rmq-connection/start-connection config)))
+    (reset! connection (rmq-connection/start-connection config))))
 
-(defn stop-connection [connection config stream-routes]
+(defn stop-connection [config stream-routes]
   (when (is-connection-required? (:ziggurat config) stream-routes)
-    (rmq-connection/stop-connection connection config)))
+    (rmq-connection/stop-connection @connection config)
+    (reset! connection nil)))
+
+;(defstate connection
+;          :start (start-connection ziggurat.config/config (:stream-routes (mount/args)))
+;          :stop (stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
 
 (defn publish
   ([exchange message-payload]
