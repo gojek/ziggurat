@@ -20,10 +20,6 @@
   (when (is-connection-required? (:ziggurat config) stream-routes)
     (rmq-connection/stop-connection connection config)))
 
-(defstate connection
-          :start (start-connection ziggurat.config/config (:stream-routes (mount/args)))
-          :stop (stop-connection connection ziggurat.config/config (:stream-routes (mount/args))))
-
 (defn publish
   ([exchange message-payload]
    (publish exchange message-payload nil))
