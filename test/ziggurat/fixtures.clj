@@ -5,7 +5,7 @@
             [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.messaging.util :as util]
-            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw :refer [connection]]
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.producer :as producer]
@@ -18,10 +18,10 @@
            (org.apache.kafka.clients.consumer ConsumerConfig)
            (io.opentracing.mock MockTracer))
   (:gen-class
-   :name tech.gojek.ziggurat.internal.test.Fixtures
-   :methods [^{:static true} [mountConfig [] void]
-             ^{:static true} [mountProducer [] void]
-             ^{:static true} [unmountAll [] void]]))
+    :name tech.gojek.ziggurat.internal.test.Fixtures
+    :methods [^{:static true} [mountConfig [] void]
+              ^{:static true} [mountProducer [] void]
+              ^{:static true} [unmountAll [] void]]))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
@@ -61,10 +61,10 @@
   (:exchange-name (exchange-type (config/rabbitmq-config))))
 
 (defn delete-queues [stream-routes]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
-            channels (util/get-channel-names stream-routes topic-entity)]
+            channels         (util/get-channel-names stream-routes topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
         (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))
@@ -74,10 +74,10 @@
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :delay))))))))
 
 (defn delete-exchanges [stream-routes]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
-            channels (util/get-channel-names stream-routes topic-entity)]
+            channels         (util/get-channel-names stream-routes topic-entity)]
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :instant)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :dead-letter)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :delay)))
@@ -91,19 +91,19 @@
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (mount-tracer)
-    (->
-     (mount/only [#'connection])
-     (mount/with-args {:stream-routes stream-routes})
-     (mount/start))
+    (-> (mount/with-args {:stream-routes stream-routes})
+        (mount/start))
+    (rmqw/start-connection config/config (:stream-routes mount/args))
     (f)
+    (rmqw/stop-connection config/config (:stream-routes mount/args))
     (mount/stop)))
 
 (defn with-start-server* [stream-routes f]
   (mount-config)
   (->
-   (mount/only [#'server])
-   (mount/with-args {:stream-routes stream-routes})
-   (mount/start))
+    (mount/only [#'server])
+    (mount/with-args {:stream-routes stream-routes})
+    (mount/start))
   (f)
   (mount/stop))
 

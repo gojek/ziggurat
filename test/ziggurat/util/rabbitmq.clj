@@ -12,7 +12,7 @@
   (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
@@ -21,7 +21,7 @@
         nil))))
 
 (defn- get-msg-from-rabbitmq-without-ack [queue-name topic-name]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)

@@ -23,3 +23,4 @@
       (is (thrown? RuntimeException (messaging/initialise-messaging-library))))))
 
 
+
