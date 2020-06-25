@@ -115,7 +115,6 @@
 (defn stop-common-states []
   (mount/stop #'config/config
               #'metrics/statsd-reporter
-              #'messaging/connection
               #'nrepl-server/server
               #'tracer/tracer))
 
