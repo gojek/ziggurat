@@ -16,7 +16,8 @@
 (def connection (atom nil))
 
 (defn start-connection [config stream-routes]
-  (when (is-connection-required? (:ziggurat config) stream-routes)
+  (when (and (is-connection-required? (:ziggurat config) stream-routes)
+             (= @connection nil))
     (reset! connection (rmq-connection/start-connection config))))
 
 (defn stop-connection [config stream-routes]
@@ -59,7 +60,7 @@
 (deftype RabbitMQMessaging [] MessagingProtocol
   (start-connection [impl config stream-routes]
     (start-connection config stream-routes))
-  (stop-connection [impl connection config stream-routes]
+  (stop-connection [impl config stream-routes]
     (stop-connection config stream-routes))
   (publish [impl exchange message-payload]
     (publish exchange message-payload))
