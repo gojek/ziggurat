@@ -6,6 +6,7 @@
             [ziggurat.config :as config]
             [ziggurat.messaging.util :as util]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw :refer [connection]]
+            [ziggurat.messaging.messaging :as messaging]
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.producer :as producer]
@@ -27,6 +28,9 @@
   (-> (mount/only [#'config/config])
       (mount/swap {#'config/config (config/config-from-env "config.test.edn")})
       (mount/start)))
+
+
+
 
 (defn mount-only-config [f]
   (mount-config)
@@ -93,9 +97,11 @@
     (mount-tracer)
     (-> (mount/with-args {:stream-routes stream-routes})
         (mount/start))
+    (messaging/start-connection config/config stream-routes)
     (rmqw/start-connection config/config (:stream-routes mount/args))
     (f)
     (rmqw/stop-connection config/config (:stream-routes mount/args))
+    (messaging/stop-connection config/config stream-routes)
     (mount/stop)))
 
 (defn with-start-server* [stream-routes f]

@@ -11,7 +11,7 @@
 (defn- get-implementation []
   (if (nil? @messaging-impl)
     (throw (Exception. "Messaging Library is not initialized"))
-    messaging-impl))
+    @messaging-impl))
 
 (defn- get-messaging-implementor-constructor []
   (if-let [configured-metrics-class-constructor (get-in (ziggurat-config) [:messaging :constructor])]

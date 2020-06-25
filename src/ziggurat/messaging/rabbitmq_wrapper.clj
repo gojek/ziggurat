@@ -57,6 +57,10 @@
     (start-connection config stream-routes))
   (stop-connection [impl config stream-routes]
     (stop-connection config stream-routes))
+  (create-and-bind-queue [impl queue-name ack?]
+    (create-and-bind-queue queue-name ack?))
+  (create-and-bind-queue [impl queue-name ack? count]
+    (create-and-bind-queue queue-name ack? count))
   (publish [impl exchange message-payload]
     (publish exchange message-payload))
   (publish [impl exchange message-payload expiration]

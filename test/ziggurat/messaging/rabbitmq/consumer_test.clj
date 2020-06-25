@@ -13,7 +13,9 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as util]
             [ziggurat.messaging.consumer :as consumer]
-            [ziggurat.mapper :as mpr])
+            [ziggurat.mapper :as mpr]
+            [ziggurat.messaging.messaging :as messaging]
+            [ziggurat.config :as config])
   (:import (com.rabbitmq.client Channel Connection)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
@@ -24,6 +26,16 @@
 (defn- gen-message-payload [topic-entity]
   {:message      {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
    :topic-entity topic-entity})
+
+(defn init-messaging [ziggurat-config stream-routes]
+  (let [config                  (config/config-from-env "config.test.edn")
+        config-with-constructor (assoc config :ziggurat ziggurat-config)]
+    (messaging/start-connection config-with-constructor stream-routes)))
+
+(defn stop-messaging [ziggurat-config stream-routes]
+  (let [config                  (config/config-from-env "config.test.edn")
+        config-with-constructor (assoc config :ziggurat ziggurat-config)]
+    (messaging/start-connection config-with-constructor stream-routes)))
 
 (defn- create-mock-channel [] (reify Channel
                                 (close [_] nil)))

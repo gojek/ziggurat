@@ -6,6 +6,7 @@
             [ziggurat.config :refer [rabbitmq-config ziggurat-config channel-retry-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
+            [ziggurat.messaging.messaging :as messaging]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
@@ -75,19 +76,19 @@
                 dead-queue-name       (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
                 dead-exchange-name    (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))]
 
-            (with-redefs [rmqw/create-and-bind-queue (fn
-                                                       ([queue-name exchange-name]
-                                                        (is
-                                                          (or
-                                                            (and
-                                                              (= queue-name instant-queue-name)
-                                                              (= exchange-name instant-exchange-name))
-                                                            (and (= queue-name dead-queue-name)
-                                                                 (= exchange-name dead-exchange-name)))))
-                                                       ([queue-name exchange-name dead-letter-exchange]
-                                                        (is (and (= queue-name delay-queue-name)
-                                                                 (= exchange-name delay-exchange-name)
-                                                                 (= dead-letter-exchange instant-exchange-name)))))]
+            (with-redefs [messaging/create-and-bind-queue (fn
+                                                            ([queue-name exchange-name]
+                                                             (is
+                                                               (or
+                                                                 (and
+                                                                   (= queue-name instant-queue-name)
+                                                                   (= exchange-name instant-exchange-name))
+                                                                 (and (= queue-name dead-queue-name)
+                                                                      (= exchange-name dead-exchange-name)))))
+                                                            ([queue-name exchange-name dead-letter-exchange]
+                                                             (is (and (= queue-name delay-queue-name)
+                                                                      (= exchange-name delay-exchange-name)
+                                                                      (= dead-letter-exchange instant-exchange-name)))))]
 
               (producer/make-queues stream-routes))))
 
@@ -105,23 +106,23 @@
                 exponential-delay-queue-name    #(util/prefixed-queue-name delay-queue-name %)
                 exponential-delay-exchange-name #(util/prefixed-queue-name delay-exchange-name %)]
 
-            (with-redefs [config/ziggurat-config     (constantly (assoc-in ziggurat-config [:retry :type] :exponential))
-                          rmqw/create-and-bind-queue (fn
-                                                       ([queue-name exchange-name]
-                                                        (is
-                                                          (or
-                                                            (and
-                                                              (= queue-name instant-queue-name)
-                                                              (= exchange-name instant-exchange-name))
-                                                            (and (= queue-name dead-queue-name)
-                                                                 (= exchange-name dead-exchange-name)))))
-                                                       ;; Verifying that delay queues with appropriate suffixes are created
-                                                       ([queue-name exchange-name dead-letter-exchange]
-                                                        (let [exponential-delay-queues    (map exponential-delay-queue-name (range 1 (inc retry-count)))
-                                                              exponential-delay-exchanges (map exponential-delay-exchange-name (range 1 (inc retry-count)))]
-                                                          (is (and (some #{queue-name} exponential-delay-queues)
-                                                                   (some #{exchange-name} exponential-delay-exchanges)
-                                                                   (= dead-letter-exchange instant-exchange-name))))))]
+            (with-redefs [config/ziggurat-config          (constantly (assoc-in ziggurat-config [:retry :type] :exponential))
+                          messaging/create-and-bind-queue (fn
+                                                            ([queue-name exchange-name]
+                                                             (is
+                                                               (or
+                                                                 (and
+                                                                   (= queue-name instant-queue-name)
+                                                                   (= exchange-name instant-exchange-name))
+                                                                 (and (= queue-name dead-queue-name)
+                                                                      (= exchange-name dead-exchange-name)))))
+                                                            ;; Verifying that delay queues with appropriate suffixes are created
+                                                            ([queue-name exchange-name dead-letter-exchange]
+                                                             (let [exponential-delay-queues    (map exponential-delay-queue-name (range 1 (inc retry-count)))
+                                                                   exponential-delay-exchanges (map exponential-delay-exchange-name (range 1 (inc retry-count)))]
+                                                               (is (and (some #{queue-name} exponential-delay-queues)
+                                                                        (some #{exchange-name} exponential-delay-exchanges)
+                                                                        (= dead-letter-exchange instant-exchange-name))))))]
               (producer/make-queues stream-routes))))
 
         (testing "it creates queues with suffixes in the range [1, 25] when exponential backoff is enabled and retry-count is more than 25"
@@ -136,25 +137,25 @@
                 exponential-delay-queue-name    #(util/prefixed-queue-name delay-queue-name %)
                 exponential-delay-exchange-name #(util/prefixed-queue-name delay-exchange-name %)]
 
-            (with-redefs [config/ziggurat-config     (constantly (-> ziggurat-config
-                                                                     (assoc-in [:retry :type] :exponential)
-                                                                     (assoc-in [:retry :count] 50)))
-                          rmqw/create-and-bind-queue (fn
-                                                       ([queue-name exchange-name]
-                                                        (is
-                                                          (or
-                                                            (and
-                                                              (= queue-name instant-queue-name)
-                                                              (= exchange-name instant-exchange-name))
-                                                            (and (= queue-name dead-queue-name)
-                                                                 (= exchange-name dead-exchange-name)))))
-                                                       ;; Verifying that delay queues with appropriate suffixes are created
-                                                       ([queue-name exchange-name dead-letter-exchange]
-                                                        (let [exponential-delay-queues    (map exponential-delay-queue-name (range 1 (inc 25)))
-                                                              exponential-delay-exchanges (map exponential-delay-exchange-name (range 1 (inc 25)))]
-                                                          (is (and (some #{queue-name} exponential-delay-queues)
-                                                                   (some #{exchange-name} exponential-delay-exchanges)
-                                                                   (= dead-letter-exchange instant-exchange-name))))))]
+            (with-redefs [config/ziggurat-config          (constantly (-> ziggurat-config
+                                                                          (assoc-in [:retry :type] :exponential)
+                                                                          (assoc-in [:retry :count] 50)))
+                          messaging/create-and-bind-queue (fn
+                                                            ([queue-name exchange-name]
+                                                             (is
+                                                               (or
+                                                                 (and
+                                                                   (= queue-name instant-queue-name)
+                                                                   (= exchange-name instant-exchange-name))
+                                                                 (and (= queue-name dead-queue-name)
+                                                                      (= exchange-name dead-exchange-name)))))
+                                                            ;; Verifying that delay queues with appropriate suffixes are created
+                                                            ([queue-name exchange-name dead-letter-exchange]
+                                                             (let [exponential-delay-queues    (map exponential-delay-queue-name (range 1 (inc 25)))
+                                                                   exponential-delay-exchanges (map exponential-delay-exchange-name (range 1 (inc 25)))]
+                                                               (is (and (some #{queue-name} exponential-delay-queues)
+                                                                        (some #{exchange-name} exponential-delay-exchanges)
+                                                                        (= dead-letter-exchange instant-exchange-name))))))]
               (producer/make-queues stream-routes))))
 
         (testing "it creates delay queue for linear retries when retry type is not defined in the config"
@@ -225,19 +226,19 @@
                 channel1-dead-exchange-name    (util/prefixed-queue-name prefix-name dead-letter-exchange-suffix)
                 expected-queue-status          {:message-count 0 :consumer-count 0}]
 
-            (with-redefs [rmqw/create-and-bind-queue (fn
-                                                       ([queue-name exchange-name]
-                                                        (is
-                                                          (or
-                                                            (and
-                                                              (= queue-name channel1-instant-queue-name)
-                                                              (= exchange-name channel1-instant-exchange-name))
-                                                            (and (= queue-name channel1-dead-queue-name)
-                                                                 (= exchange-name channel1-dead-exchange-name)))))
-                                                       ([queue-name exchange-name dead-letter-exchange]
-                                                        (is (and (= queue-name channel1-delay-queue-name)
-                                                                 (= exchange-name channel1-delay-exchange-name)
-                                                                 (= dead-letter-exchange channel1-instant-exchange-name)))))]
+            (with-redefs [messaging/create-and-bind-queue (fn
+                                                            ([queue-name exchange-name]
+                                                             (is
+                                                               (or
+                                                                 (and
+                                                                   (= queue-name channel1-instant-queue-name)
+                                                                   (= exchange-name channel1-instant-exchange-name))
+                                                                 (and (= queue-name channel1-dead-queue-name)
+                                                                      (= exchange-name channel1-dead-exchange-name)))))
+                                                            ([queue-name exchange-name dead-letter-exchange]
+                                                             (is (and (= queue-name channel1-delay-queue-name)
+                                                                      (= exchange-name channel1-delay-exchange-name)
+                                                                      (= dead-letter-exchange channel1-instant-exchange-name)))))]
               (producer/make-queues stream-routes))))))
 
     (testing "when retries are disabled"

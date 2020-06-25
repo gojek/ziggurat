@@ -28,8 +28,6 @@
                                     (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                     (orig-rmq-connect provided-config))
                     config/config overriden-default-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
         (rmqw/start-connection config/config (:stream-routes (mount/args)))
         (rmqw/stop-connection config/config (:stream-routes (mount/args)))
         (is (= @thread-count 14))
@@ -47,8 +45,6 @@
                                     (reset! rmq-connect-called? true)
                                     (orig-rmq-connect provided-config))
                     config/config overridden-default-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
         (rmqw/start-connection config/config (:stream-routes (mount/args)))
         (rmqw/stop-connection config/config (:stream-routes (mount/args)))
         (is @rmq-connect-called?))))
@@ -65,8 +61,6 @@
                                     (reset! rmq-connect-called? true)
                                     (orig-rmq-connect provided-config))
                     config/config overridden-default-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
         (rmqw/start-connection config/config (:stream-routes (mount/args)))
         (rmqw/stop-connection config/config (:stream-routes (mount/args)))
         (is (not @rmq-connect-called?)))))
@@ -86,10 +80,8 @@
                                     (reset! rmq-connect-called? true)
                                     (orig-rmq-connect provided-config))
                     config/config overridden-default-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is @rmq-connect-called?))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple channels"
