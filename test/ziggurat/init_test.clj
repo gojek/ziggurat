@@ -3,7 +3,6 @@
             [mount.core :refer [defstate] :as mount]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
-            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams :refer [stream]]
@@ -14,19 +13,26 @@
 
 (def valid-modes-count 4)
 
+(defn- exp [x n]
+  (loop [acc 1 n n]
+    (if (zero? n) acc
+                  (recur (* x acc) (dec n)))))
+
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
-    (let [result (atom 1)]
+    (let [result                              (atom 1)
+          start-messaging-internal-call-count 2]
       (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
                     streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
                     messaging/start-connection (fn [_ _] (reset! result (* @result 2)))
-                    rmqw/stop-connection       (constantly nil)
+                    messaging/stop-connection  (constantly nil)
                     config/config-file         "config.test.edn"
                     tracer/create-tracer       (fn [] (MockTracer.))]
         (init/start #(reset! result (+ @result 3)) {} [] nil)
         (init/stop #() nil)
-        (is (= 256 @result))))))
+        ;; some of the functions which call start-messaging, are called again.
+        (is (= (* 4 (exp 2 (+ start-messaging-internal-call-count valid-modes-count))) @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
   (testing "The actor stop fn stops before the ziggurat state"
@@ -42,14 +48,14 @@
 (deftest stop-calls-idempotentcy-test
   (testing "The stop function should be idempotent"
     (let [result (atom 1)]
-      (with-redefs [streams/start-streams (constantly nil)
-                    streams/stop-streams  (constantly nil)
-                    rmqw/stop-connection  (fn [_ _] (reset! result (* @result 2)))
-                    config/config-file    "config.test.edn"
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+      (with-redefs [streams/start-streams     (constantly nil)
+                    streams/stop-streams      (constantly nil)
+                    messaging/stop-connection (fn [_ _] (reset! result (* @result 2)))
+                    config/config-file        "config.test.edn"
+                    tracer/create-tracer      (fn [] (MockTracer.))]
         (init/start #() {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
-        (is (= 8 @result))))))
+        (is (= (* 4 (exp 2 valid-modes-count)) @result))))))
 
 (deftest start-calls-make-queues-test
   (testing "Start calls make queues"
