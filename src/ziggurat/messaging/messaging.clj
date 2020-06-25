@@ -26,14 +26,6 @@
   (let [messaging-impl-constructor (get-messaging-implementor-constructor)]
     (reset! messaging-impl (messaging-impl-constructor))))
 
-
-
-(defstate connection
-          :start (do (log/info "Initializing Messaging")
-                     (initialise-messaging-library)
-                     (messaging-interface/start-connection @messaging-impl ziggurat.config/config (:stream-routes (mount/args))))
-          :stop (messaging-interface/stop-connection @messaging-impl ziggurat.config/config (:stream-routes (mount/args))))
-
 (defn start-connection [config stream-routes]
   (do (initialise-messaging-library)
       (log/info "Initializing Messaging Library")
