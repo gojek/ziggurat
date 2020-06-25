@@ -16,8 +16,8 @@
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util])
   (:gen-class
-   :methods [^{:static true} [init [java.util.Map] void]]
-   :name tech.gojek.ziggurat.internal.Init))
+    :methods [^{:static true} [init [java.util.Map] void]]
+    :name tech.gojek.ziggurat.internal.Init))
 
 (defn- start*
   ([states]
@@ -27,15 +27,15 @@
        (mount/with-args args)
        (mount/start))))
 
-(defn- start-rabbitmq-connection [args]
-  (start* #{#'messaging/connection} args))
+(defn- start-messaging [args]
+  (messaging/start-connection config/config (:stream-routes args)))
 
 (defn- start-rabbitmq-consumers [args]
-  (start-rabbitmq-connection args)
+  (start-messaging args)
   (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
 
 (defn- start-rabbitmq-producers [args]
-  (start-rabbitmq-connection args)
+  (start-messaging args)
   (messaging-producer/make-queues (get args :stream-routes)))
 
 (defn start-kafka-producers []
@@ -50,11 +50,11 @@
   (start-kafka-streams args))
 
 (defn start-management-apis [args]
-  (start-rabbitmq-connection args)
+  (start-messaging args)
   (start* #{#'server/server} (dissoc args :actor-routes)))
 
 (defn start-server [args]
-  (start-rabbitmq-connection args)
+  (start-messaging args)
   (start* #{#'server/server} args))
 
 (defn start-workers [args]
@@ -138,19 +138,19 @@
 
 (defn- add-shutdown-hook [actor-stop-fn modes]
   (.addShutdownHook
-   (Runtime/getRuntime)
-   (Thread. ^Runnable #((stop actor-stop-fn modes)
-                        (shutdown-agents))
-            "Shutdown-handler")))
+    (Runtime/getRuntime)
+    (Thread. ^Runnable #((stop actor-stop-fn modes)
+                         (shutdown-agents))
+             "Shutdown-handler")))
 
 (declare StreamRoute)
 
 (s/defschema StreamRoute
   (s/conditional
-   #(and (seq %)
-         (map? %))
-   {s/Keyword {:handler-fn (s/pred #(fn? %))
-               s/Keyword   (s/pred #(fn? %))}}))
+    #(and (seq %)
+          (map? %))
+    {s/Keyword {:handler-fn (s/pred #(fn? %))
+                s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes modes]
   (when (or (empty? modes) (contains? (set modes) :stream-worker))
