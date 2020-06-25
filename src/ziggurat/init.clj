@@ -63,7 +63,7 @@
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
-  (mount/stop #'messaging/connection))
+  (messaging/stop-connection config/config (:stream-routes mount/args)))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))
