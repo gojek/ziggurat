@@ -8,21 +8,25 @@
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams :refer [stream]]
             [ziggurat.server.test-utils :as tu]
-            [ziggurat.tracer :as tracer])
+            [ziggurat.tracer :as tracer]
+            [ziggurat.messaging.messaging :as messaging])
   (:import (io.opentracing.mock MockTracer)))
+
+(def valid-modes-count 4)
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
     (let [result (atom 1)]
-      (with-redefs [streams/start-streams (fn [_ _] (reset! result (* @result 2)))
-                    streams/stop-streams  (constantly nil)
-                    rmqw/start-connection (fn [_ _] (reset! result (* @result 2)))
-                    rmqw/stop-connection  (constantly nil)
-                    config/config-file    "config.test.edn"
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+      (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
+                    streams/stop-streams       (constantly nil)
+                    ;; will be called valid modes number of times
+                    messaging/start-connection (fn [_ _] (reset! result (* @result 2)))
+                    rmqw/stop-connection       (constantly nil)
+                    config/config-file         "config.test.edn"
+                    tracer/create-tracer       (fn [] (MockTracer.))]
         (init/start #(reset! result (+ @result 3)) {} [] nil)
         (init/stop #() nil)
-        (is (= 16 @result))))))
+        (is (= 256 @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
   (testing "The actor stop fn stops before the ziggurat state"
