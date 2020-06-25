@@ -64,7 +64,7 @@
  "
 
   (start-connection [impl config stream-routes])
-  (stop-connection [impl connection config stream-routes])
+  (stop-connection [impl config stream-routes])
   (publish
     [impl exchange message-payload]
     [impl exchange message-payload expiration])
