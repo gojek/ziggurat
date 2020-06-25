@@ -4,17 +4,18 @@
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
+            [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
             [ziggurat.fixtures :as fix]))
 
 (use-fixtures :once fix/mount-only-config)
 
-(defn create-mock-object [] (reify Object
-                              (toString [this] "")))
+(defn- create-mock-object [] (reify Object
+                               (toString [this] "")))
 
 (defn reset-connection-atom [] (reset! rmqw/connection nil))
 
 (deftest start-connection-test
-  (testing "start-connection should call the rmq-connection/start-connection and return the connection atom"
+  (testing "start-connection should call the `rmq-connection/start-connection` and return the connection atom"
     (let [default-config                config/config
           start-connection-called-count (atom false)
           stream-routes                 {:default {:handler-fn (constantly nil)}}
@@ -26,7 +27,7 @@
         (is (= {:foo "bar"} @rmqw/connection)))
       (reset-connection-atom)))
 
-  (testing "start-connection should not call rmq-connection/start-connection function if retries are disabled and connection atom should be nil"
+  (testing "start-connection should not call `rmq-connection/start-connection` function if retries are disabled and connection atom should be nil"
     (let [default-config           config/config
           start-connection-called? (atom false)
           stream-routes            {:default {:handler-fn (constantly nil)}}
@@ -51,7 +52,7 @@
         (is (= true @stop-connection-called?))))
     (reset-connection-atom))
 
-  (testing "stop-connection should not call the rmq-connection/stop-connection function if connection atom is nil"
+  (testing "stop-connection should not call the `rmq-connection/stop-connection` function if connection atom is nil"
     (let [default-config          config/config
           stop-connection-called? (atom false)
           stream-routes           {:default {:handler-fn (constantly nil)}}
@@ -96,7 +97,7 @@
       (reset-connection-atom))))
 
 (deftest create-and-bind-queue-test
-  (testing "It should call the create rmq-producer/create-and-bind-queue function without dead-letter-exchange"
+  (testing "It should call the create `rmq-producer/create-and-bind-queue` function without dead-letter-exchange"
     (let [test-queue-name               "test-queue"
           test-exchange-name            "test-exchange"
           create-and-bind-queue-called? (atom false)]
@@ -108,7 +109,7 @@
         (rmqw/create-and-bind-queue test-queue-name test-exchange-name)
         (is (= @create-and-bind-queue-called? true)))))
 
-  (testing "It should call the create rmq-producer/create-and-bind-queue function with dead-letter-exchange"
+  (testing "It should call the `create rmq-producer/create-and-bind-queue` function with dead-letter-exchange"
     (let [test-queue-name               "test-queue"
           test-exchange-name            "test-exchange"
           dead-letter-exchange-name     "test-dead-letter-exchange"
@@ -122,7 +123,7 @@
         (is (= @create-and-bind-queue-called? true))))))
 
 (deftest publish-test
-  (testing "It should call rmq-producer/publish without expiration"
+  (testing "it should call `rmq-producer/publish` without expiration"
     (let [test-exchange-name   "test-exchange"
           test-message-payload {:foo "bar"}
           publish-called?      (atom false)]
@@ -134,7 +135,7 @@
         (rmqw/publish test-exchange-name test-message-payload)
         (is (= @publish-called? true)))))
 
-  (testing "It should call rmq-producer/publish with expiration"
+  (testing "It should call `rmq-producer/publish` with expiration"
     (let [test-exchange-name   "test-exchange"
           test-message-payload {:foo "bar"}
           test-expiration      "42"
@@ -146,6 +147,68 @@
                                              (reset! publish-called? true)))]
         (rmqw/publish test-exchange-name test-message-payload test-expiration)
         (is (= @publish-called? true))))))
+
+
+(deftest get-messages-from-queue-test
+  (testing "it should call `rmq-consumer/get-messages-from-queue` with a default `count` of 1 when count is not specified"
+    (let [test-queue-name                 "test-queue"
+          default-count                   1
+          get-messages-from-queue-called? (atom false)]
+      (with-redefs [rmq-consumer/get-messages-from-queue (fn [_ queue-name ack? count]
+                                                           (when (and (= test-queue-name queue-name)
+                                                                      (= default-count count)
+                                                                      (= ack? true)))
+                                                           (reset! get-messages-from-queue-called? true))]
+        (rmqw/get-messages-from-queue test-queue-name true))))
+
+  (testing "it should call `rmq-consumer/get-messages-from-queue` when `count` is specified"
+    (let [test-queue-name                 "test-queue"
+          test-count                      5
+          get-messages-from-queue-called? (atom false)]
+      (with-redefs [rmq-consumer/get-messages-from-queue (fn [_ queue-name ack? count]
+                                                           (when (and (= test-queue-name queue-name)
+                                                                      (= test-count count)
+                                                                      (= ack? true)))
+                                                           (reset! get-messages-from-queue-called? true))]
+        (rmqw/get-messages-from-queue test-queue-name true test-count)))))
+
+(deftest process-messages-from-queue-test
+  (testing "It should call `rmq-consumer/process-messages-from-queue` with the correct arguments"
+    (let [test-queue                          "test-queue"
+          test-count                          5
+          test-processing-fn                  (constantly {:foo "bar"})
+          process-messages-from-queue-called? (atom false)]
+      (with-redefs [rmq-consumer/process-messages-from-queue (fn [_ queue-name count processing-fn]
+                                                               (when (and (= queue-name test-queue)
+                                                                          (= count test-count)
+                                                                          (= {:foo "bar"} (processing-fn)))
+                                                                 (reset! process-messages-from-queue-called? true)))]
+        (rmqw/process-messages-from-queue test-queue test-count test-processing-fn)
+        (is (= true @process-messages-from-queue-called?))))))
+
+(deftest start-subscriber-test
+  (testing "it should call `rmq-consumer/start-subscriber` with the right arguments"
+    (let [test-prefetch-count      5
+          test-queue-name          "test-queue"
+          test-mapper-fn           (constantly {:foo "bar"})
+          start-subscriber-called? (atom false)]
+      (with-redefs [rmq-consumer/start-subscriber (fn [_ prefetch-count wrapped-mapper-fn queue-name]
+                                                    (when (and (= queue-name test-queue-name)
+                                                               (= test-prefetch-count prefetch-count)
+                                                               (= (wrapped-mapper-fn) {:foo "bar"}))
+                                                      (reset! start-subscriber-called? true)))]
+        (rmqw/start-subscriber test-prefetch-count test-mapper-fn test-queue-name)))))
+
+(deftest consume-message-test
+  (testing "it should call `rmq-consumer/consume-message` with the correct arguments"
+    (let [test-meta    {:meta "bar"}
+          test-payload {:foo "bar"}
+          test-ack?    false]
+      (with-redefs [rmq-consumer/consume-message (fn [_ meta ^bytes payload ack?]
+                                                   (when (and (= meta test-meta)
+                                                              (= payload test-payload)
+                                                              (= ack? test-ack?))))]
+        (rmqw/consume-message nil test-meta test-payload test-ack?)))))
 
 
 
