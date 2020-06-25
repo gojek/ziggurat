@@ -20,7 +20,7 @@
 (deftype MockMessaging []
   MessagingProtocol
   (start-connection [impl config stream-routes] (start-connection config stream-routes))
-  (stop-connection [impl connection config stream-routes] (stop-connection connection config stream-routes))
+  (stop-connection [impl config stream-routes] (stop-connection config stream-routes))
   (publish [impl exchange message-payload] (publish exchange message-payload))
   (publish [impl exchange message-payload expiration] (publish exchange message-payload expiration))
   (get-messages-from-queue [impl queue-name ack?] (get-messages-from-queue queue-name ack?))
