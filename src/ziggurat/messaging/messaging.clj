@@ -2,8 +2,6 @@
   (:require [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.messaging-interface :as messaging-interface]
-            [mount.core :as mount :refer [defstate]]
-            [mount.core :as mount]
             [clojure.tools.logging :as log]))
 
 (declare connection)
