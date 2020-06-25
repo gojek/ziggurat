@@ -121,5 +121,32 @@
         (rmqw/create-and-bind-queue test-queue-name test-exchange-name dead-letter-exchange-name)
         (is (= @create-and-bind-queue-called? true))))))
 
+(deftest publish-test
+  (testing "It should call rmq-producer/publish without expiration"
+    (let [test-exchange-name   "test-exchange"
+          test-message-payload {:foo "bar"}
+          publish-called?      (atom false)]
+      (with-redefs [rmq-producer/publish (fn [_ exchange message-payload expiration]
+                                           (when (and (= exchange test-exchange-name)
+                                                      (= message-payload test-message-payload)
+                                                      (= expiration nil))
+                                             (reset! publish-called? true)))]
+        (rmqw/publish test-exchange-name test-message-payload)
+        (is (= @publish-called? true)))))
+
+  (testing "It should call rmq-producer/publish with expiration"
+    (let [test-exchange-name   "test-exchange"
+          test-message-payload {:foo "bar"}
+          test-expiration      "42"
+          publish-called?      (atom false)]
+      (with-redefs [rmq-producer/publish (fn [_ exchange message-payload expiration]
+                                           (when (and (= exchange test-exchange-name)
+                                                      (= message-payload test-message-payload)
+                                                      (= expiration test-expiration))
+                                             (reset! publish-called? true)))]
+        (rmqw/publish test-exchange-name test-message-payload test-expiration)
+        (is (= @publish-called? true))))))
+
+
 
 
