@@ -9,7 +9,6 @@
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
-            [mount.core :as mount]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]))
 
 
