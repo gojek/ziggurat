@@ -3,6 +3,7 @@
             [ziggurat.config :as config]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
+            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
             [ziggurat.fixtures :as fix]))
 
 (use-fixtures :once fix/mount-only-config)
@@ -93,6 +94,32 @@
         (is (= 1 @stop-connection-called-count))
         (is (= nil @rmqw/connection)))
       (reset-connection-atom))))
+
+(deftest create-and-bind-queue-test
+  (testing "It should call the create rmq-producer/create-and-bind-queue function without dead-letter-exchange"
+    (let [test-queue-name               "test-queue"
+          test-exchange-name            "test-exchange"
+          create-and-bind-queue-called? (atom false)]
+      (with-redefs [rmq-producer/create-and-bind-queue (fn [_ queue-name exchange-name dead-letter-exchange]
+                                                         (when (and (= queue-name test-queue-name)
+                                                                    (= exchange-name test-exchange-name)
+                                                                    (= dead-letter-exchange nil))
+                                                           (reset! create-and-bind-queue-called? true)))]
+        (rmqw/create-and-bind-queue test-queue-name test-exchange-name)
+        (is (= @create-and-bind-queue-called? true)))))
+
+  (testing "It should call the create rmq-producer/create-and-bind-queue function with dead-letter-exchange"
+    (let [test-queue-name               "test-queue"
+          test-exchange-name            "test-exchange"
+          dead-letter-exchange-name     "test-dead-letter-exchange"
+          create-and-bind-queue-called? (atom false)]
+      (with-redefs [rmq-producer/create-and-bind-queue (fn [_ queue-name exchange-name dead-letter-exchange]
+                                                         (when (and (= queue-name test-queue-name)
+                                                                    (= exchange-name test-exchange-name)
+                                                                    (= dead-letter-exchange dead-letter-exchange-name))
+                                                           (reset! create-and-bind-queue-called? true)))]
+        (rmqw/create-and-bind-queue test-queue-name test-exchange-name dead-letter-exchange-name)
+        (is (= @create-and-bind-queue-called? true))))))
 
 
 
