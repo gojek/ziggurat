@@ -30,11 +30,11 @@
 (defn- start-messaging [args]
   (messaging/start-connection config/config (:stream-routes args)))
 
-(defn- start-rabbitmq-consumers [args]
+(defn- start-messaging-consumers [args]
   (start-messaging args)
   (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
 
-(defn- start-rabbitmq-producers [args]
+(defn- start-messaging-producers [args]
   (start-messaging args)
   (messaging-producer/make-queues (get args :stream-routes)))
 
@@ -46,7 +46,7 @@
 
 (defn start-stream [args]
   (start-kafka-producers)
-  (start-rabbitmq-producers args)
+  (start-messaging-producers args)
   (start-kafka-streams args))
 
 (defn start-management-apis [args]
@@ -59,10 +59,10 @@
 
 (defn start-workers [args]
   (start-kafka-producers)
-  (start-rabbitmq-producers args)
-  (start-rabbitmq-consumers args))
+  (start-messaging-producers args)
+  (start-messaging-consumers args))
 
-(defn- stop-rabbitmq-connection []
+(defn- stop-messaging []
   (messaging/stop-connection config/config (:stream-routes mount/args)))
 
 (defn stop-kafka-producers []
@@ -72,21 +72,21 @@
   (mount/stop #'streams/stream))
 
 (defn stop-workers []
-  (stop-rabbitmq-connection)
+  (stop-messaging)
   (stop-kafka-producers))
 
 (defn stop-server []
   (mount/stop #'server/server)
-  (stop-rabbitmq-connection))
+  (stop-messaging))
 
 (defn stop-stream []
   (stop-kafka-streams)
-  (stop-rabbitmq-connection)
+  (stop-messaging)
   (stop-kafka-producers))
 
 (defn stop-management-apis []
   (mount/stop #'server/server)
-  (stop-rabbitmq-connection))
+  (stop-messaging))
 
 (def valid-modes-fns
   {:api-server     {:start-fn start-server :stop-fn stop-server}
