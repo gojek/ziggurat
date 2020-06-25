@@ -33,3 +33,9 @@
                      (initialise-messaging-library)
                      (messaging-interface/start-connection @messaging-impl ziggurat.config/config (:stream-routes (mount/args))))
           :stop (messaging-interface/stop-connection @messaging-impl connection ziggurat.config/config (:stream-routes (mount/args))))
+
+(defn start-connection [config stream-routes]
+  (do (initialise-messaging-library)
+      (log/info "Initializing Messaging Library")
+      (messaging-interface/start-connection @messaging-impl config stream-routes)))
+
