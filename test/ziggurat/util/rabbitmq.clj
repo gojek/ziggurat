@@ -67,13 +67,13 @@
 (defn get-message-from-retry-queue [topic sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         delay-queue-name (delay-queue-name topic queue-name)
-        queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
+        queue-name       (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn get-message-from-channel-retry-queue [topic channel sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         delay-queue-name (delay-queue-name (rutil/with-channel-name topic channel) queue-name)
-        queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
+        queue-name       (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn close [^Channel channel]
