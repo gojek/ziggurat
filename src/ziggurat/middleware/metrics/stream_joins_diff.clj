@@ -21,3 +21,4 @@
    (fn [message]
      (do (publish-diff-between-joined-messages-helper message)
          (handler-fn message))))
+

@@ -24,3 +24,4 @@
                                                  (reset! metrics-published? true)))]
         ((mw/publish-diff-between-joined-messages handler-fn) message)
         (is (true? @handler-fn-called?))))))
+
