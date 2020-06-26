@@ -17,7 +17,7 @@
             [mount.core :as mount])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+(use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging]))
 
 (def topic-entity :default)

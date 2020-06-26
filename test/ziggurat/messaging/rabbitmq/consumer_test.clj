@@ -18,7 +18,7 @@
             [ziggurat.config :as config])
   (:import (com.rabbitmq.client Channel Connection)))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+(use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging]))
 
 (def topic-entity :default)
