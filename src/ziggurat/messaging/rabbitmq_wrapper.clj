@@ -1,6 +1,5 @@
 (ns ziggurat.messaging.rabbitmq-wrapper
   (:require [ziggurat.config :refer [get-in-config]]
-            [mount.core :refer [defstate]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.retry :refer [with-retry]]
