@@ -4,8 +4,6 @@
             [ziggurat.messaging.messaging-interface :as messaging-interface]
             [clojure.tools.logging :as log]))
 
-(declare connection)
-
 (def messaging-impl (atom nil))
 
 (defn- get-implementation []
