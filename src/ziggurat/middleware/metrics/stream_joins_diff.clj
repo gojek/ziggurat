@@ -9,12 +9,12 @@
         left-topic-key (first keys)
         left (first values)
         right-topic-key (second keys)
-        right (first values)
+        right (second values)
         service-name       (:app-name (ziggurat-config))
         leftEventTimeStamp (:nanos (:event-timestamp left))
         rightEventTimeStamp (:nanos (:event-timestamp right))
         diff                (Math/abs ^Integer (- leftEventTimeStamp rightEventTimeStamp))]
-    (metrics/report-histogram [service-name "stream-joins-message-diff"] diff {:left left-topic-key :right right-topic-key})))
+    (metrics/report-histogram [service-name "stream-joins-message-diff"] diff {:left (name left-topic-key) :right (name right-topic-key)})))
 
 (defn publish-diff-between-joined-messages
   [handler-fn]
