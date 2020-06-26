@@ -29,9 +29,6 @@
       (mount/swap {#'config/config (config/config-from-env "config.test.edn")})
       (mount/start)))
 
-
-
-
 (defn mount-only-config [f]
   (mount-config)
   (f)
@@ -90,19 +87,14 @@
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :dead-letter)))
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :delay))))))))
 
-(defn init-rabbit-mq [f]
+(defn init-messaging [f]
   (let [stream-routes {:default {:handler-fn #(constantly nil)
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (mount-tracer)
-    (-> (mount/with-args {:stream-routes stream-routes})
-        (mount/start))
     (messaging/start-connection config/config stream-routes)
-    (rmqw/start-connection config/config (:stream-routes mount/args))
     (f)
-    (rmqw/stop-connection config/config (:stream-routes mount/args))
-    (messaging/stop-connection config/config stream-routes)
-    (mount/stop)))
+    (messaging/stop-connection config/config stream-routes)))
 
 (defn with-start-server* [stream-routes f]
   (mount-config)
