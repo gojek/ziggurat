@@ -18,7 +18,7 @@
 
 (defn publish-diff-between-joined-messages
   [handler-fn]
-   (fn [message]
-     (do (publish-diff-between-joined-messages-helper message)
-         (handler-fn message))))
+  (fn [message]
+    (do (publish-diff-between-joined-messages-helper message)
+        (handler-fn message))))
 
