@@ -10,7 +10,7 @@
             [ziggurat.util.rabbitmq :as util]
             [ziggurat.messaging.consumer :as consumer]))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+(use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging
                                     fix/mount-metrics]))
 (defn- gen-message-payload [topic-entity]
