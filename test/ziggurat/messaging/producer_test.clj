@@ -32,7 +32,7 @@
                                                                  :type    :linear}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
-            (with-redefs [rmqw/create-and-bind-queue (fn
+            (with-redefs [messaging/create-and-bind-queue (fn
                                                        ([_ _] (swap! counter inc))
                                                        ([_ _ _] (swap! counter inc)))]
               (producer/make-queues nil)
@@ -43,7 +43,7 @@
           (let [counter       (atom 0)
                 stream-routes {:test  {:handler-fn #(constantly nil)}
                                :test2 {:handler-fn #(constantly nil)}}]
-            (with-redefs [rmqw/create-and-bind-queue (fn
+            (with-redefs [messaging/create-and-bind-queue (fn
                                                        ([_ _] (swap! counter inc))
                                                        ([_ _ _] (swap! counter inc)))]
               (producer/make-queues stream-routes)
@@ -56,7 +56,7 @@
                 instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
                 delay-queue-name      (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
                 dead-queue-name       (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))]
-            (with-redefs [rmqw/create-and-bind-queue (fn
+            (with-redefs [messaging/create-and-bind-queue (fn
                                                        ([queue-name exchange-name]
                                                         (swap! counter inc))
                                                        ([queue-name exchange-name dead-letter-exchange]
@@ -203,7 +203,7 @@
                                                          :retry {:enabled false}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
-            (with-redefs [rmqw/create-and-bind-queue (fn
+            (with-redefs [messaging/create-and-bind-queue (fn
                                                        ([_ _] (swap! counter inc))
                                                        ([_ _ _] (swap! counter inc)))]
               (producer/make-queues {:default {:handler-fn #(constantly :success)}})
@@ -255,12 +255,12 @@
                 channel1-instant-exchange-name (util/prefixed-queue-name prefix-name instant-exchange-suffix)
                 expected-queue-status          {:message-count 0 :consumer-count 0}]
 
-            (with-redefs [rmqw/create-and-bind-queue (fn
-                                                       ([queue-name exchange-name]
-                                                        (is
-                                                          (and
-                                                            (= queue-name channel1-instant-queue-name)
-                                                            (= exchange-name channel1-instant-exchange-name)))))])
+            (with-redefs [messaging/create-and-bind-queue (fn
+                                                            ([queue-name exchange-name]
+                                                             (is
+                                                               (and
+                                                                 (= queue-name channel1-instant-queue-name)
+                                                                 (= exchange-name channel1-instant-exchange-name)))))])
             (producer/make-queues stream-routes)))))))
 
 (deftest ^:integration make-queues-integration-tests
