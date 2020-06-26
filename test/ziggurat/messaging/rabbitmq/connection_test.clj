@@ -3,7 +3,6 @@
             [clojure.test :refer :all]
             [ziggurat.fixtures :as fix]
             [langohr.core :as rmq]
-            [mount.core :as mount]
             [ziggurat.config :as config :refer [ziggurat-config]]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.rabbitmq.connection :as rmq-conn]))
@@ -28,8 +27,8 @@
                                     (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                     (orig-rmq-connect provided-config))
                     config/config overriden-default-config]
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (= @thread-count 14))
         (is @rmq-connect-called?))))
 
@@ -45,8 +44,8 @@
                                     (reset! rmq-connect-called? true)
                                     (orig-rmq-connect provided-config))
                     config/config overridden-default-config]
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is @rmq-connect-called?))))
 
   (testing "if retry is disabled and channels are not present it should not create connection"
@@ -61,8 +60,8 @@
                                     (reset! rmq-connect-called? true)
                                     (orig-rmq-connect provided-config))
                     config/config overridden-default-config]
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (not @rmq-connect-called?)))))
 
   (testing "if retry is disabled and channels are present it should create connection"
@@ -100,10 +99,8 @@
                                     (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                     (orig-rmq-connect provided-config))
                     config/config overriden-default-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (= @thread-count 19)))))
 
   (testing "should provide the correct number of threads for the thread pool when channels are not present"
@@ -114,13 +111,15 @@
                                                              :jobs {:instant {:worker-count 4}}
                                                              :retry {:enabled true}
                                                              :stream-router {:default {}}
-                                                             :tracer {:enabled false}))]
+                                                             :tracer {:enabled false}))
+          stream-routes    {:default {}}]
       (with-redefs [rmq/connect   (fn [provided-config]
                                     (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                     (orig-rmq-connect provided-config))
                     config/config overriden-config]
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (= @thread-count 4)))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple stream routes"
@@ -131,13 +130,14 @@
                                                                                      :retry {:enabled true}
                                                                                      :stream-router {:default   {:channels {:channel-1 {:worker-count 10}}}
                                                                                                      :default-1 {:channels {:channel-1 {:worker-count 8}}}}
-                                                                                     :tracer {:enabled false}))]
+                                                                                     :tracer {:enabled false}))
+          stream-routes     {}]
       (with-redefs [rmq/connect   (fn [provided-config]
                                     (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                     (orig-rmq-connect provided-config))
                     config/config overridden-config]
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (= @thread-count 26))))))
 
 (deftest ^:integration start-connection-test-with-tracer-enabled
@@ -158,10 +158,8 @@
                                                  (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overriden-default-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (= @thread-count 14))
         (is @create-connect-called?))))
 
@@ -176,10 +174,8 @@
                                                  (reset! create-connect-called? true)
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overridden-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is @create-connect-called?))))
 
   (testing "if retry is disabled and channels are not present it should not create connection"
@@ -194,10 +190,8 @@
                                                  (reset! create-connect-called? true)
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overriden-config]
-        (-> (mount/only #{#'rmqw/connection})
-            (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (mount/stop #'rmqw/connection)
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (not @create-connect-called?)))))
 
   (testing "if retry is disabled and channels are present it should create connection"
@@ -214,11 +208,8 @@
                                                  (reset! create-connect-called? true)
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overridden-config]
-
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is @create-connect-called?))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple channels"
@@ -235,10 +226,8 @@
                                                  (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overridden-config]
-        (-> (mount/with-args {:stream-routes stream-routes})
-            (mount/start))
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config stream-routes)
+        (rmqw/stop-connection config/config stream-routes)
         (is (= @thread-count 19)))))
 
   (testing "should provide the correct number of threads for the thread pool when channels are not present"
@@ -255,8 +244,8 @@
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overridden-default-config]
 
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config {})
+        (rmqw/stop-connection config/config {})
         (is (= @thread-count 4)))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple stream routes"
@@ -274,7 +263,7 @@
                                                  (orig-create-conn provided-config tracer-enabled))
                     config/config              overridden-config]
 
-        (rmqw/start-connection config/config (:stream-routes (mount/args)))
-        (rmqw/stop-connection config/config (:stream-routes (mount/args)))
+        (rmqw/start-connection config/config {})
+        (rmqw/stop-connection config/config {})
         (is (= @thread-count 26))))))
 
