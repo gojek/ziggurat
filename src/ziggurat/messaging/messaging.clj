@@ -8,7 +8,7 @@
 
 (defn get-implementation []
   (if (nil? @messaging-impl)
-    (throw (Exception. "Messaging Library is not initialized"))
+    (throw (Exception. "Messaging Library has not been initialized, please make sure the messaging library has been initialized"))
     @messaging-impl))
 
 (defn- get-messaging-implementor-constructor []
@@ -28,13 +28,13 @@
     (reset! messaging-impl (messaging-impl-constructor))))
 
 (defn start-connection [config stream-routes]
-  (do (initialise-messaging-library)
-      (log/info "Initializing Messaging Library")
-      (messaging-interface/start-connection (get-implementation) config stream-routes)))
+  (initialise-messaging-library)
+  (log/info "Initialized Messaging Library")
+  (messaging-interface/start-connection (get-implementation) config stream-routes))
 
 (defn stop-connection [config stream-routes]
-  (do (log/info "Stopping Messaging Library")
-      (messaging-interface/stop-connection (get-implementation) config stream-routes)))
+  (log/info "Stopping Messaging Library")
+  (messaging-interface/stop-connection (get-implementation) config stream-routes))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
