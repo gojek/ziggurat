@@ -13,7 +13,7 @@
 (use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging]))
 
-(deftest mapper-func-test
+(deftest ^:integration mapper-func-test
   (let [service-name                    (:app-name (ziggurat-config))
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         topic-entity                    (name (first (keys stream-routes)))
@@ -132,7 +132,7 @@
           ((mapper-func (constantly :success) []) message-payload)
           (is @reported-execution-time?))))))
 
-(deftest channel-mapper-func-test
+(deftest ^:integration channel-mapper-func-test
   (let [channel                             :channel-1
         channel-name                        (name channel)
         service-name                        (:app-name (ziggurat-config))
