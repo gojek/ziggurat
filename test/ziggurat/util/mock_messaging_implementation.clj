@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]))
 
-(defn start-connection [config stream-routes] nil)
+(defn start-connection [config stream-routes]  nil)
 
 (defn stop-connection [config stream-routes] nil)
 

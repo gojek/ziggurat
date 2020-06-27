@@ -17,7 +17,6 @@
           constructor-namespace         (namespace configured-constructor-symbol)
           _                             (require [(symbol constructor-namespace)])
           metric-constructor            (resolve configured-constructor-symbol)]
-
       (if (nil? metric-constructor)
         (throw (ex-info "Incorrect messaging_interface implementation constructor configured. Please fix it." {:constructor-configured configured-constructor-symbol}))
         metric-constructor))
