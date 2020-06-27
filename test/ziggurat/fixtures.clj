@@ -92,7 +92,7 @@
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (mount-tracer)
-    (mount/start)                                           ;;TODO move it to mapper_test.clj
+    (mount/start)                                           ;;TODO move it to mapper_test.clj, removal of this causes mapper_test to fail
     (messaging/start-connection config/config stream-routes)
     (f)
     (messaging/stop-connection config/config stream-routes)))
