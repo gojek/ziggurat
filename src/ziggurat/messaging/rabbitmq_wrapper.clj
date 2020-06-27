@@ -51,26 +51,26 @@
   (rmq-consumer/consume-message ch meta payload ack?))
 
 (deftype RabbitMQMessaging [] MessagingProtocol
-  (start-connection [impl config stream-routes]
-    (start-connection config stream-routes))
-  (stop-connection [impl config stream-routes]
-    (stop-connection config stream-routes))
-  (create-and-bind-queue [impl queue-name exchange-name]
-    (create-and-bind-queue queue-name exchange-name))
-  (create-and-bind-queue [impl queue-name exchange-name dead-letter-exchange]
-    (create-and-bind-queue queue-name exchange-name dead-letter-exchange))
-  (publish [impl exchange message-payload]
-    (publish exchange message-payload))
-  (publish [impl exchange message-payload expiration]
-    (publish exchange message-payload expiration))
-  (get-messages-from-queue [impl queue-name ack?]
-    (get-messages-from-queue queue-name ack?))
-  (get-messages-from-queue [impl queue-name ack? count]
-    (get-messages-from-queue queue-name ack? count))
-  (process-messages-from-queue [impl queue-name count processing-fn]
-    (process-messages-from-queue queue-name count processing-fn))
-  (start-subscriber [impl prefetch-count wrapped-mapper-fn queue-name]
-    (start-subscriber prefetch-count wrapped-mapper-fn queue-name))
-  (consume-message [impl ch meta payload ack?]
-    (consume-message ch meta payload ack?)))
+         (start-connection [impl config stream-routes]
+           (start-connection config stream-routes))
+         (stop-connection [impl config stream-routes]
+           (stop-connection config stream-routes))
+         (create-and-bind-queue [impl queue-name exchange-name]
+           (create-and-bind-queue queue-name exchange-name))
+         (create-and-bind-queue [impl queue-name exchange-name dead-letter-exchange]
+           (create-and-bind-queue queue-name exchange-name dead-letter-exchange))
+         (publish [impl exchange message-payload]
+           (publish exchange message-payload))
+         (publish [impl exchange message-payload expiration]
+           (publish exchange message-payload expiration))
+         (get-messages-from-queue [impl queue-name ack?]
+           (get-messages-from-queue queue-name ack?))
+         (get-messages-from-queue [impl queue-name ack? count]
+           (get-messages-from-queue queue-name ack? count))
+         (process-messages-from-queue [impl queue-name count processing-fn]
+           (process-messages-from-queue queue-name count processing-fn))
+         (start-subscriber [impl prefetch-count wrapped-mapper-fn queue-name]
+           (start-subscriber prefetch-count wrapped-mapper-fn queue-name))
+         (consume-message [impl ch meta payload ack?]
+           (consume-message ch meta payload ack?)))
 
