@@ -1,4 +1,4 @@
-(ns ziggurat.messaging.rabbitmq.wrapper-test
+(ns ziggurat.messaging.rabbitmq-wrapper-test
   (:require [clojure.test :refer :all]
             [ziggurat.config :as config]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
@@ -208,7 +208,4 @@
                                                               (= payload test-payload)
                                                               (= ack? test-ack?))))]
         (rmqw/consume-message nil test-meta test-payload test-ack?)))))
-
-
-
 
