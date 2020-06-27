@@ -28,13 +28,13 @@
   (let [ziggurat-config (ziggurat-config)]
     (testing "When retries are enabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled true
-                                                                 :type    :linear}))]
+                                                              :retry {:enabled true
+                                                                      :type    :linear}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [messaging/create-and-bind-queue (fn
-                                                       ([_ _] (swap! counter inc))
-                                                       ([_ _ _] (swap! counter inc)))]
+                                                            ([_ _] (swap! counter inc))
+                                                            ([_ _ _] (swap! counter inc)))]
               (producer/make-queues nil)
               (producer/make-queues [])
               (is (= 0 @counter)))))
@@ -44,8 +44,8 @@
                 stream-routes {:test  {:handler-fn #(constantly nil)}
                                :test2 {:handler-fn #(constantly nil)}}]
             (with-redefs [messaging/create-and-bind-queue (fn
-                                                       ([_ _] (swap! counter inc))
-                                                       ([_ _ _] (swap! counter inc)))]
+                                                            ([_ _] (swap! counter inc))
+                                                            ([_ _ _] (swap! counter inc)))]
               (producer/make-queues stream-routes)
               (is (= (* (count stream-routes) 3) @counter)))))
 
@@ -57,10 +57,10 @@
                 delay-queue-name      (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
                 dead-queue-name       (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))]
             (with-redefs [messaging/create-and-bind-queue (fn
-                                                       ([queue-name exchange-name]
-                                                        (swap! counter inc))
-                                                       ([queue-name exchange-name dead-letter-exchange]
-                                                        (swap! counter inc)))]
+                                                            ([queue-name exchange-name]
+                                                             (swap! counter inc))
+                                                            ([queue-name exchange-name dead-letter-exchange]
+                                                             (swap! counter inc)))]
               (producer/make-queues stream-routes)
               (is (= (* (count stream-routes) 3) @counter)))))
 
@@ -79,12 +79,12 @@
             (with-redefs [messaging/create-and-bind-queue (fn
                                                             ([queue-name exchange-name]
                                                              (is
-                                                               (or
-                                                                 (and
-                                                                   (= queue-name instant-queue-name)
-                                                                   (= exchange-name instant-exchange-name))
-                                                                 (and (= queue-name dead-queue-name)
-                                                                      (= exchange-name dead-exchange-name)))))
+                                                              (or
+                                                               (and
+                                                                (= queue-name instant-queue-name)
+                                                                (= exchange-name instant-exchange-name))
+                                                               (and (= queue-name dead-queue-name)
+                                                                    (= exchange-name dead-exchange-name)))))
                                                             ([queue-name exchange-name dead-letter-exchange]
                                                              (is (and (= queue-name delay-queue-name)
                                                                       (= exchange-name delay-exchange-name)
@@ -110,12 +110,12 @@
                           messaging/create-and-bind-queue (fn
                                                             ([queue-name exchange-name]
                                                              (is
-                                                               (or
-                                                                 (and
-                                                                   (= queue-name instant-queue-name)
-                                                                   (= exchange-name instant-exchange-name))
-                                                                 (and (= queue-name dead-queue-name)
-                                                                      (= exchange-name dead-exchange-name)))))
+                                                              (or
+                                                               (and
+                                                                (= queue-name instant-queue-name)
+                                                                (= exchange-name instant-exchange-name))
+                                                               (and (= queue-name dead-queue-name)
+                                                                    (= exchange-name dead-exchange-name)))))
                                                             ;; Verifying that delay queues with appropriate suffixes are created
                                                             ([queue-name exchange-name dead-letter-exchange]
                                                              (let [exponential-delay-queues    (map exponential-delay-queue-name (range 1 (inc retry-count)))
@@ -143,12 +143,12 @@
                           messaging/create-and-bind-queue (fn
                                                             ([queue-name exchange-name]
                                                              (is
-                                                               (or
-                                                                 (and
-                                                                   (= queue-name instant-queue-name)
-                                                                   (= exchange-name instant-exchange-name))
-                                                                 (and (= queue-name dead-queue-name)
-                                                                      (= exchange-name dead-exchange-name)))))
+                                                              (or
+                                                               (and
+                                                                (= queue-name instant-queue-name)
+                                                                (= exchange-name instant-exchange-name))
+                                                               (and (= queue-name dead-queue-name)
+                                                                    (= exchange-name dead-exchange-name)))))
                                                             ;; Verifying that delay queues with appropriate suffixes are created
                                                             ([queue-name exchange-name dead-letter-exchange]
                                                              (let [exponential-delay-queues    (map exponential-delay-queue-name (range 1 (inc 25)))
@@ -200,12 +200,12 @@
 
     (testing "when retries are disabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [messaging/create-and-bind-queue (fn
-                                                       ([_ _] (swap! counter inc))
-                                                       ([_ _ _] (swap! counter inc)))]
+                                                            ([_ _] (swap! counter inc))
+                                                            ([_ _ _] (swap! counter inc)))]
               (producer/make-queues {:default {:handler-fn #(constantly :success)}})
               (is (= 0 @counter)))))
 
@@ -229,12 +229,12 @@
             (with-redefs [messaging/create-and-bind-queue (fn
                                                             ([queue-name exchange-name]
                                                              (is
-                                                               (or
-                                                                 (and
-                                                                   (= queue-name channel1-instant-queue-name)
-                                                                   (= exchange-name channel1-instant-exchange-name))
-                                                                 (and (= queue-name channel1-dead-queue-name)
-                                                                      (= exchange-name channel1-dead-exchange-name)))))
+                                                              (or
+                                                               (and
+                                                                (= queue-name channel1-instant-queue-name)
+                                                                (= exchange-name channel1-instant-exchange-name))
+                                                               (and (= queue-name channel1-dead-queue-name)
+                                                                    (= exchange-name channel1-dead-exchange-name)))))
                                                             ([queue-name exchange-name dead-letter-exchange]
                                                              (is (and (= queue-name channel1-delay-queue-name)
                                                                       (= exchange-name channel1-delay-exchange-name)
@@ -243,8 +243,8 @@
 
     (testing "when retries are disabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}
-                                                         :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
+                                                              :retry {:enabled false}
+                                                              :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
         (testing "it creates instant queues with topic entity for channels only"
           (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
@@ -258,9 +258,9 @@
             (with-redefs [messaging/create-and-bind-queue (fn
                                                             ([queue-name exchange-name]
                                                              (is
-                                                               (and
-                                                                 (= queue-name channel1-instant-queue-name)
-                                                                 (= exchange-name channel1-instant-exchange-name)))))])
+                                                              (and
+                                                               (= queue-name channel1-instant-queue-name)
+                                                               (= exchange-name channel1-instant-exchange-name)))))])
             (producer/make-queues stream-routes)))))))
 
 (deftest ^:integration make-queues-integration-tests
@@ -324,7 +324,7 @@
 
   (testing "when retries are disabled"
     (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                       :retry {:enabled false}))]
+                                                            :retry {:enabled false}))]
       (testing "it does not create queues when stream-routes are not passed"
         (let [counter (atom 0)]
           (with-redefs [rmqw/create-and-bind-queue (fn
@@ -365,8 +365,8 @@
 
   (testing "when retries are disabled"
     (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                       :retry {:enabled false}
-                                                       :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
+                                                            :retry {:enabled false}
+                                                            :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
       (testing "it creates instant queues with topic entity for channels only"
         (with-open [ch (lch/open @rmqw/connection)]
@@ -419,14 +419,14 @@
 
   (testing "message in channel will be retried in delay queue with suffix 1 if message retry-count exceeds retry count in channel config"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router
-                                                {:default
-                                                 {:channels
-                                                  {:exponential-retry
-                                                   {:retry {:count            5
-                                                            :enabled          true
-                                                            :type             :exponential
-                                                            :queue-timeout-ms 1000}}}}}))]
+                                                     :stream-router
+                                                     {:default
+                                                      {:channels
+                                                       {:exponential-retry
+                                                        {:retry {:count            5
+                                                                 :enabled          true
+                                                                 :type             :exponential
+                                                                 :queue-timeout-ms 1000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn        #(constantly nil)
                    :exponential-retry #(constantly nil)}}
@@ -439,9 +439,9 @@
 
   (testing "message in channel will be retried with linear queue timeout"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router {:default {:channels {:linear-retry {:retry {:count            5
-                                                                                                            :enabled          true
-                                                                                                            :queue-timeout-ms 2000}}}}}))]
+                                                     :stream-router {:default {:channels {:linear-retry {:retry {:count            5
+                                                                                                                 :enabled          true
+                                                                                                                 :queue-timeout-ms 2000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn   #(constantly nil)
                    :linear-retry #(constantly nil)}}
@@ -460,10 +460,10 @@
 
   (testing "message in channel will be retried with exponential timeout calculated from channel specific queue-timeout-ms value"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router {:default {:channels {:exponential-retry {:retry {:count            5
-                                                                                                                 :enabled          true
-                                                                                                                 :type             :exponential
-                                                                                                                 :queue-timeout-ms 1000}}}}}))]
+                                                     :stream-router {:default {:channels {:exponential-retry {:retry {:count            5
+                                                                                                                      :enabled          true
+                                                                                                                      :type             :exponential
+                                                                                                                      :queue-timeout-ms 1000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn        #(constantly nil)
                    :exponential-retry #(constantly nil)}}
@@ -586,9 +586,9 @@
 (deftest retry-with-exponential-backoff-test
   (testing "message will publish to delay with retry count queue when exponential backoff enabled"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :retry {:count   5
-                                                        :enabled true
-                                                        :type    :exponential}))]
+                                                     :retry {:count   5
+                                                             :enabled true
+                                                             :type    :exponential}))]
       (testing "message with no retry count will publish to delay queue with suffix 1"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}
@@ -683,40 +683,40 @@
     (testing "when retries are enabled"
       (let [channel :linear-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                           :stream-router {topic-entity {:channels {channel {:retry {:count            5
-                                                                                                                     :enabled          true
-                                                                                                                     :queue-timeout-ms 2000}}}}}))]
+                                                                :stream-router {topic-entity {:channels {channel {:retry {:count            5
+                                                                                                                          :enabled          true
+                                                                                                                          :queue-timeout-ms 2000}}}}}))]
           (is (= 2000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
     (testing "when exponential backoff are enabled and channel queue timeout defined"
       (let [channel :exponential-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                           :stream-router {topic-entity {:channels {channel {:retry {:count            5
-                                                                                                                     :enabled          true
-                                                                                                                     :type             :exponential
-                                                                                                                     :queue-timeout-ms 1000}}}}}))]
+                                                                :stream-router {topic-entity {:channels {channel {:retry {:count            5
+                                                                                                                          :enabled          true
+                                                                                                                          :type             :exponential
+                                                                                                                          :queue-timeout-ms 1000}}}}}))]
           (is (= 7000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
 
     (testing "when exponential backoff are enabled and channel queue timeout is not defined"
       (let [channel :exponential-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                           :stream-router {topic-entity {:channels {channel {:retry {:count   5
-                                                                                                                     :enabled true
-                                                                                                                     :type    :exponential}}}}}))]
+                                                                :stream-router {topic-entity {:channels {channel {:retry {:count   5
+                                                                                                                          :enabled true
+                                                                                                                          :type    :exponential}}}}}))]
           (is (= 700 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))))
 
 (deftest get-queue-timeout-ms-test
   (testing "when exponential retries are enabled"
     (let [message (assoc message-payload :retry-count 2)]
       (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                         :retry {:enabled true
-                                                                 :count   5
-                                                                 :type    :exponential}))]
+                                                              :retry {:enabled true
+                                                                      :count   5
+                                                                      :type    :exponential}))]
         (is (= 700 (producer/get-queue-timeout-ms message))))))
   (testing "when exponential retries are enabled and retry-count exceeds 25, the max possible timeouts are calculated using 25 as the retry-count"
     (let [message (assoc message-payload :retry-count 20)]
       (with-redefs [config/ziggurat-config (constantly (assoc (ziggurat-config)
-                                                         :retry {:enabled true
-                                                                 :count   50
-                                                                 :type    :exponential}))]
+                                                              :retry {:enabled true
+                                                                      :count   50
+                                                                      :type    :exponential}))]
         ;; For 25 max exponential retries, exponent comes to 25-20=5, which makes timeout = 100*(2^5-1) = 3100
         (is (= 3100 (producer/get-queue-timeout-ms message)))))))

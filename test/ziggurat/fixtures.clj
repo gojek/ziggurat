@@ -19,10 +19,10 @@
            (org.apache.kafka.clients.consumer ConsumerConfig)
            (io.opentracing.mock MockTracer))
   (:gen-class
-    :name tech.gojek.ziggurat.internal.test.Fixtures
-    :methods [^{:static true} [mountConfig [] void]
-              ^{:static true} [mountProducer [] void]
-              ^{:static true} [unmountAll [] void]]))
+   :name tech.gojek.ziggurat.internal.test.Fixtures
+   :methods [^{:static true} [mountConfig [] void]
+             ^{:static true} [mountProducer [] void]
+             ^{:static true} [unmountAll [] void]]))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
@@ -100,9 +100,9 @@
 (defn with-start-server* [stream-routes f]
   (mount-config)
   (->
-    (mount/only [#'server])
-    (mount/with-args {:stream-routes stream-routes})
-    (mount/start))
+   (mount/only [#'server])
+   (mount/with-args {:stream-routes stream-routes})
+   (mount/start))
   (f)
   (mount/stop))
 

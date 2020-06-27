@@ -16,7 +16,7 @@
 (defn- exp [x n]
   (loop [acc 1 n n]
     (if (zero? n) acc
-                  (recur (* x acc) (dec n)))))
+        (recur (* x acc) (dec n)))))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"

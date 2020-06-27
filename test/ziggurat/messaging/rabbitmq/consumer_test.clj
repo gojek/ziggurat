@@ -149,68 +149,68 @@
 (deftest ^:integration process-message-test
   (testing "process-message function should ack message after once processing finishes"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-                     (let [message           (gen-message-payload topic-entity)
-                           processing-fn     (fn [message-arg]
-                                               (is (= message-arg message)))
-                           topic-entity-name (name topic-entity)]
-                       (producer/publish-to-dead-queue message)
-                       (with-open [ch (lch/open @rmqw/connection)]
-                         (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
-                               prefixed-queue-name (str topic-entity-name "_" queue-name)
-                               [meta payload] (lb/get ch prefixed-queue-name false)
-                               _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
-                               consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-                           (is (= consumed-message nil)))))))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [message-arg]
+                                (is (= message-arg message)))
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open @rmqw/connection)]
+          (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                prefixed-queue-name (str topic-entity-name "_" queue-name)
+                [meta payload] (lb/get ch prefixed-queue-name false)
+                _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
+                consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+            (is (= consumed-message nil)))))))
 
   (testing "process-message function not process a message if convert-message returns nil"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-                     (let [message              (gen-message-payload topic-entity)
-                           processing-fn-called (atom false)
-                           processing-fn        (fn [message-arg]
-                                                  (if (nil? message-arg)
-                                                    (reset! processing-fn-called true)))
-                           topic-entity-name    (name topic-entity)]
-                       (producer/publish-to-dead-queue message)
-                       (with-redefs [consumer/read-messages-from-queue (fn [_ _ _ _] nil)]
-                         (with-open [ch (lch/open @rmqw/connection)]
-                           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
-                                 prefixed-queue-name (str topic-entity-name "_" queue-name)
-                                 [meta payload] (lb/get ch prefixed-queue-name false)
-                                 _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
-                                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-                             (is (= false @processing-fn-called))
-                             (is (= consumed-message nil))))))))
+      (let [message              (gen-message-payload topic-entity)
+            processing-fn-called (atom false)
+            processing-fn        (fn [message-arg]
+                                   (if (nil? message-arg)
+                                     (reset! processing-fn-called true)))
+            topic-entity-name    (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-redefs [consumer/read-messages-from-queue (fn [_ _ _ _] nil)]
+          (with-open [ch (lch/open @rmqw/connection)]
+            (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                  prefixed-queue-name (str topic-entity-name "_" queue-name)
+                  [meta payload] (lb/get ch prefixed-queue-name false)
+                  _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
+                  consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+              (is (= false @processing-fn-called))
+              (is (= consumed-message nil))))))))
 
   (testing "process-message function should reject and re-queue a message if processing fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-                     (let [message           (gen-message-payload topic-entity)
-                           processing-fn     (fn [message-arg]
-                                               (is (= message-arg message))
-                                               (throw (Exception. "exception message")))
-                           topic-entity-name (name topic-entity)]
-                       (producer/publish-to-dead-queue message)
-                       (with-open [ch (lch/open @rmqw/connection)]
-                         (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
-                               prefixed-queue-name (str topic-entity-name "_" queue-name)
-                               [meta payload] (lb/get ch prefixed-queue-name false)
-                               _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
-                               consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-                           (is (= consumed-message message)))))))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [message-arg]
+                                (is (= message-arg message))
+                                (throw (Exception. "exception message")))
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open @rmqw/connection)]
+          (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                prefixed-queue-name (str topic-entity-name "_" queue-name)
+                [meta payload] (lb/get ch prefixed-queue-name false)
+                _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
+                consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+            (is (= consumed-message message)))))))
 
   (testing "process-message function should reject and discard a message if message conversion fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-                     (let [message           (gen-message-payload topic-entity)
-                           processing-fn     (fn [_] ())
-                           topic-entity-name (name topic-entity)]
-                       (producer/publish-to-dead-queue message)
-                       (with-open [ch (lch/open @rmqw/connection)]
-                         (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
-                           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
-                                 prefixed-queue-name (str topic-entity-name "_" queue-name)
-                                 [meta payload] (lb/get ch prefixed-queue-name false)
-                                 _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
-                                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-                             (is (= consumed-message nil)))))))))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [_] ())
+            topic-entity-name (name topic-entity)]
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open @rmqw/connection)]
+          (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
+            (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                  prefixed-queue-name (str topic-entity-name "_" queue-name)
+                  [meta payload] (lb/get ch prefixed-queue-name false)
+                  _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
+                  consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
+              (is (= consumed-message nil)))))))))
 
 (deftest ^:integration ack-and-convert-message
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"

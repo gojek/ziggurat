@@ -16,8 +16,8 @@
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util])
   (:gen-class
-    :methods [^{:static true} [init [java.util.Map] void]]
-    :name tech.gojek.ziggurat.internal.Init))
+   :methods [^{:static true} [init [java.util.Map] void]]
+   :name tech.gojek.ziggurat.internal.Init))
 
 (defn- start*
   ([states]
@@ -137,19 +137,19 @@
 
 (defn- add-shutdown-hook [actor-stop-fn modes]
   (.addShutdownHook
-    (Runtime/getRuntime)
-    (Thread. ^Runnable #((stop actor-stop-fn modes)
-                         (shutdown-agents))
-             "Shutdown-handler")))
+   (Runtime/getRuntime)
+   (Thread. ^Runnable #((stop actor-stop-fn modes)
+                        (shutdown-agents))
+            "Shutdown-handler")))
 
 (declare StreamRoute)
 
 (s/defschema StreamRoute
   (s/conditional
-    #(and (seq %)
-          (map? %))
-    {s/Keyword {:handler-fn (s/pred #(fn? %))
-                s/Keyword   (s/pred #(fn? %))}}))
+   #(and (seq %)
+         (map? %))
+   {s/Keyword {:handler-fn (s/pred #(fn? %))
+               s/Keyword   (s/pred #(fn? %))}}))
 
 (defn validate-stream-routes [stream-routes modes]
   (when (or (empty? modes) (contains? (set modes) :stream-worker))

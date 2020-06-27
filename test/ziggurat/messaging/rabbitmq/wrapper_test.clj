@@ -20,7 +20,7 @@
           start-connection-called-count (atom false)
           stream-routes                 {:default {:handler-fn (constantly nil)}}
           config                        (assoc default-config
-                                          :ziggurat {:retry {:enabled true}})]
+                                               :ziggurat {:retry {:enabled true}})]
       (with-redefs [rmq-connection/start-connection (fn [_] (reset! start-connection-called-count true) {:foo "bar"})]
         (rmqw/start-connection config stream-routes)
         (is (= true @start-connection-called-count))
@@ -32,7 +32,7 @@
           start-connection-called? (atom false)
           stream-routes            {:default {:handler-fn (constantly nil)}}
           config                   (assoc default-config
-                                     :ziggurat {:retry {:enabled false}})]
+                                          :ziggurat {:retry {:enabled false}})]
       (with-redefs [rmq-connection/start-connection (fn [_] (reset! start-connection-called? true))]
         (rmqw/start-connection config stream-routes)
         (is (= false @start-connection-called?))
@@ -45,7 +45,7 @@
           stop-connection-called? (atom false)
           stream-routes           {:default {:handler-fn (constantly nil)}}
           config                  (assoc default-config
-                                    :ziggurat {:retry {:enabled true}})]
+                                         :ziggurat {:retry {:enabled true}})]
       (with-redefs [rmq-connection/stop-connection (fn [_ _] (reset! stop-connection-called? true))
                     rmqw/connection                (atom {:foo "bar"})]
         (rmqw/stop-connection config stream-routes)
@@ -57,7 +57,7 @@
           stop-connection-called? (atom false)
           stream-routes           {:default {:handler-fn (constantly nil)}}
           config                  (assoc default-config
-                                    :ziggurat {:retry {:enabled true}})]
+                                         :ziggurat {:retry {:enabled true}})]
       (with-redefs [rmq-connection/stop-connection (fn [_ _] (reset! stop-connection-called? true))
                     rmqw/connection                (atom nil)]
         (rmqw/stop-connection config stream-routes)
@@ -71,7 +71,7 @@
           mock-object                   (create-mock-object)
           stream-routes                 {:default {:handler-fn (constantly nil)}}
           config                        (assoc default-config
-                                          :ziggurat {:retry {:enabled true}})]
+                                               :ziggurat {:retry {:enabled true}})]
       (with-redefs [rmq-connection/start-connection (fn [_] (reset! start-connection-called-count true) mock-object)]
         (rmqw/start-connection config stream-routes)
         (rmqw/start-connection config stream-routes)
@@ -86,7 +86,7 @@
           stop-connection-called-count (atom 0)
           stream-routes                {:default {:handler-fn (constantly nil)}}
           config                       (assoc default-config
-                                         :ziggurat {:retry {:enabled true}})]
+                                              :ziggurat {:retry {:enabled true}})]
       (with-redefs [rmqw/connection                (atom {:foo "bar"})
                     rmq-connection/stop-connection (fn [_ _] (swap! stop-connection-called-count inc))]
         (rmqw/stop-connection config stream-routes)
@@ -147,7 +147,6 @@
                                              (reset! publish-called? true)))]
         (rmqw/publish test-exchange-name test-message-payload test-expiration)
         (is (= @publish-called? true))))))
-
 
 (deftest get-messages-from-queue-test
   (testing "it should call `rmq-consumer/get-messages-from-queue` with a default `count` of 1 when count is not specified"
