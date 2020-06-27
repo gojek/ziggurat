@@ -7,11 +7,13 @@
 (defn stop-connection [config stream-routes] nil)
 
 (defn publish
-  ([exchange message-payload] nil)
+  ([exchange message-payload]
+   (publish exchange message-payload nil))
   ([exchange message-payload expiration] nil))
 
 (defn create-and-bind-queue
-  ([queue-name exchange-name] nil)
+  ([queue-name exchange-name]
+   (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange] nil))
 
 (defn get-messages-from-queue
