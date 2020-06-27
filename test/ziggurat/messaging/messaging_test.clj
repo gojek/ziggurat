@@ -22,5 +22,19 @@
     (with-redefs [ziggurat-config (constantly {:messaging {:constructor "incorrect-constructor"}})]
       (is (thrown? RuntimeException (messaging/initialise-messaging-library))))))
 
+(deftest get-implementation-test
+  (testing "it should throw an Exception if `messaging-impl` atom is nil"
+    (with-redefs [messaging/messaging-impl (atom nil)]
+      (is (thrown? Exception (messaging/get-implementation)))))
+
+  (testing "it should return `messaging-impl` atom if it is not nil"
+    (let [atom-val {:foo "bar"}]
+      (with-redefs [messaging/messaging-impl (atom atom-val)]
+        (is (= atom-val (messaging/get-implementation)))))))
+
+
+
+
+
 
 
