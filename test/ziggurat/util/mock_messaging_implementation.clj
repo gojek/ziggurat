@@ -39,3 +39,4 @@
   (process-messages-from-queue [impl queue-name count processing-fn] (process-messages-from-queue queue-name count processing-fn))
   (start-subscriber [impl prefetch-count wrapped-mapper-fn queue-name] (start-subscriber prefetch-count wrapped-mapper-fn queue-name))
   (consume-message [impl ch meta payload ack?] (consume-message ch meta payload ack?)))
+
