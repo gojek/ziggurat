@@ -27,15 +27,15 @@
        (mount/with-args args)
        (mount/start))))
 
-(defn- start-messaging [args]
+(defn- start-messaging-connection [args]
   (messaging/start-connection config/config (:stream-routes args)))
 
 (defn- start-messaging-consumers [args]
-  (start-messaging args)
+  (start-messaging-connection args)
   (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
 
 (defn- start-messaging-producers [args]
-  (start-messaging args)
+  (start-messaging-connection args)
   (messaging-producer/make-queues (get args :stream-routes)))
 
 (defn start-kafka-producers []
@@ -50,11 +50,11 @@
   (start-kafka-streams args))
 
 (defn start-management-apis [args]
-  (start-messaging args)
+  (start-messaging-connection args)
   (start* #{#'server/server} (dissoc args :actor-routes)))
 
 (defn start-server [args]
-  (start-messaging args)
+  (start-messaging-connection args)
   (start* #{#'server/server} args))
 
 (defn start-workers [args]
