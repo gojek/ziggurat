@@ -95,7 +95,8 @@
     (mount/start)                                           ;;TODO move it to mapper_test.clj, removal of this causes mapper_test to fail
     (messaging/start-connection config/config stream-routes)
     (f)
-    (messaging/stop-connection config/config stream-routes)))
+    (messaging/stop-connection config/config stream-routes)
+    (mount/stop)))
 
 (defn with-start-server* [stream-routes f]
   (mount-config)
