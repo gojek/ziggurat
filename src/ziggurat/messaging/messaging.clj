@@ -6,7 +6,7 @@
 
 (def messaging-impl (atom nil))
 
-(defn- get-implementation []
+(defn get-implementation []
   (if (nil? @messaging-impl)
     (throw (Exception. "Messaging Library is not initialized"))
     @messaging-impl))
