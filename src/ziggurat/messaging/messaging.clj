@@ -37,7 +37,7 @@
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
-   (create-and-bind-queue queue-name exchange-name nil))
+   (messaging-interface/create-and-bind-queue (get-implementation) queue-name exchange-name))
   ([queue-name exchange-name dead-letter-exchange]
    (messaging-interface/create-and-bind-queue (get-implementation) queue-name exchange-name dead-letter-exchange)))
 
