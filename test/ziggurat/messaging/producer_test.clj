@@ -265,7 +265,7 @@
 
 (deftest ^:integration make-queues-integration-tests
   (testing "it creates queues with topic entity from stream routes"
-    (with-open [ch (lch/open @rmqw/connection)]
+    (with-open [ch (lch/open (rmqw/get-connection))]
       (let [stream-routes         {:default {:handler-fn #(constantly :success)}}
 
             instant-queue-name    (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
@@ -293,7 +293,7 @@
         (le/delete ch dead-exchange-name))))
 
   (testing "it creates queues with suffixes in the range [1, retry-count] when exponential backoff is enabled"
-    (with-open [ch (lch/open @rmqw/connection)]
+    (with-open [ch (lch/open (rmqw/get-connection))]
       (let [stream-routes                   {:default {:handler-fn #(constantly :success)}}
             retry-count                     (get-in (ziggurat-config) [:retry :count])
             instant-queue-name              (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
@@ -334,7 +334,7 @@
             (is (= 0 @counter)))))
 
       (testing "it creates queues with topic entity for channels only"
-        (with-open [ch (lch/open @rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
                 instant-queue-suffix           (:queue-name (:instant (rabbitmq-config)))
                 instant-exchange-suffix        (:exchange-name (:instant (rabbitmq-config)))
@@ -369,7 +369,7 @@
                                                             :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
       (testing "it creates instant queues with topic entity for channels only"
-        (with-open [ch (lch/open @rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
                 instant-queue-suffix           (:queue-name (:instant (rabbitmq-config)))
                 instant-exchange-suffix        (:exchange-name (:instant (rabbitmq-config)))

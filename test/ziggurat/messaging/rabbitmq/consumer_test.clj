@@ -140,8 +140,8 @@
           mock-mapper-fn           (fn [message]
                                      (when (= message-payload message)
                                        (reset! is-mocked-mpr-fn-called? true)))]
-      (rmq-producer/create-and-bind-queue @rmqw/connection queue-name exchange-name false)
-      (rmq-producer/publish @rmqw/connection exchange-name message-payload nil)
+      (rmq-producer/create-and-bind-queue (rmqw/get-connection) queue-name exchange-name false)
+      (rmq-producer/publish (rmqw/get-connection) exchange-name message-payload nil)
       (rmqw/start-subscriber 1 mock-mapper-fn queue-name)
       (Thread/sleep 5000)
       (is (true? @is-mocked-mpr-fn-called?)))))
@@ -154,7 +154,7 @@
                                 (is (= message-arg message)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open @rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload] (lb/get ch prefixed-queue-name false)
@@ -172,7 +172,7 @@
             topic-entity-name    (name topic-entity)]
         (producer/publish-to-dead-queue message)
         (with-redefs [consumer/read-messages-from-queue (fn [_ _ _ _] nil)]
-          (with-open [ch (lch/open @rmqw/connection)]
+          (with-open [ch (lch/open (rmqw/get-connection))]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload] (lb/get ch prefixed-queue-name false)
@@ -189,7 +189,7 @@
                                 (throw (Exception. "exception message")))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open @rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload] (lb/get ch prefixed-queue-name false)
@@ -203,7 +203,7 @@
             processing-fn     (fn [_] ())
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open @rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)

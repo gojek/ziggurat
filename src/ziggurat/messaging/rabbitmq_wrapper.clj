@@ -10,42 +10,44 @@
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]))
 
-(def connection (atom nil))
+(def  connection (atom nil))
+
+(defn get-connection [] @connection)
 
 (defn start-connection [config stream-routes]
   (when (and (is-connection-required? (:ziggurat config) stream-routes)
-             (nil? @connection))
+             (nil? (get-connection)))
     (reset! connection (rmq-connection/start-connection config))))
 
 (defn stop-connection [config stream-routes]
   (when (and (is-connection-required? (:ziggurat config) stream-routes)
-             (not (nil? @connection)))
-    (rmq-connection/stop-connection @connection config)
+             (not (nil? (get-connection))))
+    (rmq-connection/stop-connection (get-connection) config)
     (reset! connection nil)))
 
 (defn publish
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-   (rmq-producer/publish @connection exchange message-payload expiration)))
+   (rmq-producer/publish (get-connection) exchange message-payload expiration)))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
    (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange]
-   (rmq-producer/create-and-bind-queue @connection queue-name exchange-name dead-letter-exchange)))
+   (rmq-producer/create-and-bind-queue (get-connection) queue-name exchange-name dead-letter-exchange)))
 
 (defn get-messages-from-queue
   ([queue-name ack?]
    (get-messages-from-queue queue-name ack? 1))
   ([queue-name ack? count]
-   (rmq-consumer/get-messages-from-queue @connection queue-name ack? count)))
+   (rmq-consumer/get-messages-from-queue (get-connection) queue-name ack? count)))
 
 (defn process-messages-from-queue [queue-name count processing-fn]
-  (rmq-consumer/process-messages-from-queue @connection queue-name count processing-fn))
+  (rmq-consumer/process-messages-from-queue (get-connection) queue-name count processing-fn))
 
 (defn start-subscriber [prefetch-count wrapped-mapper-fn queue-name]
-  (rmq-consumer/start-subscriber @connection prefetch-count wrapped-mapper-fn queue-name))
+  (rmq-consumer/start-subscriber (get-connection) prefetch-count wrapped-mapper-fn queue-name))
 
 (defn consume-message [ch meta payload ack?]
   (rmq-consumer/consume-message ch meta payload ack?))

@@ -3,7 +3,7 @@
             [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper  :as rmqw]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
             [ziggurat.tracer :refer [tracer]]
@@ -103,7 +103,7 @@
             retry-count         5
             message-payload     (assoc (gen-message-payload topic-entity) :retry-count 2)
             original-zig-config (ziggurat-config)
-            rmq-ch              (lch/open @connection)]
+            rmq-ch              (lch/open (rmqw/get-connection))]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :count] (constantly retry-count))
@@ -132,7 +132,7 @@
             retry-count         5
             message-payload     (assoc (assoc-in (gen-message-payload topic-entity) [:message :msg] "skip") :retry-count 2)
             original-zig-config (ziggurat-config)
-            rmq-ch              (lch/open @connection)]
+            rmq-ch              (lch/open (rmqw/get-connection))]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :count] (constantly retry-count))
@@ -160,7 +160,7 @@
             retry-count         5
             no-of-msgs          2
             original-zig-config (ziggurat-config)
-            rmq-ch              (lch/open @connection)]
+            rmq-ch              (lch/open (rmqw/get-connection))]
 
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :count] (constantly retry-count))
@@ -188,7 +188,7 @@
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
-            ch                  (lch/open @connection)
+            ch                  (lch/open (rmqw/get-connection))
             counter             (atom 0)]
 
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
@@ -204,7 +204,7 @@
   (testing "start subscribers should call start-subscriber* according to the product of worker and mapper-fns in stream-routes"
     (let [no-of-workers       3
           original-zig-config (ziggurat-config)
-          ch                  (lch/open @connection)
+          ch                  (lch/open (rmqw/get-connection))
           counter             (atom 0)
           stream-routes       {topic-entity {:handler-fn #(constantly nil)}
                                :test        {:handler-fn #(constantly nil)}}]
@@ -229,7 +229,7 @@
                                                :retry-limit        2
                                                :success-promise    success-promise})
           original-zig-config (ziggurat-config)
-          rmq-ch              (lch/open @connection)]
+          rmq-ch              (lch/open (rmqw/get-connection))]
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
                                       channel     channel-fn}}
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
@@ -256,7 +256,7 @@
                                                :retry-limit        2
                                                :success-promise    success-promise})
           original-zig-config (ziggurat-config)
-          rmq-ch              (lch/open @connection)]
+          rmq-ch              (lch/open (rmqw/get-connection))]
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
                                       channel     channel-fn}}
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
@@ -277,7 +277,7 @@
             retry-count         3
             message-payload     (assoc (gen-message-payload topic-entity) :retry-count 3)
             original-zig-config (ziggurat-config)
-            rmq-ch              (lch/open @connection)]
+            rmq-ch              (lch/open (rmqw/get-connection))]
         (.reset tracer)
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :count] (constantly retry-count))
