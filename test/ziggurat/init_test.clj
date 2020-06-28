@@ -13,10 +13,9 @@
 
 (def valid-modes-count 4)
 
-(defn- exp [x n]
-  (loop [acc 1 n n]
-    (if (zero? n) acc
-        (recur (* x acc) (dec n)))))
+(defn exp [x n]
+  (if (zero? n) 1
+      (* x (exp x (dec n)))))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
@@ -210,8 +209,4 @@
         (init/stop-workers)
         (is (= true @producer-has-stopped)))
       (mount/stop))))
-
-
-
-
 
