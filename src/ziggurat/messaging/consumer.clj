@@ -2,7 +2,7 @@
   (:require [ziggurat.mapper :as mpr]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config get-in-config]]
-            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
+            [ziggurat.messaging.messaging :as messaging]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]
             [clojure.tools.logging :as log]
@@ -40,7 +40,7 @@
         (assoc message-payload :retry-count retry-count)))))
 
 (defn read-messages-from-queue [queue-name topic-entity ack? count]
-  (let [messages (rmqw/get-messages-from-queue queue-name ack? count)]
+  (let [messages (messaging/get-messages-from-queue queue-name ack? count)]
     (for [message messages]
       (if-not (nil? message)
         (convert-to-message-payload message topic-entity)
@@ -56,7 +56,7 @@
            (read-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) topic-entity false count))))
 
 (defn process-messages-from-queue [queue-name count processing-fn]
-  (rmqw/process-messages-from-queue queue-name count processing-fn))
+  (messaging/process-messages-from-queue queue-name count processing-fn))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
@@ -70,9 +70,9 @@
   (when (get-in ziggurat-config [:retry :enabled])
     (dotimes [_ (get-in ziggurat-config [:jobs :instant :worker-count])]
       (let [queue-name (get-instant-queue-name topic-entity ziggurat-config)]
-        (rmqw/start-subscriber (get-in ziggurat-config [:jobs :instant :prefetch-count])
-                               (mpr/mapper-func mapper-fn channels)
-                               queue-name)))))
+        (messaging/start-subscriber (get-in ziggurat-config [:jobs :instant :prefetch-count])
+                                    (mpr/mapper-func mapper-fn channels)
+                                    queue-name)))))
 
 (defn start-channels-subscriber [channels topic-entity ziggurat-config]
   (doseq [channel channels]
@@ -80,9 +80,9 @@
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count] 0)]
         (let [queue-name (get-channel-instant-queue-name topic-entity channel-key ziggurat-config)]
-          (rmqw/start-subscriber 1
-                                 (mpr/channel-mapper-func channel-handler-fn channel-key)
-                                 queue-name))))))
+          (messaging/start-subscriber 1
+                                      (mpr/channel-mapper-func channel-handler-fn channel-key)
+                                      queue-name))))))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"

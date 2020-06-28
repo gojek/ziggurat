@@ -5,7 +5,8 @@
             [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.messaging.util :as util]
-            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw :refer [connection]]
+            [ziggurat.messaging.messaging :as messaging]
             [ziggurat.server :refer [server]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.producer :as producer]
@@ -61,10 +62,10 @@
   (:exchange-name (exchange-type (config/rabbitmq-config))))
 
 (defn delete-queues [stream-routes]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
-            channels (util/get-channel-names stream-routes topic-entity)]
+            channels         (util/get-channel-names stream-routes topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
         (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))
@@ -74,10 +75,10 @@
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :delay))))))))
 
 (defn delete-exchanges [stream-routes]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
-            channels (util/get-channel-names stream-routes topic-entity)]
+            channels         (util/get-channel-names stream-routes topic-entity)]
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :instant)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :dead-letter)))
         (le/delete ch (util/prefixed-queue-name topic-identifier (get-exchange-name :delay)))
@@ -86,16 +87,15 @@
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :dead-letter)))
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-exchange-name :delay))))))))
 
-(defn init-rabbit-mq [f]
+(defn init-messaging [f]
   (let [stream-routes {:default {:handler-fn #(constantly nil)
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (mount-tracer)
-    (->
-     (mount/only [#'connection])
-     (mount/with-args {:stream-routes stream-routes})
-     (mount/start))
+    (mount/start)                                           ;;TODO move it to mapper_test.clj, removal of this causes mapper_test to fail
+    (messaging/start-connection config/config stream-routes)
     (f)
+    (messaging/stop-connection config/config stream-routes)
     (mount/stop)))
 
 (defn with-start-server* [stream-routes f]

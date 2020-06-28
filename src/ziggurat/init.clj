@@ -4,7 +4,7 @@
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
             [ziggurat.config :refer [ziggurat-config] :as config]
-            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
+            [ziggurat.messaging.messaging :as messaging]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
@@ -27,15 +27,15 @@
        (mount/with-args args)
        (mount/start))))
 
-(defn- start-rabbitmq-connection [args]
-  (start* #{#'rmqw/connection} args))
+(defn- start-messaging-connection [args]
+  (messaging/start-connection config/config (:stream-routes args)))
 
-(defn- start-rabbitmq-consumers [args]
-  (start-rabbitmq-connection args)
+(defn- start-messaging-consumers [args]
+  (start-messaging-connection args)
   (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
 
-(defn- start-rabbitmq-producers [args]
-  (start-rabbitmq-connection args)
+(defn- start-messaging-producers [args]
+  (start-messaging-connection args)
   (messaging-producer/make-queues (get args :stream-routes)))
 
 (defn start-kafka-producers []
@@ -46,24 +46,24 @@
 
 (defn start-stream [args]
   (start-kafka-producers)
-  (start-rabbitmq-producers args)
+  (start-messaging-producers args)
   (start-kafka-streams args))
 
 (defn start-management-apis [args]
-  (start-rabbitmq-connection args)
+  (start-messaging-connection args)
   (start* #{#'server/server} (dissoc args :actor-routes)))
 
 (defn start-server [args]
-  (start-rabbitmq-connection args)
+  (start-messaging-connection args)
   (start* #{#'server/server} args))
 
 (defn start-workers [args]
   (start-kafka-producers)
-  (start-rabbitmq-producers args)
-  (start-rabbitmq-consumers args))
+  (start-messaging-producers args)
+  (start-messaging-consumers args))
 
-(defn- stop-rabbitmq-connection []
-  (mount/stop #'rmqw/connection))
+(defn- stop-messaging []
+  (messaging/stop-connection config/config (:stream-routes mount/args)))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))
@@ -72,21 +72,21 @@
   (mount/stop #'streams/stream))
 
 (defn stop-workers []
-  (stop-rabbitmq-connection)
+  (stop-messaging)
   (stop-kafka-producers))
 
 (defn stop-server []
   (mount/stop #'server/server)
-  (stop-rabbitmq-connection))
+  (stop-messaging))
 
 (defn stop-stream []
   (stop-kafka-streams)
-  (stop-rabbitmq-connection)
+  (stop-messaging)
   (stop-kafka-producers))
 
 (defn stop-management-apis []
   (mount/stop #'server/server)
-  (stop-rabbitmq-connection))
+  (stop-messaging))
 
 (def valid-modes-fns
   {:api-server     {:start-fn start-server :stop-fn stop-server}
@@ -115,9 +115,9 @@
 (defn stop-common-states []
   (mount/stop #'config/config
               #'metrics/statsd-reporter
-              #'rmqw/connection
               #'nrepl-server/server
-              #'tracer/tracer))
+              #'tracer/tracer)
+  (stop-messaging))
 
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"

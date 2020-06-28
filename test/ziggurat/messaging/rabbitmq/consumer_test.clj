@@ -16,13 +16,13 @@
             [ziggurat.mapper :as mpr])
   (:import (com.rabbitmq.client Channel Connection)))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+(use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging]))
 
 (def topic-entity :default)
 
 (defn- gen-message-payload [topic-entity]
-  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
+  {:message      {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
    :topic-entity topic-entity})
 
 (defn- create-mock-channel [] (reify Channel
@@ -128,8 +128,8 @@
           mock-mapper-fn           (fn [message]
                                      (when (= message-payload message)
                                        (reset! is-mocked-mpr-fn-called? true)))]
-      (rmq-producer/create-and-bind-queue connection queue-name exchange-name false)
-      (rmq-producer/publish connection exchange-name message-payload nil)
+      (rmq-producer/create-and-bind-queue (rmqw/get-connection) queue-name exchange-name false)
+      (rmq-producer/publish (rmqw/get-connection) exchange-name message-payload nil)
       (rmqw/start-subscriber 1 mock-mapper-fn queue-name)
       (Thread/sleep 5000)
       (is (true? @is-mocked-mpr-fn-called?)))))
@@ -137,33 +137,33 @@
 (deftest ^:integration process-message-test
   (testing "process-message function should ack message after once processing finishes"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
-            processing-fn (fn [message-arg]
-                            (is (= message-arg message)))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [message-arg]
+                                (is (= message-arg message)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
-                [meta payload]      (lb/get ch prefixed-queue-name false)
+                [meta payload] (lb/get ch prefixed-queue-name false)
                 _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message nil)))))))
 
   (testing "process-message function not process a message if convert-message returns nil"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
+      (let [message              (gen-message-payload topic-entity)
             processing-fn-called (atom false)
-            processing-fn (fn [message-arg]
-                            (if (nil? message-arg)
-                              (reset! processing-fn-called true)))
-            topic-entity-name (name topic-entity)]
+            processing-fn        (fn [message-arg]
+                                   (if (nil? message-arg)
+                                     (reset! processing-fn-called true)))
+            topic-entity-name    (name topic-entity)]
         (producer/publish-to-dead-queue message)
         (with-redefs [consumer/read-messages-from-queue (fn [_ _ _ _] nil)]
-          (with-open [ch (lch/open rmqw/connection)]
+          (with-open [ch (lch/open (rmqw/get-connection))]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
-                  [meta payload]      (lb/get ch prefixed-queue-name false)
+                  [meta payload] (lb/get ch prefixed-queue-name false)
                   _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= false @processing-fn-called))
@@ -171,31 +171,31 @@
 
   (testing "process-message function should reject and re-queue a message if processing fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
-            processing-fn (fn [message-arg]
-                            (is (= message-arg message))
-                            (throw (Exception. "exception message")))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [message-arg]
+                                (is (= message-arg message))
+                                (throw (Exception. "exception message")))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
-                [meta payload]      (lb/get ch prefixed-queue-name false)
+                [meta payload] (lb/get ch prefixed-queue-name false)
                 _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message message)))))))
 
   (testing "process-message function should reject and discard a message if message conversion fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
-            processing-fn (fn [_] ())
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [_] ())
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open rmqw/connection)]
+        (with-open [ch (lch/open (rmqw/get-connection))]
           (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
-                  [meta payload]      (lb/get ch prefixed-queue-name false)
+                  [meta payload] (lb/get ch prefixed-queue-name false)
                   _                   (rmq-cons/process-message-from-queue ch meta payload processing-fn)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= consumed-message nil)))))))))
@@ -204,12 +204,12 @@
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
     (let [message                   {:foo "bar"}
           expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 0)
-          consumed-message (rmq-cons/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
+          consumed-message          (rmq-cons/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
           converted-message-payload (consumer/convert-to-message-payload consumed-message "default")]
       (is (= converted-message-payload expected-message-payload))))
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as it exists in the message"
     (let [message                   {:foo "bar" :retry-count 4}
           expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 4)
-          consumed-message (rmq-cons/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
+          consumed-message          (rmq-cons/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
           converted-message-payload (consumer/convert-to-message-payload consumed-message "default")]
       (is (= converted-message-payload expected-message-payload)))))
