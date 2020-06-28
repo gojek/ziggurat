@@ -116,7 +116,8 @@
   (mount/stop #'config/config
               #'metrics/statsd-reporter
               #'nrepl-server/server
-              #'tracer/tracer))
+              #'tracer/tracer)
+  (stop-messaging))
 
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"

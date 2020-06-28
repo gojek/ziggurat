@@ -44,9 +44,10 @@
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= 8 @result))))))
 
-(deftest stop-calls-idempotentcy-test
+(deftest stop-calls-idempotency-test
   (testing "The stop function should be idempotent"
-    (let [result (atom 1)]
+    (let [result (atom 1)
+          stop-connection-internal-call-count 1]
       (with-redefs [streams/start-streams     (constantly nil)
                     streams/stop-streams      (constantly nil)
                     messaging/stop-connection (fn [_ _] (reset! result (* @result 2)))
@@ -54,7 +55,7 @@
                     tracer/create-tracer      (fn [] (MockTracer.))]
         (init/start #() {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
-        (is (= (* 4 (exp 2 valid-modes-count)) @result))))))
+        (is (= (* 4 (exp 2 (+ stop-connection-internal-call-count valid-modes-count))) @result))))))
 
 (deftest start-calls-make-queues-test
   (testing "Start calls make queues"
