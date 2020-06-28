@@ -17,7 +17,7 @@
   ([queue-name exchange-name dead-letter-exchange] nil))
 
 (defn get-messages-from-queue
-  ([queue-name ack?] nil)
+  ([queue-name ack?] (get-messages-from-queue queue-name ack? 1))
   ([queue-name ack? count] nil))
 
 (defn process-messages-from-queue [queue-name count processing-fn] nil)
