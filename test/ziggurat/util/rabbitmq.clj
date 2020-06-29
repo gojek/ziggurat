@@ -12,7 +12,7 @@
   (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
@@ -21,7 +21,7 @@
         nil))))
 
 (defn- get-msg-from-rabbitmq-without-ack [queue-name topic-name]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open @connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
@@ -67,13 +67,13 @@
 (defn get-message-from-retry-queue [topic sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         delay-queue-name (delay-queue-name topic queue-name)
-        queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
+        queue-name       (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn get-message-from-channel-retry-queue [topic channel sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         delay-queue-name (delay-queue-name (rutil/with-channel-name topic channel) queue-name)
-        queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
+        queue-name       (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn close [^Channel channel]

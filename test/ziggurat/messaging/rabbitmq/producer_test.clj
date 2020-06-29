@@ -10,7 +10,7 @@
   (:import (com.rabbitmq.client Channel Connection)
            (org.apache.kafka.common.header Header)))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+(use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging]))
 
 (defn- create-mock-channel [] (reify Channel
