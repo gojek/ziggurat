@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.3 - 2020-06-29
+- Makes messaging implementation configurable
+- Adds a new protocol for Messaging
+
 ## 3.3.1-alpha.2 - 2020-06-23
 - Refactors rabbitmq specific logic to the messaging.rabbitmq package 
 - Adds unit tests for rabbitmq specific namespaces
