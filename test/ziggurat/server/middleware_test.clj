@@ -9,7 +9,8 @@
   (testing "should publish http-server metrics"
     (let [increment-count-called (atom false)
           request-uri            "/ping"
-          request                {:uri request-uri}
+          request-method         :get
+          request                {:uri request-uri :request-method request-method}
           response-status        404
           response               {:status response-status}
           handler                (fn [request-arg] response)]
@@ -18,6 +19,7 @@
                                                    (is (= "http-server" (first metrics-namespaces)))
                                                    (is (= "requests-served" (second metrics-namespaces)))
                                                    (is (= "count" metrics))
+                                                   (is (= (name request-method) (:request-method additional-tags)))
                                                    (is (= request-uri (:request-uri additional-tags)))
                                                    (is (= (str response-status) (:response-status additional-tags))))
                                                 (swap! increment-count-called not)))]

@@ -37,10 +37,11 @@
 
 (defn wrap-with-metrics [handler]
   (fn [request]
-    (let [response          (handler request)
-          request-uri       (:uri request)
-          response-status   (:status response)]
-      (metrics/increment-count ["http-server" "requests-served"] "count" {:request-uri request-uri :response-status (str response-status)})
+    (let [response (handler request)
+          tags     {:request-method  (name (:request-method request))
+                    :request-uri     (:uri request)
+                    :response-status (str (:status response))}]
+      (metrics/increment-count ["http-server" "requests-served"] "count" tags)
       response)))
 
 (defn- swagger-enabled? []
