@@ -1,7 +1,6 @@
 (ns ziggurat.middleware.default-test
   (:require [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
             [protobuf.core :as proto]
-            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw])
@@ -82,29 +81,27 @@
 
 (deftest protobuf->hash-test-alpha-and-deprecated
   (testing "Deprecated protobuf deserializer"
-    (with-redefs [ziggurat-config (fn [] {:alpha-features {:protobuf-middleware {:enabled false}}})]
-      (common-protobuf->hash-test)
-      (testing "When alpha feature is disabled use the old deserializer function"
-        (let [deserialize-message-called? (atom false)
-              topic-entity-name           "test"
-              message                     {:id   7
-                                           :path "/photos/h2k3j4h9h23"}
-              proto-class                 Example$Photo
-              proto-message               (proto/->bytes (proto/create Example$Photo message))]
-          (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
-            ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
-            (is (true? @deserialize-message-called?)))))))
+    (common-protobuf->hash-test)
+    (testing "When alpha feature is disabled use the old deserializer function"
+      (let [deserialize-message-called? (atom false)
+            topic-entity-name           "test"
+            message                     {:id   7
+                                         :path "/photos/h2k3j4h9h23"}
+            proto-class                 Example$Photo
+            proto-message               (proto/->bytes (proto/create Example$Photo message))]
+        (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
+          ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
+          (is (true? @deserialize-message-called?))))))
   (testing "Alpha protobuf deserializer"
-    (with-redefs [ziggurat.config/ziggurat-config (fn [] {:alpha-features {:protobuf-middleware {:enabled true}}})]
-      (common-protobuf->hash-test)
-      (testing "When alpha feature is enabled use the new deserializer function"
-        (let [deserialize-message-called? (atom false)
-              topic-entity-name           "test"
-              message                     {:id   7
-                                           :path "/photos/h2k3j4h9h23"}
-              proto-class                 Example$Photo
-              proto-message               (proto/->bytes (proto/create Example$Photo message))]
-          (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
+    (common-protobuf->hash-test)
+    (testing "When alpha feature is enabled use the new deserializer function"
+      (let [deserialize-message-called? (atom false)
+            topic-entity-name           "test"
+            message                     {:id   7
+                                         :path "/photos/h2k3j4h9h23"}
+            proto-class                 Example$Photo
+            proto-message               (proto/->bytes (proto/create Example$Photo message))]
+        (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
 
-            ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
-            (is (true? @deserialize-message-called?))))))))
+          ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
+          (is (true? @deserialize-message-called?)))))))
