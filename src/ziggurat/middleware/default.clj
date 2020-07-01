@@ -2,7 +2,6 @@
   (:require [protobuf.impl.flatland.mapdef :as protodef]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [get-in-config ziggurat-config]]
-            [flatland.protobuf.core :as proto]
             [ziggurat.metrics :as metrics]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
@@ -15,15 +14,12 @@
   [message proto-class topic-entity-name]
   (if-not (map? message) ;; TODO: we should have proper dispatch logic per message type (not like this)
     (try
-      (let [[proto-define-fn proto-load-fn proto-schema-fn] (if (true? (get-in-config [:alpha-features :protobuf-middleware :enabled]))
-                                                              [protodef/mapdef protodef/parse protodef/mapdef->schema]
-                                                              [proto/protodef proto/protobuf-load proto/protobuf-schema])
-            proto-klass                                     (proto-define-fn proto-class)
-            loaded-proto                                    (proto-load-fn proto-klass message)
-            proto-keys                                      (-> proto-klass
-                                                                proto-schema-fn
-                                                                :fields
-                                                                keys)]
+      (let [proto-klass  (protodef/mapdef proto-class)
+            loaded-proto (protodef/parse proto-klass message)
+            proto-keys   (-> proto-klass
+                             protodef/mapdef->schema
+                             :fields
+                             keys)]
         (select-keys loaded-proto proto-keys))
       (catch Throwable e
         (let [service-name      (:app-name (ziggurat-config))
