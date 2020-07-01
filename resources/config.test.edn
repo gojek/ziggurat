@@ -8,7 +8,6 @@
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
             :metrics              {:constructor "ziggurat.dropwizard-metrics-wrapper/->DropwizardMetrics"}
-            :alpha-features       {:protobuf-middleware {:enabled false}}
             :sentry               {:enabled                   [false :bool]
                                    :dsn                       "dummy"
                                    :worker-count              [10 :int]

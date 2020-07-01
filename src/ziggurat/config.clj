@@ -18,7 +18,6 @@
                                                        :worker-count              10
                                                        :queue-size                10
                                                        :thread-termination-wait-s 1}
-                                :alpha-features       {:protobuf-middleware {:enabled false}}
                                 :rabbit-mq-connection {:port            5672
                                                        :username        "guest"
                                                        :password        "guest"
