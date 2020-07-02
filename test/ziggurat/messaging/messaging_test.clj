@@ -4,14 +4,15 @@
             [ziggurat.util.mock-messaging-implementation]
             [ziggurat.util.mock-messaging-implementation :as mock-messaging]
             [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.messaging.util :as util]
             [ziggurat.config :as config])
   (:import (ziggurat.messaging.rabbitmq_wrapper RabbitMQMessaging)
            (ziggurat.util.mock_messaging_implementation MockMessaging)))
 
 (defn reset-impl [] (reset! messaging/messaging-impl nil))
 
-(def ziggurat-config-for-mock-impl  (constantly {:messaging
-                                                 {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"}}))
+(def ziggurat-config-for-mock-impl (constantly {:messaging
+                                                {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"}}))
 
 (deftest initialise-messaging-library-test
   (testing "it should default to RabbitMQMessaging library if no implementation is provided"
@@ -43,16 +44,30 @@
         (reset-impl)))))
 
 (deftest start-connection-test
-  (testing "it should call the mock-messaging/start-connection function with the correct arguments"
+  (testing "it should call the mock-messaging/start-connection function with the correct arguments when is-connection-required? is true"
     (let [test-stream-routes       {:default {:handler-fn (constantly nil)}}
           start-connection-called? (atom false)]
       (with-redefs [ziggurat-config                 ziggurat-config-for-mock-impl
+                    util/is-connection-required?    (fn [_ _] true)
                     mock-messaging/start-connection (fn [config stream-routes]
                                                       (when (and (= config config/config)
                                                                  (= test-stream-routes stream-routes))
                                                         (reset! start-connection-called? true)))]
         (messaging/start-connection config/config test-stream-routes)
         (is (= true @start-connection-called?))
+        (reset-impl))))
+
+  (testing "it should not call the mock-messaging/start-connection function with the correct arguments when is-connection-required? is false"
+    (let [test-stream-routes       {:default {:handler-fn (constantly nil)}}
+          start-connection-called? (atom false)]
+      (with-redefs [ziggurat-config                 ziggurat-config-for-mock-impl
+                    util/is-connection-required? (fn [_ _] false)
+                    mock-messaging/start-connection (fn [config stream-routes]
+                                                      (when (and (= config config/config)
+                                                                 (= test-stream-routes stream-routes))
+                                                        (reset! start-connection-called? true)))]
+        (messaging/start-connection config/config test-stream-routes)
+        (is (= false @start-connection-called?))
         (reset-impl)))))
 
 (deftest stop-connection-test
@@ -107,14 +122,14 @@
 (deftest publish-test
   (testing "it should call `mock-messaging/publish` without expiration"
     (let [test-exchange-name   "test-exchange"
-          stream-routes                 {:default {:handler-fn (constantly nil)}}
+          stream-routes        {:default {:handler-fn (constantly nil)}}
           test-message-payload {:foo "bar"}
           publish-called?      (atom false)]
       (with-redefs [mock-messaging/publish (fn [exchange message-payload]
                                              (when (and (= exchange test-exchange-name)
                                                         (= message-payload test-message-payload))
                                                (reset! publish-called? true)))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config        ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/publish test-exchange-name test-message-payload)
@@ -123,7 +138,7 @@
 
   (testing "It should call `mock-messaging/publish` with expiration"
     (let [test-exchange-name   "test-exchange"
-          stream-routes                 {:default {:handler-fn (constantly nil)}}
+          stream-routes        {:default {:handler-fn (constantly nil)}}
           test-message-payload {:foo "bar"}
           test-expiration      "42"
           publish-called?      (atom false)]
@@ -132,7 +147,7 @@
                                                         (= message-payload test-message-payload)
                                                         (= expiration test-expiration))
                                                (reset! publish-called? true)))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config        ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/publish test-exchange-name test-message-payload test-expiration)
@@ -142,13 +157,13 @@
 (deftest get-messages-from-queue-test
   (testing "it should call `mock-messaging/get-messages-from-queue` without `count`"
     (let [test-queue-name                 "test-queue"
-          stream-routes                 {:default {:handler-fn (constantly nil)}}
+          stream-routes                   {:default {:handler-fn (constantly nil)}}
           get-messages-from-queue-called? (atom false)]
       (with-redefs [mock-messaging/get-messages-from-queue (fn [queue-name ack?]
                                                              (when (and (= test-queue-name queue-name)
                                                                         (= ack? true)))
                                                              (reset! get-messages-from-queue-called? true))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config                        ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/get-messages-from-queue test-queue-name true)
@@ -157,14 +172,14 @@
   (testing "it should call `mock-messaging/get-messages-from-queue` when `count` is specified"
     (let [test-queue-name                 "test-queue"
           test-count                      5
-          stream-routes                 {:default {:handler-fn (constantly nil)}}
+          stream-routes                   {:default {:handler-fn (constantly nil)}}
           get-messages-from-queue-called? (atom false)]
       (with-redefs [mock-messaging/get-messages-from-queue (fn [queue-name ack? count]
                                                              (when (and (= test-queue-name queue-name)
                                                                         (= test-count count)
                                                                         (= ack? true)))
                                                              (reset! get-messages-from-queue-called? true))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config                        ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/get-messages-from-queue test-queue-name true test-count)
@@ -175,14 +190,14 @@
     (let [test-queue                          "test-queue"
           test-count                          5
           test-processing-fn                  (constantly {:foo "bar"})
-          stream-routes                 {:default {:handler-fn (constantly nil)}}
+          stream-routes                       {:default {:handler-fn (constantly nil)}}
           process-messages-from-queue-called? (atom false)]
       (with-redefs [mock-messaging/process-messages-from-queue (fn [queue-name count processing-fn]
                                                                  (when (and (= queue-name test-queue)
                                                                             (= count test-count)
                                                                             (= {:foo "bar"} (processing-fn)))
                                                                    (reset! process-messages-from-queue-called? true)))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config                            ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/process-messages-from-queue test-queue test-count test-processing-fn)
@@ -194,14 +209,14 @@
     (let [test-prefetch-count      5
           test-queue-name          "test-queue"
           test-mapper-fn           (constantly {:foo "bar"})
-          stream-routes                 {:default {:handler-fn (constantly nil)}}
+          stream-routes            {:default {:handler-fn (constantly nil)}}
           start-subscriber-called? (atom false)]
       (with-redefs [mock-messaging/start-subscriber (fn [prefetch-count wrapped-mapper-fn queue-name]
                                                       (when (and (= queue-name test-queue-name)
                                                                  (= test-prefetch-count prefetch-count)
                                                                  (= (wrapped-mapper-fn) {:foo "bar"}))
                                                         (reset! start-subscriber-called? true)))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config                 ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/start-subscriber test-prefetch-count test-mapper-fn test-queue-name)
@@ -209,15 +224,15 @@
 
 (deftest consume-message-test
   (testing "it should call `mock-messaging/consume-message` with the correct arguments"
-    (let [test-meta    {:meta "bar"}
-          test-payload {:foo "bar"}
-          test-ack?    false
-          stream-routes                 {:default {:handler-fn (constantly nil)}}]
-      (with-redefs [mock-messaging/consume-message (fn [_ meta  payload ack?]
+    (let [test-meta     {:meta "bar"}
+          test-payload  {:foo "bar"}
+          test-ack?     false
+          stream-routes {:default {:handler-fn (constantly nil)}}]
+      (with-redefs [mock-messaging/consume-message (fn [_ meta payload ack?]
                                                      (when (and (= meta test-meta)
                                                                 (= payload test-payload)
                                                                 (= ack? test-ack?))))
-                    ziggurat-config ziggurat-config-for-mock-impl]
+                    ziggurat-config                ziggurat-config-for-mock-impl]
         (messaging/start-connection config/config stream-routes)
         (messaging/stop-connection config/config stream-routes)
         (messaging/consume-message nil test-meta test-payload test-ack?)
