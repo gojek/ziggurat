@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.4 - 2020-07-02
+- Removes the use of the old protobuf library in favor of the new one
+
 ## 3.3.1-alpha.3 - 2020-06-29
 - Makes messaging implementation configurable
 - Adds a new protocol for Messaging
