@@ -10,18 +10,16 @@
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]))
 
-(def  connection (atom nil))
+(def connection (atom nil))
 
 (defn get-connection [] @connection)
 
 (defn start-connection [config stream-routes]
-  (when (and (is-connection-required? (:ziggurat config) stream-routes)
-             (nil? (get-connection)))
+  (when (nil? (get-connection))
     (reset! connection (rmq-connection/start-connection config))))
 
 (defn stop-connection [config stream-routes]
-  (when (and (is-connection-required? (:ziggurat config) stream-routes)
-             (not (nil? (get-connection))))
+  (when (not (nil? (get-connection)))
     (rmq-connection/stop-connection (get-connection) config)
     (reset! connection nil)))
 

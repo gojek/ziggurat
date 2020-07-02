@@ -15,7 +15,7 @@
 (defn reset-connection-atom [] (reset! rmqw/connection nil))
 
 (deftest start-connection-test
-  (testing "start-connection should call the `rmq-connection/start-connection` and set the connection atom"
+  (testing "start-connection should call the `rmq-connection/start-connection` and set the connection atom only if it's nil"
     (let [default-config                config/config
           start-connection-called-count (atom false)
           stream-routes                 {:default {:handler-fn (constantly nil)}}
@@ -25,19 +25,7 @@
         (rmqw/start-connection config stream-routes)
         (is (= true @start-connection-called-count))
         (is (= {:foo "bar"} (rmqw/get-connection))))
-      (reset-connection-atom)))
-
-  (testing "start-connection should not call `rmq-connection/start-connection` function if retries are disabled and connection atom is nil"
-    (let [default-config           config/config
-          start-connection-called? (atom false)
-          stream-routes            {:default {:handler-fn (constantly nil)}}
-          config                   (assoc default-config
-                                          :ziggurat {:retry {:enabled false}})]
-      (with-redefs [rmq-connection/start-connection (fn [_] (reset! start-connection-called? true))]
-        (rmqw/start-connection config stream-routes)
-        (is (= false @start-connection-called?))
-        (is (= (rmqw/get-connection) nil))))
-    (reset-connection-atom)))
+      (reset-connection-atom))))
 
 (deftest stop-connection-test
   (testing "stop-connection should stop the connection if retries are enabled and connection is not nil"
