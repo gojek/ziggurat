@@ -5,11 +5,14 @@
             [ziggurat.util.mock-messaging-implementation :as mock-messaging]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.util :as util]
-            [ziggurat.config :as config])
+            [ziggurat.config :as config]
+            [ziggurat.fixtures :as fix])
   (:import (ziggurat.messaging.rabbitmq_wrapper RabbitMQMessaging)
            (ziggurat.util.mock_messaging_implementation MockMessaging)))
 
 (defn reset-impl [] (reset! messaging/messaging-impl nil))
+
+(use-fixtures :once  fix/mount-only-config)
 
 (def ziggurat-config-for-mock-impl (constantly {:messaging
                                                 {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"}}))
@@ -68,7 +71,69 @@
                                                         (reset! start-connection-called? true)))]
         (messaging/start-connection config/config test-stream-routes)
         (is (= false @start-connection-called?))
-        (reset-impl)))))
+        (reset-impl))))
+
+  (testing "if retry is disabled and channels are not present it should not start the connection"
+    (let [start-connection-called?       (atom false)
+          stream-routes             {:default {:handler-fn (constantly :success)}}
+          overridden-default-config (assoc config/config
+                                           :ziggurat (-> (ziggurat-config)
+                                                         (assoc :messaging {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"})
+                                                         (assoc :retry {:enabled false})))]
+      (with-redefs [mock-messaging/start-connection   (fn [_ _]
+                                                        (reset! start-connection-called? true))
+                    config/config overridden-default-config]
+        (messaging/start-connection config/config stream-routes)
+        (messaging/stop-connection config/config stream-routes)
+        (is (not @start-connection-called?)))))
+
+  (testing "if retry is disabled and channels are present it should start connection"
+    (let [start-connection-called?       (atom false)
+          stream-routes             {:default   {:handler-fn (constantly :channel-1)
+                                                 :channel-1  (constantly :success)}
+                                     :default-1 {:handler-fn (constantly :channel-3)
+                                                 :channel-3  (constantly :success)}}
+          overridden-default-config (assoc config/config
+                                           :ziggurat (assoc (ziggurat-config)
+                                                            :retry {:enabled false}
+                                                            :messaging {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"}))]
+      (with-redefs [messaging/start-connection   (fn [_ _]
+                                                   (reset! start-connection-called? true))
+                    config/config overridden-default-config]
+        (messaging/start-connection config/config stream-routes)
+        (messaging/stop-connection config/config stream-routes)
+        (is @start-connection-called?))))
+
+  (testing "if retry is disabled and channels are present it should create connection"
+    (let [start-connection-called? (atom false)
+          stream-routes          {:default   {:handler-fn (constantly :channel-1)
+                                              :channel-1  (constantly :success)}
+                                  :default-1 {:handler-fn (constantly :channel-3)
+                                              :channel-3  (constantly :success)}}
+          overridden-config      (assoc config/config
+                                        :ziggurat (assoc (ziggurat-config)
+                                                         :messaging {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"}
+                                                         :retry {:enabled false}))]
+      (with-redefs [mock-messaging/start-connection (fn [_ _]
+                                                      (reset! start-connection-called? true))
+                    config/config              overridden-config]
+        (messaging/start-connection config/config stream-routes)
+        (messaging/stop-connection config/config stream-routes)
+        (is @start-connection-called?))))
+
+  (testing "if retry is enabled and channels are not present it should create connection"
+    (let [start-connection-called?       (atom false)
+          stream-routes             {:default {:handler-fn (constantly :success)}}
+          overridden-default-config (assoc config/config
+                                           :ziggurat (assoc (ziggurat-config)
+                                                            :messaging {:constructor "ziggurat.util.mock-messaging-implementation/->MockMessaging"}
+                                                            :retry {:enabled true}))]
+      (with-redefs [mock-messaging/start-connection   (fn [_ _]
+                                                        (reset! start-connection-called? true))
+                    config/config overridden-default-config]
+        (messaging/start-connection config/config stream-routes)
+        (is @start-connection-called?)
+        (messaging/stop-connection config/config stream-routes)))))
 
 (deftest stop-connection-test
   (testing "it should mock-messaging/stop-connection function with the correct arguments"
