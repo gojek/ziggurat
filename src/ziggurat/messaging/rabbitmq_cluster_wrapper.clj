@@ -1,6 +1,5 @@
 (ns ziggurat.messaging.rabbitmq-cluster-wrapper
   (:require [ziggurat.messaging.rabbitmq.cluster.connection :as rmq-cluster-conn]
-            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
             [ziggurat.messaging.rabbitmq.cluster.producer :as rmqc-producer]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]))
