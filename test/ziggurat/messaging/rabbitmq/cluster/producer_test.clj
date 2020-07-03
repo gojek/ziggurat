@@ -17,8 +17,8 @@
 
 (def rmq-cluster-config {:hosts "localhost"
                          :port 5672
-                         :username "guest"
-                         :password "guest"
+                         :username "rabbit"
+                         :password "rabbit"
                          :channel-timeout 2000
                          :ha-mode "all"
                          :ha-sync-mode "automatic"})
@@ -143,6 +143,9 @@
                                    (reset! bind-called? true)))
                     lh/set-policy (fn [^String vhost ^String name policy]
                                     (when (and (= "/" vhost)
+                                               (= lh/*endpoint* "http://localhost:15672")
+                                               (= lh/*username* "rabbit")
+                                               (= lh/*password* "rabbit")
                                                (= ha-policy-name name)
                                                (= policy ha-policy-body))
                                       (reset! http-called? true)))]
@@ -185,6 +188,9 @@
                     lh/set-policy (fn [^String vhost ^String name policy]
                                     (when (and (= "/" vhost)
                                                (= ha-policy-name name)
+                                               (= lh/*endpoint* "http://localhost:15672")
+                                               (= lh/*username* "rabbit")
+                                               (= lh/*password* "rabbit")
                                                (= policy ha-policy-body))
                                       (reset! http-called? true)))]
         (rmc-prod/create-and-bind-queue rmq-cluster-config nil queue-name exchange-name dead-letter-exchange-name))
