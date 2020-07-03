@@ -7,14 +7,18 @@
 
 (def connection (atom nil))
 
+(def rabbitmq-cluster-config (atom nil))
+
 (defn get-connection [] @connection)
 
 (defn start-connection [config stream-routes]
   (when (nil? (get-connection))
+    (reset! rabbitmq-cluster-config (get-in config [:ziggurat :rabbit-mq-connection]))
     (reset! connection (rmq-cluster-conn/start-connection config))))
 
 (defn stop-connection [config stream-routes]
   (when (not (nil? (get-connection)))
+    (reset! rabbitmq-cluster-config nil)
     (rmq-cluster-conn/stop-connection (get-connection) config)
     (reset! connection nil)))
 
@@ -22,13 +26,13 @@
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-   (rmq-producer/publish (get-connection) exchange message-payload expiration)))
+   (rmqc-producer/publish (get-connection) exchange message-payload expiration)))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
    (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange]
-   (rmqc-producer/create-and-bind-queue (get-connection) queue-name exchange-name dead-letter-exchange)))
+   (rmqc-producer/create-and-bind-queue @rabbitmq-cluster-config (get-connection) queue-name exchange-name dead-letter-exchange)))
 
 (defn get-messages-from-queue
   ([queue-name ack?]
