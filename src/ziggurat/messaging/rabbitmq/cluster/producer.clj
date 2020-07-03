@@ -2,10 +2,12 @@
   (:require [clojure.tools.logging :as log]
             [langohr.channel :as lch]
             [langohr.basic :as lb]
+            [langohr.http :as lh]
             [taoensso.nippy :as nippy]
             [langohr.exchange :as le]
             [ziggurat.messaging.rabbitmq.retry :refer :all]
             [langohr.queue :as lq]
+            [clojure.string :as str]
             [clojure.set :as set])
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
@@ -38,6 +40,20 @@
        (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type  :rabbitmq-publish-failure
                                                                                    :error e}))))))
 
+(defn set-ha-policy [queue-name cluster-config]
+  (let [hosts (atom (str/split (:hosts cluster-config) #","))]
+    (with-retry {:count (count @hosts)
+                 :wait 50
+                 :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
+      (binding [lh/*endpoint* (str "http://" (ffirst (swap-vals! hosts rest)) ":" (:admin-port cluster-config))
+                lh/*username* (:username cluster-config)
+                lh/*password* (:password cluster-config)]
+        (lh/set-policy "/" (str queue-name "_ha_policy")
+                       {:apply-to "all"
+                        :pattern (str "^" queue-name "$")
+                        :definition {:ha-mode (:ha-mode cluster-config)
+                                     :ha-sync-mode (:ha-sync-mode cluster-config)}})))))
+
 (defn- declare-exchange [ch exchange]
   (le/declare ch exchange "fanout" {:durable true :auto-delete false})
   (log/info "Declared exchange - " exchange))
@@ -51,7 +67,7 @@
   (log/infof "Bound queue %s to exchange %s" queue exchange))
 
 (defn create-and-bind-queue
-  ([connection queue-name exchange-name dead-letter-exchange]
+  ([cluster-config connection queue-name exchange-name dead-letter-exchange]
    (try
      (let [props (if dead-letter-exchange
                    {"x-dead-letter-exchange" dead-letter-exchange}
@@ -59,7 +75,8 @@
        (let [ch (lch/open connection)]
          (create-queue queue-name props ch)
          (declare-exchange ch exchange-name)
-         (bind-queue-to-exchange ch queue-name exchange-name)))
+         (bind-queue-to-exchange ch queue-name exchange-name)
+         (set-ha-policy queue-name cluster-config)))
      (catch Exception e
        (log/error e "Error while declaring RabbitMQ queues")
        (throw e)))))
