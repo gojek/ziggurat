@@ -50,6 +50,8 @@
   (lq/bind ch queue exchange)
   (log/infof "Bound queue %s to exchange %s" queue exchange))
 
+(defn set-ha-policies [])
+
 (defn create-and-bind-queue
   ([connection queue-name exchange-name dead-letter-exchange]
    (try

@@ -1,6 +1,7 @@
 (ns ziggurat.messaging.rabbitmq-cluster-wrapper
   (:require [ziggurat.messaging.rabbitmq.cluster.connection :as rmq-cluster-conn]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
+            [ziggurat.messaging.rabbitmq.cluster.producer :as rmqc-producer]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]))
 
@@ -27,7 +28,7 @@
   ([queue-name exchange-name]
    (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange]
-   (rmq-producer/create-and-bind-queue (get-connection) queue-name exchange-name dead-letter-exchange)))
+   (rmqc-producer/create-and-bind-queue (get-connection) queue-name exchange-name dead-letter-exchange)))
 
 (defn get-messages-from-queue
   ([queue-name ack?]
