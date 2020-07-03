@@ -36,8 +36,8 @@
 
 (defn create-connection [config tracer-enabled]
   (if tracer-enabled
-    (create-traced-clustered-connection (assoc config :hosts (transform-host-str (:hosts config) (:port config) tracer-enabled)))
-    (rmq/connect (assoc config :hosts (transform-host-str (:hosts config) (:port config) tracer-enabled)))))
+    (create-traced-clustered-connection (update-in config [:hosts]  transform-host-str (:port config) tracer-enabled))
+    (rmq/connect (update-in config [:hosts]  transform-host-str (:port config) tracer-enabled))))
 
 (defn start-connection [config]
   (log/info "Connecting to RabbitMQ")

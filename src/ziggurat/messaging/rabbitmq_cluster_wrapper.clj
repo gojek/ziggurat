@@ -16,7 +16,7 @@
     (reset! connection (rmq-cluster-conn/start-connection config))))
 
 (defn stop-connection [config stream-routes]
-  (when (not (nil? (get-connection)))
+  (when-not (nil? (get-connection))
     (reset! rabbitmq-cluster-config nil)
     (rmq-cluster-conn/stop-connection (get-connection) config)
     (reset! connection nil)))

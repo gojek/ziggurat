@@ -18,7 +18,7 @@
     (reset! connection (rmq-connection/start-connection config))))
 
 (defn stop-connection [config stream-routes]
-  (when (not (nil? (get-connection)))
+  (when-not (nil? (get-connection))
     (rmq-connection/stop-connection (get-connection) config)
     (reset! connection nil)))
 
