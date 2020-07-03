@@ -5,6 +5,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.config :as config]
             [ziggurat.messaging.rabbitmq.cluster.producer :as rmqc-producer]
+            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]))
 
 (use-fixtures :once fix/mount-only-config)
@@ -120,11 +121,11 @@
     (let [test-exchange-name   "test-exchange"
           test-message-payload {:foo "bar"}
           publish-called?      (atom false)]
-      (with-redefs [rmqc-producer/publish (fn [_ exchange message-payload expiration]
-                                            (when (and (= exchange test-exchange-name)
-                                                       (= message-payload test-message-payload)
-                                                       (= expiration nil))
-                                              (reset! publish-called? true)))]
+      (with-redefs [rmq-producer/publish (fn [_ exchange message-payload expiration]
+                                           (when (and (= exchange test-exchange-name)
+                                                      (= message-payload test-message-payload)
+                                                      (= expiration nil))
+                                             (reset! publish-called? true)))]
         (rmqcw/publish test-exchange-name test-message-payload)
         (is (= @publish-called? true)))))
 
@@ -133,11 +134,11 @@
           test-message-payload {:foo "bar"}
           test-expiration      "42"
           publish-called?      (atom false)]
-      (with-redefs [rmqc-producer/publish (fn [_ exchange message-payload expiration]
-                                            (when (and (= exchange test-exchange-name)
-                                                       (= message-payload test-message-payload)
-                                                       (= expiration test-expiration))
-                                              (reset! publish-called? true)))]
+      (with-redefs [rmq-producer/publish (fn [_ exchange message-payload expiration]
+                                           (when (and (= exchange test-exchange-name)
+                                                      (= message-payload test-message-payload)
+                                                      (= expiration test-expiration))
+                                             (reset! publish-called? true)))]
         (rmqcw/publish test-exchange-name test-message-payload test-expiration)
         (is (= @publish-called? true))))))
 
