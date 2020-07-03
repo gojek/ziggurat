@@ -45,9 +45,10 @@
     (with-retry {:count (count @hosts)
                  :wait 50
                  :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
-      (binding [lh/*endpoint* (str "http://" (ffirst (swap-vals! hosts rest)) ":" (:admin-port cluster-config))
+      (binding [lh/*endpoint* (str "http://" (ffirst (swap-vals! hosts rest)) ":" (get cluster-config :admin-port 15672))
                 lh/*username* (:username cluster-config)
                 lh/*password* (:password cluster-config)]
+        (log/info "Applying HA Policies to queue: " queue-name)
         (lh/set-policy "/" (str queue-name "_ha_policy")
                        {:apply-to "all"
                         :pattern (str "^" queue-name "$")
