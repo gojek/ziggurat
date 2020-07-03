@@ -2,7 +2,8 @@
   (:require [ziggurat.messaging.rabbitmq.cluster.connection :as rmq-cluster-conn]
             [ziggurat.messaging.rabbitmq.cluster.producer :as rmqc-producer]
             [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]
-            [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]))
+            [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
+            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]))
 
 (def connection (atom nil))
 
@@ -25,7 +26,7 @@
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-   (rmqc-producer/publish (get-connection) exchange message-payload expiration)))
+   (rmq-producer/publish (get-connection) exchange message-payload expiration)))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
