@@ -1,4 +1,4 @@
-(ns ziggurat.messaging.rabbitmq.cluster.cluster-connection-test
+(ns ziggurat.messaging.rabbitmq.cluster.connection-test
   (:require [clojure.test :refer :all]
             [langohr.core :as rmq]
             [ziggurat.messaging.rabbitmq.cluster.connection :as rmq-cluster-conn]
