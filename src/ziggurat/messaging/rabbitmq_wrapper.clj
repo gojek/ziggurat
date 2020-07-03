@@ -3,7 +3,6 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.retry :refer [with-retry]]
-            [ziggurat.messaging.util :refer [is-connection-required?]]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
