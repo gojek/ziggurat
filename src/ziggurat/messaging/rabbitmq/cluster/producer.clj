@@ -1,46 +1,14 @@
 (ns ziggurat.messaging.rabbitmq.cluster.producer
   (:require [clojure.tools.logging :as log]
             [langohr.channel :as lch]
-            [langohr.basic :as lb]
             [langohr.http :as lh]
-            [taoensso.nippy :as nippy]
             [langohr.exchange :as le]
             [ziggurat.messaging.rabbitmq.retry :refer :all]
             [langohr.queue :as lq]
-            [clojure.string :as str]
-            [clojure.set :as set])
+            [clojure.string :as str])
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
-(defn- record-headers->map [record-headers]
-  (reduce (fn [header-map record-header]
-            (assoc header-map (.key record-header) (String. (.value record-header))))
-          {}
-          record-headers))
-
-(defn- properties-for-publish
-  [expiration headers]
-  (let [props {:content-type "application/octet-stream"
-               :persistent   true
-               :headers      (record-headers->map headers)}]
-    (if expiration
-      (assoc props :expiration (str expiration))
-      props)))
-
-(defn publish
-  ([connection exchange message-payload expiration]
-   (try
-     (with-retry {:count      5
-                  :wait       100
-                  :on-failure #(log/error "publishing message to rabbitmq failed with error " (.getMessage %))}
-       (with-open [ch (lch/open connection)]
-         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
-                     (properties-for-publish expiration (:headers message-payload)))))
-     (catch Throwable e
-       (log/error e "Pushing message to rabbitmq failed, data: " message-payload)
-       (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type  :rabbitmq-publish-failure
-                                                                                   :error e}))))))
-
-(defn set-ha-policy [queue-name cluster-config]
+(defn set-ha-policy [queue-name exchange-name cluster-config]
   (let [hosts (atom (str/split (:hosts cluster-config) #","))]
     (with-retry {:count (count @hosts)
                  :wait 50
@@ -51,7 +19,7 @@
         (log/info "Applying HA Policies to queue: " queue-name)
         (lh/set-policy "/" (str queue-name "_ha_policy")
                        {:apply-to "all"
-                        :pattern (str "^" queue-name "$")
+                        :pattern (str "^" queue-name "|" exchange-name  "$")
                         :definition {:ha-mode (:ha-mode cluster-config)
                                      :ha-sync-mode (:ha-sync-mode cluster-config)}})))))
 
@@ -77,7 +45,7 @@
          (create-queue queue-name props ch)
          (declare-exchange ch exchange-name)
          (bind-queue-to-exchange ch queue-name exchange-name)
-         (set-ha-policy queue-name cluster-config)))
+         (set-ha-policy queue-name exchange-name cluster-config)))
      (catch Exception e
        (log/error e "Error while declaring RabbitMQ queues")
        (throw e)))))
