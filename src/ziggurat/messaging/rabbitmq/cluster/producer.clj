@@ -17,6 +17,7 @@
                 lh/*username* (:username cluster-config)
                 lh/*password* (:password cluster-config)]
         (log/info "Applying HA Policies to queue: " queue-name)
+        (log/info "Applying HA Policies to exchange: " exchange-name)
         (lh/set-policy "/" (str queue-name "_ha_policy")
                        {:apply-to "all"
                         :pattern (str "^" queue-name "|" exchange-name  "$")
