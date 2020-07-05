@@ -1,7 +1,6 @@
 language: clojure
 
-lein: 2.9.2
-
+lein: 2.8.1
 jdk:
   - openjdk8
 
