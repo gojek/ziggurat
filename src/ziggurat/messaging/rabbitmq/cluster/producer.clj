@@ -13,7 +13,7 @@
     (with-retry {:count (count @hosts)
                  :wait 50
                  :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
-      (binding [lh/*endpoint* (str "http://" (ffirst (swap-vals! hosts rest)) ":" (get cluster-config :admin-port 15672))
+      (binding [lh/*endpoint* (str "http://" (ffirst (clojure.core/swap-vals! hosts rest)) ":" (get cluster-config :admin-port 15672))
                 lh/*username* (:username cluster-config)
                 lh/*password* (:password cluster-config)]
         (log/info "Applying HA Policies to queue: " queue-name)
