@@ -1,25 +1,25 @@
-(ns ziggurat.messaging.rabbitmq-wrapper
-  (:require [ziggurat.config :refer [get-in-config]]
-            [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.retry :refer [with-retry]]
-            [ziggurat.tracer :refer [tracer]]
-            [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
-            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
+(ns ziggurat.messaging.rabbitmq-cluster-wrapper
+  (:require [ziggurat.messaging.rabbitmq.cluster.connection :as rmq-cluster-conn]
+            [ziggurat.messaging.rabbitmq.cluster.producer :as rmqc-producer]
+            [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]
             [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
-            [ziggurat.messaging.messaging-interface :refer [MessagingProtocol]]))
+            [ziggurat.messaging.rabbitmq.producer :as rmq-producer]))
 
 (def connection (atom nil))
+
+(def rabbitmq-cluster-config (atom nil))
 
 (defn get-connection [] @connection)
 
 (defn start-connection [config stream-routes]
   (when (nil? (get-connection))
-    (reset! connection (rmq-connection/start-connection config))))
+    (reset! rabbitmq-cluster-config (get-in config [:ziggurat :rabbit-mq-connection]))
+    (reset! connection (rmq-cluster-conn/start-connection config))))
 
 (defn stop-connection [config stream-routes]
   (when-not (nil? (get-connection))
-    (rmq-connection/stop-connection (get-connection) config)
+    (reset! rabbitmq-cluster-config nil)
+    (rmq-cluster-conn/stop-connection (get-connection) config)
     (reset! connection nil)))
 
 (defn publish
@@ -32,7 +32,7 @@
   ([queue-name exchange-name]
    (create-and-bind-queue queue-name exchange-name nil))
   ([queue-name exchange-name dead-letter-exchange]
-   (rmq-producer/create-and-bind-queue (get-connection) queue-name exchange-name dead-letter-exchange)))
+   (rmqc-producer/create-and-bind-queue @rabbitmq-cluster-config (get-connection) queue-name exchange-name dead-letter-exchange)))
 
 (defn get-messages-from-queue
   ([queue-name ack?]
@@ -72,4 +72,3 @@
            (start-subscriber prefetch-count wrapped-mapper-fn queue-name))
          (consume-message [impl ch meta payload ack?]
            (consume-message ch meta payload ack?)))
-
