@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
-## 3.3.1-alpha.5 2020-07-06
+## 3.3.1-alpha.5 - 2020-07-06
 - Adds RabbitMQMessaging implementation to support connection with RabbitMQ clusters 
 - Adds support for setting up HA policies for queues and exchanges
 
