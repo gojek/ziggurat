@@ -309,6 +309,7 @@ Your handler function will receive a message in the following format/structure
 * `:port` specifies the port number on which the RabbitMQ nodes are running.
 * `:ha-mode` is set to `"all"`.
 * `:ha-sync-mode` can be set to `"automatic"` OR `"manual"`.
+* `:admin-port` is the port on which the RabbitMQ management UI is exposed, defaults to `15672`.
 
 
 ## Configuration
