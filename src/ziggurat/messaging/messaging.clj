@@ -1,6 +1,7 @@
 (ns ziggurat.messaging.messaging
   (:require [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
+            [ziggurat.messaging.util :as util]
             [ziggurat.messaging.messaging-interface :as messaging-interface]
             [clojure.tools.logging :as log]))
 
@@ -28,8 +29,9 @@
 
 (defn start-connection [config stream-routes]
   (initialise-messaging-library)
-  (log/info "Initialized Messaging Library")
-  (messaging-interface/start-connection (get-implementation) config stream-routes))
+  (when (util/is-connection-required? (:ziggurat config) stream-routes)
+    (log/info "Initialized Messaging Library")
+    (messaging-interface/start-connection (get-implementation) config stream-routes)))
 
 (defn stop-connection [config stream-routes]
   (log/info "Stopping Messaging Library")

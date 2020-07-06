@@ -1,42 +1,50 @@
-(ns ziggurat.messaging.rabbitmq-wrapper-test
+(ns ziggurat.messaging.rabbitmq-cluster-wrapper-test
   (:require [clojure.test :refer :all]
+            [ziggurat.messaging.rabbitmq-cluster-wrapper :as rmqcw]
+            [ziggurat.messaging.rabbitmq.cluster.connection :as rmq-cluster-connection]
+            [ziggurat.fixtures :as fix]
             [ziggurat.config :as config]
-            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
-            [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
+            [ziggurat.messaging.rabbitmq.cluster.producer :as rmqc-producer]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]
-            [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]
-            [ziggurat.fixtures :as fix]))
+            [ziggurat.messaging.rabbitmq.consumer :as rmq-consumer]))
 
 (use-fixtures :once fix/mount-only-config)
+
+(def rmq-cluster-config {:hosts "localhost"
+                         :port 5672
+                         :username "guest"
+                         :password "guest"
+                         :channel-timeout 2000
+                         :ha-mode "all"
+                         :ha-sync-mode "automatic"})
 
 (defn- create-mock-object [] (reify Object
                                (toString [this] "")))
 
-(defn reset-connection-atom [] (reset! rmqw/connection nil))
+(defn reset-connection-atom [] (reset! rmqcw/connection nil))
 
 (deftest start-connection-test
-  (testing "start-connection should call the `rmq-connection/start-connection` and set the connection atom only if it's nil"
+  (testing "start-connection should call the `rmq-cluster-connection/start-connection` and set the connection and config atoms only if connection atom is nil"
     (let [default-config                config/config
           start-connection-called-count (atom false)
           stream-routes                 {:default {:handler-fn (constantly nil)}}
           config                        (assoc default-config
-                                               :ziggurat {:retry {:enabled true}})]
-      (with-redefs [rmq-connection/start-connection (fn [_] (reset! start-connection-called-count true) {:foo "bar"})]
-        (rmqw/start-connection config stream-routes)
+                                               :ziggurat {:rabbit-mq-connection rmq-cluster-config})]
+      (with-redefs [rmqcw/connection (atom nil)
+                    rmq-cluster-connection/start-connection (fn [_] (reset! start-connection-called-count true) {:foo "bar"})]
+        (rmqcw/start-connection config stream-routes)
         (is (= true @start-connection-called-count))
-        (is (= {:foo "bar"} (rmqw/get-connection))))
+        (is (= @rmqcw/rabbitmq-cluster-config rmq-cluster-config))
+        (is (= {:foo "bar"} (rmqcw/get-connection))))
       (reset-connection-atom))))
 
 (deftest stop-connection-test
-  (testing "stop-connection should stop the connection if retries are enabled and connection is not nil"
-    (let [default-config          config/config
-          stop-connection-called? (atom false)
-          stream-routes           {:default {:handler-fn (constantly nil)}}
-          config                  (assoc default-config
-                                         :ziggurat {:retry {:enabled true}})]
-      (with-redefs [rmq-connection/stop-connection (fn [_ _] (reset! stop-connection-called? true))
-                    rmqw/get-connection            (constantly {:foo "bar"})]
-        (rmqw/stop-connection config stream-routes)
+  (testing "stop-connection should stop the only connection when `get-connection` returns a non-nil value"
+    (let [stop-connection-called? (atom false)
+          stream-routes           {:default {:handler-fn (constantly nil)}}]
+      (with-redefs [rmq-cluster-connection/stop-connection (fn [_ _] (reset! stop-connection-called? true))
+                    rmqcw/get-connection                   (constantly {:foo "bar"})]
+        (rmqcw/stop-connection config/config stream-routes)
         (is (= true @stop-connection-called?))))
     (reset-connection-atom))
 
@@ -45,10 +53,10 @@
           stop-connection-called? (atom false)
           stream-routes           {:default {:handler-fn (constantly nil)}}
           config                  (assoc default-config
-                                         :ziggurat {:retry {:enabled true}})]
-      (with-redefs [rmq-connection/stop-connection (fn [_ _] (reset! stop-connection-called? true))
-                    rmqw/get-connection                (constantly nil)]
-        (rmqw/stop-connection config stream-routes)
+                                         :ziggurat {:rabbit-mq-connection rmq-cluster-config})]
+      (with-redefs [rmq-cluster-connection/stop-connection (fn [_ _] (reset! stop-connection-called? true))
+                    rmqcw/get-connection                (constantly nil)]
+        (rmqcw/stop-connection config stream-routes)
         (is (= false @stop-connection-called?))))
     (reset-connection-atom)))
 
@@ -60,26 +68,23 @@
           stream-routes                 {:default {:handler-fn (constantly nil)}}
           config                        (assoc default-config
                                                :ziggurat {:retry {:enabled true}})]
-      (with-redefs [rmq-connection/start-connection (fn [_] (reset! start-connection-called-count true) mock-object)]
-        (rmqw/start-connection config stream-routes)
-        (rmqw/start-connection config stream-routes)
-        (rmqw/start-connection config stream-routes)
+      (with-redefs [rmq-cluster-connection/start-connection (fn [_] (reset! start-connection-called-count true) mock-object)]
+        (rmqcw/start-connection config stream-routes)
+        (rmqcw/start-connection config stream-routes)
+        (rmqcw/start-connection config stream-routes)
         (is (= true @start-connection-called-count))
-        (is (= mock-object (rmqw/get-connection))))
+        (is (= mock-object (rmqcw/get-connection))))
       (reset-connection-atom))))
 
 (deftest stop-connection-idempotency-test
   (testing "It should not reset the connection atom if connection has already been stopped"
-    (let [default-config               config/config
-          stop-connection-called-count (atom 0)
-          stream-routes                {:default {:handler-fn (constantly nil)}}
-          config                       (assoc default-config
-                                              :ziggurat {:retry {:enabled true}})]
-      (with-redefs [rmqw/get-connection                (constantly nil)
-                    rmq-connection/stop-connection (fn [_ _] (swap! stop-connection-called-count inc))]
-        (rmqw/stop-connection config stream-routes)
-        (rmqw/stop-connection config stream-routes)
-        (rmqw/stop-connection config stream-routes)
+    (let [stop-connection-called-count (atom 0)
+          stream-routes                {:default {:handler-fn (constantly nil)}}]
+      (with-redefs [rmqcw/get-connection                (constantly nil)
+                    rmq-cluster-connection/stop-connection (fn [_ _] (swap! stop-connection-called-count inc))]
+        (rmqcw/stop-connection config/config stream-routes)
+        (rmqcw/stop-connection config/config stream-routes)
+        (rmqcw/stop-connection config/config stream-routes)
         (is (= 0 @stop-connection-called-count)))
       (reset-connection-atom))))
 
@@ -88,12 +93,13 @@
     (let [test-queue-name               "test-queue"
           test-exchange-name            "test-exchange"
           create-and-bind-queue-called? (atom false)]
-      (with-redefs [rmq-producer/create-and-bind-queue (fn [_ queue-name exchange-name dead-letter-exchange]
-                                                         (when (and (= queue-name test-queue-name)
-                                                                    (= exchange-name test-exchange-name)
-                                                                    (= dead-letter-exchange nil))
-                                                           (reset! create-and-bind-queue-called? true)))]
-        (rmqw/create-and-bind-queue test-queue-name test-exchange-name)
+      (with-redefs [rmqc-producer/create-and-bind-queue (fn [config _ queue-name exchange-name dead-letter-exchange]
+                                                          (when (and (= queue-name test-queue-name)
+                                                                     (= exchange-name test-exchange-name)
+                                                                     (= config rmq-cluster-config config)
+                                                                     (= dead-letter-exchange nil))
+                                                            (reset! create-and-bind-queue-called? true)))]
+        (rmqcw/create-and-bind-queue test-queue-name test-exchange-name)
         (is (= @create-and-bind-queue-called? true)))))
 
   (testing "It should call the `create rmq-producer/create-and-bind-queue` function with dead-letter-exchange"
@@ -101,12 +107,13 @@
           test-exchange-name            "test-exchange"
           dead-letter-exchange-name     "test-dead-letter-exchange"
           create-and-bind-queue-called? (atom false)]
-      (with-redefs [rmq-producer/create-and-bind-queue (fn [_ queue-name exchange-name dead-letter-exchange]
-                                                         (when (and (= queue-name test-queue-name)
-                                                                    (= exchange-name test-exchange-name)
-                                                                    (= dead-letter-exchange dead-letter-exchange-name))
-                                                           (reset! create-and-bind-queue-called? true)))]
-        (rmqw/create-and-bind-queue test-queue-name test-exchange-name dead-letter-exchange-name)
+      (with-redefs [rmqc-producer/create-and-bind-queue (fn [config _ queue-name exchange-name dead-letter-exchange]
+                                                          (when (and (= queue-name test-queue-name)
+                                                                     (= exchange-name test-exchange-name)
+                                                                     (= config rmq-cluster-config)
+                                                                     (= dead-letter-exchange dead-letter-exchange-name))
+                                                            (reset! create-and-bind-queue-called? true)))]
+        (rmqcw/create-and-bind-queue test-queue-name test-exchange-name dead-letter-exchange-name)
         (is (= @create-and-bind-queue-called? true))))))
 
 (deftest publish-test
@@ -119,7 +126,7 @@
                                                       (= message-payload test-message-payload)
                                                       (= expiration nil))
                                              (reset! publish-called? true)))]
-        (rmqw/publish test-exchange-name test-message-payload)
+        (rmqcw/publish test-exchange-name test-message-payload)
         (is (= @publish-called? true)))))
 
   (testing "It should call `rmq-producer/publish` with expiration"
@@ -132,7 +139,7 @@
                                                       (= message-payload test-message-payload)
                                                       (= expiration test-expiration))
                                              (reset! publish-called? true)))]
-        (rmqw/publish test-exchange-name test-message-payload test-expiration)
+        (rmqcw/publish test-exchange-name test-message-payload test-expiration)
         (is (= @publish-called? true))))))
 
 (deftest get-messages-from-queue-test
@@ -145,7 +152,7 @@
                                                                       (= default-count count)
                                                                       (= ack? true)))
                                                            (reset! get-messages-from-queue-called? true))]
-        (rmqw/get-messages-from-queue test-queue-name true))))
+        (rmqcw/get-messages-from-queue test-queue-name true))))
 
   (testing "it should call `rmq-consumer/get-messages-from-queue` when `count` is specified"
     (let [test-queue-name                 "test-queue"
@@ -156,7 +163,7 @@
                                                                       (= test-count count)
                                                                       (= ack? true)))
                                                            (reset! get-messages-from-queue-called? true))]
-        (rmqw/get-messages-from-queue test-queue-name true test-count)))))
+        (rmqcw/get-messages-from-queue test-queue-name true test-count)))))
 
 (deftest process-messages-from-queue-test
   (testing "It should call `rmq-consumer/process-messages-from-queue` with the correct arguments"
@@ -169,7 +176,7 @@
                                                                           (= count test-count)
                                                                           (= {:foo "bar"} (processing-fn)))
                                                                  (reset! process-messages-from-queue-called? true)))]
-        (rmqw/process-messages-from-queue test-queue test-count test-processing-fn)
+        (rmqcw/process-messages-from-queue test-queue test-count test-processing-fn)
         (is (= true @process-messages-from-queue-called?))))))
 
 (deftest start-subscriber-test
@@ -183,7 +190,7 @@
                                                                (= test-prefetch-count prefetch-count)
                                                                (= (wrapped-mapper-fn) {:foo "bar"}))
                                                       (reset! start-subscriber-called? true)))]
-        (rmqw/start-subscriber test-prefetch-count test-mapper-fn test-queue-name)))))
+        (rmqcw/start-subscriber test-prefetch-count test-mapper-fn test-queue-name)))))
 
 (deftest consume-message-test
   (testing "it should call `rmq-consumer/consume-message` with the correct arguments"
@@ -194,5 +201,5 @@
                                                    (when (and (= meta test-meta)
                                                               (= payload test-payload)
                                                               (= ack? test-ack?))))]
-        (rmqw/consume-message nil test-meta test-payload test-ack?)))))
+        (rmqcw/consume-message nil test-meta test-payload test-ack?)))))
 
