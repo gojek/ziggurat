@@ -77,36 +77,6 @@
                                                        (reset! metric-reporter-called? true))]
         ((mw/protobuf->hash handler-fn nil topic-entity-name) (mw/->RegularMessage nil)))
       (is (true? @handler-fn-called?))
-<<<<<<< HEAD
-      (is (true? @metric-reporter-called?)))))
-
-(deftest protobuf->hash-test-alpha-and-deprecated
-  (testing "Deprecated protobuf deserializer"
-    (common-protobuf->hash-test)
-    (testing "When alpha feature is disabled use the old deserializer function"
-      (let [deserialize-message-called? (atom false)
-            topic-entity-name           "test"
-            message                     {:id   7
-                                         :path "/photos/h2k3j4h9h23"}
-            proto-class                 Example$Photo
-            proto-message               (proto/->bytes (proto/create Example$Photo message))]
-        (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
-          ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
-          (is (true? @deserialize-message-called?))))))
-  (testing "Alpha protobuf deserializer"
-    (common-protobuf->hash-test)
-    (testing "When alpha feature is enabled use the new deserializer function"
-      (let [deserialize-message-called? (atom false)
-            topic-entity-name           "test"
-            message                     {:id   7
-                                         :path "/photos/h2k3j4h9h23"}
-            proto-class                 Example$Photo
-            proto-message               (proto/->bytes (proto/create Example$Photo message))]
-        (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
-
-          ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
-          (is (true? @deserialize-message-called?)))))))
-=======
       (is (true? @metric-reporter-called?))))
   (testing "using the new deserializer function"
     (let [deserialize-message-called? (atom false)
@@ -118,4 +88,4 @@
       (with-redefs [mw/deserialize-message (fn [_ _ _] (reset! deserialize-message-called? true))]
         ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) (mw/->RegularMessage proto-message))
         (is (true? @deserialize-message-called?))))))
->>>>>>> 393899cc701c833430d9e196456a9456a5d84570
+
