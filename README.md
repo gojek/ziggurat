@@ -270,7 +270,7 @@ This will allow an actor to join messages from 2 topics into 1 result. To be abl
     :consumer-type        :stream-joins
     :input-topics         {:topic-1-key {:name "topic-1"} :topic-2-key {:name "topic-2"}}
     :join-cfg             {:topic-1-and-topic-2 {:join-window-ms 5000 :join-type :inner}}
-}}}
+}}}}
 ```
 * consumer-type - enables stream joins if `:stream-joins` key is provided, other possible value is `:default` which is the default actor behavior
 * input-topics - a map of topics in which you want to use for joining
@@ -290,6 +290,26 @@ Your handler function will receive a message in the following format/structure
 ```clojure
 {:topic-1-key "message-from-1st-topic" :topic-2-key "message-from-2nd-topic"}
 ```
+
+## Connecting to a RabbitMQ cluster (alpha feature) 
+* To connect to RabbitMQ clusters add the following config to your `config.edn`
+```clojure
+{:ziggurat {:messaging {:constructor "ziggurat.messaging.rabbitmq-cluster-wrapper/->RabbitMQMessaging"
+            :rabbit-mq-connection {:hosts "g-lambda-lambda-rabbitmq-a-01,g-lambda-lambda-rabbitmq-a-02,g-lambda-lambda-rabbitmq-a-03" 
+                                   :port [5672 :int]
+                                   :prefetch-count  [3 :int]
+                                   :username        "guest"
+                                   :password        "guest"
+                                   :ha-mode         "all"
+                                   :admin-port      [15672 :int]
+                                   :ha-sync-mode    "automatic"
+                                   :channel-timeout [2000 :int]}}}}
+``` 
+* `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
+* `:port` specifies the port number on which the RabbitMQ nodes are running.
+* `:ha-mode` is set to `"all"`.
+* `:ha-sync-mode` can be set to `"automatic"` OR `"manual"`.
+
 
 ## Configuration
 
