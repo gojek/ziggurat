@@ -131,7 +131,7 @@
       (is (true? @http-called?))
       (is (true? @queue-declare-called?))))
 
-  (testing "it should apply default ha-params when ha-params are not defined in the config"
+  (testing "it should apply default ha-config when ha-config is not defined in the config"
     (let [default-props {:durable true :auto-delete false}
           dead-letter-exchange-name "test-dead-letter-exchange"
           queue-name "test-queue"
