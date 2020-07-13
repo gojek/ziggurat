@@ -9,22 +9,24 @@
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
 (defn set-ha-policy [queue-name exchange-name cluster-config]
-  (let [hosts (atom (str/split (:hosts cluster-config) #","))]
-    (with-retry {:count (count @hosts)
-                 :wait 50
+  (let [hosts-vec (str/split (:hosts cluster-config) #",")
+        hosts (atom hosts-vec)]
+    (with-retry {:count      (count @hosts)
+                 :wait       50
                  :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
       (let [host (first @hosts)
-            _ (swap! hosts rest)]
+            _    (swap! hosts rest)]
         (binding [lh/*endpoint* (str "http://" host ":" (get cluster-config :admin-port 15672))
                   lh/*username* (:username cluster-config)
                   lh/*password* (:password cluster-config)]
-          (log/info "Applying HA Policies to queue: " queue-name)
-          (log/info "Applying HA Policies to exchange: " exchange-name)
+          (log/info "applying HA policies to queue: " queue-name)
+          (log/info "applying HA policies to exchange: " exchange-name)
           (lh/set-policy "/" (str queue-name "_ha_policy")
                          {:apply-to   "all"
                           :pattern    (str "^" queue-name "|" exchange-name "$")
-                          :definition {:ha-mode      (:ha-mode cluster-config)
-                                       :ha-sync-mode (:ha-sync-mode cluster-config)}}))))))
+                          :definition {:ha-mode      (get cluster-config :ha-mode "all")
+                                       :ha-params    (get cluster-config :ha-params (count hosts-vec))
+                                       :ha-sync-mode (get cluster-config :ha-sync-mode "automatic")}}))))))
 
 (defn- declare-exchange [ch exchange]
   (le/declare ch exchange "fanout" {:durable true :auto-delete false})

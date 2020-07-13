@@ -20,8 +20,11 @@
                          :username "rabbit"
                          :password "rabbit"
                          :channel-timeout 2000
-                         :ha-mode "all"
+                         :ha-mode "exactly"
+                         :ha-params 1
                          :ha-sync-mode "automatic"})
+
+(def rmq-cluster-config-without-ha-params (dissoc rmq-cluster-config :ha-mode :ha-params :ha-sync-mode))
 
 (defn- create-mock-channel [] (reify Channel
                                 (close [_] nil)))
@@ -37,6 +40,7 @@
           ha-policy-body {:apply-to "all"
                           :pattern (str "^"  queue-name "|" exchange-name "$")
                           :definition {:ha-mode (:ha-mode rmq-cluster-config)
+                                       :ha-params (:ha-params rmq-cluster-config)
                                        :ha-sync-mode (:ha-sync-mode rmq-cluster-config)}}
           exchange-declare-called? (atom false)
           queue-declare-called? (atom false)
@@ -79,6 +83,7 @@
           ha-policy-body {:apply-to "all"
                           :pattern (str "^" queue-name "|" exchange-name "$")
                           :definition {:ha-mode (:ha-mode rmq-cluster-config)
+                                       :ha-params (:ha-params rmq-cluster-config)
                                        :ha-sync-mode (:ha-sync-mode rmq-cluster-config)}}
           ha-policy-name (str queue-name "_ha_policy")
           default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
@@ -109,6 +114,51 @@
                                                (= policy ha-policy-body))
                                       (reset! http-called? true)))]
         (rmc-prod/create-and-bind-queue rmq-cluster-config nil queue-name exchange-name dead-letter-exchange-name))
+      (is (true? @bind-called?))
+      (is (true? @exchange-declare-called?))
+      (is (true? @http-called?))
+      (is (true? @queue-declare-called?))))
+
+  (testing "it should apply default ha-params when ha-params are not defined in the config"
+    (let [default-props {:durable true :auto-delete false}
+          dead-letter-exchange-name "test-dead-letter-exchange"
+          queue-name "test-queue"
+          exchange-name "test-exchange"
+          exchange-type "fanout"
+          ha-policy-body {:apply-to "all"
+                          :pattern (str "^" queue-name "|" exchange-name "$")
+                          :definition {:ha-mode "all"
+                                       :ha-params 1
+                                       :ha-sync-mode "automatic"}}
+          ha-policy-name (str queue-name "_ha_policy")
+          default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
+          exchange-declare-called? (atom false)
+          queue-declare-called? (atom false)
+          bind-called? (atom false)
+          http-called? (atom false)]
+      (with-redefs [lch/open   (fn [^Connection _] (create-mock-channel))
+                    lq/declare (fn [^Channel _ ^String queue props]
+                                 (when (and (= props default-props-with-arguments)
+                                            (= queue-name queue))
+                                   (reset! queue-declare-called? true)))
+                    le/declare (fn [^Channel _ ^String name ^String type props]
+                                 (when (and (= name exchange-name)
+                                            (= props default-props)
+                                            (= type exchange-type))
+                                   (reset! exchange-declare-called? true)))
+                    lq/bind    (fn [^Channel _ ^String queue ^String exchange]
+                                 (when (and (= queue queue-name)
+                                            (= exchange exchange-name))
+                                   (reset! bind-called? true)))
+                    lh/set-policy (fn [^String vhost ^String name policy]
+                                    (when (and (= "/" vhost)
+                                               (= ha-policy-name name)
+                                               (= lh/*endpoint* "http://localhost:15672")
+                                               (= lh/*username* "rabbit")
+                                               (= lh/*password* "rabbit")
+                                               (= policy ha-policy-body))
+                                      (reset! http-called? true)))]
+        (rmc-prod/create-and-bind-queue rmq-cluster-config-without-ha-params nil queue-name exchange-name dead-letter-exchange-name))
       (is (true? @bind-called?))
       (is (true? @exchange-declare-called?))
       (is (true? @http-called?))
