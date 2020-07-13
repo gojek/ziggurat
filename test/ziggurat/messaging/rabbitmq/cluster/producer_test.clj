@@ -7,6 +7,7 @@
             [langohr.http :as lh]
             [ziggurat.fixtures :as fix]
             [taoensso.nippy :as nippy]
+            [clojure.string :as str]
             [langohr.basic :as lb]
             [ziggurat.messaging.rabbitmq.producer :as rm-prod])
   (:import (com.rabbitmq.client Channel Connection)
@@ -20,14 +21,27 @@
                          :username "rabbit"
                          :password "rabbit"
                          :channel-timeout 2000
-                         :ha-mode "exactly"
+                         :ha-mode "all"
                          :ha-params 1
                          :ha-sync-mode "automatic"})
 
-(def rmq-cluster-config-without-ha-params (dissoc rmq-cluster-config :ha-mode :ha-params :ha-sync-mode))
+(def rmq-cluster-config-without-ha-config (dissoc rmq-cluster-config :ha-mode :ha-params :ha-sync-mode))
 
 (defn- create-mock-channel [] (reify Channel
                                 (close [_] nil)))
+
+(deftest get-default-ha-policy-test
+  (testing "it should ignore `:ha-params` when `:ha-mode` is `all`"
+    (let [expected-ha-policy {:ha-mode "all" :ha-sync-mode "automatic"}
+          hosts-vec (str/split (:hosts rmq-cluster-config) #",")
+          ha-policy (rmc-prod/get-default-ha-policy hosts-vec rmq-cluster-config)]
+      (is (= ha-policy expected-ha-policy))))
+  (testing "it should return the default `:ha-params` when `:ha-mode` is `exactly`"
+    (let [expected-ha-policy                    {:ha-mode "exactly" :ha-sync-mode "automatic" :ha-params 1}
+          hosts-vec                             (str/split (:hosts rmq-cluster-config) #",")
+          rmq-cluster-conf-with-ha-mode-exactly (assoc rmq-cluster-config :ha-mode "exactly")
+          ha-policy                             (rmc-prod/get-default-ha-policy hosts-vec rmq-cluster-conf-with-ha-mode-exactly)]
+      (is (= ha-policy expected-ha-policy)))))
 
 (deftest create-and-bind-queue-test
   (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
@@ -40,7 +54,6 @@
           ha-policy-body {:apply-to "all"
                           :pattern (str "^"  queue-name "|" exchange-name "$")
                           :definition {:ha-mode (:ha-mode rmq-cluster-config)
-                                       :ha-params (:ha-params rmq-cluster-config)
                                        :ha-sync-mode (:ha-sync-mode rmq-cluster-config)}}
           exchange-declare-called? (atom false)
           queue-declare-called? (atom false)
@@ -83,7 +96,6 @@
           ha-policy-body {:apply-to "all"
                           :pattern (str "^" queue-name "|" exchange-name "$")
                           :definition {:ha-mode (:ha-mode rmq-cluster-config)
-                                       :ha-params (:ha-params rmq-cluster-config)
                                        :ha-sync-mode (:ha-sync-mode rmq-cluster-config)}}
           ha-policy-name (str queue-name "_ha_policy")
           default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
@@ -128,7 +140,6 @@
           ha-policy-body {:apply-to "all"
                           :pattern (str "^" queue-name "|" exchange-name "$")
                           :definition {:ha-mode "all"
-                                       :ha-params 1
                                        :ha-sync-mode "automatic"}}
           ha-policy-name (str queue-name "_ha_policy")
           default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
@@ -158,7 +169,7 @@
                                                (= lh/*password* "rabbit")
                                                (= policy ha-policy-body))
                                       (reset! http-called? true)))]
-        (rmc-prod/create-and-bind-queue rmq-cluster-config-without-ha-params nil queue-name exchange-name dead-letter-exchange-name))
+        (rmc-prod/create-and-bind-queue rmq-cluster-config-without-ha-config nil queue-name exchange-name dead-letter-exchange-name))
       (is (true? @bind-called?))
       (is (true? @exchange-declare-called?))
       (is (true? @http-called?))
