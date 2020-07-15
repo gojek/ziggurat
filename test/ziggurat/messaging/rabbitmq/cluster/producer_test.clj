@@ -6,17 +6,14 @@
             [langohr.channel :as lch]
             [langohr.http :as lh]
             [ziggurat.fixtures :as fix]
-            [taoensso.nippy :as nippy]
-            [clojure.string :as str]
-            [langohr.basic :as lb]
-            [ziggurat.messaging.rabbitmq.producer :as rm-prod])
+            [clojure.string :as str])
   (:import (com.rabbitmq.client Channel Connection)
            (org.apache.kafka.common.header Header)))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
 
-(def rmq-cluster-config {:hosts "localhost"
+(def rmq-cluster-config {:hosts "localhost-1,localhost-2"
                          :port 5672
                          :username "rabbit"
                          :password "rabbit"
@@ -75,7 +72,7 @@
                                    (reset! bind-called? true)))
                     lh/set-policy (fn [^String vhost ^String name policy]
                                     (when (and (= "/" vhost)
-                                               (= lh/*endpoint* "http://localhost:15672")
+                                               (= lh/*endpoint* "http://localhost-1:15672")
                                                (= lh/*username* "rabbit")
                                                (= lh/*password* "rabbit")
                                                (= ha-policy-name name)
@@ -120,7 +117,7 @@
                     lh/set-policy (fn [^String vhost ^String name policy]
                                     (when (and (= "/" vhost)
                                                (= ha-policy-name name)
-                                               (= lh/*endpoint* "http://localhost:15672")
+                                               (= lh/*endpoint* "http://localhost-1:15672")
                                                (= lh/*username* "rabbit")
                                                (= lh/*password* "rabbit")
                                                (= policy ha-policy-body))
@@ -164,7 +161,7 @@
                     lh/set-policy (fn [^String vhost ^String name policy]
                                     (when (and (= "/" vhost)
                                                (= ha-policy-name name)
-                                               (= lh/*endpoint* "http://localhost:15672")
+                                               (= lh/*endpoint* "http://localhost-1:15672")
                                                (= lh/*username* "rabbit")
                                                (= lh/*password* "rabbit")
                                                (= policy ha-policy-body))
