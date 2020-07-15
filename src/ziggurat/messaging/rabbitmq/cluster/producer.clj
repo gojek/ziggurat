@@ -9,9 +9,8 @@
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
 (defn get-default-ha-policy [hosts-vec cluster-config]
-  (let [host-count   (count hosts-vec)
-        ha-mode      (get cluster-config :ha-mode "all")
-        ha-params    (get cluster-config :ha-params host-count)
+  (let [ha-mode      (get cluster-config :ha-mode "all")
+        ha-params    (get cluster-config :ha-params 1)
         ha-sync-mode (get cluster-config :ha-sync-mode "automatic")]
     (if (= "all" ha-mode)
       {:ha-mode ha-mode :ha-sync-mode ha-sync-mode}
