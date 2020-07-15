@@ -6,13 +6,20 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]])
-  (:import (java.time Instant)))
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.middleware.default :as mw])
+  (:import (java.time Instant)
+           (clojure.lang PersistentArrayMap)))
 
 (defn- send-msg-to-channel [channels message-payload return-code]
   (when-not (contains? (set channels) return-code)
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
   (producer/publish-to-channel-instant-queue return-code message-payload))
+
+(defn convert-message-to-regular-message [message]          ;;Provides backward compatibility for releases prior to 3.3.1-alpha.5
+  (if (instance? PersistentArrayMap message)                ;;TODO should be removed once stream joins middleware is fixed
+    (mw/->RegularMessage message)
+    message))
 
 (defn mapper-func [mapper-fn channels]
   (fn [{:keys [topic-entity message] :as message-payload}]
@@ -31,7 +38,7 @@
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time                      (.toEpochMilli (Instant/now))
-                return-code                     (mapper-fn message)
+                return-code                     (mapper-fn (convert-message-to-regular-message message))
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
@@ -40,10 +47,10 @@
             (metrics/multi-ns-report-histogram multi-execution-time-namespaces time-val additional-tags)
             (case return-code
               :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
-              :retry   (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
-                           (producer/retry message-payload))
-              :skip    (metrics/multi-ns-increment-count multi-message-processing-namespaces skip-metric additional-tags)
-              :block   'TODO
+              :retry (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
+                         (producer/retry message-payload))
+              :skip (metrics/multi-ns-increment-count multi-message-processing-namespaces skip-metric additional-tags)
+              :block 'TODO
               (do
                 (send-msg-to-channel channels message-payload return-code)
                 (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags))))
@@ -72,7 +79,7 @@
       (nr/with-tracing "job" metric-namespace
         (try
           (let [start-time                     (.toEpochMilli (Instant/now))
-                return-code                    (mapper-fn message)
+                return-code                    (mapper-fn (convert-message-to-regular-message message))
                 end-time                       (.toEpochMilli (Instant/now))
                 time-val                       (- end-time start-time)
                 execution-time-namespace       "execution-time"
