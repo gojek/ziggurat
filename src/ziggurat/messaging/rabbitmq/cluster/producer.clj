@@ -8,7 +8,7 @@
             [clojure.string :as str])
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
-(defn get-default-ha-policy [hosts-vec cluster-config]
+(defn get-default-ha-policy [cluster-config]
   (let [ha-mode      (get cluster-config :ha-mode "all")
         ha-params    (get cluster-config :ha-params 1)
         ha-sync-mode (get cluster-config :ha-sync-mode "automatic")]
