@@ -30,14 +30,12 @@
 (deftest get-default-ha-policy-test
   (testing "it should ignore `:ha-params` when `:ha-mode` is `all`"
     (let [expected-ha-policy {:ha-mode "all" :ha-sync-mode "automatic"}
-          hosts-vec (str/split (:hosts rmq-cluster-config) #",")
-          ha-policy (rmc-prod/get-default-ha-policy hosts-vec rmq-cluster-config)]
+          ha-policy (rmc-prod/get-default-ha-policy rmq-cluster-config)]
       (is (= ha-policy expected-ha-policy))))
   (testing "it should return the default `:ha-params` when `:ha-mode` is `exactly`"
     (let [expected-ha-policy                    {:ha-mode "exactly" :ha-sync-mode "automatic" :ha-params 1}
-          hosts-vec                             (str/split (:hosts rmq-cluster-config) #",")
           rmq-cluster-conf-with-ha-mode-exactly (assoc rmq-cluster-config :ha-mode "exactly")
-          ha-policy                             (rmc-prod/get-default-ha-policy hosts-vec rmq-cluster-conf-with-ha-mode-exactly)]
+          ha-policy                             (rmc-prod/get-default-ha-policy rmq-cluster-conf-with-ha-mode-exactly)]
       (is (= ha-policy expected-ha-policy)))))
 
 (deftest create-and-bind-queue-test

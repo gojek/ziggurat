@@ -24,7 +24,7 @@
                  :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
       (let [host (first @hosts)
             _    (swap! hosts rest)
-            ha-policy (get-default-ha-policy hosts-vec cluster-config)]
+            ha-policy (get-default-ha-policy cluster-config)]
         (binding [lh/*endpoint* (str "http://" host ":" (get cluster-config :admin-port 15672))
                   lh/*username* (:username cluster-config)
                   lh/*password* (:password cluster-config)]
