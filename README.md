@@ -278,6 +278,9 @@ This will allow an actor to join messages from 2 topics into 1 result. To be abl
 
 And your actor's handler function be like
 ```clojure
+(ns my-actor
+  (:require [ziggurat.middleware.stream-joins :as mw]))
+
 (def handler-func
   (-> main-func
       (mw/protobuf->hash [com.gojek.esb.booking.BookingLogMessage com.gojek.esb.booking.BookingLogMessage] :booking)))
@@ -291,11 +294,11 @@ Your handler function will receive a message in the following format/structure
 {:topic-1-key "message-from-1st-topic" :topic-2-key "message-from-2nd-topic"}
 ```
 
-## Connecting to a RabbitMQ cluster (alpha feature) 
+## Connecting to a RabbitMQ cluster (alpha feature)
 * To connect to RabbitMQ clusters add the following config to your `config.edn`
 ```clojure
 {:ziggurat {:messaging {:constructor "ziggurat.messaging.rabbitmq-cluster-wrapper/->RabbitMQMessaging"
-            :rabbit-mq-connection {:hosts "g-lambda-lambda-rabbitmq-a-01,g-lambda-lambda-rabbitmq-a-02,g-lambda-lambda-rabbitmq-a-03" 
+            :rabbit-mq-connection {:hosts "g-lambda-lambda-rabbitmq-a-01,g-lambda-lambda-rabbitmq-a-02,g-lambda-lambda-rabbitmq-a-03"
                                    :port [5672 :int]
                                    :prefetch-count  [3 :int]
                                    :username        "guest"
@@ -304,7 +307,7 @@ Your handler function will receive a message in the following format/structure
                                    :admin-port      [15672 :int]
                                    :ha-sync-mode    "automatic"
                                    :channel-timeout [2000 :int]}}}}
-``` 
+```
 * `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
 * `:port` specifies the port number on which the RabbitMQ nodes are running.
 * `:ha-mode` is set to `"all"`.
