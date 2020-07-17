@@ -5,7 +5,6 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.header-transformer :as header-transformer]
             [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
-            [ziggurat.middleware.default :as mw]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.util.map :as umap]
@@ -23,8 +22,7 @@
            [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
            [io.opentracing.contrib.kafka TracingKafkaUtils]
            [io.opentracing.tag Tags]
-           [java.time Duration]
-           [ziggurat.middleware.default StreamJoinsMessage]))
+           [java.time Duration]))
 
 (def default-config-for-stream
   {:buffered-records-per-partition     10000
@@ -199,7 +197,7 @@
         join-type         (:join-type cfg-1)
         value-joiner      (reify ValueJoiner
                             (apply [_ left right]
-                              (mw/->StreamJoinsMessage {topic-key-1 left topic-key-2 right})))
+                              {topic-key-1 left topic-key-2 right}))
         out-strm          (if cfg-1
                             (case join-type
                               :left  (.leftJoin strm-1 strm-2 value-joiner join-window-ms)
@@ -221,12 +219,6 @@
          (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
     (.build builder)))
 
-(defn- normalize-message-value [message]
-  (let [msg-val (:value message)]
-    (if (string? msg-val)
-      message ;; TODO: this should be JsonMessage
-      (assoc-in message [:value] (mw/->RegularMessage msg-val)))))
-
 (defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
@@ -236,7 +228,6 @@
          (timestamp-transform-values topic-entity-name oldest-processed-message-in-s)
          (header-transform-values)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values normalize-message-value)
          (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
     (.build builder)))
 

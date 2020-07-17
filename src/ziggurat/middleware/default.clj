@@ -5,7 +5,7 @@
             [ziggurat.metrics :as metrics]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
-(defn- deserialize-message
+(defn deserialize-message
   "This function takes in the message(proto Byte Array) and the proto-class and deserializes the proto ByteArray into a
   Clojure PersistentHashMap.
   Temporary logic for migration of services to Ziggurat V3.0
@@ -32,28 +32,8 @@
           nil)))
     message))
 
-(defprotocol Deserializable
-  (deserialize [message proto-class topic-entity-name]))
-
-(defrecord RegularMessage [message])
-(defrecord StreamJoinsMessage [message])
-
-(extend-type RegularMessage
-  Deserializable
-  (deserialize [this proto-class topic-entity-name]
-    (deserialize-message (:message this) proto-class topic-entity-name)))
-
-(extend-type StreamJoinsMessage
-  Deserializable
-  (deserialize [this proto-class topic-entity-name]
-    (reduce
-     (fn [[k1 v1] [k2 v2]]
-       {k1 (deserialize-message v1 (if (vector? proto-class) (first proto-class) proto-class) topic-entity-name)
-        k2 (deserialize-message v2 (if (vector? proto-class) (second proto-class) proto-class) topic-entity-name)})
-     (:message this))))
-
 (defn protobuf->hash
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
   (fn [message]
-    (handler-fn (deserialize message proto-class topic-entity-name))))
+    (handler-fn (deserialize-message message proto-class topic-entity-name))))

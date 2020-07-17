@@ -5,6 +5,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.middleware.default :as default-middleware]
+            [ziggurat.middleware.stream-joins :as stream-joins-middleware]
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.producer :as producer])
@@ -103,10 +104,10 @@
 (deftest start-stream-joins-test
   (testing "stream joins using inner join"
     (let [message-received-count (atom 0)
-          mapped-fn              (get-mapped-fn message-received-count {:topic {:id 7, :path "/photos/h2k3j4h9h23"}, :another-test-topic {:id 7, :path "/photos/h2k3j4h9h23"}})
+          mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
           times                  1
           kvs                    (repeat times message-key-value)
-          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
           streams                (start-streams {:default {:handler-fn handler-fn}}
                                                 (-> (ziggurat-config)
                                                     (assoc-in [:stream-router :default :consumer-type] :stream-joins)
@@ -128,10 +129,10 @@
       (is (= times @message-received-count))))
   (testing "stream joins using left join"
     (let [message-received-count (atom 0)
-          mapped-fn              (get-mapped-fn message-received-count {:topic {:id 7, :path "/photos/h2k3j4h9h23"}, :another-test-topic {:id 7, :path "/photos/h2k3j4h9h23"}})
+          mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
           times                  1
           kvs                    (repeat times message-key-value)
-          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
           streams                (start-streams {:default {:handler-fn handler-fn}}
                                                 (-> (ziggurat-config)
                                                     (assoc-in [:stream-router :default :consumer-type] :stream-joins)
@@ -153,10 +154,10 @@
       (is (= times @message-received-count))))
   (testing "stream joins using outer join"
     (let [message-received-count (atom 0)
-          mapped-fn              (get-mapped-fn message-received-count {:topic {:id 7, :path "/photos/h2k3j4h9h23"}, :another-test-topic {:id 7, :path "/photos/h2k3j4h9h23"}})
+          mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
           times                  1
           kvs                    (repeat times message-key-value)
-          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
           streams                (start-streams {:default {:handler-fn handler-fn}}
                                                 (-> (ziggurat-config)
                                                     (assoc-in [:stream-router :default :consumer-type] :stream-joins)
