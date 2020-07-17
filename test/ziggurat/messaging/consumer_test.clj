@@ -3,13 +3,12 @@
             [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
+            [ziggurat.messaging.rabbitmq-wrapper  :as rmqw]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as util]
-            [ziggurat.messaging.consumer :as consumer])
-  (:import (ziggurat.middleware.default RegularMessage)))
+            [ziggurat.messaging.consumer :as consumer]))
 
 (use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging
@@ -23,20 +22,19 @@
                                retry-limit
                                skip-promise
                                success-promise] :as opts}]
-  (fn [^RegularMessage regular-message]
-    (let [message (:message regular-message)]               ;; TODO revert once stream-joins middleware is fixed
-      (swap! call-counter-atom inc)
-      (cond (< @retry-counter-atom (or retry-limit 5))
-            (do (when retry-counter-atom (swap! retry-counter-atom inc))
-                :retry)
+  (fn [message]
+    (swap! call-counter-atom inc)
+    (cond (< @retry-counter-atom (or retry-limit 5))
+          (do (when retry-counter-atom (swap! retry-counter-atom inc))
+              :retry)
 
-            (= (:msg message) "skip")
-            (do (when skip-promise (deliver skip-promise true))
-                :skip)
+          (= (:msg message) "skip")
+          (do (when skip-promise (deliver skip-promise true))
+              :skip)
 
-            :else
-            (do (when success-promise (deliver success-promise true))
-                :success)))))
+          :else
+          (do (when success-promise (deliver success-promise true))
+              :success))))
 
 (defn- block-and-retry-until [success-fn]
   (try
