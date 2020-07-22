@@ -114,7 +114,7 @@
   message)
 
 (defn store-supplier-builder []
-  (KeyValueStoreBuilder. (RocksDbKeyValueBytesStoreSupplier. "state-store")
+  (KeyValueStoreBuilder. (RocksDbKeyValueBytesStoreSupplier. "state-store" true)
                          (Serdes/ByteArray)
                          (Serdes/ByteArray)
                          (SystemTime.)))
