@@ -25,7 +25,7 @@
                  [io.opentracing.contrib/opentracing-kafka-client "0.1.4" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
                  [io.opentracing.contrib/opentracing-rabbitmq-client "0.1.5" :exclusions [com.rabbitmq/amqp-client]]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
-                 [org.apache.kafka/kafka-streams "2.1.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-streams "2.3.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.12.1"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.12.1"]
                  [org.clojure/clojure "1.10.0"]
@@ -65,13 +65,14 @@
                        :dependencies [[com.google.protobuf/protobuf-java "3.9.1"]
                                       [io.confluent/kafka-schema-registry "4.1.1" :exclusions [javax.ws.rs/javax.ws.rs-api com.fasterxml.jackson.core/jackson-annotations]]
                                       [junit/junit "4.12"]
-                                      [org.apache.kafka/kafka-streams "2.1.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                                      [org.apache.kafka/kafka-clients "2.1.0" :classifier "test"]
-                                      [org.apache.kafka/kafka_2.11 "2.1.0" :classifier "test"]
+                                      [org.apache.kafka/kafka-streams "2.3.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                      [org.apache.kafka/kafka-clients "2.3.0" :classifier "test"]
+                                      [org.apache.kafka/kafka_2.11 "2.3.0" :classifier "test"]
                                       [org.clojure/test.check "0.10.0"]]
                        :plugins      [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
-             :dev     {:plugins [[lein-cljfmt "0.6.4"]
+             :dev     {:plugins [[lein-ancient "0.6.15"]
+                                 [lein-cljfmt "0.6.4"]
                                  [lein-cloverage "1.0.13"]
                                  [lein-kibit "0.1.7" :exclusions [org.clojure/tools.cli rewrite-clj org.clojure/tools.reader]]]}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
