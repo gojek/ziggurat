@@ -3,11 +3,14 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.7 - 2020-07-23
+- Remove defrecord wrappers
+
 ## 3.3.1-alpha.6 - 2020-07-18
 - Uses default ha-config values if nothing is provided
 
 ## 3.3.1-alpha.5 - 2020-07-06
-- Adds RabbitMQMessaging implementation to support connection with RabbitMQ clusters 
+- Adds RabbitMQMessaging implementation to support connection with RabbitMQ clusters
 - Adds support for setting up HA policies for queues and exchanges
 
 ## 3.3.1-alpha.4 - 2020-07-02
@@ -18,7 +21,7 @@ All notable changes to this project will be documented in this file. This change
 - Adds a new protocol for Messaging
 
 ## 3.3.1-alpha.2 - 2020-06-23
-- Refactors rabbitmq specific logic to the messaging.rabbitmq package 
+- Refactors rabbitmq specific logic to the messaging.rabbitmq package
 - Adds unit tests for rabbitmq specific namespaces
 - Adds test annotations to messaging integration tests
 
@@ -26,10 +29,10 @@ All notable changes to this project will be documented in this file. This change
 - Support for Kafka Stream KStream-KStream Join
 
 ## 3.3.1 - 2020-06-17
-- Introduces a swagger middleware on the HTTP server. 
+- Introduces a swagger middleware on the HTTP server.
 
 ## 3.3.0 - 2020-05-26
-- Makes metrics library configurable, exposes a metrics interface and provides an 
+- Makes metrics library configurable, exposes a metrics interface and provides an
 implementation for clj-statsd library.
 - Updates dependency of flatland/protobuf and puts the change behind a alpha-features configuration flag
 - Adds support for all configurations of kafka-producer.
@@ -128,8 +131,8 @@ implementation for clj-statsd library.
 
 ## 3.1.0-alpha.2 - 2019-11-05
 - JSON middleware has been added.
-- Adds custom delay ([Issue#78](https://github.com/gojek/ziggurat/issues/78)) 
-  for processing messages from RabbitMQ channels and 
+- Adds custom delay ([Issue#78](https://github.com/gojek/ziggurat/issues/78))
+  for processing messages from RabbitMQ channels and
   adds exponential backoff strategy (configurable) for channel retries.
 
 ## 3.1.0-alpha.1 - 2019-10-14
