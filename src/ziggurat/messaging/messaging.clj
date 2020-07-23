@@ -34,8 +34,9 @@
     (messaging-interface/start-connection (get-implementation) config stream-routes)))
 
 (defn stop-connection [config stream-routes]
-  (log/info "Stopping Messaging Library")
-  (messaging-interface/stop-connection (get-implementation) config stream-routes))
+  (when-not (nil? @messaging-impl)
+    (log/info "Stopping Messaging Library")
+    (messaging-interface/stop-connection (get-implementation) config stream-routes)))
 
 (defn create-and-bind-queue
   ([queue-name exchange-name]
