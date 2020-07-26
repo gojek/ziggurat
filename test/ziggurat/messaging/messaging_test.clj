@@ -136,7 +136,7 @@
         (messaging/stop-connection config/config stream-routes)))))
 
 (deftest stop-connection-test
-  (testing "it should mock-messaging/stop-connection function with the correct arguments"
+  (testing "it should call the mock-messaging/stop-connection function with the correct arguments"
     (let [test-stream-routes      {:default {:handler-fn (constantly nil)}}
           stop-connection-called? (atom false)]
       (with-redefs [ziggurat-config                ziggurat-config-for-mock-impl
@@ -147,6 +147,19 @@
         (messaging/start-connection config/config test-stream-routes)
         (messaging/stop-connection config/config test-stream-routes)
         (is (= true @stop-connection-called?))
+        (reset-impl))))
+
+  (testing "it should not call the mock-messaging/stop-connection function when the `messaging-impl` is nil"
+    (let [test-stream-routes      {:default {:handler-fn (constantly nil)}}
+          stop-connection-called? (atom false)]
+      (with-redefs [ziggurat-config ziggurat-config-for-mock-impl
+                    messaging/messaging-impl (atom nil)
+                    mock-messaging/stop-connection (fn [config stream-routes]
+                                                     (when (and (= config config/config)
+                                                                (= test-stream-routes stream-routes))
+                                                       (reset! stop-connection-called? true)))]
+        (messaging/stop-connection config/config test-stream-routes)
+        (is (= false @stop-connection-called?))
         (reset-impl)))))
 
 (deftest create-and-bind-queue-test
