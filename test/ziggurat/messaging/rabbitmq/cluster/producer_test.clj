@@ -32,7 +32,7 @@
     (let [expected-ha-policy {:ha-mode "all" :ha-sync-mode "automatic"}
           ha-policy (rmc-prod/get-default-ha-policy rmq-cluster-config (count (:hosts rmq-cluster-config)))]
       (is (= ha-policy expected-ha-policy))))
-  (testing "it should return the default `:ha-params` when `:ha-mode` is `exactly`"
+  (testing "it should use the `:ha-params` if specified when `:ha-mode` is `exactly`"
     (let [expected-ha-policy                    {:ha-mode "exactly" :ha-sync-mode "automatic" :ha-params 1}
           rmq-cluster-conf-with-ha-mode-exactly (assoc rmq-cluster-config :ha-mode "exactly")
           ha-policy                             (rmc-prod/get-default-ha-policy rmq-cluster-conf-with-ha-mode-exactly (count (:hosts rmq-cluster-config)))]
