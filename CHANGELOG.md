@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.9 - 2020-08-07
+- Defaults RabbitMQ queue replication to (n/2) + 1 nodes, where `n` is the number of nodes in the cluster
+
 ## 3.3.1-alpha.8 - 2020-07-27
 - Fixes false positive exception thrown by messaging when an actor abnormally terminates
 
