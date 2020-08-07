@@ -8,12 +8,15 @@
             [clojure.string :as str])
   (:import (org.apache.kafka.common.header.internals RecordHeader)))
 
-(defn get-default-ha-policy [cluster-config]
-  (let [ha-mode      (get cluster-config :ha-mode "all")
-        ha-params    (get cluster-config :ha-params 1)
+(defn get-replica-count [host-count]
+  (int (Math/ceil (/ host-count 2))))
+
+(defn get-default-ha-policy [cluster-config host-count]
+  (let [ha-mode      (get cluster-config :ha-mode "exactly")
+        ha-params    (get cluster-config :ha-params (get-replica-count host-count))
         ha-sync-mode (get cluster-config :ha-sync-mode "automatic")]
     (if (= "all" ha-mode)
-      {:ha-mode ha-mode :ha-sync-mode ha-sync-mode}
+      {:ha-mode "all" :ha-sync-mode ha-sync-mode}
       {:ha-mode ha-mode :ha-sync-mode ha-sync-mode :ha-params ha-params})))
 
 (defn set-ha-policy [queue-name exchange-name cluster-config]
@@ -22,9 +25,9 @@
     (with-retry {:count      (count @hosts)
                  :wait       50
                  :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
-      (let [host (first @hosts)
-            _    (swap! hosts rest)
-            ha-policy (get-default-ha-policy cluster-config)]
+      (let [host      (first @hosts)
+            _         (swap! hosts rest)
+            ha-policy (get-default-ha-policy cluster-config (count hosts-vec))]
         (binding [lh/*endpoint* (str "http://" host ":" (get cluster-config :admin-port 15672))
                   lh/*username* (:username cluster-config)
                   lh/*password* (:password cluster-config)]
