@@ -13,7 +13,7 @@
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
 
-(def rmq-cluster-config {:hosts "localhost-1,localhost-2"
+(def rmq-cluster-config {:hosts "localhost-1,localhost-2,localhost-3"
                          :port 5672
                          :username "rabbit"
                          :password "rabbit"
@@ -136,7 +136,7 @@
                           :pattern (str "^" queue-name "|" exchange-name "$")
                           :definition {:ha-mode "exactly"
                                        :ha-sync-mode "automatic"
-                                       :ha-params 1}}
+                                       :ha-params 2}}
           ha-policy-name (str queue-name "_ha_policy")
           default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
           exchange-declare-called? (atom false)
