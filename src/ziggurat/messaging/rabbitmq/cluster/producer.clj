@@ -11,9 +11,9 @@
 (defn get-replica-count [host-count]
   (int (Math/ceil (/ host-count 2))))
 
-(defn get-default-ha-policy [cluster-config host-count]
+(defn get-default-ha-policy [cluster-config replica-count]
   (let [ha-mode      (get cluster-config :ha-mode "exactly")
-        ha-params    (get cluster-config :ha-params (get-replica-count host-count))
+        ha-params    (get cluster-config :ha-params  replica-count)
         ha-sync-mode (get cluster-config :ha-sync-mode "automatic")]
     (if (= "all" ha-mode)
       {:ha-mode "all" :ha-sync-mode ha-sync-mode}
@@ -27,7 +27,7 @@
                  :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
       (let [host      (first @hosts)
             _         (swap! hosts rest)
-            ha-policy (get-default-ha-policy cluster-config (count hosts-vec))]
+            ha-policy (get-default-ha-policy cluster-config (get-replica-count (count hosts-vec)))]
         (binding [lh/*endpoint* (str "http://" host ":" (get cluster-config :admin-port 15672))
                   lh/*username* (:username cluster-config)
                   lh/*password* (:password cluster-config)]
