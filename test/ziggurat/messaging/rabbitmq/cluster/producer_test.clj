@@ -13,7 +13,7 @@
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
 
-(def rmq-cluster-config {:hosts "localhost-1,localhost-2"
+(def rmq-cluster-config {:hosts "localhost-1,localhost-2,localhost-3"
                          :port 5672
                          :username "rabbit"
                          :password "rabbit"
@@ -30,12 +30,12 @@
 (deftest get-default-ha-policy-test
   (testing "it should ignore `:ha-params` when `:ha-mode` is `all`"
     (let [expected-ha-policy {:ha-mode "all" :ha-sync-mode "automatic"}
-          ha-policy (rmc-prod/get-default-ha-policy rmq-cluster-config)]
+          ha-policy (rmc-prod/get-default-ha-policy rmq-cluster-config (count (:hosts rmq-cluster-config)))]
       (is (= ha-policy expected-ha-policy))))
-  (testing "it should return the default `:ha-params` when `:ha-mode` is `exactly`"
+  (testing "it should use the `:ha-params` if specified when `:ha-mode` is `exactly`"
     (let [expected-ha-policy                    {:ha-mode "exactly" :ha-sync-mode "automatic" :ha-params 1}
           rmq-cluster-conf-with-ha-mode-exactly (assoc rmq-cluster-config :ha-mode "exactly")
-          ha-policy                             (rmc-prod/get-default-ha-policy rmq-cluster-conf-with-ha-mode-exactly)]
+          ha-policy                             (rmc-prod/get-default-ha-policy rmq-cluster-conf-with-ha-mode-exactly (count (:hosts rmq-cluster-config)))]
       (is (= ha-policy expected-ha-policy)))))
 
 (deftest create-and-bind-queue-test
@@ -134,8 +134,9 @@
           exchange-type "fanout"
           ha-policy-body {:apply-to "all"
                           :pattern (str "^" queue-name "|" exchange-name "$")
-                          :definition {:ha-mode "all"
-                                       :ha-sync-mode "automatic"}}
+                          :definition {:ha-mode "exactly"
+                                       :ha-sync-mode "automatic"
+                                       :ha-params 2}}
           ha-policy-name (str queue-name "_ha_policy")
           default-props-with-arguments (assoc default-props :arguments  {"x-dead-letter-exchange" dead-letter-exchange-name})
           exchange-declare-called? (atom false)
