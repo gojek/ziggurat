@@ -13,30 +13,39 @@
 
 (defn get-default-ha-policy [cluster-config replica-count]
   (let [ha-mode      (get cluster-config :ha-mode "exactly")
-        ha-params    (get cluster-config :ha-params  replica-count)
+        ha-params    (get cluster-config :ha-params replica-count)
         ha-sync-mode (get cluster-config :ha-sync-mode "automatic")]
     (if (= "all" ha-mode)
       {:ha-mode "all" :ha-sync-mode ha-sync-mode}
       {:ha-mode ha-mode :ha-sync-mode ha-sync-mode :ha-params ha-params})))
 
+(defn set-ha-policy-on-host [host-endpoint username password ha-policy-body exchange-name queue-name]
+  (try
+    (binding [lh/*endpoint* host-endpoint
+              lh/*username* username
+              lh/*password* password]
+      (log/info "applying HA policies to queue: " queue-name)
+      (log/info "applying HA policies to exchange: " exchange-name)
+      (lh/set-policy "/" (str queue-name "_ha_policy")
+                     {:apply-to   "all"
+                      :pattern    (str "^" queue-name "|" exchange-name "$")
+                      :definition ha-policy-body}))
+    true
+    (catch Exception e
+      (log/error "error setting ha-policies" (.getMessage e))
+      false)))
+
 (defn set-ha-policy [queue-name exchange-name cluster-config]
-  (let [hosts-vec (str/split (:hosts cluster-config) #",")
-        hosts     (atom hosts-vec)]
-    (with-retry {:count      (count @hosts)
-                 :wait       50
-                 :on-failure #(log/error "setting ha-policies failed " (.getMessage %))}
-      (let [host      (first @hosts)
-            _         (swap! hosts rest)
-            ha-policy (get-default-ha-policy cluster-config (get-replica-count (count hosts-vec)))]
-        (binding [lh/*endpoint* (str "http://" host ":" (get cluster-config :admin-port 15672))
-                  lh/*username* (:username cluster-config)
-                  lh/*password* (:password cluster-config)]
-          (log/info "applying HA policies to queue: " queue-name)
-          (log/info "applying HA policies to exchange: " exchange-name)
-          (lh/set-policy "/" (str queue-name "_ha_policy")
-                         {:apply-to   "all"
-                          :pattern    (str "^" queue-name "|" exchange-name "$")
-                          :definition ha-policy}))))))
+  (let [username       (:username cluster-config)
+        password       (:password cluster-config)
+        hosts-vec      (str/split (:hosts cluster-config) #",")
+        ha-policy-body (get-default-ha-policy cluster-config (get-replica-count (count hosts-vec)))]
+    (loop [hosts hosts-vec]
+      (let [host-endpoint (str "http://" (first hosts) ":" (get cluster-config :admin-port 15672))
+            status (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)]
+        (when (or (not status)
+                  (> (count hosts) 0))
+          (recur (rest hosts)))))))
 
 (defn- declare-exchange [ch exchange]
   (le/declare ch exchange "fanout" {:durable true :auto-delete false})
