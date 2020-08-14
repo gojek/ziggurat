@@ -44,7 +44,7 @@
       (let [host-endpoint (str "http://" (first hosts) ":" (get cluster-config :admin-port 15672))
             status (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)]
         (when (or (not status)
-                  (> (count hosts) 0))
+                  (pos? (count hosts)))
           (recur (rest hosts)))))))
 
 (defn- declare-exchange [ch exchange]
