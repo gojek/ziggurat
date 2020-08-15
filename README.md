@@ -37,7 +37,7 @@ Ziggurat is built with the intent to abstract out
 - retrying failed messages
 - setting up an HTTP server
 ```
-from a clojure application such that a user only needs to pass a function that will be mapped to every message recieved from Kafka.
+from a clojure application such that a user only needs to pass a function that will be mapped to every message received from Kafka.
 
 Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
@@ -94,7 +94,7 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 
 * The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 * The main-fn returns a keyword which can be any of the below words
-    * :success - The message was successfuly processed and the stream should continue to the next message
+    * :success - The message was successfully processed and the stream should continue to the next message
     * :retry - The message failed to be processed and it should be retried.
     * :skip - The message should be skipped without reporting its failure or retrying the message
 * The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
@@ -199,7 +199,7 @@ The default middleware `default/protobuf->hash` assumes that the message is seri
 
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
-_The handler-fn gets a serialized message from kafka and thus we need a deserealize-message function. We have provided default deserializers in Ziggurat_
+_The handler-fn gets a serialized message from kafka and thus we need a deserialize-message function. We have provided default deserializers in Ziggurat_
 
 ### Deserializing JSON messages using JSON middleware
 Ziggurat 3.1.0 provides a middleware to deserialize JSON messages, along with proto.
@@ -429,7 +429,7 @@ and different timeout values.
 ```
 
 ## Deprecation Notice
-- Please note that the :datadog key inside the config file will be removed (sometime in the future) in favor of :statsd. Both contents are thesame though, it's just the key name was changed.
+- Please note that the :datadog key inside the config file will be removed (sometime in the future) in favor of :statsd. Both contents are same though, it's just the key name was changed.
   The reason for this is to avoid confusion with our users. We would still have backward compatibility for the :datadog key.
 
 ## Contribution
