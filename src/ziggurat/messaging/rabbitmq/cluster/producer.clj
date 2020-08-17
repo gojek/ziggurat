@@ -30,10 +30,9 @@
                      {:apply-to   "all"
                       :pattern    (str "^" queue-name "|" exchange-name "$")
                       :definition ha-policy-body}))
-    true
     (catch Exception e
       (log/error "error setting ha-policies" (.getMessage e))
-      false)))
+      nil)))
 
 (defn set-ha-policy [queue-name exchange-name cluster-config]
   (let [username       (:username cluster-config)
@@ -42,8 +41,8 @@
         ha-policy-body (get-default-ha-policy cluster-config (get-replica-count (count hosts-vec)))]
     (loop [hosts hosts-vec]
       (let [host-endpoint (str "http://" (first hosts) ":" (get cluster-config :admin-port 15672))
-            status (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)]
-        (when (and (not status)
+            http-resp     (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)]
+        (when (and (not (nil? http-resp))
                    (pos? (count hosts)))
           (recur (rest hosts)))))))
 
