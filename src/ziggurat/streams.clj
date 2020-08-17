@@ -154,6 +154,25 @@
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
 
 (declare stream)
+(def stream-map {})
+
+(defn stop-stream [topic-entity]
+  (log/debug (str "Stopping Kafka stream with topic-entity" topic-entity))
+  (if (get stream-map topic-entity)
+    (do (.close (get stream-map topic-entity))
+        {:status 200
+         :body   {:message "Kafka stream successfully stopped"}})
+    {:status 400
+     :body   {:error "No Kafka stream with provided topic-entity exists"}}))
+
+(defn start-stream [topic-entity]
+  (log/debug (str "Starting Kafka stream with topic-entity" topic-entity))
+  (if (get stream-map topic-entity)
+    (do (.start (get stream-map topic-entity))
+        {:status 200
+         :body   {:message "Kafka stream successfully started"}})
+    {:status 400
+     :body   {:error "No Kafka stream with provided topic-entity exists"}}))
 
 (defn stop-streams [streams]
   (log/debug "Stopping Kafka streams")
@@ -262,6 +281,7 @@
                                         (umap/deep-merge default-config-for-stream))
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (.start stream)
+               (conj stream-map {topic-entity stream})
                (conj streams stream)))
            []
            stream-routes)))
