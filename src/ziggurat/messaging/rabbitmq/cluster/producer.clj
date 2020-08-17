@@ -42,8 +42,8 @@
     (loop [hosts hosts-vec]
       (let [host-endpoint (str "http://" (first hosts) ":" (get cluster-config :admin-port 15672))
             http-resp     (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)]
-        (when (and (not (nil? http-resp))
-                   (pos? (count hosts)))
+        (when (and  (nil? http-resp)
+                    (pos? (count hosts)))
           (recur (rest hosts)))))))
 
 (defn- declare-exchange [ch exchange]
