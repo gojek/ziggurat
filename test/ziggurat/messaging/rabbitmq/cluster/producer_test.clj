@@ -53,6 +53,7 @@
                                                (= name ha-policy-name))
                                       {}))]
         (is (not (nil? (rmc-prod/set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)))))))
+
   (testing "it should apply ha-policy on a host and return a nil response when an exception is thrown"
     (let [host-endpoint "http://localhost:15672"
           username "test"
@@ -62,7 +63,15 @@
           queue-name "test-queue"]
       (with-redefs [lh/set-policy (fn [^String vhost ^String name policy]
                                     (throw (Exception. "error applying ha policies")))]
-        (is (nil? (rmc-prod/set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)))))))
+        (is (nil? (rmc-prod/set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name))))))
+
+  (testing "it should set ha-policies `hosts` number of times if an excpetion is thrown"
+    (let [call-count (atom 0)]
+      (with-redefs [lh/set-policy (fn [^String vhost ^String name policy]
+                                    (swap! call-count inc)
+                                    (throw (Exception. "error applying ha policies")))]
+        (rmc-prod/set-ha-policy "" "" {:hosts "localhost-1,localhost-2,localhost-3"})
+        (is (= @call-count 3))))))
 
 (deftest create-and-bind-queue-test
   (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
