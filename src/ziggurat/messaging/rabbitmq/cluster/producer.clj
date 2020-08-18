@@ -41,10 +41,11 @@
         ha-policy-body (get-default-ha-policy cluster-config (get-replica-count (count hosts-vec)))]
     (loop [hosts hosts-vec]
       (let [host-endpoint (str "http://" (first hosts) ":" (get cluster-config :admin-port 15672))
-            http-resp     (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)]
-        (when (and  (nil? http-resp)
-                    (pos? (count hosts)))
-          (recur (rest hosts)))))))
+            resp     (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)
+            remaining-hosts (rest hosts)]
+        (when (and  (nil? resp)
+                    (pos? (count remaining-hosts)))
+          (recur remaining-hosts))))))
 
 (defn- declare-exchange [ch exchange]
   (le/declare ch exchange "fanout" {:durable true :auto-delete false})
