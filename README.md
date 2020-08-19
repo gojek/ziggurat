@@ -263,7 +263,7 @@ JAEGER_AGENT_HOST: "localhost"
 JAEGER_AGENT_PORT: 6831
 ```
 
-## Stream Joins
+## Stream Joins [Alpha feature]
 This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
 ```clojure
 {:ziggurat  {:stream-router        {:stream-id            {
