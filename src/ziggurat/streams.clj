@@ -243,7 +243,7 @@
                       topology)
         top         (topology-fn handler-fn stream-config topic-entity channels)]
 
-    (when (not (nil? top))
+    (when-not (nil? top)
       (KafkaStreams. ^Topology top
                      ^Properties (properties stream-config)
                      (new TracingKafkaClientSupplier tracer)))))
@@ -268,7 +268,7 @@
                                         (merge-consumer-type-config)
                                         (umap/deep-merge default-config-for-stream))
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
-               (when (not (nil? stream))
+               (when-not (nil? stream)
                  (.start stream)
                  (conj streams stream))))
            []
