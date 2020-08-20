@@ -262,8 +262,20 @@ JAEGER_SERVICE_NAME: "service-name"
 JAEGER_AGENT_HOST: "localhost"
 JAEGER_AGENT_PORT: 6831
 ```
+## Alpha features
+We recommend that you do not use alpha features in production, as the API contract, and it's implementation is likely to change
+in the future releases.
+#### How to enable alpha features in Ziggurat
+To enable alpha features in Ziggurat add the following config to your actor's `config.edn` file under the `:ziggurat` key
+```clojure
+{:ziggurat {:alpha-features {:feature-name true}}}
+```
+All alpha features in this doc will contain an Alpha feature tag.
+
 
 ## Stream Joins [Alpha feature]
+Refer to the alpha features section on how to enable Stream joins, set the keyword `:stream-joins` to `true` to enable it.
+
 This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
 ```clojure
 {:ziggurat  {:stream-router        {:stream-id            {
