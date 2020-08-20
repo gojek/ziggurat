@@ -1,24 +1,24 @@
-version: '3.3'
+version: "3.3"
 
 services:
   rabbitmq:
-    image: 'rabbitmq:3.8.2-management-alpine'
+    image: "rabbitmq:3.8.2-management-alpine"
     ports:
-     - '5672:5672'
-     - '15672:15672'
-    container_name: 'ziggurat_rabbitmq'
+      - "5672:5672"
+      - "15672:15672"
+    container_name: "ziggurat_rabbitmq"
   zookeeper:
-    image: 'bitnami/zookeeper:latest'
+    image: "bitnami/zookeeper:latest"
     ports:
-     - '2181:2181'
-    container_name: 'ziggurat_zookeeper'
+      - "2181:2181"
+    container_name: "ziggurat_zookeeper"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
   kafka:
-    image: 'bitnami/kafka:${KAFKA_VERSION}'
+    image: "bitnami/kafka:${KAFKA_VERSION}"
     ports:
-      - '9092:9092'
-    container_name: 'ziggurat_kafka'
+      - "9092:9092"
+    container_name: "ziggurat_kafka"
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
