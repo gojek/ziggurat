@@ -213,7 +213,8 @@
   (when (config/get-in-config [:alpha-features :stream-joins])
     (log/warn "[Alpha Feature]: Stream joins is an alpha feature."
               "Please use it only after understanding its risks and implications."
-              "Its contract can change in the future releases of Ziggurat.")
+              "Its contract can change in the future releases of Ziggurat."
+              "Please refer to the README doc for more information.")
     (let [builder    (StreamsBuilder.)
           _          (.addStateStore builder (store-supplier-builder))
           stream-map (map (fn [[topic-key topic-value] [_ cfg]]
