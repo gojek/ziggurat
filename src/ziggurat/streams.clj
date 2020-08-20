@@ -223,8 +223,7 @@
       (->> stream
            (header-transform-values)
            (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
-      (.build builder)))
-  (constantly nil))
+      (.build builder))))
 
 (defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
@@ -243,6 +242,7 @@
                       :stream-joins stream-joins-topology
                       topology)
         top         (topology-fn handler-fn stream-config topic-entity channels)]
+
     (when (not (nil? top))
       (KafkaStreams. ^Topology top
                      ^Properties (properties stream-config)
