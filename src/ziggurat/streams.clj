@@ -5,6 +5,7 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.header-transformer :as header-transformer]
             [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
+            [ziggurat.util.logging :as zl]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.util.map :as umap]
@@ -208,9 +209,9 @@
      :cfg    cfg-2}))
 
 (defn- stream-joins-topology [handler-fn {:keys [input-topics join-cfg oldest-processed-message-in-s]} topic-entity channels]
-  (log/warn "[Alpha Feature]: Stream joins is an alpha feature."
-            "Please use it only after understanding its risks and implications."
-            "Its contract can change in the future releases of Ziggurat.")
+  (ziggurat.util.logging/log-warn-colored "[Alpha Feature]: Stream joins is an alpha feature."
+                                          "Please use it only after understanding its risks and implications."
+                                          "Its contract can change in the future releases of Ziggurat.")
   (let [builder          (StreamsBuilder.)
         _                (.addStateStore builder (store-supplier-builder))
         stream-map       (map (fn [[topic-key topic-value] [_ cfg]]
