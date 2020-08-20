@@ -9,10 +9,3 @@
      ~@body
      (finally (doseq [[k# _#] ~context-map] (ThreadContext/remove (name k#))))))
 
-(defn log-warn-colored [& message]
-  (let [red      "\u001b[31m"
-        reset    "\u001b[0m"
-        msg-list (conj red message)]
-    (apply log/warn msg-list)
-    (log/warn reset "")))
-
