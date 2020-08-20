@@ -104,12 +104,12 @@
             (let [count "avasdas"
                   topic-entity "default"
                   params {:count count :topic-name topic-entity}
-                  {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
-                                                "/v1/dead_set"
-                                                true
-                                                true
-                                                {}
-                                                params)]
+                  {:keys [status _]} (tu/get (-> (ziggurat-config) :http-server :port)
+                                             "/v1/dead_set"
+                                             true
+                                             true
+                                             {}
+                                             params)]
               (is (= 400 status)))))
 
         (testing "should return 400 when get /v1/dead_set is called with negative count val"
@@ -117,12 +117,12 @@
             (let [count "-10"
                   topic-entity "default"
                   params {:count count :topic-name topic-entity}
-                  {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
-                                                "/v1/dead_set"
-                                                true
-                                                true
-                                                {}
-                                                params)]
+                  {:keys [status _]} (tu/get (-> (ziggurat-config) :http-server :port)
+                                             "/v1/dead_set"
+                                             true
+                                             true
+                                             {}
+                                             params)]
               (is (= 400 status)))))
 
         (testing "should return 400 when get /v1/dead_set is called without topic entity"
@@ -169,7 +169,7 @@
 
         (testing "should return 200 when delete /v1/dead_set is called with valid parameters"
           (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]
-            (let [count 10
+            (let [count "10"
                   params {:count count :topic-entity "default"}
                   {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                    "/v1/dead_set"
