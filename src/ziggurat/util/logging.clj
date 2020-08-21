@@ -1,4 +1,5 @@
 (ns ziggurat.util.logging
+  (:require [clojure.tools.logging :as log])
   (:import (org.apache.logging.log4j ThreadContext)))
 
 (defmacro with-context
@@ -7,3 +8,4 @@
      (doseq [[k# v#] ~context-map] (ThreadContext/put (name k#) (str v#)))
      ~@body
      (finally (doseq [[k# _#] ~context-map] (ThreadContext/remove (name k#))))))
+
