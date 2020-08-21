@@ -20,7 +20,7 @@
     (Integer/parseInt count)
     (catch NumberFormatException ex
       (log/errorf "count %s is not an integer" count)
-      (str "Count %s is not an integer" count))))
+      nil)))
 
 (defn- validate-channel-or-topic-entity [topic-entity stream-routes channel]
   (some? (get-in stream-routes [(keyword topic-entity) (or (keyword channel) :handler-fn)])))
