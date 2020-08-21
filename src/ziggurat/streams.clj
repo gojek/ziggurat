@@ -202,7 +202,7 @@
                               {topic-key-1 left topic-key-2 right}))
         out-strm          (if cfg-1
                             (case join-type
-                              :left  (.leftJoin strm-1 strm-2 value-joiner join-window-ms)
+                              :left (.leftJoin strm-1 strm-2 value-joiner join-window-ms)
                               :outer (.outerJoin strm-1 strm-2 value-joiner join-window-ms)
                               (.join strm-1 strm-2 value-joiner join-window-ms))
                             strm-1)]
@@ -210,6 +210,8 @@
      :cfg    cfg-2}))
 
 (defn- stream-joins-topology [handler-fn {:keys [input-topics join-cfg oldest-processed-message-in-s]} topic-entity channels]
+  (log/warn "Stream joins config found for topic entity " topic-entity "."
+            "Please refer to the README doc on how to enable alpha features.")
   (when (config/get-in-config [:alpha-features :stream-joins])
     (log/warn "[Alpha Feature]: Stream joins is an alpha feature."
               "Please use it only after understanding its risks and implications."
