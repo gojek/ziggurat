@@ -274,8 +274,9 @@ All alpha features in this doc will contain an Alpha feature tag.
 
 
 ## Stream Joins [Alpha feature]
-Refer to the alpha features section on how to enable Stream joins, set the keyword `:stream-joins` to `true` to enable it.
+Stream joins is an alpha feature, and we recommend that you do not use it in production. It's API contract might likely change in the future.
 
+Refer to the alpha features section on how to enable Stream joins, set the keyword `:stream-joins` to `true` to enable it.
 This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
 ```clojure
 {:ziggurat  {:stream-router        {:stream-id            {
