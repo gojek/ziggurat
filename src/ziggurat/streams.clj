@@ -5,10 +5,12 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.header-transformer :as header-transformer]
             [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
+            [ziggurat.util.logging :as zl]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.util.map :as umap]
-            [ziggurat.tracer :refer [tracer]])
+            [ziggurat.tracer :refer [tracer]]
+            [ziggurat.config :as config])
   (:import [java.util Properties]
            [java.util.regex Pattern]
            [org.apache.kafka.clients.consumer ConsumerConfig]
@@ -219,7 +221,7 @@
                               {topic-key-1 left topic-key-2 right}))
         out-strm          (if cfg-1
                             (case join-type
-                              :left  (.leftJoin strm-1 strm-2 value-joiner join-window-ms)
+                              :left (.leftJoin strm-1 strm-2 value-joiner join-window-ms)
                               :outer (.outerJoin strm-1 strm-2 value-joiner join-window-ms)
                               (.join strm-1 strm-2 value-joiner join-window-ms))
                             strm-1)]
@@ -227,16 +229,23 @@
      :cfg    cfg-2}))
 
 (defn- stream-joins-topology [handler-fn {:keys [input-topics join-cfg oldest-processed-message-in-s]} topic-entity channels]
-  (let [builder          (StreamsBuilder.)
-        _                (.addStateStore builder (store-supplier-builder))
-        stream-map       (map (fn [[topic-key topic-value] [_ cfg]]
-                                (let [topic-name (:name topic-value)]
-                                  {:stream (.stream builder topic-name) :cfg cfg :topic-name topic-name :topic-key topic-key})) input-topics (assoc join-cfg :end nil))
-        {stream :stream} (reduce (partial join-streams oldest-processed-message-in-s handler-fn channels topic-entity) stream-map)]
-    (->> stream
-         (header-transform-values)
-         (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
-    (.build builder)))
+  (log/warn "Stream joins config found for topic entity " topic-entity "."
+            "Please refer to the README doc on how to enable alpha features.")
+  (when (config/get-in-config [:alpha-features :stream-joins])
+    (log/warn "[Alpha Feature]: Stream joins is an alpha feature."
+              "Please use it only after understanding its risks and implications."
+              "Its contract can change in the future releases of Ziggurat."
+              "Please refer to the README doc for more information.")
+    (let [builder    (StreamsBuilder.)
+          _          (.addStateStore builder (store-supplier-builder))
+          stream-map (map (fn [[topic-key topic-value] [_ cfg]]
+                            (let [topic-name (:name topic-value)]
+                              {:stream (.stream builder topic-name) :cfg cfg :topic-name topic-name :topic-key topic-key})) input-topics (assoc join-cfg :end nil))
+          {stream :stream} (reduce (partial join-streams oldest-processed-message-in-s handler-fn channels topic-entity) stream-map)]
+      (->> stream
+           (header-transform-values)
+           (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
+      (.build builder))))
 
 (defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
   (let [builder           (StreamsBuilder.)
@@ -254,11 +263,12 @@
   (let [topology-fn (case (:consumer-type stream-config)
                       :stream-joins stream-joins-topology
                       topology)
-        top         (topology-fn handler-fn stream-config topic-entity channels)
-        _           (log/info (.describe top))]
-    (KafkaStreams. ^Topology top
-                   ^Properties (properties stream-config)
-                   (new TracingKafkaClientSupplier tracer))))
+        top         (topology-fn handler-fn stream-config topic-entity channels)]
+
+    (when-not (nil? top)
+      (KafkaStreams. ^Topology top
+                     ^Properties (properties stream-config)
+                     (new TracingKafkaClientSupplier tracer)))))
 
 (defn- merge-consumer-type-config
   [config]
@@ -280,9 +290,10 @@
                                         (merge-consumer-type-config)
                                         (umap/deep-merge default-config-for-stream))
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
-               (.start stream)
-               (conj stream-map {topic-entity stream})
-               (conj streams stream)))
+               (when-not (nil? stream)
+                 (.start stream)
+                 (conj stream-map {topic-entity stream})
+                 (conj streams stream))))
            []
            stream-routes)))
 
