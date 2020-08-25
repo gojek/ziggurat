@@ -6,7 +6,6 @@
             [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [ring.logger :refer [wrap-with-logger]]
             [ziggurat.resource.dead-set :as ds]
-            [ziggurat.streams :as streams]
             [ziggurat.server.middleware :as m]))
 
 (defn ping [_request]
@@ -21,8 +20,6 @@
    ["v1/dead_set" {:delete (ds/delete-messages)}]
    ["v1/dead_set/replay" {:post (ds/get-replay)}]
    ["v1/dead_set" {:get (ds/get-view)}]
-   ["v1/stream/stop" {:post (streams/stop-stream)}]
-   ["v1/stream/start" {:post (streams/start-stream)}]
    [true (fn [_req] (ring.util.response/not-found ""))]])
 
 (defn handler [actor-routes]

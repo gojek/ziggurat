@@ -156,29 +156,22 @@
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
 
 (declare stream)
-(def stream-map {})
 
 (defn stop-stream [topic-entity]
-  (log/debug (str "Stopping Kafka stream with topic-entity" topic-entity))
-  (if (get stream-map topic-entity)
-    (do (.close (get stream-map topic-entity))
-        {:status 200
-         :body   {:message "Kafka stream successfully stopped"}})
-    {:status 400
-     :body   {:error "No Kafka stream with provided topic-entity exists"}}))
+  (if (get stream topic-entity)
+    (do (.close (get stream topic-entity))
+        (log/info (str "Stopping Kafka stream with topic-entity" topic-entity)))
+    (log/error "No Kafka stream with provided topic-entity exists")))
 
 (defn start-stream [topic-entity]
-  (log/debug (str "Starting Kafka stream with topic-entity" topic-entity))
-  (if (get stream-map topic-entity)
-    (do (.start (get stream-map topic-entity))
-        {:status 200
-         :body   {:message "Kafka stream successfully started"}})
-    {:status 400
-     :body   {:error "No Kafka stream with provided topic-entity exists"}}))
+  (if (get stream topic-entity)
+    (do (.start (get stream topic-entity))
+        (log/info "Kafka stream successfully started"))
+    (log/error "No Kafka stream with provided topic-entity exists")))
 
 (defn stop-streams [streams]
   (log/debug "Stopping Kafka streams")
-  (doseq [stream streams]
+  (doseq [[topic-entity stream] streams]
     (.close stream)))
 
 (defn- traced-handler-fn [handler-fn channels message topic-entity]
@@ -292,9 +285,8 @@
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (when-not (nil? stream)
                  (.start stream)
-                 (conj stream-map {topic-entity stream})
-                 (conj streams stream))))
-           []
+                 (assoc streams topic-entity stream))))
+           {}
            stream-routes)))
 
 (defstate stream
