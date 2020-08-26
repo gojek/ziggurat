@@ -1,6 +1,7 @@
 (ns ziggurat.streams-test
   (:require [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
             [protobuf.core :as proto]
+            [mount.core :as mount]
             [ziggurat.streams :refer [start-streams stop-streams start-stream stop-stream]]
             [ziggurat.fixtures :as fix]
             [ziggurat.config :refer [ziggurat-config]]
@@ -107,6 +108,7 @@
         times                  6
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _                      (mount/start)
         streams                (start-streams {:default {:handler-fn handler-fn}}
                                               (-> (ziggurat-config)
                                                   (assoc-in [:stream-router :default :application-id] (rand-application-id))
@@ -126,6 +128,7 @@
         times                  6
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _                      (mount/start)
         streams                (start-streams {:default {:handler-fn handler-fn}}
                                               (-> (ziggurat-config)
                                                   (assoc-in [:stream-router :default :application-id] (rand-application-id))
@@ -137,7 +140,6 @@
                                                         (MockTime.))
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-stream :default)
-    (start-stream :default)
     (start-stream :default)
     (is (= times @message-received-count))))
 

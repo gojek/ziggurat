@@ -160,14 +160,21 @@
 (defn stop-stream [topic-entity]
   (if (get stream topic-entity)
     (do (.close (get stream topic-entity))
-        (log/info (str "Stopping Kafka stream with topic-entity" topic-entity)))
+        (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
     (log/error "No Kafka stream with provided topic-entity exists")))
 
 (defn start-stream [topic-entity]
-  (if (get stream topic-entity)
-    (do (.start (get stream topic-entity))
-        (log/info "Kafka stream successfully started"))
-    (log/error "No Kafka stream with provided topic-entity exists")))
+  (log/info KafkaStreams)
+  (let [stream (get stream topic-entity)]
+    (if stream
+      (let [state (.state stream)]
+        (log/info "--------------------------------------------------------------------")
+        (log/info org.apache.kafka.streams.KafkaStreams/values)
+        (if (= state org.apache.kafka.streams.KafkaStreams$State/NOT_RUNNING)
+          (do (.start stream)
+              (log/info (str "Kafka stream with entity " topic-entity " successfully started")))
+          (log/error "Kafka stream already up and running")))
+      (log/error "No Kafka stream with provided topic-entity exists"))))
 
 (defn stop-streams [streams]
   (log/debug "Stopping Kafka streams")
