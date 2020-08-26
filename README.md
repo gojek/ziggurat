@@ -307,7 +307,7 @@ Your handler function will receive a message in the following format/structure
 {:topic-1-key "message-from-1st-topic" :topic-2-key "message-from-2nd-topic"}
 ```
 
-## Connecting to a RabbitMQ cluster (alpha feature)
+## Connecting to a RabbitMQ cluster
 * To connect to RabbitMQ clusters add the following config to your `config.edn`
 ```clojure
 {:ziggurat {:messaging {:constructor "ziggurat.messaging.rabbitmq-cluster-wrapper/->RabbitMQMessaging"
@@ -315,17 +315,12 @@ Your handler function will receive a message in the following format/structure
                                    :port [5672 :int]
                                    :prefetch-count  [3 :int]
                                    :username        "guest"
-                                   :password        "guest"
-                                   :ha-mode         "all"
-                                   :admin-port      [15672 :int]
-                                   :ha-sync-mode    "automatic"
+                                   :password        "guest" 
                                    :channel-timeout [2000 :int]}}}}
 ```
 * `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
 * `:port` specifies the port number on which the RabbitMQ nodes are running.
-* `:ha-mode` is set to `"all"`.
-* `:ha-sync-mode` can be set to `"automatic"` OR `"manual"`.
-* `:admin-port` is the port on which the RabbitMQ management UI is exposed, defaults to `15672`.
+* By default, your queues and exchanges are replicated across (n+1)/2 nodes in the cluster
 
 
 ## Configuration
