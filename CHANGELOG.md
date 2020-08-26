@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.3.1-alpha.10 - 2020-08-19
+- Moves stream joins behind an alpha feature flag
+
 ## 3.3.1-alpha.9 - 2020-08-07
 - Defaults RabbitMQ queue replication to `(n/2) + 1` nodes, where `n` is the number of nodes in the cluster
 
