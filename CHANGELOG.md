@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.4.0 - 2020-08-21
+- Releases Stable Ziggurat version with support for RabbitMQ clusters
+
 ## 3.3.1-alpha.10 - 2020-08-19
 - Moves stream joins behind an alpha feature flag
 
