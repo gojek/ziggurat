@@ -154,6 +154,21 @@
                 (is (= 400 status))
                 (is (= expected-body body))))))
 
+        (testing "should return 400 when get /v1/dead_set is called with invalid count val"
+          (with-redefs [channel-retry-enabled? (constantly true)]
+            (with-redefs [ds/view (fn [_ _ _] nil)]
+              (let [expected-body {:error "Count should be positive integer"}
+                    count "-10"
+                    params {:count count :topic-entity "default"}
+                    {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
+                                                  "/v1/dead_set"
+                                                  true
+                                                  true
+                                                  {}
+                                                  params)]
+                (is (= 400 status))
+                (is (= expected-body body))))))
+
         (testing "should return 200 when get /v1/dead_set is called with valid count val"
           (with-redefs [ds/view (fn [_ _ _] {:foo "bar"})]
             (let [count "10"
@@ -179,6 +194,19 @@
                                                    params)]
               (is (= 200 status))
               (is (= (:message body) "Deleted messages successfully")))))
+
+        (testing "should return 400 when delete /v1/dead_set is called with invalid count val"
+          (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]
+            (let [count "-10"
+                  params {:count count :topic-entity "default"}
+                  {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port)
+                                                   "/v1/dead_set"
+                                                   true
+                                                   true
+                                                   {}
+                                                   params)]
+              (is (= 400 status))
+              (is (= (:error body) "Count should be positive integer")))))
 
         (testing "should return 400 when delete /v1/dead_set is called with invalid count val"
           (with-redefs [ds/delete (fn [_ _ _] nil)]
