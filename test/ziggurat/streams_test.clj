@@ -20,6 +20,7 @@
            [io.opentracing.tag Tags]))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
+                                    fix/silence-logging
                                     fix/mount-metrics]))
 
 (defn- props []
