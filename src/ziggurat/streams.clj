@@ -157,20 +157,24 @@
 
 (declare stream)
 
+(defn close-stream
+  [topic-entity stream]
+  (let [state (.state stream)]
+    (if (= state org.apache.kafka.streams.KafkaStreams$State/RUNNING)
+      (do (.close stream)
+          (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
+      (log/error (str "Kafka stream cannot be stopped at the moment, current state is " state)))))
+
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]
     (if stream
-      (let [state (.state stream)]
-        (if (= state org.apache.kafka.streams.KafkaStreams$State/RUNNING)
-          (do (.close stream)
-              (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
-          (log/error (str "Kafka stream cannot be stopped at the moment, current state is " state))))
-      (log/error "No Kafka stream with provided topic-entity exists"))))
+      (close-stream topic-entity stream)
+      (log/error (str "No Kafka stream with provided topic-entity: " topic-entity " exists.")))))
 
 (defn stop-streams [streams]
   (log/debug "Stopping Kafka streams")
   (doseq [[topic-entity stream] streams]
-    (.close stream)))
+    (close-stream topic-entity stream)))
 
 (defn- traced-handler-fn [handler-fn channels message topic-entity]
   (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message) tracer)
@@ -288,7 +292,7 @@
            stream-routes)))
 
 (defstate stream
-  :start (do (log/info "Starting Kafka stream")
+  :start (do (log/info "Starting Kafka streams")
              (start-streams (:stream-routes (mount/args)) (ziggurat-config)))
-  :stop (do (log/info "Stopping Kafka stream")
+  :stop (do (log/info "Stopping Kafka streams")
             (stop-streams stream)))

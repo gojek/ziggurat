@@ -20,7 +20,6 @@
            [io.opentracing.tag Tags]))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
-                                    fix/silence-logging
                                     fix/mount-metrics]))
 
 (defn- props []
@@ -119,8 +118,49 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (Thread/sleep 10000)                                     ;;wating for streams to consume messages
     (stop-stream :default)
+    (is (= times @message-received-count))))
+
+(deftest stop-duplicate-stream-test
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count)
+        times                  6
+        kvs                    (repeat times message-key-value)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _                      (mount/start)
+        streams                (start-streams {:default {:handler-fn handler-fn}}
+                                              (-> (ziggurat-config)
+                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+    (Thread/sleep 10000)                                    ;;waiting for streams to start
+    (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                        kvs
+                                                        (props)
+                                                        (MockTime.))
+    (Thread/sleep 10000)                                     ;;wating for streams to consume messages
+    (stop-stream :default)
+    (stop-stream :default)                                   ;;attempting to close same stream again
+    (is (= times @message-received-count))))
+
+(deftest stop-invalid-stream-test
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count)
+        times                  6
+        kvs                    (repeat times message-key-value)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _                      (mount/start)
+        streams                (start-streams {:default {:handler-fn handler-fn}}
+                                              (-> (ziggurat-config)
+                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+    (Thread/sleep 10000)                                    ;;waiting for streams to start
+    (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                        kvs
+                                                        (props)
+                                                        (MockTime.))
+    (Thread/sleep 10000)                                     ;;wating for streams to consume messages
+    (stop-stream :invalid-topic-entity)
     (is (= times @message-received-count))))
 
 (deftest start-stream-joins-test
