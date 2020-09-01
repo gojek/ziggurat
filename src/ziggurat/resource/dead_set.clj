@@ -52,7 +52,7 @@
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Topic entity/channel should be present and valid"}})
+             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
           not-found-for-retry)))))
 
 (defn get-view []
@@ -68,7 +68,7 @@
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Topic entity/channel should be present and valid"}})
+             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
           not-found-for-retry)))))
 
 (defn delete-messages []
@@ -84,5 +84,5 @@
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Topic entity/channel should be present and valid"}})
+             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
           not-found-for-retry)))))
