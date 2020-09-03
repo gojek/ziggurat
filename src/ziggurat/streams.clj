@@ -156,6 +156,7 @@
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
 
 (declare stream)
+(def restarted-streams (atom {}))
 
 (defn close-stream
   [topic-entity stream]
@@ -163,7 +164,10 @@
     (if (= state org.apache.kafka.streams.KafkaStreams$State/RUNNING)
       (do (.close stream)
           (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
-      (log/error (str "Kafka stream cannot be stopped at the moment, current state is " state)))))
+      (if (get @restarted-streams topic-entity)
+        (if (= (.state (get @restarted-streams topic-entity)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)
+          (close-stream topic-entity (get @restarted-streams topic-entity)))
+        (log/error (str "Kafka stream cannot be stopped at the moment, current state is " state))))))
 
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]
@@ -290,6 +294,17 @@
                  (assoc streams topic-entity stream))))
            {}
            stream-routes)))
+
+(defn start-stream
+  [topic-entity]
+  (reset! restarted-streams (reduce (fn [new-stream-map stream-object]
+                                      (if (and (= (.state (second stream-object)) org.apache.kafka.streams.KafkaStreams$State/NOT_RUNNING)
+                                               (= (first stream-object) topic-entity))
+                                        (let [new-stream-object-map (start-streams (hash-map (first stream-object) (get (:stream-routes (mount/args)) (first stream-object))))]
+                                          (assoc new-stream-map (first stream-object) (get new-stream-object-map (first stream-object))))
+                                        (assoc new-stream-map (first stream-object) (second stream-object))))
+                                    {}
+                                    stream)))
 
 (defstate stream
   :start (do (log/info "Starting Kafka streams")
