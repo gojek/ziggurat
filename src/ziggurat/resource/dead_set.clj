@@ -22,9 +22,8 @@
       (log/errorf "count %s is not an integer" count)
       nil)))
 
-(defn- validate-params [count topic-entity stream-routes channel]
-  (and (some? (get-in stream-routes [(keyword topic-entity) (or (keyword channel) :handler-fn)]))
-       (validate-count count)))
+(defn- validate-channel-or-topic-entity [topic-entity stream-routes channel]
+  (some? (get-in stream-routes [(keyword topic-entity) (or (keyword channel) :handler-fn)])))
 
 (defn- channel-request? [channel]
   (some? channel))
@@ -45,12 +44,15 @@
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (retry-allowed? topic-entity channel)
-          (if (validate-params parsed-count topic-entity stream-routes channel)
-            (do (r/replay parsed-count topic-entity channel)
-                {:status 200
-                 :body   {:message "Requeued messages on the queue for retrying"}})
+          (if (validate-channel-or-topic-entity topic-entity stream-routes channel)
+            (if (validate-count parsed-count)
+              (do (r/replay parsed-count topic-entity channel)
+                  {:status 200
+                   :body   {:message "Requeued messages on the queue for retrying"}})
+              {:status 400
+               :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})
+             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
           not-found-for-retry)))))
 
 (defn get-view []
@@ -58,11 +60,15 @@
     (fn view [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (retry-allowed? topic-entity channel)
-          (if (validate-params parsed-count topic-entity stream-routes channel)
-            {:status 200
-             :body   {:messages (r/view parsed-count topic-entity channel)}}
+          (if (validate-channel-or-topic-entity topic-entity stream-routes channel)
+            (if (validate-count parsed-count)
+              (do (r/view parsed-count topic-entity channel)
+                  {:status 200
+                   :body   {:messages (r/view parsed-count topic-entity channel)}})
+              {:status 400
+               :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})
+             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
           not-found-for-retry)))))
 
 (defn delete-messages []
@@ -70,11 +76,13 @@
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (retry-allowed? topic-entity channel)
-          (if (validate-params parsed-count topic-entity stream-routes channel)
-            (do
-              (r/delete parsed-count topic-entity channel)
-              {:status 200
-               :body   {:message "Deleted messages successfully"}})
+          (if (validate-channel-or-topic-entity topic-entity stream-routes channel)
+            (if (validate-count parsed-count)
+              (do (r/delete parsed-count topic-entity channel)
+                  {:status 200
+                   :body   {:message "Deleted messages successfully"}})
+              {:status 400
+               :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Count should be the positive integer and topic entity/ channel should be present"}})
+             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
           not-found-for-retry)))))
