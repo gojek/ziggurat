@@ -16,11 +16,12 @@
            [kafka.utils MockTime]
            [org.apache.kafka.clients.producer ProducerConfig]
            [org.apache.kafka.streams KeyValue]
+           [org.apache.kafka.streams KafkaStreams$State]
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
            [io.opentracing.tag Tags]))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
-                                    fix/silence-logging
+                                    ; fix/silence-logging
                                     fix/mount-metrics]))
 
 (defn- props []
@@ -59,6 +60,13 @@
      (when (= expected-message message-from-kafka)
        (swap! message-received-count inc))
      :success)))
+
+(defn- poll-to-check-if-running
+  ([stream]
+   (poll-to-check-if-running stream :default))
+  ([stream topic-entity]
+   (while (not (= (.state (get stream topic-entity)) KafkaStreams$State/RUNNING))
+     (Thread/sleep 2000))))
 
 (defn- rand-application-id []
   (str "test" "-" (rand-int 999999999)))
@@ -107,80 +115,103 @@
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)
-        streams                (start-streams {:default {:handler-fn handler-fn}}
-                                              (-> (ziggurat-config)
-                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (stop-stream :default)
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)))
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/REBALANCING)))))
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
+                                                                                      (ziggurat-config)))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+  (poll-to-check-if-running ziggurat.streams/stream)
+  (stop-stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))))
 
 (deftest start-stopped-stream-test
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)
-        streams                (start-streams {:default {:handler-fn handler-fn}}
-                                              (-> (ziggurat-config)
-                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (stop-stream :default)
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)))
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/REBALANCING)))
-    (start-stream :default)
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (is (not (= (.state (get @ziggurat.streams/restarted-streams :default)) org.apache.kafka.streams.KafkaStreams$State/NOT_RUNNING)))))
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
+                                                                                      (ziggurat-config)))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+  (poll-to-check-if-running ziggurat.streams/stream)
+  (stop-stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (start-stream :default)
+  (poll-to-check-if-running ziggurat.streams/stream)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/NOT_RUNNING))))
 
 (deftest stop-restarted-stream-test
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)
-        streams                (start-streams {:default {:handler-fn handler-fn}}
-                                              (-> (ziggurat-config)
-                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (stop-stream :default)
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)))
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/REBALANCING)))
-    (start-stream :default)
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (is (not (= (.state (get @ziggurat.streams/restarted-streams :default)) org.apache.kafka.streams.KafkaStreams$State/NOT_RUNNING)))
-    (stop-stream :default)
-    (is (not (= (.state (get @ziggurat.streams/restarted-streams :default)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)))
-    (is (not (= (.state (get @ziggurat.streams/restarted-streams :default)) org.apache.kafka.streams.KafkaStreams$State/REBALANCING)))))
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
+                                                                                      (ziggurat-config)))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+  (poll-to-check-if-running ziggurat.streams/stream)
+  (stop-stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (start-stream :default)
+  (poll-to-check-if-running ziggurat.streams/stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/NOT_RUNNING)))
+  (stop-stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))))
+
+(deftest stop-desired-stream-only-test
+  (let [message-received-count (atom 0)
+        mapped-fn              (get-mapped-fn message-received-count)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}
+                                                                                       :using-string-serde {:handler-fn handler-fn}}
+                                                                                      (-> (ziggurat-config)
+                                                                                          (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                                                          (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)
+                                                                                          (assoc-in [:stream-router :using-string-serde :application-id] (rand-application-id))
+                                                                                          (assoc-in [:stream-router :using-string-serde :changelog-topic-replication-factor] changelog-topic-replication-factor))))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+  (poll-to-check-if-running ziggurat.streams/stream)
+  (stop-stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (is (= (.state (get ziggurat.streams/stream :using-string-serde)) KafkaStreams$State/RUNNING)))
 
 (deftest stop-duplicate-stream-test
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)
-        streams                (start-streams {:default {:handler-fn handler-fn}}
-                                              (-> (ziggurat-config)
-                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (stop-stream :default)
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)))
-    (is (not (= (.state (get ziggurat.streams/stream :default)) org.apache.kafka.streams.KafkaStreams$State/REBALANCING)))
-    (stop-stream :default)                                   ;;attempting to close same stream again
-    ))
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
+                                                                                      (ziggurat-config)))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+  (poll-to-check-if-running ziggurat.streams/stream)
+  (stop-stream :default)
+  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (stop-stream :default))
 
 (deftest stop-invalid-stream-test
-  (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+  (let [is-close-called        (atom 0)
+        mapped-fn              (get-mapped-fn is-close-called)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)
-        streams                (start-streams {:default {:handler-fn handler-fn}}
-                                              (-> (ziggurat-config)
-                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (stop-stream :invalid-topic-entity)))
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
+                                                                                      (ziggurat-config)))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}})
+    (poll-to-check-if-running ziggurat.streams/stream)
+    (with-redefs [ziggurat.streams/close-stream (fn [] (swap! is-close-called inc))]
+      (stop-stream :invalid-topic-entity)
+      (is (= @is-close-called 0)))))
+
+(deftest start-invalid-stream-test
+  (let [is-close-called        (atom 0)
+        mapped-fn              (get-mapped-fn is-close-called)
+        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _                      (mount/start)]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
+                                                                                      (ziggurat-config)))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}})
+    (println ziggurat.streams/stream))
+  (let [is-close-called (atom 0)]
+    (with-redefs [mount/start-with-states (fn [] (swap! is-close-called inc))]
+      (start-stream :invalid-topic-entity)
+      (is (= @is-close-called 0)))))
 
 (deftest start-stream-joins-test
   (testing "stream joins using inner join"

@@ -16,7 +16,7 @@
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.common.utils SystemTime]
-           [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
+           [org.apache.kafka.streams KafkaStreams KafkaStreams$State StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]
@@ -156,18 +156,13 @@
   (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
 
 (declare stream)
-(def restarted-streams (atom {}))
 
 (defn close-stream
   [topic-entity stream]
-  (let [state (.state stream)]
-    (if (= state org.apache.kafka.streams.KafkaStreams$State/RUNNING)
-      (do (.close stream)
-          (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
-      (if (get @restarted-streams topic-entity)
-        (if (= (.state (get @restarted-streams topic-entity)) org.apache.kafka.streams.KafkaStreams$State/RUNNING)
-          (close-stream topic-entity (get @restarted-streams topic-entity)))
-        (log/error (str "Kafka stream cannot be stopped at the moment, current state is " state))))))
+  (if (not (= (.state stream) KafkaStreams$State/NOT_RUNNING))
+    (do (.close stream)
+        (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
+    (log/error (str "Kafka stream cannot be stopped at the moment, current state is " (.state stream)))))
 
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]
@@ -297,14 +292,26 @@
 
 (defn start-stream
   [topic-entity]
-  (reset! restarted-streams (reduce (fn [new-stream-map stream-object]
-                                      (if (and (= (.state (second stream-object)) org.apache.kafka.streams.KafkaStreams$State/NOT_RUNNING)
-                                               (= (first stream-object) topic-entity))
-                                        (let [new-stream-object-map (start-streams (hash-map (first stream-object) (get (:stream-routes (mount/args)) (first stream-object))))]
-                                          (assoc new-stream-map (first stream-object) (get new-stream-object-map (first stream-object))))
-                                        (assoc new-stream-map (first stream-object) (second stream-object))))
-                                    {}
-                                    stream)))
+  (if (get (:stream-routes (mount/args)) topic-entity)
+    (mount/start-with-states {#'ziggurat.streams/stream
+                              {:start (fn []
+                                        (reduce (fn [new-stream-map stream-object]
+                                                  (let [stream-topic-entity (first stream-object)
+                                                        stream (second stream-object)]
+                                                    (if (and (= (.state stream) KafkaStreams$State/NOT_RUNNING)
+                                                             (= stream-topic-entity topic-entity))
+                                                      (let [new-stream-object-map (start-streams
+                                                                                   (hash-map stream-topic-entity
+                                                                                             (get (:stream-routes (mount/args))
+                                                                                                  stream-topic-entity)))]
+                                                        (assoc new-stream-map
+                                                               stream-topic-entity
+                                                               (get new-stream-object-map stream-topic-entity)))
+                                                      (assoc new-stream-map stream-topic-entity stream))))
+                                                {}
+                                                stream))
+                               :stop (fn [] (stop-streams stream))}})
+    (log/error (str "No Kafka stream with provided topic-entity: " topic-entity " exists."))))
 
 (defstate stream
   :start (do (log/info "Starting Kafka streams")
