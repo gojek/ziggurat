@@ -21,7 +21,7 @@
            [io.opentracing.tag Tags]))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
-                                    ; fix/silence-logging
+                                    fix/silence-logging
                                     fix/mount-metrics]))
 
 (defn- props []
@@ -118,7 +118,7 @@
         _                      (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+                                                         :stop (fn [] (stop-streams #'ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
@@ -206,8 +206,7 @@
         _                      (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}})
-    (println ziggurat.streams/stream))
+                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
   (let [is-close-called (atom 0)]
     (with-redefs [mount/start-with-states (fn [] (swap! is-close-called inc))]
       (start-stream :invalid-topic-entity)
