@@ -159,10 +159,15 @@
 
 (defn close-stream
   [topic-entity stream]
-  (if (not (= (.state stream) KafkaStreams$State/NOT_RUNNING))
-    (do (.close stream)
-        (log/info (str "Stopping Kafka stream with topic-entity " topic-entity)))
-    (log/error (str "Kafka stream cannot be stopped at the moment, current state is " (.state stream)))))
+  (if-not (= (.state stream) KafkaStreams$State/NOT_RUNNING)
+    (do
+      (.close stream)
+      (log/info
+       (str "Stopping Kafka stream with topic-entity " topic-entity)))
+    (log/error
+     (str
+      "Kafka stream cannot be stopped at the moment, current state is "
+      (.state stream)))))
 
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]

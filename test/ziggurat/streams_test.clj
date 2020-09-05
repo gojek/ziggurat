@@ -121,7 +121,7 @@
                                                          :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
 
 (deftest start-stopped-stream-test
   (let [message-received-count (atom 0)
@@ -133,10 +133,10 @@
                                                          :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
   (start-stream :default)
   (poll-to-check-if-running ziggurat.streams/stream)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/NOT_RUNNING))))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/NOT_RUNNING)))
 
 (deftest stop-restarted-stream-test
   (let [message-received-count (atom 0)
@@ -148,12 +148,12 @@
                                                          :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
   (start-stream :default)
   (poll-to-check-if-running ziggurat.streams/stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/NOT_RUNNING)))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/NOT_RUNNING))
   (stop-stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
 
 (deftest stop-desired-stream-only-test
   (let [message-received-count (atom 0)
@@ -170,7 +170,7 @@
                                                          :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
   (is (= (.state (get ziggurat.streams/stream :using-string-serde)) KafkaStreams$State/RUNNING)))
 
 (deftest stop-duplicate-stream-test
@@ -183,7 +183,7 @@
                                                          :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
-  (is (not (= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
+  (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
   (stop-stream :default))
 
 (deftest stop-invalid-stream-test
