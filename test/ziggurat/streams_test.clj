@@ -65,8 +65,11 @@
   ([stream]
    (poll-to-check-if-running stream :default))
   ([stream topic-entity]
-   (while (not (= (.state (get stream topic-entity)) KafkaStreams$State/RUNNING))
-     (Thread/sleep 2000))))
+   (let [threshold 0]
+     (while (and (not= (.state (get stream topic-entity)) KafkaStreams$State/RUNNING)
+                 (> threshold 30))
+       (Thread/sleep 2000)
+       (inc threshold)))))
 
 (defn- rand-application-id []
   (str "test" "-" (rand-int 999999999)))
