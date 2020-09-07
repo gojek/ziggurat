@@ -159,15 +159,16 @@
 
 (defn close-stream
   [topic-entity stream]
-  (if-not (= (.state stream) KafkaStreams$State/NOT_RUNNING)
-    (do
-      (.close stream)
-      (log/info
-       (str "Stopping Kafka stream with topic-entity " topic-entity)))
-    (log/error
-     (str
-      "Kafka stream cannot be stopped at the moment, current state is "
-      (.state stream)))))
+  (let [stream-state (.state stream)]
+    (if (= stream-state KafkaStreams$State/NOT_RUNNING)
+      (log/error
+        (str
+          "Kafka stream cannot be stopped at the moment, current state is "
+          stream-state))
+      (do
+        (.close stream)
+        (log/info
+          (str "Stopping Kafka stream with topic-entity " topic-entity))))))
 
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]
@@ -295,24 +296,29 @@
            {}
            stream-routes)))
 
+(defn- stream-object-evaluator
+  [new-stream-map stream-object topic-entity]
+  (let [stream-topic-entity (first stream-object)
+        stream (second stream-object)]
+    (if (and (= (.state stream) KafkaStreams$State/NOT_RUNNING)
+             (= stream-topic-entity topic-entity))
+      (let [new-stream-object-map (start-streams
+                                    (hash-map stream-topic-entity
+                                              (get (:stream-routes (mount/args))
+                                                   stream-topic-entity)))]
+        (assoc new-stream-map
+               stream-topic-entity
+               (get new-stream-object-map stream-topic-entity)))
+      (assoc new-stream-map stream-topic-entity stream))))
+
 (defn start-stream
   [topic-entity]
   (if (seq (select-keys ziggurat.streams/stream [topic-entity]))
     (mount/start-with-states {#'ziggurat.streams/stream
                               {:start (fn []
-                                        (reduce (fn [new-stream-map stream-object]
-                                                  (let [stream-topic-entity (first stream-object)
-                                                        stream (second stream-object)]
-                                                    (if (and (= (.state stream) KafkaStreams$State/NOT_RUNNING)
-                                                             (= stream-topic-entity topic-entity))
-                                                      (let [new-stream-object-map (start-streams
-                                                                                   (hash-map stream-topic-entity
-                                                                                             (get (:stream-routes (mount/args))
-                                                                                                  stream-topic-entity)))]
-                                                        (assoc new-stream-map
-                                                               stream-topic-entity
-                                                               (get new-stream-object-map stream-topic-entity)))
-                                                      (assoc new-stream-map stream-topic-entity stream))))
+                                        (reduce (fn
+                                                  [new-stream-map stream-object]
+                                                  (stream-object-evaluator new-stream-map stream-object topic-entity))
                                                 {}
                                                 stream))
                                :stop (fn [] (stop-streams stream))}})
