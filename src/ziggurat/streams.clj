@@ -297,7 +297,7 @@
 
 (defn start-stream
   [topic-entity]
-  (if (get (:stream-routes (mount/args)) topic-entity)
+  (if (seq (select-keys ziggurat.streams/stream [topic-entity]))
     (mount/start-with-states {#'ziggurat.streams/stream
                               {:start (fn []
                                         (reduce (fn [new-stream-map stream-object]
