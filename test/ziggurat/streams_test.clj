@@ -174,7 +174,7 @@
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
-  (is (= (.state (get ziggurat.streams/stream :using-string-serde)) KafkaStreams$State/RUNNING)))
+  (is (not= (.state (get ziggurat.streams/stream :using-string-serde)) KafkaStreams$State/NOT_RUNNING)))
 
 (deftest stop-duplicate-stream-test
   (let [message-received-count (atom 0)
