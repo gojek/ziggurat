@@ -162,13 +162,13 @@
   (let [stream-state (.state stream)]
     (if (= stream-state KafkaStreams$State/NOT_RUNNING)
       (log/error
-        (str
-          "Kafka stream cannot be stopped at the moment, current state is "
-          stream-state))
+       (str
+        "Kafka stream cannot be stopped at the moment, current state is "
+        stream-state))
       (do
         (.close stream)
         (log/info
-          (str "Stopping Kafka stream with topic-entity " topic-entity))))))
+         (str "Stopping Kafka stream with topic-entity " topic-entity))))))
 
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]
@@ -303,9 +303,9 @@
     (if (and (= (.state stream) KafkaStreams$State/NOT_RUNNING)
              (= stream-topic-entity topic-entity))
       (let [new-stream-object-map (start-streams
-                                    (hash-map stream-topic-entity
-                                              (get (:stream-routes (mount/args))
-                                                   stream-topic-entity)))]
+                                   (hash-map stream-topic-entity
+                                             (get (:stream-routes (mount/args))
+                                                  stream-topic-entity)))]
         (assoc new-stream-map
                stream-topic-entity
                (get new-stream-object-map stream-topic-entity)))
