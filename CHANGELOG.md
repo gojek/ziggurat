@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.4.2
+
+- Fixes issue [#56](https://github.com/gojek/ziggurat/issues/56)
+- Adds functionality to stop and restart KafkaStreams using nREPL.
+
 ## 3.4.1
 
 - Fixes issue [#142](https://github.com/gojek/ziggurat/issues/142)

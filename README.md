@@ -16,45 +16,49 @@
   </a>
 </p>
 
-* [Wiki](https://github.com/gojek/ziggurat/wiki)
-* [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
-* [Upgrade Guide](https://github.com/gojek/ziggurat/wiki/Upgrade-guide)
------------------------------------------------------------------------------------------
-* [Description](#description)
-* [Dev Setup](#dev-setup)
-* [Usage](#usage)
-* [Configuration](#configuration)
-* [Contribution Guidelines](#contribution)
-* [License](#license)
+- [Wiki](https://github.com/gojek/ziggurat/wiki)
+- [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
+- [Upgrade Guide](https://github.com/gojek/ziggurat/wiki/Upgrade-guide)
 
+---
+
+- [Description](#description)
+- [Dev Setup](#dev-setup)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Contribution Guidelines](#contribution)
+- [License](#license)
 
 ## Description
 
 Ziggurat is a framework built to simplify Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
 Ziggurat is built with the intent to abstract out
+
 ```
 - reading messages from Kafka
 - retrying failed messages
 - setting up an HTTP server
 ```
+
 from a clojure application such that a user only needs to pass a function that will be mapped to every message received from Kafka.
 
 Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
 ## Dev Setup
+
 (For mac users only)
 
-- Install Clojure: ```brew install clojure```
+- Install Clojure: `brew install clojure`
 
-- Install leiningen: ```brew install leiningen```
+- Install leiningen: `brew install leiningen`
 
-- Run docker-compose: ```docker-compose up```. This starts
-    - Kafka on localhost:9092
-    - ZooKeeper on localhost:2181
-    - RabbitMQ on localhost:5672
+- Run docker-compose: `docker-compose up`. This starts
 
-- Run tests: ```make test```
+  - Kafka on localhost:9092
+  - ZooKeeper on localhost:2181
+  - RabbitMQ on localhost:5672
 
+- Run tests: `make test`
 
 ## Usage
 
@@ -65,6 +69,7 @@ Add this to your project.clj
 _Please refer [clojars](https://clojars.org/tech.gojek/ziggurat) for the latest stable version_
 
 To start a stream (a thread that reads messages from Kafka), add this to your core namespace.
+
 ```clojure
 (require '[ziggurat.init :as ziggurat])
 
@@ -88,18 +93,19 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
+
 _NOTE: this example assumes that the message is serialized in Protobuf format_
 
 Please refer the [Middleware section](#middleware-in-ziggurat) for understanding `handler-fn` here.
 
-* The main-fn is the function that will be applied to every message that is read from the Kafka stream.
-* The main-fn returns a keyword which can be any of the below words
-    * :success - The message was successfully processed and the stream should continue to the next message
-    * :retry - The message failed to be processed and it should be retried.
-    * :skip - The message should be skipped without reporting its failure or retrying the message
-* The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
-* The stop-fn is run at shutdown and facilitates graceful shutdown, for example, releasing db connections, shutting down http servers etc.
-* Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
+- The main-fn is the function that will be applied to every message that is read from the Kafka stream.
+- The main-fn returns a keyword which can be any of the below words
+  - :success - The message was successfully processed and the stream should continue to the next message
+  - :retry - The message failed to be processed and it should be retried.
+  - :skip - The message should be skipped without reporting its failure or retrying the message
+- The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
+- The stop-fn is run at shutdown and facilitates graceful shutdown, for example, releasing db connections, shutting down http servers etc.
+- Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
 
 ```clojure
 (ziggurat/main start-fn stop-fn {:stream-id-1 {:handler-fn handler-fn-1}
@@ -137,12 +143,14 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}} routes)
 
 ```
+
 _NOTE: this example assumes that the message is serialized in Protobuf format_
 
 Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
 how you can pass in your own route.
 
 or
+
 ```clojure
 (ziggurat/main {:start-fn start-fn
                 :stop-fn stop-fn
@@ -154,6 +162,7 @@ or
 This will start both api-server and stream-worker modes
 
 There are four modes supported by ziggurat
+
 ```
  :api-server - Mode by which only server will be started with actor routes and management routes(Dead set management)
  :stream-worker - Only start the server plus rabbitmq for only producing the messages for retry and channels
@@ -164,13 +173,35 @@ There are four modes supported by ziggurat
 You can pass in multiple modes and it will start accordingly
 If nothing passed to modes then it will start all the modes.
 
+## Toggle streams on a running actor
+
+Feature implementation of [issue #56](https://github.com/gojek/ziggurat/issues/56). Stop and start streams on a running process using nREPL. A nREPL server starts at `port 7011`(default) when an actor using ziggurat starts. Check `ZIGGURAT_NREPL_SERVER_PORT` in your config.
+
+Connect to the shell using
+
+```shell
+lein repl :connect <host>:<port>
+```
+
+The functions can be accessed via the following commands to stop and start streams using their `topic-entity`
+
+```shell
+> (ziggurat.streams/stop-stream :booking)
+> (ziggurat.streams/start-stream :booking)
+```
+
+where `booking` is the `topic-entity`
+
 ## Middleware in Ziggurat
+
 Version 3.0.0 of Ziggurat introduces the support of Middleware. Old versions of Ziggurat (< 3.0) assumed that the messages read from kafka were serialized in proto-format and thus it deserialized
 them and passed a clojure map to the mapper-fn. We have now pulled the deserialization function into a middleware and users have the freedom to use this function to deserialize their messages
 or define their custom middlewares. This enables ziggurat to process messages serialized in any format.
 
 ### Custom Middleware usage
+
 The default middleware `default/protobuf->hash` assumes that the message is serialized in proto format.
+
 ```clojure
 (require '[ziggurat.init :as ziggurat])
 
@@ -199,9 +230,11 @@ The default middleware `default/protobuf->hash` assumes that the message is seri
 
 (ziggurat/main start-fn stop-fn {:stream-id {:handler-fn handler-fn}})
 ```
+
 _The handler-fn gets a serialized message from kafka and thus we need a deserialize-message function. We have provided default deserializers in Ziggurat_
 
 ### Deserializing JSON messages using JSON middleware
+
 Ziggurat 3.1.0 provides a middleware to deserialize JSON messages, along with proto.
 It can be used like this.
 
@@ -216,6 +249,7 @@ Here, `message-handler-fn` calls `parse-json` with a message handler function
 config (as defined in `config.edn`) as the second argument.
 
 ## Publishing data to Kafka Topics in Ziggurat
+
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
 
 At the time of initialization, an instance of `org.apache.kafka.clients.producer.KafkaProducer` is constructed using config values provided in `resources/config.edn`. A producer can be configured for each of the stream-routes in config.edn. Please see the example below.
@@ -234,6 +268,7 @@ For publishing data using a producer which is defined for the stream router conf
 `(send :default "test-topic" 1 "key" "value")`
 
 ## Tracing
+
 [Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
 
 Currently, the execution of the handler function is traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
@@ -257,27 +292,35 @@ To enable tracing, the following config needs to be added to the `config.edn` un
 ```
 
 Example Jaeger Env Config:
+
 ```
 JAEGER_SERVICE_NAME: "service-name"
 JAEGER_AGENT_HOST: "localhost"
 JAEGER_AGENT_PORT: 6831
 ```
+
 ## Alpha features
+
 We recommend that you do not use alpha features in production, as the API contract, and it's implementation is likely to change
 in the future releases.
+
 #### How to enable alpha features in Ziggurat
+
 To enable alpha features in Ziggurat add the following config to your actor's `config.edn` file under the `:ziggurat` key
+
 ```clojure
 {:ziggurat {:alpha-features {:feature-name true}}}
 ```
+
 All alpha features in this doc will contain an Alpha feature tag.
 
-
 ## Stream Joins [Alpha feature]
+
 Stream joins is an alpha feature, and we recommend that you do not use it in production. It's API contract might likely change in the future.
 
 Refer to the alpha features section on how to enable Stream joins, set the keyword `:stream-joins` to `true` to enable it.
 This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
+
 ```clojure
 {:ziggurat  {:stream-router        {:stream-id            {
     :consumer-type        :stream-joins
@@ -285,11 +328,13 @@ This will allow an actor to join messages from 2 topics into 1 result. To be abl
     :join-cfg             {:topic-1-and-topic-2 {:join-window-ms 5000 :join-type :inner}}
 }}}}
 ```
-* consumer-type - enables stream joins if `:stream-joins` key is provided, other possible value is `:default` which is the default actor behavior
-* input-topics - a map of topics in which you want to use for joining
-* join-cfg - a map of configurations which you define the join-window-ms and the join-type (`:inner`, `:left` or `:outer`)
+
+- consumer-type - enables stream joins if `:stream-joins` key is provided, other possible value is `:default` which is the default actor behavior
+- input-topics - a map of topics in which you want to use for joining
+- join-cfg - a map of configurations which you define the join-window-ms and the join-type (`:inner`, `:left` or `:outer`)
 
 And your actor's handler function be like
+
 ```clojure
 (ns my-actor
   (:require [ziggurat.middleware.stream-joins :as mw]))
@@ -308,24 +353,27 @@ Your handler function will receive a message in the following format/structure
 ```
 
 ## Connecting to a RabbitMQ cluster
-* To connect to RabbitMQ clusters add the following config to your `config.edn`
+
+- To connect to RabbitMQ clusters add the following config to your `config.edn`
+
 ```clojure
 {:ziggurat {:messaging {:constructor "ziggurat.messaging.rabbitmq-cluster-wrapper/->RabbitMQMessaging"
             :rabbit-mq-connection {:hosts "g-lambda-lambda-rabbitmq-a-01,g-lambda-lambda-rabbitmq-a-02,g-lambda-lambda-rabbitmq-a-03"
                                    :port [5672 :int]
                                    :prefetch-count  [3 :int]
                                    :username        "guest"
-                                   :password        "guest" 
+                                   :password        "guest"
                                    :channel-timeout [2000 :int]}}}}
 ```
-* `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
-* `:port` specifies the port number on which the RabbitMQ nodes are running.
-* By default, your queues and exchanges are replicated across (n+1)/2 nodes in the cluster
 
+- `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
+- `:port` specifies the port number on which the RabbitMQ nodes are running.
+- By default, your queues and exchanges are replicated across (n+1)/2 nodes in the cluster
 
 ## Configuration
 
 All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.
+
 ```clojure
 {:ziggurat  {:app-name            "application_name"
             :nrepl-server         {:port [7011 :int]}
@@ -374,39 +422,43 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
             :http-server          {:port         [8010 :int]
                                                :thread-count [100 :int]}}}
 ```
-* app-name - Refers to the name of the application. Used to namespace queues and metrics.
-* nrepl-server - Port on which the repl server will be hosted
-* stream-router - Configs related to all the Kafka streams the application is reading from
-    * stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different Kafka brokers and have different number of threads (depending on the throughput of the stream).
-        * application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
-        * bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
-        * stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
-        * origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
-        * oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
-        * changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
-        * producer - Configuration for KafkaProducer. Currently, only following options are supported. Please see [Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) for detailed explanation for each of the configuration parameters.
-            * bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
-            * acks - The number of acknowledgments the producer requires the leader to have received before considering a request complete. Valid values are [all, -1, 0, 1].
-            * retries - Setting a value greater than zero will cause the client to resend any record whose send fails with a potentially transient error.
-            * key.serializer - Serializer class for key that implements the org.apache.kafka.common.serialization.Serializer interface.
-            * value.serializer - Serializer class for value that implements the org.apache.kafka.common.serialization.Serializer interface.
-            * max.in.flight.requests.per.connection - The maximum number of unacknowledged requests the client will send on a single connection before blocking.
-            * enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
 
-* datadog - The statsd host and port that metrics should be sent to, although the key name is datadog, it supports statsd as well to send metrics.
-* statsd - Same as datadog but with a more appropriate name, the :datadog key will be deprecated in the future.
-* sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
-* rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
-* rabbit-mq - The queues that are part of the retry mechanism
-* retry - The number of times the message should be retried and if retry flow should be enabled or not
-* jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
-* http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
+- app-name - Refers to the name of the application. Used to namespace queues and metrics.
+- nrepl-server - Port on which the repl server will be hosted
+- stream-router - Configs related to all the Kafka streams the application is reading from
+
+  - stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different Kafka brokers and have different number of threads (depending on the throughput of the stream).
+    - application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
+    - bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
+    - stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
+    - origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
+    - oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
+    - changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
+    - producer - Configuration for KafkaProducer. Currently, only following options are supported. Please see [Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) for detailed explanation for each of the configuration parameters.
+      - bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
+      - acks - The number of acknowledgments the producer requires the leader to have received before considering a request complete. Valid values are [all, -1, 0, 1].
+      - retries - Setting a value greater than zero will cause the client to resend any record whose send fails with a potentially transient error.
+      - key.serializer - Serializer class for key that implements the org.apache.kafka.common.serialization.Serializer interface.
+      - value.serializer - Serializer class for value that implements the org.apache.kafka.common.serialization.Serializer interface.
+      - max.in.flight.requests.per.connection - The maximum number of unacknowledged requests the client will send on a single connection before blocking.
+      - enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
+
+- datadog - The statsd host and port that metrics should be sent to, although the key name is datadog, it supports statsd as well to send metrics.
+- statsd - Same as datadog but with a more appropriate name, the :datadog key will be deprecated in the future.
+- sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
+- rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
+- rabbit-mq - The queues that are part of the retry mechanism
+- retry - The number of times the message should be retried and if retry flow should be enabled or not
+- jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
+- http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
 
 ## Alpha (Experimental) Features
+
 The contract and interface for experimental features in Ziggurat can be changed as we iterate towards better designs for that feature.
 For all purposes these features should be considered unstable and should only be used after understanding their risks and implementations.
 
 ### Exponential Backoff based Retries
+
 In addition to linear retries, Ziggurat users can now use exponential backoff strategy for retries. This means that the message
 timeouts after every retry increase by a factor of 2. So, if your configured timeout is 100ms the backoffs will have timeouts as
 `200, 300, 700, 1500 ..`. These timeouts are calculated using the formula `(queue-timeout-ms * ((2**exponent) - 1))` where `exponent` falls in this range `[1,(min 25, configured-retry-count)]`.
@@ -437,13 +489,16 @@ and different timeout values.
 ```
 
 ## Deprecation Notice
+
 - Please note that the :datadog key inside the config file will be removed (sometime in the future) in favor of :statsd. Both contents are same though, it's just the key name was changed.
   The reason for this is to avoid confusion with our users. We would still have backward compatibility for the :datadog key.
 
 ## Contribution
+
 - For dev setup and contributions please refer to CONTRIBUTING.md
 
 ## License
+
 ```
 Copyright 2018, GO-JEK Tech <http://gojek.tech>
 
