@@ -42,6 +42,7 @@
                                                         :origin-topic         "topic"
                                                         :upgrade-from         "1.1"
                                                         :consumer-type        :default
+                                                        :changelog-topic-replication-factor [1 :int]
                                                         :channels             {:channel-1 {:worker-count [10 :int]
                                                                                            :retry        {:type    [:linear :keyword]
                                                                                                           :count   [5 :int]

@@ -16,7 +16,7 @@
            [org.apache.kafka.clients.consumer ConsumerConfig]
            [org.apache.kafka.common.serialization Serdes]
            [org.apache.kafka.common.utils SystemTime]
-           [org.apache.kafka.streams KafkaStreams StreamsConfig StreamsBuilder Topology]
+           [org.apache.kafka.streams KafkaStreams KafkaStreams$State StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]
@@ -157,10 +157,29 @@
 
 (declare stream)
 
+(defn close-stream
+  [topic-entity stream]
+  (let [stream-state (.state stream)]
+    (if (= stream-state KafkaStreams$State/NOT_RUNNING)
+      (log/error
+       (str
+        "Kafka stream cannot be stopped at the moment, current state is "
+        stream-state))
+      (do
+        (.close stream)
+        (log/info
+         (str "Stopping Kafka stream with topic-entity " topic-entity))))))
+
+(defn stop-stream [topic-entity]
+  (let [stream (get stream topic-entity)]
+    (if stream
+      (close-stream topic-entity stream)
+      (log/error (str "No Kafka stream with provided topic-entity: " topic-entity " exists.")))))
+
 (defn stop-streams [streams]
   (log/debug "Stopping Kafka streams")
-  (doseq [stream streams]
-    (.close stream)))
+  (doseq [[topic-entity stream] streams]
+    (close-stream topic-entity stream)))
 
 (defn- traced-handler-fn [handler-fn channels message topic-entity]
   (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message) tracer)
@@ -273,12 +292,40 @@
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (when-not (nil? stream)
                  (.start stream)
-                 (conj streams stream))))
-           []
+                 (assoc streams topic-entity stream))))
+           {}
            stream-routes)))
 
+(defn- stream-object-evaluator
+  [new-stream-map stream-object topic-entity]
+  (let [stream-topic-entity (first stream-object)
+        stream (second stream-object)]
+    (if (and (= (.state stream) KafkaStreams$State/NOT_RUNNING)
+             (= stream-topic-entity topic-entity))
+      (let [new-stream-object-map (start-streams
+                                   (hash-map stream-topic-entity
+                                             (get (:stream-routes (mount/args))
+                                                  stream-topic-entity)))]
+        (assoc new-stream-map
+               stream-topic-entity
+               (get new-stream-object-map stream-topic-entity)))
+      (assoc new-stream-map stream-topic-entity stream))))
+
+(defn start-stream
+  [topic-entity]
+  (if (seq (select-keys ziggurat.streams/stream [topic-entity]))
+    (mount/start-with-states {#'ziggurat.streams/stream
+                              {:start (fn []
+                                        (reduce (fn
+                                                  [new-stream-map stream-object]
+                                                  (stream-object-evaluator new-stream-map stream-object topic-entity))
+                                                {}
+                                                stream))
+                               :stop (fn [] (stop-streams stream))}})
+    (log/error (str "No Kafka stream with provided topic-entity: " topic-entity " exists."))))
+
 (defstate stream
-  :start (do (log/info "Starting Kafka stream")
+  :start (do (log/info "Starting Kafka streams")
              (start-streams (:stream-routes (mount/args)) (ziggurat-config)))
-  :stop (do (log/info "Stopping Kafka stream")
+  :stop (do (log/info "Stopping Kafka streams")
             (stop-streams stream)))
