@@ -34,9 +34,13 @@
          (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
                      (properties-for-publish expiration (:headers message-payload)))))
      (catch Throwable e
-       (log/error e "Pushing message to rabbitmq failed, data: " message-payload)
-       (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type  :rabbitmq-publish-failure
-                                                                                   :error e}))))))
+       (log/info (class e))
+       (if (= com.rabbitmq.client.AlreadyClosedException (class e))
+         ((Thread/sleep 5000)
+          (publish connection exchange message-payload expiration))
+         ((log/error e "Pushing message to rabbitmq failed, data: " message-payload)
+          (throw (ex-info "Pushing message to rabbitMQ failed after retries, data: " {:type  :rabbitmq-publish-failure
+                                                                                      :error e}))))))))
 
 (defn- declare-exchange [ch exchange]
   (le/declare ch exchange "fanout" {:durable true :auto-delete false})
