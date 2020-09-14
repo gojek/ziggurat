@@ -32,7 +32,7 @@
    :auto-offset-reset-config           "latest"
    :oldest-processed-message-in-s      604800
    :changelog-topic-replication-factor 3
-   :session-timeout-ms-config          60000
+   :session-timeout-ms-config          10000
    :consumer-type                      :default
    :default-key-serde                  "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"
    :default-value-serde                "org.apache.kafka.common.serialization.Serdes$ByteArraySerde"})
@@ -193,9 +193,6 @@
                      (.start t))]
     (try
       ((mapper-func handler-fn channels) (assoc (->MessagePayload (:value message) topic-entity) :headers (:headers message)))
-      (catch Exception e
-        (log/error "Stopping Kafka Streams due to error: " e)
-        (stop-streams stream))
       (finally
         (.finish span)))))
 
