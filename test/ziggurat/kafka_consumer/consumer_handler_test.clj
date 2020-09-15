@@ -78,7 +78,7 @@
                                                 (= metrics "retry")
                                                 (is (= expected-retry-count count))))
                     metrics/report-time     (fn [metric-namespace _ _]
-                                                   (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed" "execution-time"])))
+                                              (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed" "execution-time"])))
                     ch/retry (fn [batch current-retry-count topic-entity]
                                (is (= batch (vec (replicate expected-retry-count 0))))
                                (is (= current-retry-count nil))

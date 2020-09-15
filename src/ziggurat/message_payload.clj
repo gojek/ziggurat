@@ -6,7 +6,7 @@
 (declare message-payload-schema)
 
 (s/defschema message-payload-schema
-             {:message                      s/Any
-              :topic-entity                 s/Keyword
-              (s/optional-key :retry-count) s/Int
-              (s/optional-key :headers)     s/Any})
+  {:message                      s/Any
+   :topic-entity                 s/Keyword
+   (s/optional-key :retry-count) s/Int
+   (s/optional-key :headers)     s/Any})
