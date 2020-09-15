@@ -2,14 +2,13 @@
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer :all]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.message-payload :refer [map->MessagePayload]]
             [ziggurat.metrics :as metrics])
   (:import (org.apache.kafka.common.errors WakeupException)
            (java.time Duration Instant)
            (org.apache.kafka.clients.consumer Consumer ConsumerRecord)))
 
 (def batch-consumption-metric-ns ["ziggurat.batch.consumption" "message.processed"])
-
-(defrecord BatchPayload [batch topic-entity retry-count])
 
 (defn- publish-batch-process-metrics
   [topic-entity batch-size success-count skip-count retry-count time-taken-in-millis]
@@ -25,14 +24,14 @@
    (producer/retry batch-payload))
   ([batch current-retry-count topic-entity]
    (when (> (count batch) 0)
-     (let [message (map->BatchPayload {:batch         batch
+     (let [message (map->MessagePayload {:message         batch
                                        :retry-count        current-retry-count
                                        :topic-entity topic-entity})]
        (producer/retry message)))))
 
 (defn process
   [batch-handler batch-payload]
-  (let [batch               (:batch batch-payload)
+  (let [batch               (:message batch-payload)
         topic-entity        (:topic-entity batch-payload)
         current-retry-count (:retry-count batch-payload)
         batch-size          (count batch)]
@@ -69,7 +68,7 @@
   [records topic-entity]
   (let [key-value-pairs (map (fn [^ConsumerRecord m]
                                {:value (.value m) :key (.key m)}) records)]
-    (map->BatchPayload {:batch key-value-pairs :topic-entity topic-entity})))
+    (map->MessagePayload {:message key-value-pairs :topic-entity topic-entity})))
 
 (defn poll-for-messages
   [^Consumer consumer handler-fn topic-entity consumer-config]

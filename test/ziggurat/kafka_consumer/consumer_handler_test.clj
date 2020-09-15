@@ -1,6 +1,7 @@
 (ns ziggurat.kafka-consumer.consumer-handler-test
   (:require [clojure.test :refer :all])
   (:require [ziggurat.kafka-consumer.consumer-handler :as ch]
+            [ziggurat.message-payload :as mp]
             [ziggurat.config :refer :all]
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.producer :as producer]
@@ -83,7 +84,7 @@
                                (is (= batch (vec (replicate expected-retry-count 0))))
                                (is (= current-retry-count nil))
                                (is (= topic-entity :consumer-1)))]
-        (ch/process batch-handler (ch/map->BatchPayload {:batch (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})))))
+        (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})))))
   (testing "should publish metrics for exception in process message"
     (let [expected-batch-size    10
           batch-handler          (fn [_] (throw (Exception. "exception in batch-handler")))]
@@ -91,18 +92,18 @@
                                               (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
                                               (is (= metrics "exception")))
                     ch/retry (fn [message]
-                               (is (= message (ch/map->BatchPayload {:batch (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))))]
-        (ch/process batch-handler (ch/map->BatchPayload {:batch (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})))))
+                               (is (= message (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))))]
+        (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})))))
   (testing "should process the batch only when its non-empty"
     (let [batch-size     10
           processed      (atom false)
           batch-handler  (fn [_] (reset! processed true))]
-      (ch/process batch-handler (ch/map->BatchPayload {:batch (vec (replicate batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))
+      (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))
       (is (true? @processed))))
   (testing "should NOT process the batch if its empty"
     (let [processed      (atom false)
           batch-handler  (fn [_] (reset! processed true))]
-      (ch/process batch-handler (ch/map->BatchPayload {:batch [] :topic-entity :consumer-1 :retry-count nil}))
+      (ch/process batch-handler (mp/map->MessagePayload {:message [] :topic-entity :consumer-1 :retry-count nil}))
       (is (false? @processed)))))
 
 (deftest retry-test
@@ -111,11 +112,11 @@
           expected-retry-count    3
           retry-messages          (vec (replicate expected-retry-count 0))
           batch-handler          (fn [_] {:skip [] :retry (vec (replicate expected-retry-count 0))})
-          batch-payload        (ch/map->BatchPayload {:batch (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})
+          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})
           retried                (atom false)]
       (with-redefs [producer/retry (fn [message]
                                      (reset! retried true)
-                                     (is (= message (ch/map->BatchPayload {:batch retry-messages :topic-entity :consumer-1 :retry-count nil}))))
+                                     (is (= message (mp/map->MessagePayload {:message retry-messages :topic-entity :consumer-1 :retry-count nil}))))
                     metrics/increment-count (constantly nil)
                     metrics/report-time (constantly nil)]
         (ch/process batch-handler batch-payload)
@@ -125,7 +126,7 @@
           expected-retry-count    0
           batch-handler          (fn [_] {:skip [] :retry (vec (replicate expected-retry-count 0))})
           retried                (atom false)
-          batch-payload        (ch/map->BatchPayload {:batch (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})]
+          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})]
       (with-redefs [producer/retry (fn [message]
                                      (reset! retried true))
                     metrics/increment-count (constantly nil)
@@ -135,7 +136,7 @@
   (testing "when batch handler throws exception all messages should be added to rabbitmq retry queue"
     (let [expected-batch-size    10
           batch-handler          (fn [_] (throw (Exception. "batch handler exception")))
-          batch-payload        (ch/map->BatchPayload {:batch (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})
+          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})
           retried                (atom false)]
       (with-redefs [producer/retry (fn [message]
                                      (reset! retried true)
