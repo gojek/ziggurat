@@ -67,7 +67,7 @@
                                                         :channels                    {:channel-1 {:worker-count [10 :int]
                                                                                                   :retry        {:count   [5 :int]
                                                                                                                  :enabled [true :bool]}}}}}
-            :consumers            {:consumer-1 {:consumer-group-id "test-consumer-1002"
+            :batch-routes            {:consumer-1 {:consumer-group-id "test-consumer-1002"
                                                 :bootstrap-servers "localhost:9092"
                                                 :max-poll-records   [1000 :int]
                                                 :origin-topic       "some-topic"

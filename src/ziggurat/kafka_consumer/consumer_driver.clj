@@ -47,7 +47,7 @@
 
 (defstate consumer-groups
   :start (do (log/info "Starting consumers")
-             (start-consumers (:consumers (ziggurat-config)) (mount/args)))
+             (start-consumers (:batch-routes (ziggurat-config)) (mount/args)))
   :stop  (do (stop-consumers consumer-groups)))
 
 

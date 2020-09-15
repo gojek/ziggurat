@@ -28,6 +28,6 @@
       (log/error e "Error while shutting down thread pool"))))
 
 (defstate executor-thread-pool
-  :start (construct-thread-pool (total-thread-count (:consumers (ziggurat-config))))
+  :start (construct-thread-pool (total-thread-count (:batch-routes (ziggurat-config))))
   :stop (shutdown executor-thread-pool))
 

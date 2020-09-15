@@ -81,7 +81,7 @@
   (testing "should log an error when a rejected exception is thrown by the thread-pool"
     (let [polling-started                (atom false)
           zig-config                     (ziggurat-config)]
-      (with-redefs [ziggurat-config      (constantly (assoc zig-config :consumers {:dummy-consumer-group-1 {:thread-count 1}}))
+      (with-redefs [ziggurat-config      (constantly (assoc zig-config :batch-routes {:dummy-consumer-group-1 {:thread-count 1}}))
                     ct/create-consumer   (fn [consumer-config]
                                            (is (not (nil? consumer-config)))
                                            ;; returning a dummy data instead of a consumer
@@ -108,7 +108,7 @@
   (testing "stop-consumers should call .wakeup on all consumers when shutting down"
     (let [consumers-shut-down            (atom 0)
           zig-config                     (ziggurat-config)]
-      (with-redefs [ziggurat-config      (constantly (assoc zig-config :consumers {:dummy-consumer-group-1 {:thread-count 2}}))
+      (with-redefs [ziggurat-config      (constantly (assoc zig-config :batch-routes {:dummy-consumer-group-1 {:thread-count 2}}))
                     ct/create-consumer   (fn [consumer-config]
                                            (reify Consumer
                                              (wakeup [_]
