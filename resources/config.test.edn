@@ -67,5 +67,19 @@
                                                         :channels                    {:channel-1 {:worker-count [10 :int]
                                                                                                   :retry        {:count   [5 :int]
                                                                                                                  :enabled [true :bool]}}}}}
+            :consumers            {:consumer-1 {:consumer-group-id "test-consumer-1002"
+                                                :bootstrap-servers "localhost:9092"
+                                                :max-poll-records   [1000 :int]
+                                                :origin-topic       "some-topic"
+                                                :poll-timeout       [1000 :int]
+                                                :thread-count      [2 :int]
+                                                :session-timeout-ms-config [60000 :int]}
+                                   :consumer-2 {:consumer-group-id "test-consumer-2002"
+                                                :bootstrap-servers "localhost:9092"
+                                                :max-poll-records   [2000 :int]
+                                                :origin-topic       "some-topic"
+                                                :poll-timeout       [1000 :int]
+                                                :thread-count       [4 :int]
+                                                :session-timeout-ms-config [60000 :int]}}
             :tracer               {:enabled         [true :bool]
                                    :custom-provider ""}}}
