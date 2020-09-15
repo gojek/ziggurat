@@ -103,32 +103,32 @@
 (deftest validate-stream-routes-test
   (let [exception-message "Invalid stream routes"]
     (testing "Validate Stream Routes should raise exception if stream routes is nil and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes nil [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes nil [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream routes are empty and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route does not have handler-fn and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default {}} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route does have nil value and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default nil} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default nil} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default {:handler-fn nil}} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and there is no mode passed"
-      (is (thrown? RuntimeException exception-message (init/validate-stream-routes {:default {:handler-fn nil}} nil)))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} nil)))))
 
   (testing "Validate Stream Routes should return nil if stream route is empty or nil and stream worker is not one of the modes"
-    (is (nil? (init/validate-stream-routes nil [:api-server])))
-    (is (nil? (init/validate-stream-routes {} [:api-server]))))
+    (is (nil? (init/validate-routes nil [:api-server])))
+    (is (nil? (init/validate-routes {} [:api-server]))))
 
   (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
     (let [stream-route {:default {:handler-fn (fn [])
                                   :channel-1  (fn [])
                                   :channel-2  (fn [])}}]
-      (is (= stream-route (init/validate-stream-routes stream-route [:stream-worker]))))))
+      (is (= stream-route (init/validate-routes stream-route [:stream-worker]))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"
