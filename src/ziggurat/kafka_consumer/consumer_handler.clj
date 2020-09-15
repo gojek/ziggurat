@@ -23,7 +23,7 @@
   ([batch-payload]
    (producer/retry batch-payload))
   ([batch current-retry-count topic-entity]
-   (when (> (count batch) 0)
+   (when (pos? (count batch))
      (let [message (map->MessagePayload {:message         batch
                                          :retry-count        current-retry-count
                                          :topic-entity topic-entity})]
