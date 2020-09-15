@@ -25,8 +25,8 @@
   ([batch current-retry-count topic-entity]
    (when (> (count batch) 0)
      (let [message (map->MessagePayload {:message         batch
-                                       :retry-count        current-retry-count
-                                       :topic-entity topic-entity})]
+                                         :retry-count        current-retry-count
+                                         :topic-entity topic-entity})]
        (producer/retry message)))))
 
 (defn process

@@ -169,9 +169,9 @@
 
 (s/defschema BatchRoute
   (s/conditional
-    #(and (seq %)
-          (map? %))
-    {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
+   #(and (seq %)
+         (map? %))
+   {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
 
 (defn validate-routes [stream-routes batch-routes modes]
   (when (or (empty? modes) (contains? (set modes) :stream-worker))
