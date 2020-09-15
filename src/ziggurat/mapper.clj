@@ -93,12 +93,3 @@
               :rabbitmq-publish-failure (throw e)
               (producer/retry-for-channel message-payload channel))))))))
 
-(defrecord MessagePayload [message topic-entity])
-
-(declare message-payload-schema)
-
-(s/defschema message-payload-schema
-  {:message                      s/Any
-   :topic-entity                 s/Keyword
-   (s/optional-key :retry-count) s/Int
-   (s/optional-key :headers)     s/Any})

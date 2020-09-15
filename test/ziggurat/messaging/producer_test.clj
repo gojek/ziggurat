@@ -13,7 +13,7 @@
             [langohr.basic :as lb]
             [ziggurat.config :as config]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.mapper :refer [->MessagePayload]]
+            [ziggurat.message-payload :refer [->MessagePayload]]
             [mount.core :as mount])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 

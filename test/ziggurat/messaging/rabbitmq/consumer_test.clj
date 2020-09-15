@@ -13,7 +13,7 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as util]
             [ziggurat.messaging.consumer :as consumer]
-            [ziggurat.mapper :as mpr])
+            [ziggurat.message-payload :as mp])
   (:import (com.rabbitmq.client Channel Connection)))
 
 (use-fixtures :once (join-fixtures [fix/init-messaging
@@ -203,13 +203,13 @@
 (deftest ^:integration ack-and-convert-message
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
     (let [message                   {:foo "bar"}
-          expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 0)
+          expected-message-payload  (assoc (mp/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 0)
           consumed-message          (rmq-cons/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
           converted-message-payload (consumer/convert-to-message-payload consumed-message "default")]
       (is (= converted-message-payload expected-message-payload))))
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as it exists in the message"
     (let [message                   {:foo "bar" :retry-count 4}
-          expected-message-payload  (assoc (mpr/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 4)
+          expected-message-payload  (assoc (mp/->MessagePayload (dissoc message :retry-count) topic-entity) :retry-count 4)
           consumed-message          (rmq-cons/consume-message nil {:delivery-tag "delivery-tag"} (nippy/freeze message) false)
           converted-message-payload (consumer/convert-to-message-payload consumed-message "default")]
       (is (= converted-message-payload expected-message-payload)))))

@@ -1,5 +1,6 @@
 (ns ziggurat.messaging.consumer
   (:require [ziggurat.mapper :as mpr]
+            [ziggurat.message-payload :as mp]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config get-in-config]]
             [ziggurat.messaging.messaging :as messaging]
@@ -32,11 +33,11 @@
    It also converts the topic-entity into a keyword while constructing MessagePayload."
   [message topic-entity]
   (try
-    (s/validate mpr/message-payload-schema message)
+    (s/validate mp/message-payload-schema message)
     (catch Exception e
       (log/info "old message format read, converting to message-payload: " message)
       (let [retry-count     (or (:retry-count message) 0)
-            message-payload (mpr/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
+            message-payload (mp/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
         (assoc message-payload :retry-count retry-count)))))
 
 (defn read-messages-from-queue [queue-name topic-entity ack? count]

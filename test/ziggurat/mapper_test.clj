@@ -8,6 +8,7 @@
             [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
+            [ziggurat.message-payload :as mp]
             [langohr.basic :as lb]))
 
 (use-fixtures :once (join-fixtures [fix/init-messaging
@@ -228,11 +229,11 @@
     (let [message {:message      {:foo "bar"}
                    :topic-entity :topic
                    :retry-count  2}]
-      (is (s/validate message-payload-schema message))))
+      (is (s/validate mp/message-payload-schema message))))
   (testing "It validates the schema for a message that does not contain retry-count"
     (let [message {:message      {:foo "bar"}
                    :topic-entity :topic}]
-      (is (s/validate message-payload-schema message))))
+      (is (s/validate mp/message-payload-schema message))))
   (testing "It raises exception if schema is not correct"
     (let [message {:foo "bar"}]
-      (is (thrown? Exception (s/validate message-payload-schema message))))))
+      (is (thrown? Exception (s/validate mp/message-payload-schema message))))))
