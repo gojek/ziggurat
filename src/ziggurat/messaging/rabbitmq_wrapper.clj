@@ -2,7 +2,6 @@
   (:require [ziggurat.config :refer [get-in-config]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.retry :refer [with-retry]]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.rabbitmq.connection :as rmq-connection]
             [ziggurat.messaging.rabbitmq.producer :as rmq-producer]

@@ -2,7 +2,6 @@
   (:require [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
             [clojure.tools.logging :as log]
-            [ziggurat.retry :refer [with-retry]]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]))
 

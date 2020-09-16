@@ -2,7 +2,9 @@
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config channel-retry-config]]
             [ziggurat.messaging.util :refer :all]
-            [ziggurat.messaging.messaging :as messaging]))
+            [ziggurat.messaging.messaging :as messaging]
+            [ziggurat.messaging.util :as util]
+            [ziggurat.sentry :refer [sentry-reporter]]))
 
 (def MAX_EXPONENTIAL_RETRIES 25)
 

@@ -4,7 +4,7 @@
             [langohr.basic :as lb]
             [taoensso.nippy :as nippy]
             [langohr.exchange :as le]
-            [ziggurat.messaging.rabbitmq.retry :refer :all]
+            [ziggurat.metrics :as metrics]
             [langohr.queue :as lq]))
 
 (defn- record-headers->map [record-headers]
@@ -34,9 +34,11 @@
       (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
                   (properties-for-publish expiration (:headers message-payload))))
     (catch Exception e
-      (log/error e "Exception was encountered")
-      (when (network-exception? e)
-        true))))
+      (log/error e "Exception was encountered while publishing to RabbitMQ")
+      (if (network-exception? e)
+        (do (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
+            true)
+        (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})))))
 
 (defn publish
   ([connection exchange message-payload expiration]

@@ -499,17 +499,6 @@
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
           (is (= expected-dead-set-message message-from-mq))))))
 
-  (testing "it will retry publishing message six times when unable to publish to rabbitmq"
-    (fix/with-queues
-      {:default {:handler-fn #(constantly nil)}}
-      (let [retry-count           (atom 0)
-            retry-message-payload (assoc message-payload :retry-count 5)]
-        (with-redefs [lb/publish (fn [_ _ _ _ props]
-                                   (swap! retry-count inc)
-                                   (throw (Exception. "some exception")))]
-          (is (thrown? clojure.lang.ExceptionInfo (producer/retry retry-message-payload)))
-          (is (= 6 @retry-count))))))
-
   (testing "message with no retry count will publish to delay queue"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
