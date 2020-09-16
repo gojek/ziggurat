@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.4.2-alpha.1
+
+- Investigate if transform() affects how stream joins behave
+
 ## 3.4.2
 
 - Fixes issue [#56](https://github.com/gojek/ziggurat/issues/56)
