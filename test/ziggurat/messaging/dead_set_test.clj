@@ -5,7 +5,7 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.util.rabbitmq :as rmq]))
 
-(use-fixtures :once (join-fixtures [fix/init-messaging
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
                                     fix/mount-metrics]))
 

@@ -3,12 +3,12 @@
             [mount.core :refer [defstate] :as mount]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
+            [ziggurat.messaging.connection :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.streams :as streams :refer [stream]]
             [ziggurat.server.test-utils :as tu]
-            [ziggurat.tracer :as tracer]
-            [ziggurat.messaging.messaging :as messaging])
+            [ziggurat.tracer :as tracer])
   (:import (io.opentracing.mock MockTracer)))
 
 (def valid-modes-count 4)
@@ -24,14 +24,13 @@
       (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
                     streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
-                    messaging/start-connection (fn [_ _] (reset! result (* @result 2)))
-                    messaging/stop-connection  (constantly nil)
+                    rmqc/start-connection (fn [] (reset! result (* @result 2)))
+                    rmqc/stop-connection  (constantly nil)
                     config/config-file         "config.test.edn"
                     tracer/create-tracer       (fn [] (MockTracer.))]
         (init/start #(reset! result (+ @result 3)) {} {} [] nil)
         (init/stop #() nil)
-        ;; some of the functions which call start-messaging, are called again.
-        (is (= (* 4 (exp 2 (+ start-messaging-internal-call-count valid-modes-count))) @result))))))
+        (is (= 16 @result))))))
 
 (deftest stop-calls-actor-stop-fn-test
   (testing "The actor stop fn stops before the ziggurat state"
@@ -44,18 +43,18 @@
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= 8 @result))))))
 
-(deftest stop-calls-idempotency-test
+(deftest stop-calls-idempotentcy-test
   (testing "The stop function should be idempotent"
     (let [result (atom 1)
           stop-connection-internal-call-count 1]
       (with-redefs [streams/start-streams     (constantly nil)
                     streams/stop-streams      (constantly nil)
-                    messaging/stop-connection (fn [_ _] (reset! result (* @result 2)))
+                    rmqc/stop-connection (fn [_] (reset! result (* @result 2)))
                     config/config-file        "config.test.edn"
                     tracer/create-tracer      (fn [] (MockTracer.))]
         (init/start #() {} {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
-        (is (= (* 4 (exp 2 (+ stop-connection-internal-call-count valid-modes-count))) @result))))))
+        (is (= 8 @result))))))
 
 (deftest start-calls-make-queues-with-both-streams-and-batch-routes-test
   (testing "Start calls make queues with both streams and batch routes"
@@ -81,7 +80,7 @@
           expected-batch-routes  {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
-                    messaging-consumer/start-subscribers (fn [stream-routes batch-routes _]
+                    messaging-consumer/start-subscribers (fn [stream-routes batch-routes]
                                                            (swap! start-subscriber-called + 1)
                                                            (is (= stream-routes expected-stream-routes))
                                                            (is (= batch-routes expected-batch-routes)))
@@ -235,7 +234,8 @@
 
 (deftest kafka-producers-should-start
   (let [args                 {:actor-routes  []
-                              :stream-routes []}
+                              :stream-routes {}
+                              :batch-routes  {}}
         producer-has-started (atom false)]
     (with-redefs [init/start-kafka-producers (fn [] (reset! producer-has-started true))
                   init/start-kafka-streams   (constantly nil)]

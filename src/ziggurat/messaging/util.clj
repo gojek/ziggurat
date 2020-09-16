@@ -1,13 +1,5 @@
 (ns ziggurat.messaging.util
-  (:require [ziggurat.channel :refer [get-keys-for-topic]]))
-
-(defn is-connection-required? [ziggurat-config stream-routes]
-  (let [all-channels (reduce (fn [all-channel-vec [topic-entity _]]
-                               (concat all-channel-vec (get-keys-for-topic stream-routes topic-entity)))
-                             []
-                             stream-routes)]
-    (or (pos? (count all-channels))
-        (-> ziggurat-config :retry :enabled))))
+  (:require [clojure.string :as str]))
 
 (defn prefixed-queue-name [topic-entity value]
   (str (name topic-entity) "_" value))
@@ -24,3 +16,9 @@
       (get topic-entity)
       (dissoc :handler-fn)
       keys))
+
+(defn list-of-hosts [config]
+  (let [{:keys [host hosts]} config]
+    (if hosts
+      (str/split hosts #",")
+      [host])))
