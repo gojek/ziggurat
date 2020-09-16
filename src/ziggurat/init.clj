@@ -21,6 +21,9 @@
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
 
+(defn- all-routes [args]
+  (merge (:stream-routes args) (:batch-routes args)))
+
 (defn- start*
   ([states]
    (start* states nil))
@@ -38,7 +41,7 @@
 
 (defn- start-messaging-producers [args]
   (start-messaging-connection args)
-  (messaging-producer/make-queues (get args :stream-routes)))
+  (messaging-producer/make-queues (all-routes args)))
 
 (defn start-kafka-producers []
   (start* #{#'kafka-producers}))
