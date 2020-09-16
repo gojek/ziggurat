@@ -60,20 +60,20 @@
         (-> (mount/only [#'consumer-groups])
             (mount/stop)))))
   (testing "should not submit a task to the thread-pool if the task is nil"
-    (let [polling-started                (atom false)]
+    (let [polling-started-for-nil-task   (atom false)]
       (with-redefs [ct/create-consumer   (fn [consumer-config]
                                            (is (not (nil? consumer-config)))
                                            ;; returning a dummy data instead of a consumer
                                            {:dummy-key :dummy-value})
                     ch/poll-for-messages (fn [_ _ _ _]
-                                           (reset! polling-started true))
-                    cd/stop-consumers       (constantly nil) ;; stop-consumers does nothing as there are just dummy consumers
+                                           (reset! polling-started-for-nil-task true))
+                    cd/stop-consumers    (constantly nil) ;; stop-consumers does nothing as there are just dummy consumers
                     cast                 (constantly nil)]
         (-> (mount/only [#'consumer-groups])
             (mount/with-args {:consumer-1 {:handler-fn dummy-handler-fn}
                               :consumer-2 {:handler-fn dummy-handler-fn}})
             (mount/start))
-        (is (= false @polling-started))
+        (is (= false @polling-started-for-nil-task))
         (-> (mount/only [#'consumer-groups])
             (mount/stop))))))
 
