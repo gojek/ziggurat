@@ -28,7 +28,7 @@
                     messaging/stop-connection  (constantly nil)
                     config/config-file         "config.test.edn"
                     tracer/create-tracer       (fn [] (MockTracer.))]
-        (init/start #(reset! result (+ @result 3)) {} [] nil)
+        (init/start #(reset! result (+ @result 3)) {} {} [] nil)
         (init/stop #() nil)
         ;; some of the functions which call start-messaging, are called again.
         (is (= (* 4 (exp 2 (+ start-messaging-internal-call-count valid-modes-count))) @result))))))
@@ -40,7 +40,7 @@
                     streams/stop-streams  (fn [_] (reset! result (* @result 2)))
                     config/config-file    "config.test.edn"
                     tracer/create-tracer  (fn [] (MockTracer.))]
-        (init/start #() {} [] nil)
+        (init/start #() {} {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= 8 @result))))))
 
@@ -53,7 +53,7 @@
                     messaging/stop-connection (fn [_ _] (reset! result (* @result 2)))
                     config/config-file        "config.test.edn"
                     tracer/create-tracer      (fn [] (MockTracer.))]
-        (init/start #() {} [] nil)
+        (init/start #() {} {} [] nil)
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= (* 4 (exp 2 (+ stop-connection-internal-call-count valid-modes-count))) @result))))))
 
@@ -69,7 +69,7 @@
                     messaging-consumer/start-subscribers (constantly nil)
                     config/config-file                   "config.test.edn"
                     tracer/create-tracer                 (fn [] (MockTracer.))]
-        (init/start #() expected-stream-routes [] nil)
+        (init/start #() expected-stream-routes {} [] nil)
         (init/stop #() nil)
         (is (= 2 @make-queues-called))))))
 
@@ -85,7 +85,7 @@
                     messaging-producer/make-queues       (constantly nil)
                     config/config-file                   "config.test.edn"
                     tracer/create-tracer                 (fn [] (MockTracer.))]
-        (init/start #() expected-stream-routes [] nil)
+        (init/start #() expected-stream-routes {} [] nil)
         (init/stop #() nil)
         (is (= 1 @start-subscriber-called))))))
 
@@ -94,7 +94,7 @@
     (let [start-was-called       (atom false)
           expected-stream-routes {:default {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
-                    init/start             (fn [_ stream-router _ _]
+                    init/start             (fn [_ stream-router _ _ _]
                                              (swap! start-was-called not)
                                              (is (= expected-stream-routes stream-router)))]
         (init/main #() #() expected-stream-routes)
@@ -103,32 +103,29 @@
 (deftest validate-stream-routes-test
   (let [exception-message "Invalid stream routes"]
     (testing "Validate Stream Routes should raise exception if stream routes is nil and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-routes nil [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes nil {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream routes are empty and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-routes {} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route does not have handler-fn and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {}} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route does have nil value and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-routes {:default nil} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default nil} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and stream worker is one of the modes"
-      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} [:stream-worker]))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and there is no mode passed"
-      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} nil)))))
+      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} {:consumer-1 {:handler-fn #()}} nil))))
 
-  (testing "Validate Stream Routes should return nil if stream route is empty or nil and stream worker is not one of the modes"
-    (is (nil? (init/validate-routes nil [:api-server])))
-    (is (nil? (init/validate-routes {} [:api-server]))))
-
-  (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn"
-    (let [stream-route {:default {:handler-fn (fn [])
-                                  :channel-1  (fn [])
-                                  :channel-2  (fn [])}}]
-      (is (= stream-route (init/validate-routes stream-route [:stream-worker]))))))
+    (testing "Does not throw an exception if validation is successful"
+      (let [stream-route {:default {:handler-fn (fn [])
+                                    :channel-1  (fn [])
+                                    :channel-2  (fn [])}}
+            batch-route  {:consumer-1 {:handler-fn #()}}]
+        (is (= batch-route (init/validate-routes stream-route batch-route [:stream-worker :batch-consumer])))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"
@@ -136,8 +133,8 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"
                   tracer/create-tracer  (fn [] (MockTracer.))]
-      (init/start #() {} [["test-ping" (fn [_request] {:status 200
-                                                       :body   "pong"})]] nil)
+      (init/start #() {} {} [["test-ping" (fn [_request] {:status 200
+                                                          :body   "pong"})]] nil)
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
@@ -150,8 +147,8 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"
                   tracer/create-tracer  (fn [] (MockTracer.))]
-      (init/start #() {} [["test-ping" (fn [_request] {:status 200
-                                                       :body   "pong"})]] [:management-api :api-server])
+      (init/start #() {} {} [["test-ping" (fn [_request] {:status 200
+                                                          :body   "pong"})]] [:management-api :api-server])
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)
             status-actor status
             {:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
@@ -164,7 +161,7 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"
                   tracer/create-tracer  (fn [] (MockTracer.))]
-      (init/start #() {} [] nil)
+      (init/start #() {} {} [] nil)
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)]
         (init/stop #() nil)
         (is (= 404 status)))))
@@ -174,7 +171,7 @@
                   streams/stop-streams  (constantly nil)
                   config/config-file    "config.test.edn"
                   tracer/create-tracer  (fn [] (MockTracer.))]
-      (init/start #() {} [] nil)
+      (init/start #() {} {} [] nil)
       (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
         (init/stop #() nil)
         (is (= 200 status))))))

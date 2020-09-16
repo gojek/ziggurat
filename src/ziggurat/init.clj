@@ -108,12 +108,18 @@
    :batch-consumer {:start-fn start-batch-consumer :stop-fn stop-batch-consumer}
    :management-api {:start-fn start-management-apis :stop-fn stop-management-apis}})
 
+(defn- all-modes []
+  (keys valid-modes-fns))
+
+(defn- all-modes-except-batch-consumer []
+  (remove #(= % :batch-consumer) (all-modes)))
+
 (defn- execute-function
   ([modes fnk]
    (execute-function modes fnk nil))
   ([modes fnk args]
    (doseq [mode (-> modes
-                    (or (keys valid-modes-fns))
+                    (or (all-modes))
                     sort)]
      (if (nil? args)
        ((fnk (get valid-modes-fns mode)))
@@ -180,7 +186,7 @@
     (s/validate BatchRoute batch-routes)))
 
 (defn validate-modes [modes]
-  (let [invalid-modes       (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
+  (let [invalid-modes       (filter #(not (contains? (set (all-modes)) %)) modes)
         invalid-modes-count (count invalid-modes)]
     (when (pos? invalid-modes-count)
       (throw (ex-info "Wrong modes arguement passed - " {:invalid-modes invalid-modes})))))
@@ -200,7 +206,7 @@
   ([start-fn stop-fn stream-routes]
    (main start-fn stop-fn stream-routes []))
   ([start-fn stop-fn stream-routes actor-routes]
-   (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes}))
+   (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes :modes (all-modes-except-batch-consumer)}))
   ([{:keys [start-fn stop-fn stream-routes batch-routes actor-routes modes]}]
    (try
      (validate-modes modes)
