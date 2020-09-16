@@ -45,9 +45,11 @@
         (-> (mount/only [#'consumer-groups])
             (mount/stop))
         (is (= @stopped-consumer-count 6))
-        (is (= @stopped-consumer-groups-count 2)))))
+        (is (= @stopped-consumer-groups-count 2))))))
+
+(deftest do-not-poll-if-nil-consumer-test
   (testing "should not start polling if consumer is not created, i.e. consumer is nil"
-    (let [consumer-nil-polling-started                (atom false)]
+    (let [consumer-nil-polling-started   (atom false)]
       (with-redefs [ct/create-consumer   (constantly nil)
                     ch/poll-for-messages (fn [_ _ _ _]
                                            (reset! consumer-nil-polling-started true))
@@ -58,7 +60,9 @@
             (mount/start))
         (is (= false @consumer-nil-polling-started))
         (-> (mount/only [#'consumer-groups])
-            (mount/stop)))))
+            (mount/stop))))))
+
+(deftest do-not-poll-if-nil-task-test
   (testing "should not submit a task to the thread-pool if the task is nil"
     (let [polling-started-for-nil-task   (atom false)]
       (with-redefs [ct/create-consumer   (fn [consumer-config]
