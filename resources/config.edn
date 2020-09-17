@@ -1,0 +1,53 @@
+{:ziggurat {:app-name             "application_name"
+            :env                  [:dev :keyword]
+            :nrepl-server         {:port [8013 :int]}
+            :datadog              {:host    "localhost"
+                                   :port    [8126 :int]
+                                   :enabled [false :bool]}
+            :statsd               {:host    "localhost"
+                                   :port    [8125 :int]
+                                   :enabled [false :bool]}
+            :metrics              {:constructor "ziggurat.dropwizard-metrics-wrapper/->DropwizardMetrics"}
+
+            :alpha-features       {}
+            :sentry               {:enabled                   [false :bool]
+                                   :dsn                       "dummy"
+                                   :worker-count              [10 :int]
+                                   :queue-size                [10 :int]
+                                   :thread-termination-wait-s [1 :int]}
+            :rabbit-mq-connection {:host            "localhost"
+                                   :port            [5672 :int]
+                                   :username        "guest"
+                                   :password        "guest"
+                                   :channel-timeout [2000 :int]}
+            :jobs                 {:instant {:worker-count   [4 :int]
+                                             :prefetch-count [4 :int]}}
+            :rabbit-mq            {:delay       {:queue-name           "application_name_delay_queue_test"
+                                                 :exchange-name        "application_name_delay_exchange_test"
+                                                 :dead-letter-exchange "application_name_instant_exchange_test"
+                                                 :queue-timeout-ms     [100 :int]}
+                                   :instant     {:queue-name    "application_name_instant_queue_test"
+                                                 :exchange-name "application_name_instant_exchange_test"}
+                                   :dead-letter {:queue-name    "application_name_dead_letter_queue_test"
+                                                 :exchange-name "application_name_dead_letter_exchange_test"}}
+            :retry                {:count   [5 :int]
+                                   :type    [:linear :keyword]
+                                   :enabled [true :bool]}
+            :http-server          {:middlewares  {:swagger {:enabled false}}
+                                   :port         [9012 :int]
+                                   :thread-count [100 :int]}
+            :stream-router        {:stream-1  {:application-id       "test-stream-consumer-prateek-1001"
+                                              :bootstrap-servers    "g-gojek-id-mainstream.golabs.io:6668"
+                                              :stream-threads-count [1 :int]
+                                              :origin-topic         "driver-location-ping-3"
+                                              :upgrade-from         "1.1"
+                                              :consumer-type        :default}}
+            :batch-routes         {:consumer-1 {:consumer-group-id "test-batch-consumer-prateek-1001"
+                                                :bootstrap-servers "g-gojek-id-mainstream.golabs.io:6668"
+                                                :max-poll-records   [100 :int]
+                                                :origin-topic       "driver-location-ping-3"
+                                                :poll-timeout       [1000 :int]
+                                                :thread-count      [2 :int]
+                                                :session-timeout-ms-config [60000 :int]}}
+            :tracer               {:enabled         [true :bool]
+                                   :custom-provider ""}}}

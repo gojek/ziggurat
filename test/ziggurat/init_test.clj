@@ -90,7 +90,7 @@
         (is (= 1 @start-subscriber-called))))))
 
 (deftest main-test
-  (testing "Main function should call start"
+  (testing "Main function should call start (arity: 3)"
     (let [start-was-called       (atom false)
           expected-stream-routes {:default {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
@@ -100,20 +100,32 @@
         (init/main #() #() expected-stream-routes)
         (is @start-was-called)))))
 
+(def mock-modes {:api-server     {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                 :stream-worker  {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                 :worker         {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                 :batch-consumer {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                 :management-api {:start-fn (constantly nil) :stop-fn (constantly nil)}})
+
 (deftest batch-routes-test
-  (testing "Main function should call the start method for batch consumption if batch-routes are provided and the modes vector is empty"
+  (testing "Main function should start batch consumption if batch-routes are provided and the modes vector is empty (arity: 1)"
     (let [start-batch-consumers-was-called       (atom false)
           expected-stream-routes                 {:default {:handler-fn #(constantly nil)}}
           batch-routes                           {:consumer-1 {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
                     init/start-common-states (constantly nil)
-                    init/valid-modes-fns    {:api-server     {:start-fn (constantly nil) :stop-fn (constantly nil)}
-                                             :stream-worker  {:start-fn (constantly nil) :stop-fn (constantly nil)}
-                                             :worker         {:start-fn (constantly nil) :stop-fn (constantly nil)}
-                                             :batch-consumer {:start-fn (fn [_] (reset! start-batch-consumers-was-called true)) :stop-fn (constantly nil)}
-                                             :management-api {:start-fn (constantly nil) :stop-fn (constantly nil)}}]
+                    init/valid-modes-fns    (assoc-in mock-modes [:batch-consumer :start-fn] (fn [_] (reset! start-batch-consumers-was-called true)))]
         (init/main {:start-fn #() :stop-fn #() :stream-routes expected-stream-routes :batch-routes batch-routes :actor-routes []})
         (is @start-batch-consumers-was-called)))))
+
+(deftest stream-routes-test
+  (testing "Main function should call the start the streams when the (arity: 4)"
+    (let [start-streams-called       (atom false)
+          expected-stream-routes     {:default {:handler-fn #(constantly nil)}}]
+      (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
+                    init/start-common-states (constantly nil)
+                    init/valid-modes-fns    (assoc-in mock-modes [:stream-worker :start-fn] (fn [_] (reset! start-streams-called true)))]
+        (init/main #() #() expected-stream-routes )
+        (is @start-streams-called)))))
 
 (deftest validate-stream-routes-test
   (let [exception-message "Invalid stream routes"]
