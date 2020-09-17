@@ -37,7 +37,7 @@
 
 (defn- start-messaging-consumers [args]
   (start-messaging-connection args)
-  (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
+  (messaging-consumer/start-subscribers (get args :stream-routes) (get args :batch-routes) (ziggurat-config)))
 
 (defn- start-messaging-producers [args]
   (start-messaging-connection args)
