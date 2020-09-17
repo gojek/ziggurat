@@ -57,35 +57,38 @@
         (init/stop #(reset! result (+ @result 3)) nil)
         (is (= (* 4 (exp 2 (+ stop-connection-internal-call-count valid-modes-count))) @result))))))
 
-(deftest start-calls-make-queues-test
-  (testing "Start calls make queues"
+(deftest start-calls-make-queues-with-both-streams-and-batch-routes-test
+  (testing "Start calls make queues with both streams and batch routes"
     (let [make-queues-called     (atom 0)
-          expected-stream-routes {:default {:handler-fn #()}}]
+          expected-stream-routes {:default {:handler-fn #()}}
+          expected-batch-routes {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
-                    messaging-producer/make-queues       (fn [stream-routes]
+                    messaging-producer/make-queues       (fn [all-routes]
                                                            (swap! make-queues-called + 1)
-                                                           (is (= stream-routes expected-stream-routes)))
+                                                           (is (= all-routes (merge expected-stream-routes expected-batch-routes))))
                     messaging-consumer/start-subscribers (constantly nil)
                     config/config-file                   "config.test.edn"
                     tracer/create-tracer                 (fn [] (MockTracer.))]
-        (init/start #() expected-stream-routes {} [] nil)
+        (init/start #() expected-stream-routes expected-batch-routes [] nil)
         (init/stop #() nil)
         (is (= 2 @make-queues-called))))))
 
 (deftest start-calls-start-subscribers-test
   (testing "Start calls start subscribers"
     (let [start-subscriber-called (atom 0)
-          expected-stream-routes  {:default {:handler-fn #()}}]
+          expected-stream-routes  {:default {:handler-fn #()}}
+          expected-batch-routes  {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
-                    messaging-consumer/start-subscribers (fn [stream-routes _]
+                    messaging-consumer/start-subscribers (fn [stream-routes batch-routes _]
                                                            (swap! start-subscriber-called + 1)
-                                                           (is (= stream-routes expected-stream-routes)))
+                                                           (is (= stream-routes expected-stream-routes))
+                                                           (is (= batch-routes expected-batch-routes)))
                     messaging-producer/make-queues       (constantly nil)
                     config/config-file                   "config.test.edn"
                     tracer/create-tracer                 (fn [] (MockTracer.))]
-        (init/start #() expected-stream-routes {} [] nil)
+        (init/start #() expected-stream-routes expected-batch-routes [] nil)
         (init/stop #() nil)
         (is (= 1 @start-subscriber-called))))))
 
