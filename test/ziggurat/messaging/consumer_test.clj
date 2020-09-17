@@ -3,12 +3,13 @@
             [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.rabbitmq-wrapper  :as rmqw]
+            [ziggurat.messaging.rabbitmq-wrapper :as rmqw]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.retry :as retry]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as util]
-            [ziggurat.messaging.consumer :as consumer]))
+            [ziggurat.messaging.consumer :as consumer]
+            [ziggurat.mapper :as mpr]))
 
 (use-fixtures :once (join-fixtures [fix/init-messaging
                                     fix/silence-logging
@@ -110,10 +111,10 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (consumer/start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                             :call-counter-atom  call-counter
-                                                             :retry-limit        2
-                                                             :success-promise    success-promise}) topic-entity [] (ziggurat-config))
+          (consumer/start-retry-subscriber* (mpr/mapper-func (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                             :call-counter-atom                   call-counter
+                                                             :retry-limit                         2
+                                                             :success-promise                     success-promise}) []) topic-entity (ziggurat-config))
 
           (producer/publish-to-delay-queue message-payload)
 
@@ -139,10 +140,10 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (consumer/start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
+          (consumer/start-retry-subscriber* (mpr/mapper-func (mock-mapper-fn {:retry-counter-atom retry-counter
                                                              :call-counter-atom  call-counter
                                                              :skip-promise       skip-promise
-                                                             :retry-limit        -1}) topic-entity [] (ziggurat-config))
+                                                             :retry-limit        -1}) []) topic-entity (ziggurat-config))
 
           (producer/publish-to-delay-queue message-payload)
 
@@ -167,9 +168,9 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (consumer/start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
+          (consumer/start-retry-subscriber* (mpr/mapper-func (mock-mapper-fn {:retry-counter-atom retry-counter
                                                              :call-counter-atom  call-counter
-                                                             :retry-limit        (* no-of-msgs 10)}) topic-entity [] (ziggurat-config))
+                                                             :retry-limit        (* no-of-msgs 10)}) []) topic-entity (ziggurat-config))
 
           (dotimes [_ no-of-msgs]
             (producer/retry (gen-message-payload topic-entity)))
@@ -184,7 +185,7 @@
           (is (= no-of-msgs (count (consumer/get-dead-set-messages topic-entity no-of-msgs)))))
         (util/close rmq-ch))))
 
-  (testing "start subscribers should not call start-subscriber* when stream router is nil"
+  (testing "start subscribers should only call start-subscriber* for batch-routes if stream routes are nil"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
@@ -194,12 +195,45 @@
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
                                                                   (update-in [:retry :enabled] (constantly true))
                                                                   (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                      consumer/start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
-
-          (consumer/start-subscribers nil (ziggurat-config))
-
-          (is (= 0 @counter))
+                      consumer/start-retry-subscriber* (fn [_ topic-entity _]
+                                                         (swap! counter inc)
+                                                         (is (= topic-entity :consumer-1)))]
+          (consumer/start-subscribers nil {:consumer-1 {:handler-fn #()}} (ziggurat-config))
+          (is (= 1 @counter))
           (util/close ch)))))
+
+  (testing "start subscribers should only call start-subscriber* for both batch-routes and stream-routes if both are provided"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+                     (let [no-of-workers       3
+                           original-zig-config (ziggurat-config)
+                           ch                  (lch/open (rmqw/get-connection))
+                           counter             (atom 0)]
+
+                       (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
+                                                                                 (update-in [:retry :enabled] (constantly true))
+                                                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
+                                     consumer/start-retry-subscriber* (fn [_ topic-entity _]
+                                                                        (swap! counter inc)
+                                                                        (is (or (= topic-entity :consumer-1) (= topic-entity :default))))]
+                         (consumer/start-subscribers {:default {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} (ziggurat-config))
+                         (is (= 2 @counter))
+                         (util/close ch)))))
+
+  (testing "start subscribers should not be called if none of the stream-routes or batch-routes are provided"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+                     (let [no-of-workers       3
+                           original-zig-config (ziggurat-config)
+                           ch                  (lch/open (rmqw/get-connection))
+                           counter             (atom 0)]
+
+                       (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
+                                                                                 (update-in [:retry :enabled] (constantly true))
+                                                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
+                                     consumer/start-retry-subscriber* (fn [_ _ _]
+                                                                        (swap! counter inc))]
+                         (consumer/start-subscribers nil nil (ziggurat-config))
+                         (is (= 0 @counter))
+                         (util/close ch)))))
 
   (testing "start subscribers should call start-subscriber* according to the product of worker and mapper-fns in stream-routes"
     (let [no-of-workers       3
@@ -211,8 +245,8 @@
       (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
                                                                 (update-in [:retry :enabled] (constantly true))
                                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                    consumer/start-retry-subscriber* (fn [_ _ _ _] (swap! counter inc))]
-        (consumer/start-subscribers stream-routes (ziggurat-config))
+                    consumer/start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
+        (consumer/start-subscribers stream-routes {} (ziggurat-config))
         (is (= (count stream-routes) @counter))
         (util/close ch)))))
 
@@ -284,10 +318,10 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (consumer/start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
+          (consumer/start-retry-subscriber* (mpr/mapper-func (mock-mapper-fn {:retry-counter-atom retry-counter
                                                              :call-counter-atom  call-counter
                                                              :retry-limit        0
-                                                             :success-promise    success-promise}) topic-entity [] (ziggurat-config))
+                                                             :success-promise    success-promise}) []) topic-entity (ziggurat-config))
 
           (producer/publish-to-delay-queue message-payload)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
