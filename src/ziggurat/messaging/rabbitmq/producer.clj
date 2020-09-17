@@ -5,7 +5,9 @@
             [taoensso.nippy :as nippy]
             [langohr.exchange :as le]
             [ziggurat.metrics :as metrics]
-            [langohr.queue :as lq]))
+            [langohr.queue :as lq])
+  (:import (com.rabbitmq.client AlreadyClosedException)
+           (java.io IOException)))
 
 (defn- record-headers->map [record-headers]
   (reduce (fn [header-map record-header]
@@ -25,7 +27,7 @@
 (defn- network-exception?
   [e]
   (let [exception-class (class e)]
-    (or (= com.rabbitmq.client.AlreadyClosedException exception-class) (= java.io.IOException exception-class))))
+    (or (= AlreadyClosedException exception-class) (= IOException exception-class))))
 
 (defn- publish-internal
   [connection exchange message-payload expiration]
@@ -36,9 +38,14 @@
     (catch Exception e
       (log/error e "Exception was encountered while publishing to RabbitMQ")
       (if (network-exception? e)
-        (do (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
+        (do (metrics/increment-count
+             ["rabbitmq" "publish" "network"] "exception"
+             {:topic-entity (name (:topic-entity message-payload))})
             true)
-        (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})))))
+        (do (metrics/increment-count
+             ["rabbitmq" "publish"] "exception"
+             {:topic-entity (name (:topic-entity message-payload))})
+            false)))))
 
 (defn publish
   ([connection exchange message-payload expiration]
