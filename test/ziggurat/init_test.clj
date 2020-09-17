@@ -127,7 +127,7 @@
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
                     init/start-common-states (constantly nil)
                     init/valid-modes-fns    (assoc-in mock-modes [:stream-worker :start-fn] (fn [_] (reset! start-streams-called true)))]
-        (init/main #() #() expected-stream-routes )
+        (init/main #() #() expected-stream-routes)
         (is @start-streams-called)))))
 
 (deftest validate-stream-routes-test
