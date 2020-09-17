@@ -100,6 +100,21 @@
         (init/main #() #() expected-stream-routes)
         (is @start-was-called)))))
 
+(deftest batch-routes-test
+  (testing "Main function should call the start method for batch consumption if batch-routes are provided and the modes vector is empty"
+    (let [start-batch-consumers-was-called       (atom false)
+          expected-stream-routes                 {:default {:handler-fn #(constantly nil)}}
+          batch-routes                           {:consumer-1 {:handler-fn #(constantly nil)}}]
+      (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
+                    init/start-common-states (constantly nil)
+                    init/valid-modes-fns    {:api-server     {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                                             :stream-worker  {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                                             :worker         {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                                             :batch-consumer {:start-fn (fn [_] (reset! start-batch-consumers-was-called true)) :stop-fn (constantly nil)}
+                                             :management-api {:start-fn (constantly nil) :stop-fn (constantly nil)}}]
+        (init/main {:start-fn #() :stop-fn #() :stream-routes expected-stream-routes :batch-routes batch-routes :actor-routes []})
+        (is @start-batch-consumers-was-called)))))
+
 (deftest validate-stream-routes-test
   (let [exception-message "Invalid stream routes"]
     (testing "Validate Stream Routes should raise exception if stream routes is nil and stream worker is one of the modes"
