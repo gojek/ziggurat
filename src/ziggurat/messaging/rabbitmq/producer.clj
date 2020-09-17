@@ -34,7 +34,8 @@
   (try
     (with-open [ch (lch/open connection)]
       (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
-                  (properties-for-publish expiration (:headers message-payload))))
+                  (properties-for-publish expiration (:headers message-payload)))
+      false)
     (catch Exception e
       (log/error e "Exception was encountered while publishing to RabbitMQ")
       (if (network-exception? e)

@@ -632,10 +632,7 @@
                                                  (reset! publish-called? true)))]
         (producer/publish-to-instant-queue retry-message-payload)
         (is (true? @prefixed-queue-name-called?))
-        (is (true? @publish-called?)))))
-  (testing "An exception is raised, if publishing to RabbitMQ fails even after retries"
-    (rmqw/stop-connection config/config (:stream-routes (mount/args)))
-    (is (thrown? clojure.lang.ExceptionInfo (producer/publish-to-instant-queue message-payload)))))
+        (is (true? @publish-called?))))))
 
 (deftest publish-to-delay-queue-test
   (testing "creates a span when tracer is enabled"
