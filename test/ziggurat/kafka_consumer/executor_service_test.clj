@@ -20,11 +20,11 @@
 (deftest thread-pool-test-with-default-thread-count
   (testing "should create a thread-pool using DEFAULT_THREAD_COUNT when thread count is not provided in the configuration"
     (with-redefs [config/config (->
-                                  (assoc-in config/config [:ziggurat :batch-routes :consumer-1 :thread-count] nil)
-                                  (assoc-in [:ziggurat :batch-routes :consumer-2 :thread-count] nil))]
+                                 (assoc-in config/config [:ziggurat :batch-routes :consumer-1 :thread-count] nil)
+                                 (assoc-in [:ziggurat :batch-routes :consumer-2 :thread-count] nil))]
       (let [expected-thread-count 4]
-      (-> (mount/only [#'thread-pool])
-          (mount/start))
-      (is (= expected-thread-count (.getMaximumPoolSize (cast ThreadPoolExecutor thread-pool))))
-      (-> (mount/only [#'thread-pool])
-          (mount/stop))))))
+        (-> (mount/only [#'thread-pool])
+            (mount/start))
+        (is (= expected-thread-count (.getMaximumPoolSize (cast ThreadPoolExecutor thread-pool))))
+        (-> (mount/only [#'thread-pool])
+            (mount/stop))))))

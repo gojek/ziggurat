@@ -58,8 +58,8 @@
                     ch/poll-for-messages  (constantly nil)
                     cd/stop-consumers     (constantly nil)
                     config/config         (->
-                                            (assoc-in config/config [:ziggurat :batch-routes :consumer-1 :thread-count] nil)
-                                            (assoc-in [:ziggurat :batch-routes :consumer-2 :thread-count] nil))]
+                                           (assoc-in config/config [:ziggurat :batch-routes :consumer-1 :thread-count] nil)
+                                           (assoc-in [:ziggurat :batch-routes :consumer-2 :thread-count] nil))]
         (-> (mount/only [#'consumer-groups])
             (mount/with-args {:consumer-1 {:handler-fn dummy-handler-fn}
                               :consumer-2 {:handler-fn dummy-handler-fn}})
