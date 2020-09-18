@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.4.2-alpha.3
+
+- Fix project version
+
 ## 3.4.2-alpha.2
 
 - Log the stream record metadata
