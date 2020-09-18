@@ -24,7 +24,7 @@
   [topic-entity consumer-config init-arg]
   (let [thread-count (or (:thread-count consumer-config) DEFAULT_THREAD_COUNT)]
     (reduce (fn [consumers _]
-              (let [consumer (ct/create-consumer consumer-config)]
+              (let [consumer (ct/create-consumer topic-entity consumer-config)]
                 (when consumer
                   (start-polling-with-consumer consumer init-arg topic-entity consumer-config)
                   (conj consumers consumer))))

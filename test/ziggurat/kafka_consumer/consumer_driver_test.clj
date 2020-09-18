@@ -22,7 +22,7 @@
   (testing "should create the required number of consumers and consumer groups as per the config in config.edn"
     (let [stopped-consumer-groups-count  (atom 0)
           stopped-consumer-count         (atom 0)]
-      (with-redefs [ct/create-consumer   (fn [consumer-config]
+      (with-redefs [ct/create-consumer   (fn [topic-entity consumer-config]
                                            (is (not (nil? consumer-config)))
                                            ;; returning a dummy data instead of a consumer
                                            {:dummy-key :dummy-value})
@@ -51,7 +51,7 @@
 (deftest create-consumers-per-group-with-default-thread-count-test
   (testing "should create the consumers according to default thread count when thread count config is not available"
     (let [create-consumer-called         (atom 0)]
-      (with-redefs [ct/create-consumer   (fn [consumer-config]
+      (with-redefs [ct/create-consumer   (fn [topic-entity consumer-config]
                                            (swap! create-consumer-called inc)
                                            ;; returning a dummy data instead of a consumer
                                            {:dummy-key :dummy-value})
@@ -86,7 +86,7 @@
 (deftest do-not-poll-if-nil-task-test
   (testing "should not submit a task to the thread-pool if the task is nil"
     (let [polling-started-for-nil-task   (atom false)]
-      (with-redefs [ct/create-consumer   (fn [consumer-config]
+      (with-redefs [ct/create-consumer   (fn [topic-entity consumer-config]
                                            (is (not (nil? consumer-config)))
                                            ;; returning a dummy data instead of a consumer
                                            {:dummy-key :dummy-value})
@@ -107,7 +107,7 @@
     (let [polling-started                (atom false)
           zig-config                     (ziggurat-config)]
       (with-redefs [ziggurat-config      (constantly (assoc zig-config :batch-routes {:dummy-consumer-group-1 {:thread-count 1}}))
-                    ct/create-consumer   (fn [consumer-config]
+                    ct/create-consumer   (fn [topic-entity consumer-config]
                                            (is (not (nil? consumer-config)))
                                            ;; returning a dummy data instead of a consumer
                                            {:dummy-key :dummy-value})
@@ -134,7 +134,7 @@
     (let [consumers-shut-down            (atom 0)
           zig-config                     (ziggurat-config)]
       (with-redefs [ziggurat-config      (constantly (assoc zig-config :batch-routes {:dummy-consumer-group-1 {:thread-count 2}}))
-                    ct/create-consumer   (fn [consumer-config]
+                    ct/create-consumer   (fn [topic-entity consumer-config]
                                            (reify Consumer
                                              (wakeup [_]
                                                (swap! consumers-shut-down inc))))
