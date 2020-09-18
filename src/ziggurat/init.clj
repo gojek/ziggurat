@@ -21,7 +21,7 @@
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
 
-(defn- all-routes [args]
+(defn- event-routes [args]
   (merge (:stream-routes args) (:batch-routes args)))
 
 (defn- start*
@@ -41,7 +41,7 @@
 
 (defn- start-messaging-producers [args]
   (start-messaging-connection args)
-  (messaging-producer/make-queues (all-routes args)))
+  (messaging-producer/make-queues (event-routes args)))
 
 (defn start-kafka-producers []
   (start* #{#'kafka-producers}))
@@ -108,21 +108,21 @@
   {:api-server     {:start-fn start-server :stop-fn stop-server}
    :stream-worker  {:start-fn start-stream :stop-fn stop-stream}
    :worker         {:start-fn start-workers :stop-fn stop-workers}
-   :batch-consumer {:start-fn start-batch-consumer :stop-fn stop-batch-consumer}
+   :batch-worker   {:start-fn start-batch-consumer :stop-fn stop-batch-consumer}
    :management-api {:start-fn start-management-apis :stop-fn stop-management-apis}})
 
-(defn- all-modes []
+(defn- valid-modes []
   (keys valid-modes-fns))
 
 (defn- all-modes-except-batch-consumer []
-  (remove #(= % :batch-consumer) (all-modes)))
+  (remove #(= % :batch-worker) (valid-modes)))
 
 (defn- execute-function
   ([modes fnk]
    (execute-function modes fnk nil))
   ([modes fnk args]
    (doseq [mode (-> modes
-                    (or (all-modes))
+                    (or (valid-modes))
                     sort)]
      (if (nil? args)
        ((fnk (get valid-modes-fns mode)))
@@ -183,13 +183,18 @@
    {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
 
 (defn validate-routes [stream-routes batch-routes modes]
-  (when (or (empty? modes) (contains? (set modes) :stream-worker))
-    (s/validate StreamRoute stream-routes))
-  (when (or (empty? modes) (contains? (set modes) :batch-consumer))
-    (s/validate BatchRoute batch-routes)))
+  (if  (empty? modes)
+    (do
+      (s/validate StreamRoute stream-routes)
+      (s/validate BatchRoute batch-routes))
+    (do
+      (when (contains? (set modes) :stream-worker)
+        (s/validate StreamRoute stream-routes))
+      (when (contains? (set modes) :batch-worker)
+        (s/validate BatchRoute batch-routes)))))
 
 (defn validate-modes [modes]
-  (let [invalid-modes       (filter #(not (contains? (set (all-modes)) %)) modes)
+  (let [invalid-modes       (filter #(not (contains? (set (valid-modes)) %)) modes)
         invalid-modes-count (count invalid-modes)]
     (when (pos? invalid-modes-count)
       (throw (ex-info "Wrong modes arguement passed - " {:invalid-modes invalid-modes})))))

@@ -36,7 +36,7 @@
                     metrics/increment-count (fn [metric-namespace metrics _ _]
                                               (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
                                               (is (= metrics "commit.failed.exception")))]
-        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout 1000})
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
         (is (= expected-calls @actual-calls)))))
   (testing "create message payload from values of consumer-record and pass it to the process function"
     (let [topic-partition (TopicPartition. "string" 1)
@@ -59,7 +59,7 @@
                                    (is (= (:value (first (:batch message))) "world"))
                                    (is (= (:topic-entity message) :random-consumer-id))
                                    (is (= (:retry-count message) nil))))]
-        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout 1000})))))
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})))))
 
 (deftest process-function-test
   (testing "should publish metrics for batch size, success count, failure count, retry-count and execution time after processing is finished"

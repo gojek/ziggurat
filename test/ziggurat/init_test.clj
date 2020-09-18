@@ -106,7 +106,7 @@
 (def mock-modes {:api-server     {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :stream-worker  {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :worker         {:start-fn (constantly nil) :stop-fn (constantly nil)}
-                 :batch-consumer {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                 :batch-worker {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :management-api {:start-fn (constantly nil) :stop-fn (constantly nil)}})
 
 (deftest batch-routes-test
@@ -116,7 +116,7 @@
           batch-routes                           {:consumer-1 {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
                     init/start-common-states (constantly nil)
-                    init/valid-modes-fns    (assoc-in mock-modes [:batch-consumer :start-fn] (fn [_] (reset! start-batch-consumers-was-called true)))]
+                    init/valid-modes-fns    (assoc-in mock-modes [:batch-worker :start-fn] (fn [_] (reset! start-batch-consumers-was-called true)))]
         (init/main {:start-fn #() :stop-fn #() :stream-routes expected-stream-routes :batch-routes batch-routes :actor-routes []})
         (is @start-batch-consumers-was-called)))))
 
@@ -155,7 +155,7 @@
                                     :channel-1  (fn [])
                                     :channel-2  (fn [])}}
             batch-route  {:consumer-1 {:handler-fn #()}}]
-        (is (= batch-route (init/validate-routes stream-route batch-route [:stream-worker :batch-consumer])))))))
+        (is (= batch-route (init/validate-routes stream-route batch-route [:stream-worker :batch-worker])))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"

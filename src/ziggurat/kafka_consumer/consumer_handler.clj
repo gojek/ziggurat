@@ -77,7 +77,7 @@
       (let [batch-payload (create-batch-payload records topic-entity)]
         (process handler-fn batch-payload))
       (commit-offsets consumer topic-entity)
-      (recur (seq (.poll consumer (Duration/ofMillis (:poll-timeout consumer-config))))))
+      (recur (seq (.poll consumer (Duration/ofMillis (:poll-timeout-ms-config consumer-config))))))
     (catch WakeupException e)
     (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
                  (.close consumer)))))
