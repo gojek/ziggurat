@@ -5,10 +5,11 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.kafka-consumer.consumer-driver :as cd :refer [consumer-groups]]
             [mount.core :as mount]
-            [ziggurat.kafka-consumer.executor-thread-pool :refer [executor-thread-pool]]
+            [ziggurat.kafka-consumer.executor-service :refer [thread-pool]]
             [ziggurat.fixtures :as fix]
             [clojure.tools.logging :as log]
-            [ziggurat.metrics :as metrics])
+            [ziggurat.metrics :as metrics]
+            [ziggurat.config :as config])
   (:import (java.util.concurrent ExecutorService RejectedExecutionHandler)
            (org.apache.kafka.clients.consumer Consumer)))
 
@@ -46,6 +47,26 @@
             (mount/stop))
         (is (= @stopped-consumer-count 6))
         (is (= @stopped-consumer-groups-count 2))))))
+
+(deftest create-consumers-per-group-with-default-thread-count-test
+  (testing "should create the consumers according to default thread count when thread count config is not available"
+    (let [create-consumer-called         (atom 0)]
+      (with-redefs [ct/create-consumer   (fn [consumer-config]
+                                           (swap! create-consumer-called inc)
+                                           ;; returning a dummy data instead of a consumer
+                                           {:dummy-key :dummy-value})
+                    ch/poll-for-messages  (constantly nil)
+                    cd/stop-consumers     (constantly nil)
+                    config/config         (->
+                                            (assoc-in config/config [:ziggurat :batch-routes :consumer-1 :thread-count] nil)
+                                            (assoc-in [:ziggurat :batch-routes :consumer-2 :thread-count] nil))]
+        (-> (mount/only [#'consumer-groups])
+            (mount/with-args {:consumer-1 {:handler-fn dummy-handler-fn}
+                              :consumer-2 {:handler-fn dummy-handler-fn}})
+            (mount/start))
+        (is (= @create-consumer-called 4))
+        (-> (mount/only [#'consumer-groups])
+            (mount/stop))))))
 
 (deftest do-not-poll-if-nil-consumer-test
   (testing "should not start polling if consumer is not created, i.e. consumer is nil"
@@ -100,7 +121,7 @@
                                               (is (= metric-namespace ["ziggurat.batch.consumption"]))
                                               (is (= metrics "thread-pool.task.rejected"))
                                               (is (>= val 0)))]
-        (.shutdown ^ExecutorService executor-thread-pool)
+        (.shutdown ^ExecutorService thread-pool)
         (-> (mount/only [#'consumer-groups])
             (mount/with-args {:consumer-1 {:handler-fn dummy-handler-fn}})
             (mount/start))

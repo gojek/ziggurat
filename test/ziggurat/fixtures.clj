@@ -14,7 +14,7 @@
             [langohr.exchange :as le]
             [langohr.queue :as lq]
             [ziggurat.tracer :as tracer]
-            [ziggurat.kafka-consumer.executor-thread-pool :refer [executor-thread-pool]])
+            [ziggurat.kafka-consumer.executor-service :refer [thread-pool]])
   (:import (java.util Properties)
            (org.apache.kafka.clients.producer ProducerConfig)
            (org.apache.kafka.clients.consumer ConsumerConfig)
@@ -36,10 +36,10 @@
   (mount/stop))
 
 (defn mount-test-thread-pool [f]
-  (-> (mount/only [#'executor-thread-pool])
+  (-> (mount/only [#'thread-pool])
       (mount/start))
   (f)
-  (-> (mount/only [#'executor-thread-pool])
+  (-> (mount/only [#'thread-pool])
       (mount/stop)))
 
 (defn mount-metrics [f]

@@ -15,7 +15,7 @@
             [ziggurat.streams :as streams]
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util]
-            [ziggurat.kafka-consumer.executor-thread-pool :as thread-pool]
+            [ziggurat.kafka-consumer.executor-service :as executor-service]
             [ziggurat.kafka-consumer.consumer-driver :as consumer-driver])
   (:gen-class
    :methods [^{:static true} [init [java.util.Map] void]]
@@ -94,13 +94,13 @@
   (stop-messaging))
 
 (defn start-batch-consumer [args]
-  (-> (mount/only #{#'thread-pool/executor-thread-pool
+  (-> (mount/only #{#'executor-service/thread-pool
                     #'consumer-driver/consumer-groups})
       (mount/with-args (:batch-routes args))
       (mount/start)))
 
 (defn stop-batch-consumer []
-  (-> (mount/only #{#'thread-pool/executor-thread-pool
+  (-> (mount/only #{#'executor-service/thread-pool
                     #'consumer-driver/consumer-groups})
       (mount/stop)))
 
