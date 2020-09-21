@@ -130,7 +130,26 @@
       (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
                     lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
                                               (throw (IOException. "IO Exception")))]
-        (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration)))))))
+        (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))))
+
+  (testing "when lb/publish function raises an IOException, it goes infinitely"
+    (let [is-infinite-loop-checked?       (atom false)
+          serialized-message              (byte-array 1234)
+          exchange-name                   "exchange-test"
+          headers                         (map #(reify
+                                                  Header
+                                                  (key [_] (str "foo-" %))
+                                                  (value [_] serialized-message)) (range 1 3))
+          message-payload                 {:foo "bar" :headers headers}
+          expiration                      nil]
+      (with-redefs [lch/open                    (fn [^Connection _] (create-mock-channel))
+                    rm-prod/publish-internal    (fn [_ _ _ _]
+                                                  true)
+                    rm-prod/publish              (fn [connection exchange message-payload expiration]
+                                                   (when (rm-prod/publish-internal connection exchange message-payload expiration)
+                                                     (reset! is-infinite-loop-checked? true)))]
+        (rm-prod/publish nil exchange-name message-payload expiration))
+      (is (true? @is-infinite-loop-checked?)))))
 
 (deftest create-and-bind-queue-test
   (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"

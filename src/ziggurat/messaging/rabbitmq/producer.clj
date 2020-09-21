@@ -32,7 +32,7 @@
    {:topic-entity (name (:topic-entity message-payload))})
   true)
 
-(defn- publish-internal
+(defn publish-internal
   [connection exchange message-payload expiration]
   (try
     (with-open [ch (lch/open connection)]
