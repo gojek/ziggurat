@@ -9,9 +9,11 @@
 
 (deftest create-consumer-test
   (testing "create the consumer with provided config and subscribe to provided topic"
-    (let [consumer ^KafkaConsumer (create-consumer :consumer-1 (get-in (ziggurat-config) [:batch-routes :consumer-1]))]
-      (is (= (get-in (ziggurat-config) [:batch-routes :consumer-1 :origin-topic]) (last (keys (.listTopics consumer)))))
+    (let [consumer ^KafkaConsumer (create-consumer :consumer-1 (get-in (ziggurat-config) [:batch-routes :consumer-1]))
+          expected-origin-topic   (get-in (ziggurat-config) [:batch-routes :consumer-1 :origin-topic])]
+      (is (contains? (set (keys (.listTopics consumer))) expected-origin-topic))
       (.unsubscribe consumer)
       (.close consumer)))
   (testing "returns nil when invalid configs are provided (KafkaConsumer throws Exception)"
-    (is (= nil (create-consumer :consumer-1 (assoc-in (get-in (ziggurat-config) [:batch-routes :consumer-1]) [:consumer-group-id] nil))))))
+    (let [consumer-config (get-in (ziggurat-config) [:batch-routes :consumer-1])]
+      (is (= nil (create-consumer :consumer-1 (assoc-in consumer-config [:consumer-group-id] nil)))))))
