@@ -9,6 +9,7 @@
             [langohr.exchange :as le])
   (:import (com.rabbitmq.client Channel Connection)
            (com.rabbitmq.client AlreadyClosedException)
+           (java.io IOException)
            (com.rabbitmq.client ShutdownSignalException)
            (org.apache.kafka.common.header Header)))
 
@@ -103,7 +104,7 @@
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))
       (is (true? @nippy-called?))))
 
-  (testing "when lb/publish function raises an exception, it goes infinitely"
+  (testing "when lb/publish function raises an AlreadyClosedException, it goes infinitely"
     (let [serialized-message              (byte-array 1234)
           exchange-name                   "exchange-test"
           headers                         (map #(reify
@@ -115,6 +116,20 @@
       (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
                     lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
                                               (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil))))]
+        (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))))
+
+  (testing "when lb/publish function raises an IOException, it goes infinitely"
+    (let [serialized-message              (byte-array 1234)
+          exchange-name                   "exchange-test"
+          headers                         (map #(reify
+                                                  Header
+                                                  (key [_] (str "foo-" %))
+                                                  (value [_] serialized-message)) (range 1 3))
+          message-payload                 {:foo "bar" :headers headers}
+          expiration                      nil]
+      (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
+                    lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
+                                              (throw (IOException. "IO Exception")))]
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration)))))))
 
 (deftest create-and-bind-queue-test

@@ -205,18 +205,12 @@
         topic-key-2       (:topic-key stream-2)
         cfg-1             (:cfg stream-1)
         cfg-2             (:cfg stream-2)
-        strm-1            (map-values
-                           #(stream-joins-log-and-report-metrics
-                             topic-name-1
-                             topic-entity-name
-                             %)
-                           (:stream stream-1))
-        strm-2            (map-values
-                           #(stream-joins-log-and-report-metrics
-                             topic-name-2
-                             topic-entity-name
-                             %)
-                           (:stream stream-2))
+        strm-1            (->> (:stream stream-1)
+                               (stream-joins-delay-metric topic-name-1 topic-entity-name oldest-processed-message-in-s)
+                               (map-values #(stream-joins-log-and-report-metrics topic-name-1 topic-entity-name %)))
+        strm-2            (->> (:stream stream-2)
+                               (stream-joins-delay-metric topic-name-2 topic-entity-name oldest-processed-message-in-s)
+                               (map-values #(stream-joins-log-and-report-metrics topic-name-2 topic-entity-name %)))
         join-window-ms    (JoinWindows/of (Duration/ofMillis (:join-window-ms cfg-1)))
         join-type         (:join-type cfg-1)
         value-joiner      (reify ValueJoiner

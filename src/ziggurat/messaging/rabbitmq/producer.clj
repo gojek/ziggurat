@@ -24,10 +24,13 @@
       (assoc props :expiration (str expiration))
       props)))
 
-(defn- network-exception?
-  [e]
-  (let [exception-class (class e)]
-    (or (= AlreadyClosedException exception-class) (= IOException exception-class))))
+(defn- handle-network-exception
+  [e message-payload]
+  (log/error e "Exception was encountered while publishing to RabbitMQ")
+  (metrics/increment-count
+   ["rabbitmq" "publish" "network"] "exception"
+   {:topic-entity (name (:topic-entity message-payload))})
+  true)
 
 (defn- publish-internal
   [connection exchange message-payload expiration]
@@ -36,17 +39,16 @@
       (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
                   (properties-for-publish expiration (:headers message-payload)))
       false)
+    (catch AlreadyClosedException e
+      (handle-network-exception e message-payload))
+    (catch IOException e
+      (handle-network-exception e message-payload))
     (catch Exception e
       (log/error e "Exception was encountered while publishing to RabbitMQ")
-      (if (network-exception? e)
-        (do (metrics/increment-count
-             ["rabbitmq" "publish" "network"] "exception"
-             {:topic-entity (name (:topic-entity message-payload))})
-            true)
-        (do (metrics/increment-count
-             ["rabbitmq" "publish"] "exception"
-             {:topic-entity (name (:topic-entity message-payload))})
-            false)))))
+      (metrics/increment-count
+       ["rabbitmq" "publish"] "exception"
+       {:topic-entity (name (:topic-entity message-payload))})
+      false)))
 
 (defn publish
   ([connection exchange message-payload expiration]

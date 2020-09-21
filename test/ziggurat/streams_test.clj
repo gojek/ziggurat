@@ -9,6 +9,8 @@
             [ziggurat.middleware.stream-joins :as stream-joins-middleware]
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.tracer :refer [tracer]]
+            [ziggurat.messaging.producer :as producer]
+            [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
             [ziggurat.config :as config])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
@@ -380,3 +382,27 @@
     (stop-streams streams)
     (is (= times @message-received-count))))
 
+(deftest handles-mapper-fn-test
+  (let [mapper-function-called? (atom false)
+        mapped-fn            (fn [message]
+                               :retry)
+        times                1
+        kvs                  (repeat times message-key-value)
+        streams              (start-streams {:default {:handler-fn mapped-fn}}
+                                            (-> (ziggurat-config)
+                                                (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)
+                                                (dissoc :tracer)))]
+    (with-redefs [producer/retry                (fn [message-payload]
+                                                  (throw (ex-info "Streams test: rabbit retry error" {:type :rabbitmq-publish-failure
+                                                                                                      :e    (Exception. "Custom Error")})))
+                  mapper-func (fn [_ _]
+                                (reset! mapper-function-called? true))]
+      (Thread/sleep 10000)                                  ;;waiting for streams to start
+      (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (Thread/sleep 5000)                                   ;;wating for streams to consume messages
+      (is @mapper-function-called?))
+    (stop-streams streams)))
