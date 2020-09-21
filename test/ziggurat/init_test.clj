@@ -130,7 +130,7 @@
         (init/main #() #() expected-stream-routes)
         (is @start-streams-called)))))
 
-(deftest validate-stream-routes-test
+(deftest validate-events-routes-test
   (let [exception-message "Invalid stream routes"]
     (testing "Validate Stream Routes should raise exception if stream routes is nil and stream worker is one of the modes"
       (is (thrown? RuntimeException exception-message (init/validate-routes nil {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
