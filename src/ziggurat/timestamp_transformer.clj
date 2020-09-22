@@ -1,6 +1,8 @@
 (ns ziggurat.timestamp-transformer
   (:require [ziggurat.kafka-delay :refer [calculate-and-report-kafka-delay]]
             [clojure.tools.logging :as log]
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [sentry-clj.async :as sentry]
             [ziggurat.util.time :refer [get-current-time-in-millis get-timestamp-from-record]])
   (:import [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams.kstream Transformer]
@@ -22,8 +24,13 @@
          (^void init [_ ^ProcessorContext context]
            (set! processor-context context))
          (transform [_ record-key record-value]
-           (log/info "stream record metadata--> " "record-key: " record-key " record-value: " record-value " partition: " (.partition processor-context) " topic: " (.topic processor-context))
-           (let [message-time (.timestamp processor-context)]
+           (let [message-time (.timestamp processor-context)
+                 partition    (.partition processor-context)
+                 topic        (.topic processor-context)
+                 metadata     (str "stream record metadata--> " "record-key: " record-key " record-value: " record-value " partition: " partition " topic: " topic)]
+             (log/info metadata)
+             ;; HACK:
+             (sentry/report-error sentry-reporter (Exception. "this exception is made for logging the stream metadata") metadata)
              (when (message-to-process? message-time oldest-processed-message-in-s)
                (calculate-and-report-kafka-delay metric-namespace message-time additional-tags)
                (KeyValue/pair record-key record-value))))
