@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.4.2-alpha.4
+
+- Log metadata thru sentry
+
 ## 3.4.2-alpha.3
 
 - Fix project version
