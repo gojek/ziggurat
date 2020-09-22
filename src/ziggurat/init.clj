@@ -14,10 +14,15 @@
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
             [ziggurat.tracer :as tracer]
-            [ziggurat.util.java-util :as util])
+            [ziggurat.util.java-util :as util]
+            [ziggurat.kafka-consumer.executor-service :as executor-service]
+            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver])
   (:gen-class
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
+
+(defn- event-routes [args]
+  (merge (:stream-routes args) (:batch-routes args)))
 
 (defn- start*
   ([states]
@@ -32,11 +37,11 @@
 
 (defn- start-messaging-consumers [args]
   (start-messaging-connection args)
-  (messaging-consumer/start-subscribers (get args :stream-routes) (ziggurat-config)))
+  (messaging-consumer/start-subscribers (get args :stream-routes) (get args :batch-routes) (ziggurat-config)))
 
 (defn- start-messaging-producers [args]
   (start-messaging-connection args)
-  (messaging-producer/make-queues (get args :stream-routes)))
+  (messaging-producer/make-queues (event-routes args)))
 
 (defn start-kafka-producers []
   (start* #{#'kafka-producers}))
@@ -88,18 +93,36 @@
   (mount/stop #'server/server)
   (stop-messaging))
 
+(defn start-batch-consumer [args]
+  (-> (mount/only #{#'executor-service/thread-pool
+                    #'consumer-driver/consumer-groups})
+      (mount/with-args (:batch-routes args))
+      (mount/start)))
+
+(defn stop-batch-consumer []
+  (-> (mount/only #{#'executor-service/thread-pool
+                    #'consumer-driver/consumer-groups})
+      (mount/stop)))
+
 (def valid-modes-fns
   {:api-server     {:start-fn start-server :stop-fn stop-server}
    :stream-worker  {:start-fn start-stream :stop-fn stop-stream}
    :worker         {:start-fn start-workers :stop-fn stop-workers}
+   :batch-worker   {:start-fn start-batch-consumer :stop-fn stop-batch-consumer}
    :management-api {:start-fn start-management-apis :stop-fn stop-management-apis}})
+
+(defn- valid-modes []
+  (keys valid-modes-fns))
+
+(defn- all-modes-except-batch-consumer []
+  (remove #(= % :batch-worker) (valid-modes)))
 
 (defn- execute-function
   ([modes fnk]
    (execute-function modes fnk nil))
   ([modes fnk args]
    (doseq [mode (-> modes
-                    (or (keys valid-modes-fns))
+                    (or (valid-modes))
                     sort)]
      (if (nil? args)
        ((fnk (get valid-modes-fns mode)))
@@ -121,13 +144,14 @@
 
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"
-  [actor-start-fn stream-routes actor-routes modes]
+  [actor-start-fn stream-routes batch-routes actor-routes modes]
   (start-common-states)
   (actor-start-fn)
   (execute-function modes
                     :start-fn
                     {:actor-routes  actor-routes
-                     :stream-routes stream-routes}))
+                     :stream-routes stream-routes
+                     :batch-routes  batch-routes}))
 
 (defn stop
   "Calls the Ziggurat's state stop fns and then actor-stop-fn."
@@ -152,12 +176,25 @@
    {s/Keyword {:handler-fn (s/pred #(fn? %))
                s/Keyword   (s/pred #(fn? %))}}))
 
-(defn validate-stream-routes [stream-routes modes]
-  (when (or (empty? modes) (contains? (set modes) :stream-worker))
-    (s/validate StreamRoute stream-routes)))
+(s/defschema BatchRoute
+  (s/conditional
+   #(and (seq %)
+         (map? %))
+   {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
+
+(defn validate-routes [stream-routes batch-routes modes]
+  (if  (empty? modes)
+    (do
+      (s/validate StreamRoute stream-routes)
+      (s/validate BatchRoute batch-routes))
+    (do
+      (when (contains? (set modes) :stream-worker)
+        (s/validate StreamRoute stream-routes))
+      (when (contains? (set modes) :batch-worker)
+        (s/validate BatchRoute batch-routes)))))
 
 (defn validate-modes [modes]
-  (let [invalid-modes       (filter #(not (contains? (set (keys valid-modes-fns)) %)) modes)
+  (let [invalid-modes       (filter #(not (contains? (set (valid-modes)) %)) modes)
         invalid-modes-count (count invalid-modes)]
     (when (pos? invalid-modes-count)
       (throw (ex-info "Wrong modes arguement passed - " {:invalid-modes invalid-modes})))))
@@ -177,13 +214,13 @@
   ([start-fn stop-fn stream-routes]
    (main start-fn stop-fn stream-routes []))
   ([start-fn stop-fn stream-routes actor-routes]
-   (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes}))
-  ([{:keys [start-fn stop-fn stream-routes actor-routes modes]}]
+   (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes :modes (all-modes-except-batch-consumer)}))
+  ([{:keys [start-fn stop-fn stream-routes batch-routes actor-routes modes]}]
    (try
      (validate-modes modes)
-     (validate-stream-routes stream-routes modes)
+     (validate-routes stream-routes batch-routes modes)
      (add-shutdown-hook stop-fn modes)
-     (start start-fn stream-routes actor-routes modes)
+     (start start-fn stream-routes batch-routes actor-routes modes)
      (catch clojure.lang.ExceptionInfo e
        (log/error e)
        (System/exit 1))

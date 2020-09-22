@@ -39,12 +39,16 @@
     (channel-retry-enabled? topic-entity channel)
     (retry-enabled?)))
 
+(defn- all-routes []
+  (merge (:stream-routes (mount/args))
+         (:batch-routes (mount/args))))
+
 (defn get-replay []
-  (let [stream-routes (:stream-routes (mount/args))]
+  (let [routes (all-routes)]
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (retry-allowed? topic-entity channel)
-          (if (validate-channel-or-topic-entity topic-entity stream-routes channel)
+          (if (validate-channel-or-topic-entity topic-entity routes channel)
             (if (validate-count parsed-count)
               (do (r/replay parsed-count topic-entity channel)
                   {:status 200
@@ -56,11 +60,11 @@
           not-found-for-retry)))))
 
 (defn get-view []
-  (let [stream-routes (:stream-routes (mount/args))]
+  (let [routes (all-routes)]
     (fn view [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (retry-allowed? topic-entity channel)
-          (if (validate-channel-or-topic-entity topic-entity stream-routes channel)
+          (if (validate-channel-or-topic-entity topic-entity routes channel)
             (if (validate-count parsed-count)
               (do (r/view parsed-count topic-entity channel)
                   {:status 200
@@ -72,11 +76,11 @@
           not-found-for-retry)))))
 
 (defn delete-messages []
-  (let [stream-routes (:stream-routes (mount/args))]
+  (let [routes (all-routes)]
     (fn [{{:keys [count topic-entity channel]} :params}]
       (let [parsed-count (parse-count count)]
         (if (retry-allowed? topic-entity channel)
-          (if (validate-channel-or-topic-entity topic-entity stream-routes channel)
+          (if (validate-channel-or-topic-entity topic-entity routes channel)
             (if (validate-count parsed-count)
               (do (r/delete parsed-count topic-entity channel)
                   {:status 200

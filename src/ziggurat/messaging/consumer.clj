@@ -1,11 +1,13 @@
 (ns ziggurat.messaging.consumer
   (:require [ziggurat.mapper :as mpr]
+            [ziggurat.message-payload :as mp]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.config :refer [ziggurat-config get-in-config]]
             [ziggurat.messaging.messaging :as messaging]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]
             [clojure.tools.logging :as log]
+            [ziggurat.kafka-consumer.consumer-handler :as ch]
             [schema.core :as s]))
 
 (defn get-dead-set-queue-name
@@ -32,11 +34,11 @@
    It also converts the topic-entity into a keyword while constructing MessagePayload."
   [message topic-entity]
   (try
-    (s/validate mpr/message-payload-schema message)
+    (s/validate mp/message-payload-schema message)
     (catch Exception e
       (log/info "old message format read, converting to message-payload: " message)
       (let [retry-count     (or (:retry-count message) 0)
-            message-payload (mpr/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
+            message-payload (mp/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
         (assoc message-payload :retry-count retry-count)))))
 
 (defn read-messages-from-queue [queue-name topic-entity ack? count]
@@ -66,12 +68,12 @@
   ([topic-entity channel count processing-fn]
    (process-messages-from-queue (get-dead-set-queue-name topic-entity (ziggurat-config) channel) count processing-fn)))
 
-(defn start-retry-subscriber* [mapper-fn topic-entity channels ziggurat-config]
+(defn start-retry-subscriber* [handler-fn topic-entity ziggurat-config]
   (when (get-in ziggurat-config [:retry :enabled])
     (dotimes [_ (get-in ziggurat-config [:jobs :instant :worker-count])]
       (let [queue-name (get-instant-queue-name topic-entity ziggurat-config)]
         (messaging/start-subscriber (get-in ziggurat-config [:jobs :instant :prefetch-count])
-                                    (mpr/mapper-func mapper-fn channels)
+                                    handler-fn
                                     queue-name)))))
 
 (defn start-channels-subscriber [channels topic-entity ziggurat-config]
@@ -86,10 +88,14 @@
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
-  [stream-routes ziggurat-config]
+  [stream-routes batch-routes ziggurat-config]
   (doseq [stream-route stream-routes]
     (let [topic-entity  (first stream-route)
-          topic-handler (-> stream-route second :handler-fn)
+          handler       (-> stream-route second :handler-fn)
           channels      (-> stream-route second (dissoc :handler-fn))]
       (start-channels-subscriber channels topic-entity ziggurat-config)
-      (start-retry-subscriber* topic-handler topic-entity (keys channels) ziggurat-config))))
+      (start-retry-subscriber* (mpr/mapper-func handler (keys channels)) topic-entity ziggurat-config)))
+  (doseq [batch-route batch-routes]
+    (let [topic-entity  (first batch-route)
+          handler (-> batch-route second :handler-fn)]
+      (start-retry-subscriber* (fn [message] (ch/process handler message)) topic-entity ziggurat-config))))
