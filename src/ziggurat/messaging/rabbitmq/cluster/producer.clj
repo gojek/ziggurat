@@ -3,7 +3,6 @@
             [langohr.channel :as lch]
             [langohr.http :as lh]
             [langohr.exchange :as le]
-            [ziggurat.messaging.rabbitmq.retry :refer :all]
             [langohr.queue :as lq]
             [clojure.string :as str])
   (:import (org.apache.kafka.common.header.internals RecordHeader)))

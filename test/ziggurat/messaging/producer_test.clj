@@ -499,7 +499,7 @@
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
           (is (= expected-dead-set-message message-from-mq))))))
 
-  (testing "it will retry publishing message six times when unable to publish to rabbitmq"
+  (testing "it will handle exception when unable to publish to rabbitmq"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
       (let [retry-count           (atom 0)
@@ -507,8 +507,8 @@
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (swap! retry-count inc)
                                    (throw (Exception. "some exception")))]
-          (is (thrown? clojure.lang.ExceptionInfo (producer/retry retry-message-payload)))
-          (is (= 6 @retry-count))))))
+          (is (= nil (producer/retry retry-message-payload)))
+          (is (= 1 @retry-count))))))
 
   (testing "message with no retry count will publish to delay queue"
     (fix/with-queues
@@ -643,10 +643,7 @@
                                                  (reset! publish-called? true)))]
         (producer/publish-to-instant-queue retry-message-payload)
         (is (true? @prefixed-queue-name-called?))
-        (is (true? @publish-called?)))))
-  (testing "An exception is raised, if publishing to RabbitMQ fails even after retries"
-    (rmqw/stop-connection config/config (:stream-routes (mount/args)))
-    (is (thrown? clojure.lang.ExceptionInfo (producer/publish-to-instant-queue message-payload)))))
+        (is (true? @publish-called?))))))
 
 (deftest publish-to-delay-queue-test
   (testing "creates a span when tracer is enabled"

@@ -8,6 +8,9 @@
             [langohr.queue :as lq]
             [langohr.exchange :as le])
   (:import (com.rabbitmq.client Channel Connection)
+           (com.rabbitmq.client AlreadyClosedException)
+           (java.io IOException)
+           (com.rabbitmq.client ShutdownSignalException)
            (org.apache.kafka.common.header Header)))
 
 (use-fixtures :once (join-fixtures [fix/init-messaging
@@ -15,6 +18,13 @@
 
 (defn- create-mock-channel [] (reify Channel
                                 (close [_] nil)))
+
+(defn- timeout [timeout-ms callback]
+  (let [fut (future (callback))
+        ret (deref fut timeout-ms ::timed-out)]
+    (when (= ret ::timed-out)
+      (future-cancel fut))
+    ret))
 
 (deftest producer-test
   (testing "it should publish a message without expiry"
@@ -99,7 +109,50 @@
                                      (reset! nippy-called? true))
                                    serialized-message)]
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))
-      (is (true? @nippy-called?)))))
+      (is (true? @nippy-called?))))
+
+  (testing "when lb/publish function raises an AlreadyClosedException, it is caught"
+    (let [serialized-message              (byte-array 1234)
+          exchange-name                   "exchange-test"
+          headers                         (map #(reify
+                                                  Header
+                                                  (key [_] (str "foo-" %))
+                                                  (value [_] serialized-message)) (range 1 3))
+          message-payload                 {:foo "bar" :headers headers}
+          expiration                      nil]
+      (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
+                    lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
+                                              (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil))))]
+        (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))))
+
+  (testing "when lb/publish function raises an IOException, it is caught"
+    (let [serialized-message              (byte-array 1234)
+          exchange-name                   "exchange-test"
+          headers                         (map #(reify
+                                                  Header
+                                                  (key [_] (str "foo-" %))
+                                                  (value [_] serialized-message)) (range 1 3))
+          message-payload                 {:foo "bar" :headers headers}
+          expiration                      nil]
+      (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
+                    lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
+                                              (throw (IOException. "IO Exception")))]
+        (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))))
+
+  (testing "when publish-internal function returns true, it waits infinitely"
+    (let [serialized-message              (byte-array 1234)
+          exchange-name                   "exchange-test"
+          headers                         (map #(reify
+                                                  Header
+                                                  (key [_] (str "foo-" %))
+                                                  (value [_] serialized-message)) (range 1 3))
+          message-payload                 {:foo "bar" :headers headers}
+          expiration                      nil]
+      (with-redefs [lch/open                    (fn [^Connection _] (create-mock-channel))
+                    rm-prod/publish-internal    (fn [_ _ _ _]
+                                                  true)]
+        (is :ziggurat.messaging.rabbitmq.producer-test/timed-out
+            (timeout 10000 #(rm-prod/publish nil exchange-name message-payload expiration)))))))
 
 (deftest create-and-bind-queue-test
   (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"

@@ -1,6 +1,5 @@
 (ns ziggurat.retry
-  (:require [clojure.set :as set]
-            [ziggurat.sentry :refer [sentry-reporter]]))
+  (:require [clojure.set :as set]))
 
 (def default-wait 100)
 (def default-retry 2)

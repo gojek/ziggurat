@@ -10,6 +10,7 @@
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.mapper :refer [mapper-func]]
             [ziggurat.config :as config])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
@@ -381,8 +382,8 @@
     (stop-streams streams)
     (is (= times @message-received-count))))
 
-(deftest stops-streams-when-exception-is-raised-from-mapper-fn-test
-  (let [stop-streams-called? (atom false)
+(deftest handles-mapper-fn-test
+  (let [mapper-function-called? (atom false)
         mapped-fn            (fn [message]
                                :retry)
         times                1
@@ -395,13 +396,13 @@
     (with-redefs [producer/retry                (fn [message-payload]
                                                   (throw (ex-info "Streams test: rabbit retry error" {:type :rabbitmq-publish-failure
                                                                                                       :e    (Exception. "Custom Error")})))
-                  ziggurat.streams/stop-streams (fn [kafka-stream]
-                                                  (reset! stop-streams-called? true))]
+                  mapper-func (fn [_ _]
+                                (reset! mapper-function-called? true))]
       (Thread/sleep 10000)                                  ;;waiting for streams to start
       (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                           kvs
                                                           (props)
                                                           (MockTime.))
       (Thread/sleep 5000)                                   ;;wating for streams to consume messages
-      (is @stop-streams-called?))
+      (is @mapper-function-called?))
     (stop-streams streams)))
