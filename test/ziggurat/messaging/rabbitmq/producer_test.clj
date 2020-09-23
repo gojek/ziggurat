@@ -19,6 +19,13 @@
 (defn- create-mock-channel [] (reify Channel
                                 (close [_] nil)))
 
+(defn- timeout [timeout-ms callback]
+  (let [fut (future (callback))
+        ret (deref fut timeout-ms ::timed-out)]
+    (when (= ret ::timed-out)
+      (future-cancel fut))
+    ret))
+
 (deftest producer-test
   (testing "it should publish a message without expiry"
     (let [publish-called? (atom false)
@@ -104,7 +111,7 @@
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))
       (is (true? @nippy-called?))))
 
-  (testing "when lb/publish function raises an AlreadyClosedException, it goes infinitely"
+  (testing "when lb/publish function raises an AlreadyClosedException, it is caught"
     (let [serialized-message              (byte-array 1234)
           exchange-name                   "exchange-test"
           headers                         (map #(reify
@@ -118,7 +125,7 @@
                                               (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil))))]
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))))
 
-  (testing "when lb/publish function raises an IOException, it goes infinitely"
+  (testing "when lb/publish function raises an IOException, it is caught"
     (let [serialized-message              (byte-array 1234)
           exchange-name                   "exchange-test"
           headers                         (map #(reify
@@ -132,9 +139,8 @@
                                               (throw (IOException. "IO Exception")))]
         (is (thrown? Exception (rm-prod/publish nil exchange-name message-payload expiration))))))
 
-  (testing "when lb/publish function raises an IOException, it goes infinitely"
-    (let [is-infinite-loop-checked?       (atom false)
-          serialized-message              (byte-array 1234)
+  (testing "when publish-internal function returns true, it waits infinitely"
+    (let [serialized-message              (byte-array 1234)
           exchange-name                   "exchange-test"
           headers                         (map #(reify
                                                   Header
@@ -144,12 +150,9 @@
           expiration                      nil]
       (with-redefs [lch/open                    (fn [^Connection _] (create-mock-channel))
                     rm-prod/publish-internal    (fn [_ _ _ _]
-                                                  true)
-                    rm-prod/publish              (fn [connection exchange message-payload expiration]
-                                                   (when (rm-prod/publish-internal connection exchange message-payload expiration)
-                                                     (reset! is-infinite-loop-checked? true)))]
-        (rm-prod/publish nil exchange-name message-payload expiration))
-      (is (true? @is-infinite-loop-checked?)))))
+                                                  true)]
+        (is :ziggurat.messaging.rabbitmq.producer-test/timed-out
+            (timeout 10000 #(rm-prod/publish nil exchange-name message-payload expiration)))))))
 
 (deftest create-and-bind-queue-test
   (testing "it should create a queue,an exchange and bind the queue to the exchange but not tag the queue with a dead-letter exchange"
