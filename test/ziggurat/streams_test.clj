@@ -10,7 +10,7 @@
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.mapper :refer [mapper-func ->MessagePayload]]
+            [ziggurat.mapper :refer [mapper-func]]
             [ziggurat.config :as config])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
