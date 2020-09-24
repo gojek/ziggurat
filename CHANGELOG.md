@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.4.3
+
+- Fixes closing of streams when RabbitMQ server is server
+
 ## 3.4.2-alpha.4
 
 - Log metadata thru sentry
-- Fixes closing of streams when RabbitMQ server is server
 
 ## 3.4.2-alpha.3
 
