@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
-## 3.4.3
+## 3.5.0
 
-- Fixes closing of streams when RabbitMQ server is server
+- Adds support for consuming Kafka messages in batches using Kafka Consumer API
+- Fixes the logic during RabbitMQ disconnection - Ziggurat now retries (publishing a message) 
+infinitely till RMQ recovers. This changes the present behaviour where Kafka Streams were being stopped
+during disconnection with RabbitMQ.
 
 ## 3.4.2-alpha.4
 
