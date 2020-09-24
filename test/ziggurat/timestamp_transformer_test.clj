@@ -1,8 +1,8 @@
 (ns ziggurat.timestamp-transformer-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer :all]
             [ziggurat.metrics :as metrics]
-            [ziggurat.timestamp-transformer :refer [create]]
-            [ziggurat.util.time :refer [get-current-time-in-millis get-timestamp-from-record]])
+            [ziggurat.timestamp-transformer :refer :all]
+            [ziggurat.util.time :refer :all])
   (:import [org.apache.kafka.clients.consumer ConsumerRecord]
            [org.apache.kafka.streams.processor ProcessorContext]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]
@@ -32,16 +32,10 @@
         expected-metric-namespaces ["test" default-namespace]
         record-timestamp           1528720767777
         current-time               1528720768777
-        expected-delay             1000
-        test-partition             1337
-        test-topic                 "test-topic"
-        my-key                     "my-key"
-        my-value                   "my-value"]
+        expected-delay             1000]
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay"
       (let [context                    (reify ProcessorContext
-                                         (timestamp [_] record-timestamp)
-                                         (partition [_] test-partition)
-                                         (topic [_] test-topic))
+                                         (timestamp [_] record-timestamp))
             expected-topic-entity-name "expected-topic-entity-name"
             timestamp-transformer      (create expected-metric-namespaces current-time expected-topic-entity-name)]
         (.init timestamp-transformer context)
@@ -51,12 +45,10 @@
                                                         (is (or (= metric-namespaces expected-metric-namespaces)
                                                                 (= metric-namespaces [default-namespace])))
                                                         (is (= expected-topic-entity-name topic-entity-name)))]
-          (.transform timestamp-transformer my-key my-value))))
+          (.transform timestamp-transformer nil nil))))
     (testing "creates a timestamp-transformer object that calculates and reports timestamp delay when topic-entity-name is nil"
       (let [context                    (reify ProcessorContext
-                                         (timestamp [_] record-timestamp)
-                                         (partition [_] test-partition)
-                                         (topic [_] test-topic))
+                                         (timestamp [_] record-timestamp))
             expected-topic-entity-name nil
             timestamp-transformer      (create expected-metric-namespaces current-time)]
         (.init timestamp-transformer context)
@@ -66,4 +58,4 @@
                                                         (is (or (= metric-namespaces expected-metric-namespaces)
                                                                 (= metric-namespaces [default-namespace])))
                                                         (is (= topic-entity-name expected-topic-entity-name)))]
-          (.transform timestamp-transformer my-key my-value))))))
+          (.transform timestamp-transformer nil nil))))))
