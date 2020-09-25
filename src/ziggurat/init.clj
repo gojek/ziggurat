@@ -184,9 +184,12 @@
 
 (defn validate-routes [stream-routes batch-routes modes]
   (if  (empty? modes)
-    (do
-      (s/validate StreamRoute stream-routes)
-      (s/validate BatchRoute batch-routes))
+    (cond
+      (and (some? stream-routes) (some? batch-routes)) (do (s/validate StreamRoute stream-routes)
+                                                           (s/validate BatchRoute batch-routes))
+      (some? stream-routes) (s/validate StreamRoute stream-routes)
+      (some? batch-routes) (s/validate BatchRoute batch-routes)
+      :else (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in initial args for ziggurat")))
     (do
       (when (contains? (set modes) :stream-worker)
         (s/validate StreamRoute stream-routes))
