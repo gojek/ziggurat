@@ -22,7 +22,7 @@
          (^void init [_ ^ProcessorContext context]
            (set! processor-context context))
          (transform [_ record-key record-value]
-           (log/info "stream record metadata--> " "record-key: " record-key " record-value: " record-value " partition: " (.partition processor-context) " topic: " (.topic processor-context))
+           ;;(log/debug "stream record metadata--> " "record-key: " record-key " record-value: " record-value " partition: " (.partition processor-context) " topic: " (.topic processor-context))
            (let [message-time (.timestamp processor-context)]
              (when (message-to-process? message-time oldest-processed-message-in-s)
                (calculate-and-report-kafka-delay metric-namespace message-time additional-tags)
