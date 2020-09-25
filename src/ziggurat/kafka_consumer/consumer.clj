@@ -26,5 +26,5 @@
       (.subscribe consumer topic-pattern)
       consumer)
     (catch Exception e
-      (log/error "Exception received while creating Kafka Consumer for: " topic-entity))))
+      (log/error e "Exception received while creating Kafka Consumer for: " topic-entity))))
 
