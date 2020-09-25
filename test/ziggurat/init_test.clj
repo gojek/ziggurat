@@ -155,7 +155,23 @@
                                     :channel-1  (fn [])
                                     :channel-2  (fn [])}}
             batch-route  {:consumer-1 {:handler-fn #()}}]
-        (is (= batch-route (init/validate-routes stream-route batch-route [:stream-worker :batch-worker])))))))
+        (is (= batch-route (init/validate-routes stream-route batch-route [:stream-worker :batch-worker])))))
+    (testing "nil modes : batch routes and stream routes not present should raise an exception"
+      (is (thrown? IllegalArgumentException (init/validate-routes nil nil nil))))
+    (testing "nil modes : batch routes not present and stream routes are present should not throw exception"
+      (is (some? (init/validate-routes {:default {:handler-fn (fn [])}} nil nil))))
+    (testing "nil modes : stream routes not present and batch routes are present should not throw exception"
+      (is (some? (init/validate-routes nil {:consumer-1 {:handler-fn (fn [])}} nil))))
+    (testing "nil modes : stream routes and batch routes are present should return not throw exception"
+      (is (some? (init/validate-routes {:default {:handler-fn (fn [])}} {:consumer-1 {:handler-fn (fn [])}} nil))))
+    (testing "with modes : stream-worker present in modes and stream routes not present should throw an exception"
+      (is (thrown? Exception (init/validate-routes nil nil [:api-server :stream-worker]))))
+    (testing "with modes : batch-worker present in modes and batch routes not present should throw an exception"
+      (is (thrown? Exception (init/validate-routes nil nil [:api-server :batch-worker]))))
+    (testing "with modes : batch-worker and stream-worker present in modes and batch routes and stream routes present should not throw an exception"
+      (is (some? (init/validate-routes {:default {:handler-fn (fn [])}} {:consumer-1 {:handler-fn (fn [])}} [:api-server :stream-worker :batch-worker]))))
+    (testing "with modes : actor routes present in modes and arguments should return nil"
+      (is (nil? (init/validate-routes nil nil [:api-server]))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"
