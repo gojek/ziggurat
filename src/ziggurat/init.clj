@@ -183,24 +183,23 @@
    {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
 
 (defn validate-routes [stream-routes batch-routes modes]
-  (if  (empty? modes)
-    (cond
-      (and (some? stream-routes) (some? batch-routes)) (do (s/validate StreamRoute stream-routes)
-                                                           (s/validate BatchRoute batch-routes))
-      (some? stream-routes) (s/validate StreamRoute stream-routes)
-      (some? batch-routes) (s/validate BatchRoute batch-routes)
-      :else (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in initial args for ziggurat")))
-    (do
-      (when (contains? (set modes) :stream-worker)
-        (s/validate StreamRoute stream-routes))
-      (when (contains? (set modes) :batch-worker)
-        (s/validate BatchRoute batch-routes)))))
+  (when (contains? (set modes) :stream-worker)
+    (s/validate StreamRoute stream-routes))
+  (when (contains? (set modes) :batch-worker)
+    (s/validate BatchRoute batch-routes)))
 
-(defn validate-modes [modes]
-  (let [invalid-modes       (filter #(not (contains? (set (valid-modes)) %)) modes)
-        invalid-modes-count (count invalid-modes)]
-    (when (pos? invalid-modes-count)
-      (throw (ex-info "Wrong modes arguement passed - " {:invalid-modes invalid-modes})))))
+(defn validate-modes [modes stream-routes batch-routes actor-routes]
+  (let [base-modes    [:management-api :worker]
+        derived-modes (if-not (empty? modes)
+                        modes
+                        (cond-> base-modes
+                                (some? stream-routes) (conj :stream-worker)
+                                (some? batch-routes) (conj :batch-worker)
+                                (some? actor-routes) (conj :api-server)))
+        invalid-modes (filter #(not (contains? (set (valid-modes)) %)) derived-modes)]
+    (if (pos? (count invalid-modes))
+      (throw (ex-info "Wrong modes argument passed" {:invalid-modes invalid-modes}))
+      derived-modes)))
 
 (defn main
   "The entry point for your application.
@@ -220,10 +219,10 @@
    (main {:start-fn start-fn :stop-fn stop-fn :stream-routes stream-routes :actor-routes actor-routes :modes (all-modes-except-batch-consumer)}))
   ([{:keys [start-fn stop-fn stream-routes batch-routes actor-routes modes]}]
    (try
-     (validate-modes modes)
-     (validate-routes stream-routes batch-routes modes)
-     (add-shutdown-hook stop-fn modes)
-     (start start-fn stream-routes batch-routes actor-routes modes)
+     (let [derived-modes (validate-modes modes stream-routes batch-routes actor-routes)]
+       (validate-routes stream-routes batch-routes derived-modes)
+       (add-shutdown-hook stop-fn derived-modes)
+       (start start-fn stream-routes batch-routes actor-routes derived-modes))
      (catch clojure.lang.ExceptionInfo e
        (log/error e)
        (System/exit 1))
