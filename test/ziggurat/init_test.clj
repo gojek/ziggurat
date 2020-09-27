@@ -229,7 +229,9 @@
            (init/validate-modes nil nil {:consumer-1 {:handler-fn #()}} nil))))
   (testing "Validate modes should return [:management-api :worker :stream-worker :batch-worker] if both stream-routes and batch-routes are provided by the user"
     (is (= [:management-api :worker :stream-worker :batch-worker]
-           (init/validate-modes nil {:stream-1 {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} nil)))))
+           (init/validate-modes nil {:stream-1 {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} nil))))
+  (testing "Validate modes should throw an IllegalArgumentException if modes are not provided explicitly and neither :stream-routes and :batch-routes keys are present in init args"
+    (is (thrown? IllegalArgumentException (init/validate-modes nil nil nil [])))))
 
 (deftest kafka-producers-should-start
   (let [args                 {:actor-routes  []

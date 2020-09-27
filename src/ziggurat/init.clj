@@ -188,14 +188,19 @@
   (when (contains? (set modes) :batch-worker)
     (s/validate BatchRoute batch-routes)))
 
+(defn- derive-modes [stream-routes batch-routes actor-routes]
+  (let [base-modes    [:management-api :worker]]
+    (if (and (nil? stream-routes) (nil? batch-routes))
+      (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in init args")))
+    (cond-> base-modes
+            (some? stream-routes) (conj :stream-worker)
+            (some? batch-routes) (conj :batch-worker)
+            (some? actor-routes) (conj :api-server))))
+
 (defn validate-modes [modes stream-routes batch-routes actor-routes]
-  (let [base-modes    [:management-api :worker]
-        derived-modes (if-not (empty? modes)
+  (let [derived-modes (if-not (empty? modes)
                         modes
-                        (cond-> base-modes
-                                (some? stream-routes) (conj :stream-worker)
-                                (some? batch-routes) (conj :batch-worker)
-                                (some? actor-routes) (conj :api-server)))
+                        (derive-modes stream-routes batch-routes actor-routes))
         invalid-modes (filter #(not (contains? (set (valid-modes)) %)) derived-modes)]
     (if (pos? (count invalid-modes))
       (throw (ex-info "Wrong modes argument passed" {:invalid-modes invalid-modes}))
