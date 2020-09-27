@@ -219,8 +219,8 @@
     (let [modes [:stream-worker :api-server :batch-worker]]
       (is (= modes (init/validate-modes modes nil nil nil)))))
   (testing "Validate modes should return the modes derived from routes if no modes are provided by the user"
-      (is (= [:management-api :worker :stream-worker :batch-worker :api-server]
-             (init/validate-modes nil {:stream-1 {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} []))))
+    (is (= [:management-api :worker :stream-worker :batch-worker :api-server]
+           (init/validate-modes nil {:stream-1 {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} []))))
   (testing "Validate modes should return [:management-api :worker :stream-worker] if only stream-routes are provided by the user"
     (is (= [:management-api :worker :stream-worker]
            (init/validate-modes nil {:stream-1 {:handler-fn #()}} nil nil))))

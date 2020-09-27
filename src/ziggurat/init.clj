@@ -193,9 +193,9 @@
     (if (and (nil? stream-routes) (nil? batch-routes))
       (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in init args")))
     (cond-> base-modes
-            (some? stream-routes) (conj :stream-worker)
-            (some? batch-routes) (conj :batch-worker)
-            (some? actor-routes) (conj :api-server))))
+      (some? stream-routes) (conj :stream-worker)
+      (some? batch-routes) (conj :batch-worker)
+      (some? actor-routes) (conj :api-server))))
 
 (defn validate-modes [modes stream-routes batch-routes actor-routes]
   (let [derived-modes (if-not (empty? modes)
