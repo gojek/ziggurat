@@ -38,6 +38,41 @@
                                               (is (= metrics "commit.failed.exception")))]
         (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
         (is (= expected-calls @actual-calls)))))
+  (testing "Exceptions other than WakeupException are caught"
+    (let [topic-partition (TopicPartition. "string" 1)
+          individual-consumer-record (ConsumerRecord. "topic" 1 2 "hello" "world")
+          list-of-consumer-records (doto (ArrayList.) (.add individual-consumer-record))
+          map-of-partition-and-records (doto (HashMap.) (.put topic-partition list-of-consumer-records))
+          records (ConsumerRecords. map-of-partition-and-records)
+          kafka-consumer (reify Consumer
+                           (^ConsumerRecords poll [_ ^Duration _]
+                             records)
+                           (commitSync [_])
+                           (close [_]))]
+      (with-redefs [ch/process (fn [_ _] (throw (Exception.)))
+                    metrics/increment-count (constantly nil)]
+        (is (= nil (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000}))))))
+  (testing "Uses DEFAULT_POLL_TIMEOUT_MS_CONFIG if :poll-timeout-ms-config is not configured"
+    (let [topic-partition (TopicPartition. "string" 1)
+          individual-consumer-record (ConsumerRecord. "topic" 1 2 "hello" "world")
+          list-of-consumer-records (doto (ArrayList.) (.add individual-consumer-record))
+          map-of-partition-and-records (doto (HashMap.) (.put topic-partition list-of-consumer-records))
+          records (ConsumerRecords. map-of-partition-and-records)
+          actual-poll-timeout  (atom 0)
+          process-calls        (atom 0)
+          kafka-consumer (reify Consumer
+                           (^ConsumerRecords poll [_ ^Duration timeout]
+                             (reset! actual-poll-timeout (.toMillis timeout))
+                             records)
+                           (commitSync [_])
+                           (close [_]))]
+      (with-redefs [ch/process (fn [_ _]
+                                 (if (< @process-calls 1)
+                                   (swap! process-calls inc)
+                                   (throw (Exception.))))
+                    metrics/increment-count (constantly nil)]
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config nil})
+        (is (= ch/DEFAULT_POLL_TIMEOUT_MS_CONFIG @actual-poll-timeout)))))
   (testing "create message payload from values of consumer-record and pass it to the process function"
     (let [topic-partition (TopicPartition. "string" 1)
           individual-consumer-record (ConsumerRecord. "topic" 1 2 "hello" "world")
