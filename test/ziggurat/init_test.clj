@@ -147,30 +147,19 @@
     (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and stream worker is one of the modes"
       (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
-    (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and there is no mode passed"
-      (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} {:consumer-1 {:handler-fn #()}} nil))))
-
     (testing "Does not throw an exception if validation is successful"
       (let [stream-route {:default {:handler-fn (fn [])
                                     :channel-1  (fn [])
                                     :channel-2  (fn [])}}
             batch-route  {:consumer-1 {:handler-fn #()}}]
         (is (= batch-route (init/validate-routes stream-route batch-route [:stream-worker :batch-worker])))))
-    (testing "nil modes : batch routes and stream routes not present should raise an exception"
-      (is (thrown? IllegalArgumentException (init/validate-routes nil nil nil))))
-    (testing "nil modes : batch routes not present and stream routes are present should not throw exception"
-      (is (some? (init/validate-routes {:default {:handler-fn (fn [])}} nil nil))))
-    (testing "nil modes : stream routes not present and batch routes are present should not throw exception"
-      (is (some? (init/validate-routes nil {:consumer-1 {:handler-fn (fn [])}} nil))))
-    (testing "nil modes : stream routes and batch routes are present should return not throw exception"
-      (is (some? (init/validate-routes {:default {:handler-fn (fn [])}} {:consumer-1 {:handler-fn (fn [])}} nil))))
-    (testing "with modes : stream-worker present in modes and stream routes not present should throw an exception"
+    (testing "stream-worker present in modes and stream routes not present should throw an exception"
       (is (thrown? Exception (init/validate-routes nil nil [:api-server :stream-worker]))))
-    (testing "with modes : batch-worker present in modes and batch routes not present should throw an exception"
+    (testing "batch-worker present in modes and batch routes not present should throw an exception"
       (is (thrown? Exception (init/validate-routes nil nil [:api-server :batch-worker]))))
-    (testing "with modes : batch-worker and stream-worker present in modes and batch routes and stream routes present should not throw an exception"
+    (testing "batch-worker and stream-worker present in modes and batch routes and stream routes present should not throw an exception"
       (is (some? (init/validate-routes {:default {:handler-fn (fn [])}} {:consumer-1 {:handler-fn (fn [])}} [:api-server :stream-worker :batch-worker]))))
-    (testing "with modes : actor routes present in modes and arguments should return nil"
+    (testing "actor routes present in modes and arguments should return nil"
       (is (nil? (init/validate-routes nil nil [:api-server]))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
@@ -225,7 +214,24 @@
 (deftest validate-modes-test
   (testing "Validate modes should raise exception if modes have any invalid element"
     (let [modes [:invalid-modes :api-server :second-invalid]]
-      (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes))))))
+      (is (thrown? clojure.lang.ExceptionInfo (init/validate-modes modes nil nil nil)))))
+  (testing "Validate modes should return the list of modes provided by the user, if all modes are valid"
+    (let [modes [:stream-worker :api-server :batch-worker]]
+      (is (= modes (init/validate-modes modes nil nil nil)))))
+  (testing "Validate modes should return the modes derived from routes if no modes are provided by the user"
+    (is (= [:management-api :worker :stream-worker :batch-worker :api-server]
+           (init/validate-modes nil {:stream-1 {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} []))))
+  (testing "Validate modes should return [:management-api :worker :stream-worker] if only stream-routes are provided by the user"
+    (is (= [:management-api :worker :stream-worker]
+           (init/validate-modes nil {:stream-1 {:handler-fn #()}} nil nil))))
+  (testing "Validate modes should return [:management-api :worker :batch-worker] if only batch-routes are provided by the user"
+    (is (= [:management-api :worker :batch-worker]
+           (init/validate-modes nil nil {:consumer-1 {:handler-fn #()}} nil))))
+  (testing "Validate modes should return [:management-api :worker :stream-worker :batch-worker] if both stream-routes and batch-routes are provided by the user"
+    (is (= [:management-api :worker :stream-worker :batch-worker]
+           (init/validate-modes nil {:stream-1 {:handler-fn #()}} {:consumer-1 {:handler-fn #()}} nil))))
+  (testing "Validate modes should throw an IllegalArgumentException if modes are not provided explicitly and neither :stream-routes and :batch-routes keys are present in init args"
+    (is (thrown? IllegalArgumentException (init/validate-modes nil nil nil [])))))
 
 (deftest kafka-producers-should-start
   (let [args                 {:actor-routes  []
