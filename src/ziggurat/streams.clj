@@ -31,7 +31,7 @@
   {:buffered-records-per-partition     10000
    :commit-interval-ms                 15000
    :auto-offset-reset-config           "latest"
-   :oldest-processed-message-in-s      604800
+   :oldest-processed-message-in-s      10
    :changelog-topic-replication-factor 3
    :session-timeout-ms-config          10000
    :consumer-type                      :default

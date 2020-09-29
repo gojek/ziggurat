@@ -6,11 +6,6 @@
            [org.apache.kafka.streams.kstream Transformer]
            [org.apache.kafka.streams.processor TimestampExtractor ProcessorContext]))
 
-(defn- message-to-process? [message-timestamp oldest-processed-message-in-s]
-  (let [current-time (get-current-time-in-millis)
-        allowed-time (- current-time (* 1000 oldest-processed-message-in-s))]
-    (> message-timestamp allowed-time)))
-
 (deftype IngestionTimeExtractor [] TimestampExtractor
          (extract [_ record _]
            (let [ingestion-time (get-timestamp-from-record record)]
@@ -23,10 +18,16 @@
            (set! processor-context context))
          (transform [_ record-key record-value]
            ;;(log/debug "stream record metadata--> " "record-key: " record-key " record-value: " record-value " partition: " (.partition processor-context) " topic: " (.topic processor-context))
-           (let [message-time (.timestamp processor-context)]
-             (when (message-to-process? message-time oldest-processed-message-in-s)
-               (calculate-and-report-kafka-delay metric-namespace message-time additional-tags)
-               (KeyValue/pair record-key record-value))))
+           (let [message-time     (.timestamp processor-context)
+                 partition        (.partition processor-context)
+                 topic            (.topic processor-context)
+                 new-record-value (with-meta 'record-value {:timestamp message-time
+                                                            :topic topic
+                                                            :additional-tags additional-tags
+                                                            :metric-namespace metric-namespace
+                                                            :partition partition})]
+
+             (KeyValue/pair record-key new-record-value)))
          (close [_] nil))
 
 (defn create

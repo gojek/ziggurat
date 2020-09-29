@@ -1,8 +1,11 @@
 (ns ziggurat.middleware.default
   (:require [protobuf.impl.flatland.mapdef :as protodef]
             [sentry-clj.async :as sentry]
+            [ziggurat.kafka-delay :refer [calculate-and-report-kafka-delay]]
             [ziggurat.config :refer [get-in-config ziggurat-config]]
             [ziggurat.metrics :as metrics]
+            [ziggurat.util.time :refer [get-current-time-in-millis get-timestamp-from-record]]
+            [ziggurat.streams :refer [default-config-for-stream]]
             [ziggurat.sentry :refer [sentry-reporter]]))
 
 (defn deserialize-message
@@ -32,8 +35,20 @@
           nil)))
     message))
 
+(defn- message-to-process? [message-timestamp oldest-processed-message-in-s]
+  (let [current-time (get-current-time-in-millis)
+        allowed-time (- current-time (* 1000 oldest-processed-message-in-s))]
+    (> message-timestamp allowed-time)))
+
+
 (defn protobuf->hash
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
   (fn [message]
-    (handler-fn (deserialize-message message proto-class topic-entity-name))))
+    (let [metadata (meta message)]
+      (when (message-to-process? (:timestamp metadata) (:oldest-processed-message-in-s default-config-for-stream) )
+        (calculate-and-report-kafka-delay (:metric-namespace metadata) (:timestamp metadata) (:additional-tags metadata))
+        (handler-fn (deserialize-message message proto-class topic-entity-name)))
+      (when-not (message-to-process? (:timestamp metadata) (:oldest-processed-message-in-s default-config-for-stream) )
+        (println "************ not processing ******************")
+        (println message)))))
