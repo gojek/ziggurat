@@ -48,7 +48,4 @@
     (let [metadata (meta message)]
       (when (message-to-process? (:timestamp metadata) (:oldest-processed-message-in-s default-config-for-stream) )
         (calculate-and-report-kafka-delay (:metric-namespace metadata) (:timestamp metadata) (:additional-tags metadata))
-        (handler-fn (deserialize-message message proto-class topic-entity-name)))
-      (when-not (message-to-process? (:timestamp metadata) (:oldest-processed-message-in-s default-config-for-stream) )
-        (println "************ not processing ******************")
-        (println message)))))
+        (handler-fn (deserialize-message message proto-class topic-entity-name))))))
