@@ -123,7 +123,7 @@
                                               (is (>= val 0)))]
         (.shutdown ^ExecutorService thread-pool)
         (-> (mount/only [#'consumer-groups])
-            (mount/with-args {:consumer-1 {:handler-fn dummy-handler-fn}})
+            (mount/with-args {:dummy-consumer-group-1 {:handler-fn dummy-handler-fn}})
             (mount/start))
         (is (= false @polling-started))
         (-> (mount/only [#'consumer-groups])
@@ -140,7 +140,7 @@
                                                (swap! consumers-shut-down inc))))
                     ch/poll-for-messages (constantly nil)]
         (-> (mount/only [#'consumer-groups])
-            (mount/with-args {})
+            (mount/with-args {:dummy-consumer-group-1 {:handler-fn dummy-handler-fn}})
             (mount/start))
         (-> (mount/only [#'consumer-groups])
             (mount/stop))
