@@ -45,7 +45,12 @@
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
   (fn [message]
-    (let [metadata (meta message)]
-      (when (message-to-process? (:timestamp metadata) (:oldest-processed-message-in-s default-config-for-stream) )
-        (calculate-and-report-kafka-delay (:metric-namespace metadata) (:timestamp metadata) (:additional-tags metadata))
-        (handler-fn (deserialize-message message proto-class topic-entity-name))))))
+    (let [metadata         (meta message)
+          timestamp        (:timestamp metadata)
+          time-threshold   (:oldest-processed-message-in-s default-config-for-stream)
+          should-process   (message-to-process? timestamp time-threshold)
+          additional-tags  (:additional-tags metadata)
+          metric-namespace (:metric-namespace metadata)]
+      (when should-process
+        (calculate-and-report-kafka-delay metric-namespace timestamp additional-tags)
+        (handler-fn (deserialize-message (var-get message) proto-class topic-entity-name))))))

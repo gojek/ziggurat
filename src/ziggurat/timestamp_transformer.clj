@@ -20,14 +20,13 @@
            ;;(log/debug "stream record metadata--> " "record-key: " record-key " record-value: " record-value " partition: " (.partition processor-context) " topic: " (.topic processor-context))
            (let [message-time     (.timestamp processor-context)
                  partition        (.partition processor-context)
-                 topic            (.topic processor-context)
-                 new-record-value (with-meta 'record-value {:timestamp message-time
-                                                            :topic topic
-                                                            :additional-tags additional-tags
-                                                            :metric-namespace metric-namespace
-                                                            :partition partition})]
-
-             (KeyValue/pair record-key new-record-value)))
+                 topic            (.topic processor-context)]
+             (def ^{:timestamp message-time
+                    :topic topic
+                    :additional-tags additional-tags
+                    :metric-namespace metric-namespace
+                    :partition partition} new-record-value record-value)
+             (KeyValue/pair record-key #'new-record-value)))
          (close [_] nil))
 
 (defn create
