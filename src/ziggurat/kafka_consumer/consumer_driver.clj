@@ -17,7 +17,7 @@
       (try
         (.submit ^ExecutorService thread-pool ^Runnable message-poller)
         (catch RejectedExecutionException e
-          (metrics/increment-count ["ziggurat.batch.consumption"] "thread-pool.task.rejected" 1 {:topic-entity topic-entity})
+          (metrics/increment-count ["ziggurat.batch.consumption"] "thread-pool.task.rejected" 1 {:topic-entity (name topic-entity)})
           (log/error "message polling task was rejected by the threadpool" e))))))
 
 (defn- start-consumers-per-group

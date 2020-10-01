@@ -13,7 +13,7 @@
 
 (defn- publish-batch-process-metrics
   [topic-entity batch-size success-count skip-count retry-count time-taken-in-millis]
-  (let [topic-entity-tag {:topic-entity topic-entity}]
+  (let [topic-entity-tag {:topic-entity (name topic-entity)}]
     (metrics/increment-count batch-consumption-metric-ns "total" batch-size topic-entity-tag)
     (metrics/increment-count batch-consumption-metric-ns "success" success-count topic-entity-tag)
     (metrics/increment-count batch-consumption-metric-ns "skip" skip-count topic-entity-tag)
@@ -53,7 +53,7 @@
               (retry messages-to-be-retried current-retry-count topic-entity)))))
       (catch Exception e
         (do
-          (metrics/increment-count batch-consumption-metric-ns "exception" 1 {:topic-entity topic-entity})
+          (metrics/increment-count batch-consumption-metric-ns "exception" 1 {:topic-entity (name topic-entity)})
           (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
           (retry batch-payload))))))
 
@@ -62,7 +62,7 @@
   (try
     (.commitSync consumer)
     (catch Exception e
-      (metrics/increment-count batch-consumption-metric-ns "commit.failed.exception" 1 {:topic-entity topic-entity})
+      (metrics/increment-count batch-consumption-metric-ns "commit.failed.exception" 1 {:topic-entity (name topic-entity)})
       (log/error "Exception while committing offsets:" e))))
 
 (defn- create-batch-payload

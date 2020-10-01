@@ -117,10 +117,11 @@
                     log/error              (fn [str e]
                                              (is (= "message polling task was rejected by the threadpool" str))
                                              (is (= RejectedExecutionHandler (class e))))
-                    metrics/increment-count (fn [metric-namespace metrics val _]
+                    metrics/increment-count (fn [metric-namespace metrics val tags]
                                               (is (= metric-namespace ["ziggurat.batch.consumption"]))
                                               (is (= metrics "thread-pool.task.rejected"))
-                                              (is (>= val 0)))]
+                                              (is (>= val 0))
+                                              (is (= "dummy-consumer-group-1" (:topic-entity tags))))]
         (.shutdown ^ExecutorService thread-pool)
         (-> (mount/only [#'consumer-groups])
             (mount/with-args {:dummy-consumer-group-1 {:handler-fn dummy-handler-fn}})
