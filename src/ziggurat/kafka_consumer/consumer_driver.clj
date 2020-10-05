@@ -34,8 +34,9 @@
 (defn- start-consumers [consumer-configs init-args]
   (log/info "Starting consumers")
   (reduce (fn [consumer-groups [topic-entity init-arg]]
-            (let [consumer-config (get consumer-configs topic-entity)]
-              (assoc consumer-groups topic-entity (start-consumers-per-group topic-entity consumer-config init-arg))))
+            (if-some [consumer-config (get consumer-configs topic-entity)]
+              (assoc consumer-groups topic-entity (start-consumers-per-group topic-entity consumer-config init-arg))
+              consumer-groups))
           {}
           init-args))
 
