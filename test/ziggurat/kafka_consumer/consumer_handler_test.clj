@@ -33,9 +33,10 @@
                                  (if (< @actual-calls 2)
                                    (swap! actual-calls inc)
                                    (throw (WakeupException.))))
-                    metrics/increment-count (fn [metric-namespace metrics _ _]
+                    metrics/increment-count (fn [metric-namespace metrics _ tags]
                                               (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
-                                              (is (= metrics "commit.failed.exception")))]
+                                              (is (= metrics "commit.failed.exception"))
+                                              (is (= "random-consumer-id" (:topic-entity tags))))]
         (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
         (is (= expected-calls @actual-calls)))))
   (testing "Exceptions other than WakeupException are caught"
@@ -103,7 +104,8 @@
           expected-skip-count     2
           expected-retry-count    2
           batch-handler          (fn [_] {:skip (vec (replicate expected-skip-count 0)) :retry (vec (replicate expected-retry-count 0))})]
-      (with-redefs [metrics/increment-count (fn [_ metrics count _]
+      (with-redefs [metrics/increment-count (fn [_ metrics count tags]
+                                              (is (= "consumer-1" (:topic-entity tags)))
                                               (cond
                                                 (= metrics "total")
                                                 (is (= expected-batch-size count))
@@ -123,9 +125,10 @@
   (testing "should publish metrics for exception in process message"
     (let [expected-batch-size    10
           batch-handler          (fn [_] (throw (Exception. "exception in batch-handler")))]
-      (with-redefs [metrics/increment-count (fn [metric-namespace metrics _ _]
+      (with-redefs [metrics/increment-count (fn [metric-namespace metrics _ tags]
                                               (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
-                                              (is (= metrics "exception")))
+                                              (is (= metrics "exception"))
+                                              (is (= "consumer-1" (:topic-entity tags))))
                     ch/retry (fn [message]
                                (is (= message (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))))]
         (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})))))

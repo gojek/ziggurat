@@ -48,6 +48,27 @@
         (is (= @stopped-consumer-count 6))
         (is (= @stopped-consumer-groups-count 2))))))
 
+(deftest should-create-consumers-only-for-topic-entities-provided-in-batch-routes
+  (testing "should create consumers only for those topic-entities which have been provided in init-args"
+    (let [valid-topic-entities           #{:consumer-1}]
+      (with-redefs [ct/create-consumer   (fn [topic-entity consumer-config]
+                                           (is (contains? valid-topic-entities topic-entity))
+                                           (is (not (nil? consumer-config)))
+                                           ;; returning a dummy data instead of a consumer
+                                           {:dummy-key :dummy-value})
+                    cast                 (constantly nil)
+                    cd/stop-consumers    (constantly nil)]
+        (-> (mount/only [#'consumer-groups])
+            (mount/with-args {:consumer-1          {:handler-fn dummy-handler-fn}
+                              :invalid-batch-route {:handler-fn dummy-handler-fn}})
+            (mount/start))
+        (is (= 1 (count consumer-groups)))
+        (is (= 2 (count (:consumer-1 consumer-groups))))
+        (is (nil? (:consumer-2 consumer-groups)))
+        (is (nil? (:invalid-batch-route consumer-groups)))
+        (-> (mount/only [#'consumer-groups])
+            (mount/stop))))))
+
 (deftest create-consumers-per-group-with-default-thread-count-test
   (testing "should create the consumers according to default thread count when thread count config is not available"
     (let [create-consumer-called         (atom 0)]
@@ -117,13 +138,14 @@
                     log/error              (fn [str e]
                                              (is (= "message polling task was rejected by the threadpool" str))
                                              (is (= RejectedExecutionHandler (class e))))
-                    metrics/increment-count (fn [metric-namespace metrics val _]
+                    metrics/increment-count (fn [metric-namespace metrics val tags]
                                               (is (= metric-namespace ["ziggurat.batch.consumption"]))
                                               (is (= metrics "thread-pool.task.rejected"))
-                                              (is (>= val 0)))]
+                                              (is (>= val 0))
+                                              (is (= "dummy-consumer-group-1" (:topic-entity tags))))]
         (.shutdown ^ExecutorService thread-pool)
         (-> (mount/only [#'consumer-groups])
-            (mount/with-args {:consumer-1 {:handler-fn dummy-handler-fn}})
+            (mount/with-args {:dummy-consumer-group-1 {:handler-fn dummy-handler-fn}})
             (mount/start))
         (is (= false @polling-started))
         (-> (mount/only [#'consumer-groups])
@@ -140,7 +162,7 @@
                                                (swap! consumers-shut-down inc))))
                     ch/poll-for-messages (constantly nil)]
         (-> (mount/only [#'consumer-groups])
-            (mount/with-args {})
+            (mount/with-args {:dummy-consumer-group-1 {:handler-fn dummy-handler-fn}})
             (mount/start))
         (-> (mount/only [#'consumer-groups])
             (mount/stop))

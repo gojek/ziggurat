@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.5.1
+- Fixed publishing of metrics for batch consumption
+- Fixed the startup logic for batch consumption - only routes provided in Ziggurat init-args will be started
+- Standardized naming for Kafka Consumer API configs
+
 ## 3.5.0
 
 - Adds support for consuming Kafka messages in batches using Kafka Consumer API

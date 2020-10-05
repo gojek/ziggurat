@@ -17,7 +17,7 @@
       (try
         (.submit ^ExecutorService thread-pool ^Runnable message-poller)
         (catch RejectedExecutionException e
-          (metrics/increment-count ["ziggurat.batch.consumption"] "thread-pool.task.rejected" 1 {:topic-entity topic-entity})
+          (metrics/increment-count ["ziggurat.batch.consumption"] "thread-pool.task.rejected" 1 {:topic-entity (name topic-entity)})
           (log/error "message polling task was rejected by the threadpool" e))))))
 
 (defn- start-consumers-per-group
@@ -33,11 +33,12 @@
 
 (defn- start-consumers [consumer-configs init-args]
   (log/info "Starting consumers")
-  (reduce (fn [consumer-groups [topic-entity consumer-config]]
-            (let [init-arg-for-the-consumer-group (get init-args topic-entity)]
-              (assoc consumer-groups topic-entity (start-consumers-per-group topic-entity consumer-config init-arg-for-the-consumer-group))))
+  (reduce (fn [consumer-groups [topic-entity init-arg]]
+            (if-some [consumer-config (get consumer-configs topic-entity)]
+              (assoc consumer-groups topic-entity (start-consumers-per-group topic-entity consumer-config init-arg))
+              consumer-groups))
           {}
-          consumer-configs))
+          init-args))
 
 (defn- stop-consumers [consumer-groups]
   (do (log/info "stopping consumers")
