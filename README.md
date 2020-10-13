@@ -421,7 +421,7 @@ A full list of supported configs is given below. These configs can be added to `
     {:retry [] :skip []}))
 ```
 
-##### List of all the supported configs for a Batch Handler
+##### List of all the supported configs for Batch Consumption
 Ziggurat Config | Default Value | Description | Mandatory?
 --- | --- | --- | ---
 :bootstrap-servers | NA | [https://kafka.apache.org/documentation/#bootstrap.servers](https://kafka.apache.org/documentation/#bootstrap.servers) | Yes
