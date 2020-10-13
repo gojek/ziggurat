@@ -319,6 +319,19 @@ All alpha features in this doc will contain an Alpha feature tag.
 Stream joins is an alpha feature, and we recommend that you do not use it in production. It's API contract might likely change in the future.
 
 Refer to the alpha features section on how to enable Stream joins, set the keyword `:stream-joins` to `true` to enable it.
+
+Before starting with the code changes, please make sure that the kafka topics one intends to join via Kafka Stream DSL's
+join feature satisfies the following pre-conditions
+- The number of partitions for both the topics should be exactly same. 
+- Both the topics should be co-partitioned, i.e. If the messages which are produced to these 
+topics share the exact same key, these messages should land up in the same parition index. The implications
+are that while producing the data to these topics, the developer should take care to use the same Kafka Producer
+Client for both the topics. If that's not the case, please do that before attempting a Stream Joins.
+
+For more details and deeper explanation about the above points, one can refer this guide: 
+[Join Co-partitioning Requirements](https://kafka.apache.org/23/documentation/streams/developer-guide/dsl-api.html#join-co-partitioning-requirements)
+
+
 This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
 
 ```clojure
