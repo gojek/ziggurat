@@ -546,7 +546,13 @@ In addition to linear retries, Ziggurat users can now use exponential backoff st
 timeouts after every retry increase by a factor of 2. So, if your configured timeout is 100ms the backoffs will have timeouts as
 `200, 300, 700, 1500 ..`. These timeouts are calculated using the formula `(queue-timeout-ms * ((2**exponent) - 1))` where `exponent` falls in this range `[1,(min 25, configured-retry-count)]`.
 
-The number of retries possible in this case are capped at 25. The number of queues created in the RabbitMQ are equal to the configured-retry-count or 25, whichever is smaller.
+~~The number of retries possible in this case are capped at 25.~~ 
+
+**_Note: Due to a bug in Ziggurat ([Issue 186](https://github.com/gojek/ziggurat/issues/186)), 
+the max retries possible (with a timeout value of 5000 milliseconds) is 18. This number will vary if timeout value is increased
+or decreased. Ziggurat Team is trying to fix this ASAP. Please get in touch with Ziggurat Team to verify if your configuration is correct._**
+
+The number of queues created in the RabbitMQ are equal to the configured-retry-count or 25, whichever is smaller.
 
 Exponential retries can be configured as described below.
 
