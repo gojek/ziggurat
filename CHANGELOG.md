@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.5.3
+- Refactored and simplified the code for retrying, publishing and consuming using RabbitMQ.
+
 ## 3.5.2
 - If there's an exception in the batch handler function, the failure metrics is published with a count of "total batch 
 size" (which was being processed by the function) instead of just 1 as was being done before this change. 
