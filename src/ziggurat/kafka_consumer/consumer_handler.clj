@@ -53,7 +53,7 @@
               (retry messages-to-be-retried current-retry-count topic-entity)))))
       (catch Exception e
         (do
-          (metrics/increment-count batch-consumption-metric-ns "exception" 1 {:topic-entity (name topic-entity)})
+          (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})
           (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
           (retry batch-payload))))))
 

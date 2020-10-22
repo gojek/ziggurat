@@ -125,7 +125,8 @@
   (testing "should publish metrics for exception in process message"
     (let [expected-batch-size    10
           batch-handler          (fn [_] (throw (Exception. "exception in batch-handler")))]
-      (with-redefs [metrics/increment-count (fn [metric-namespace metrics _ tags]
+      (with-redefs [metrics/increment-count (fn [metric-namespace metrics count tags]
+                                              (is (= count expected-batch-size))
                                               (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
                                               (is (= metrics "exception"))
                                               (is (= "consumer-1" (:topic-entity tags))))
