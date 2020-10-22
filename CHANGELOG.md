@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.5.2
+- If there's an exception in the batch handler function, the failure metrics is published with a count of "total batch 
+size" (which was being processed by the function) instead of just 1 as was being done before this change. 
+
 ## 3.5.1
 - Fixed publishing of metrics for batch consumption
 - Fixed the startup logic for batch consumption - only routes provided in Ziggurat init-args will be started
