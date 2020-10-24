@@ -3,7 +3,8 @@
             [langohr.channel :as lch]
             [langohr.basic :as lb]
             [ziggurat.config :refer [rabbitmq-config]]
-            [ziggurat.messaging.rabbitmq-wrapper :as rmqw :refer [connection]]
+            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :refer [delay-queue-name]]
             [ziggurat.messaging.util :as rutil]
@@ -12,20 +13,20 @@
   (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]
-  (with-open [ch (lch/open @connection)]
+  (with-open [ch (lch/open connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
-          (rmqw/consume-message ch meta payload true)))
+          (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))
       (catch NullPointerException e
         nil))))
 
 (defn- get-msg-from-rabbitmq-without-ack [queue-name topic-name]
-  (with-open [ch (lch/open @connection)]
+  (with-open [ch (lch/open connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
-          (rmqw/consume-message ch meta payload false)))
+          (consumer/convert-and-ack-message ch meta payload false (keyword topic-name))))
       (catch NullPointerException e
         nil))))
 
@@ -67,13 +68,13 @@
 (defn get-message-from-retry-queue [topic sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         delay-queue-name (delay-queue-name topic queue-name)
-        queue-name       (rutil/prefixed-queue-name delay-queue-name sequence)]
+        queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn get-message-from-channel-retry-queue [topic channel sequence]
   (let [{:keys [queue-name]} (:delay (rabbitmq-config))
         delay-queue-name (delay-queue-name (rutil/with-channel-name topic channel) queue-name)
-        queue-name       (rutil/prefixed-queue-name delay-queue-name sequence)]
+        queue-name (rutil/prefixed-queue-name delay-queue-name sequence)]
     (get-msg-from-rabbitmq queue-name topic)))
 
 (defn close [^Channel channel]

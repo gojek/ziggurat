@@ -5,13 +5,13 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
-            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
+            [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
             [ziggurat.message-payload :as mp]
             [langohr.basic :as lb]))
 
-(use-fixtures :once (join-fixtures [fix/init-messaging
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
 
 (deftest ^:integration mapper-func-test
