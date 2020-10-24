@@ -517,9 +517,8 @@
                                  (when (< @publish-called 2)
                                    (swap! publish-called inc)
                                    (throw (IOException. "io exception"))))
-                    metrics/increment-count (fn [_ _ _] (println "test 4") nil)]
+                    metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (println "test 5")
         (is (= 2 @publish-called)))))
   (testing "publish/producer tries to publish again if already closed exception is received"
     (let [publish-called (atom 0)]
