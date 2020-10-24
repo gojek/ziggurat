@@ -13,7 +13,7 @@
             [ziggurat.config :as config]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.message-payload :refer [->MessagePayload]]
-            [mount.core :as mount])
+            [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]
            (com.rabbitmq.client Channel Connection ShutdownSignalException AlreadyClosedException)
            (org.apache.kafka.common.header Header)
@@ -25,9 +25,6 @@
 (def topic-entity :default)
 (def message-payload (->MessagePayload {:foo "bar"} topic-entity))
 (defn retry-count-config [] (-> (ziggurat-config) :retry :count))
-
-(defn- create-mock-channel [] (reify Channel
-                                (close [_] nil)))
 
 (defn- timeout [timeout-ms callback]
   (let [fut (future (callback))
@@ -512,60 +509,38 @@
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?))))))
 
-(deftest publish-error-handling-during-rabbitmq-dsiconnection-test
-  (testing "it will handle exception when unable to publish to rabbitmq"
-    (fix/with-queues
-      {:default {:handler-fn #(constantly nil)}}
-      (let [retry-count           (atom 0)
-            retry-message-payload (assoc message-payload :retry-count 5)]
-        (with-redefs [lb/publish (fn [_ _ _ _ props]
-                                   (swap! retry-count inc)
-                                   (throw (Exception. "some exception")))]
-          (is (= nil (producer/retry retry-message-payload)))
-          (is (= 1 @retry-count))))))
-
-  (testing "when lb/publish function raises an AlreadyClosedException, it is caught"
-    (let [serialized-message              (byte-array 1234)
-          exchange-name                   "exchange-test"
-          headers                         (map #(reify
-                                                  Header
-                                                  (key [_] (str "foo-" %))
-                                                  (value [_] serialized-message)) (range 1 3))
-          message-payload                 {:foo "bar" :headers headers}
-          expiration                      nil]
-      (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
-                    lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
-                                              (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil))))]
-        (is (thrown? Exception (producer/publish exchange-name message-payload expiration))))))
-
-  (testing "when lb/publish function raises an IOException, it is caught"
-    (let [serialized-message              (byte-array 1234)
-          exchange-name                   "exchange-test"
-          headers                         (map #(reify
-                                                  Header
-                                                  (key [_] (str "foo-" %))
-                                                  (value [_] serialized-message)) (range 1 3))
-          message-payload                 {:foo "bar" :headers headers}
-          expiration                      nil]
-      (with-redefs [lch/open                (fn [^Connection _] (create-mock-channel))
-                    lb/publish              (fn [^Channel _ ^String _ ^String _ _ _]
-                                              (throw (IOException. "IO Exception")))]
-        (is (thrown? Exception (producer/publish exchange-name message-payload expiration))))))
-
-  (testing "when publish-internal function returns true, it waits infinitely"
-    (let [serialized-message              (byte-array 1234)
-          exchange-name                   "exchange-test"
-          headers                         (map #(reify
-                                                  Header
-                                                  (key [_] (str "foo-" %))
-                                                  (value [_] serialized-message)) (range 1 3))
-          message-payload                 {:foo "bar" :headers headers}
-          expiration                      nil]
-      (with-redefs [lch/open                    (fn [^Connection _] (create-mock-channel))
-                    producer/publish-internal    (fn [_ _ _ _]
-                                                   true)]
-        (is :ziggurat.messaging.rabbitmq.producer-test/timed-out
-            (timeout 10000 #(producer/publish exchange-name message-payload expiration)))))))
+(deftest publish-behaviour-on-rabbitmq-disconnection-test
+  (testing "producer/publish tries to publish again if IOException is thrown"
+    (let [publish-called (atom 0)]
+      (with-redefs [lch/open   (fn [_] (reify Channel (close [_] nil)))
+                    lb/publish (fn [_ _ _ _ _]
+                                 (when (< @publish-called 2)
+                                   (swap! publish-called inc)
+                                   (throw (IOException. "io exception"))))
+                    metrics/increment-count (fn [_ _ _] (println "test 4") nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (println "test 5")
+        (is (= 2 @publish-called)))))
+  (testing "publish/producer tries to publish again if already closed exception is received"
+    (let [publish-called (atom 0)]
+      (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 2)
+                                                (swap! publish-called inc)
+                                                (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil)))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 2 @publish-called)))))
+  (testing "producer/publish does not try again if the exception thrown is neither IOException nor AlreadyClosedException"
+    (let [publish-called (atom 0)]
+      (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 2)
+                                                (swap! publish-called inc)
+                                                (throw (Exception. "non-io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 1 @publish-called))))))
 
 (deftest publish-to-delay-queue-test
   (testing "creates a span when tracer is enabled"

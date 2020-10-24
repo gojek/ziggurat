@@ -106,12 +106,10 @@
 (defn- handle-network-exception
   [e message-payload]
   (log/error e "Exception was encountered while publishing to RabbitMQ")
-  (metrics/increment-count
-   ["rabbitmq" "publish" "network"] "exception"
-   {:topic-entity (name (:topic-entity message-payload))})
+  (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
   true)
 
-(defn publish-internal
+(defn- publish-internal
   [exchange message-payload expiration]
   (try
     (with-open [ch (lch/open connection)]
@@ -124,9 +122,7 @@
       (handle-network-exception e message-payload))
     (catch Exception e
       (log/error e "Exception was encountered while publishing to RabbitMQ")
-      (metrics/increment-count
-       ["rabbitmq" "publish"] "exception"
-       {:topic-entity (name (:topic-entity message-payload))})
+      (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})
       false)))
 
 (defn publish
