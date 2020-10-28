@@ -6,6 +6,7 @@
             [ziggurat.sentry :refer [sentry-reporter]]))
 
 (defn protobuf-struct->persistent-map [struct]
+  "This functions converts a protobuf struct in to clojure persistent map recursively"
   (let [fields                          (:fields struct)
         protobuf-value-flattener        (fn flatten-value [value]
                                           (first (map (fn [[type val]]
@@ -25,9 +26,7 @@
                                           (let [key   (keyword (:key entry))
                                                 value (:value entry)]
                                             (if key
-                                              (assoc res
-                                                key
-                                                (protobuf-value-flattener value))
+                                              (assoc res key (protobuf-value-flattener value))
                                               res)))]
     (reduce protobuf-struct-entry-flattener
             {}
@@ -61,8 +60,7 @@
                                                          (= "google.protobuf.Struct" (:name v))))
                                                   struct-entries))]
              (reduce (fn [res val]
-                       (update res val
-                               #(protobuf-struct->persistent-map %)))
+                       (update res val protobuf-struct->persistent-map))
                      result
                      struct-keys))
            result))
