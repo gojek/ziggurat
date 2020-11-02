@@ -612,4 +612,16 @@
                                                                       :count               50
                                                                       :type                :exponential}))]
         ;; For 25 max exponential retries, exponent comes to 25-20=5, which makes timeout = 100*(2^5-1) = 3100
-        (is (= 3100 (producer/get-queue-timeout-ms message)))))))
+        (is (= 3100 (producer/get-queue-timeout-ms message))))))
+  (testing "when exponential retries are enabled with total retries as 25 and if the message has already been retried 24 times, then the queue-timeout is calculated without any failure"
+    (let [message (assoc message-payload :retry-count 1)]
+      (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
+                                                              :retry {:enabled             true
+                                                                      :count               25
+                                                                      :type                :exponential}
+                                                              :rabbit-mq            {:delay       {:queue-timeout-ms   5000}}))]
+         ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
+        (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
+
+
+
