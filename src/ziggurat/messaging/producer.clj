@@ -179,7 +179,7 @@
    _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
   [retry-count message-retry-count queue-timeout-ms]
   (let [exponential-backoff (get-backoff-exponent retry-count message-retry-count)]
-    (int (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms))))
+    (long (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms))))
 
 (defn get-queue-timeout-ms [message-payload]
   "Calculate queue timeout for delay queue. Uses the value from [[get-exponential-backoff-timeout-ms]] if exponential backoff enabled."
