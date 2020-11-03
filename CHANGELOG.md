@@ -10,7 +10,9 @@ All notable changes to this project will be documented in this file. This change
 - Both, `{:ziggurat :rabbit-mq-connection {:hosts`  and `{:ziggurat :rabbit-mq-connection {:host` configs 
 are accepted for connecting to RabbitMQ. But, `:hosts` is preferred over `:host`. `:hosts` should be used
 to define cluster hosts.
-- defrecord `ziggurat.message-payload.MessagePayload` has been moved to `ziggurat.mapper.MessagePayload`  
+- defrecord `ziggurat.mapper.MessagePayload` has been added back to preserve backward compatibility
+- Fixed a bug in calculation of exponential backoff timeout where casting the timeout to integer 
+was throwing an IllegalArgumentException  
 
 ## 3.5.2
 - If there's an exception in the batch handler function, the failure metrics is published with a count of "total batch 
