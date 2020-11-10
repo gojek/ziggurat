@@ -1,16 +1,11 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
-            [schema.core :as s]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [clojure.tools.logging :as log])
-  (:import (java.time Instant)
-           (java.util HashMap)
-           [com.newrelic.api.agent NewRelic]))
+            [ziggurat.sentry :refer [sentry-reporter]]))
 
 (defn- send-msg-to-channel [channels message-payload return-code]
   (when-not (contains? (set channels) return-code)
