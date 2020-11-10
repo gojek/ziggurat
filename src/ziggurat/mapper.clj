@@ -17,13 +17,13 @@
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
+(defn report-errors-to-new-relic [throwable message]
+  (when (get-in (ziggurat-config) [:new-relic :enabled])
+    (NewRelic/noticeError throwable (HashMap. {"error_message" message}) false)))
+
 (defn- report-errors [throwable message]
   (sentry/report-error sentry-reporter throwable message)
-  (if (get-in (ziggurat-config) [:new-relic :enabled])
-    (do
-      (log/info "Reporting the error to new relic")
-      (NewRelic/noticeError throwable (HashMap. {"error_message" message})))
-    (log/info "New relic hasn't been enabled")))
+  (report-errors-to-new-relic throwable message))
 
 (defn mapper-func [mapper-fn channels]
   (fn [{:keys [topic-entity message] :as message-payload}]
