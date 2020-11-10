@@ -2,7 +2,7 @@
   (:require [new-reliquary.core :as newrelic]
             [ziggurat.config :refer [ziggurat-config]])
   (:import (java.util HashMap)
-  [com.newrelic.api.agent NewRelic]))
+           [com.newrelic.api.agent NewRelic]))
 
 (defmacro with-tracing [category transaction-name & body]
   `(newrelic/with-newrelic-transaction

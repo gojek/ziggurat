@@ -57,9 +57,7 @@
           (catch Throwable e
             (producer/retry message-payload)
             (report-errors e (str "Actor execution failed for " topic-entity-name))
-            (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags))))))
-
-  )
+            (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
 (defn channel-mapper-func [mapper-fn channel]
   (fn [{:keys [topic-entity message] :as message-payload}]
@@ -97,8 +95,5 @@
             (producer/retry-for-channel message-payload channel)
             (report-errors e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
-
-
-
 
 (defrecord MessagePayload [message topic-entity])
