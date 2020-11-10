@@ -9,8 +9,8 @@
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
             [ziggurat.message-payload :as mp]
-            [langohr.basic :as lb])
-  (:import (com.newrelic.api.agent NewRelic)))
+            [langohr.basic :as lb]
+            [ziggurat.new-relic :as nr]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -92,9 +92,11 @@
               sentry-report-fn-called?  (atom false)
               new-relic-notice-error-called?  (atom false)
               unsuccessfully-processed? (atom false)
-              expected-metric           "failure"]
+              expected-metric           "failure"
+              config  (ziggurat-config)]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        report-errors-to-new-relic    (fn [_ _] (reset! new-relic-notice-error-called? true))
+                        ziggurat-config         (fn [] (assoc-in config [:new-relic :enabled] true))
+                        nr/report-error    (fn [_ _] (reset! new-relic-notice-error-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
                                                                  (= metric-namespace [expected-metric-namespace]))
@@ -107,30 +109,6 @@
             (is @unsuccessfully-processed?)
             (is @new-relic-notice-error-called?)
             (is @sentry-report-fn-called?)))))
-
-    (testing "reports error to sentry, doesnot report to new-relic (if disabled), publishes message to retry queue if mapper-fn raises exception"
-      (fix/with-queues stream-routes
-                       (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
-
-                             sentry-report-fn-called?  (atom false)
-                             new-relic-notice-error-called?  (atom false)
-                             unsuccessfully-processed? (atom false)
-                             expected-metric           "failure"]
-                         (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                                       ziggurat-config         (fn [_ _] (assoc-in (ziggurat-config) [:new-relic :enabled] false))
-                                       report-errors-to-new-relic    (fn [] (reset! new-relic-notice-error-called? true))
-                                       metrics/increment-count (fn [metric-namespace metric additional-tags]
-                                                                 (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
-                                                                                (= metric-namespace [expected-metric-namespace]))
-                                                                            (= metric expected-metric)
-                                                                            (= additional-tags expected-additional-tags))
-                                                                   (reset! unsuccessfully-processed? true)))]
-                           ((mapper-func (fn [_] (throw (Exception. "test exception"))) []) message-payload)
-                           (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
-                             (is (= message-from-mq expected-message)))
-                           (is @unsuccessfully-processed?)
-                           (is (= @new-relic-notice-error-called? false))
-                           (is @sentry-report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?   (atom false)
