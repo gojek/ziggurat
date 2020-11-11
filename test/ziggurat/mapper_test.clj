@@ -86,7 +86,7 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
-    (testing "reports error to sentry, new-relic (if enabled), publishes message to retry queue if mapper-fn raises exception"
+    (testing "reports error to sentry, new-relic, publishes message to retry queue if mapper-fn raises exception"
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
@@ -95,7 +95,6 @@
               expected-metric           "failure"
               config  (ziggurat-config)]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        ziggurat-config         (fn [] (assoc-in config [:new-relic :enabled] true))
                         nr/report-error    (fn [_ _] (reset! new-relic-notice-error-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
