@@ -8,6 +8,10 @@
   `(newrelic/with-newrelic-transaction
      ~category ~transaction-name (^{:once true} fn* [] ~@body)))
 
+(defn- notice-error [throwable message]
+  (NewRelic/noticeError throwable (HashMap. {"error_message" message}) false))
+
 (defn report-error [throwable message]
   (when (get-in (ziggurat-config) [:new-relic :enabled])
-    (NewRelic/noticeError throwable (HashMap. {"error_message" message}) false)))
+    (notice-error throwable message)))
+
