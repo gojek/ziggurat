@@ -185,7 +185,6 @@
             (is @sentry-report-fn-called?)
             (is @new-relic-report-error-called?)))))
 
-
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?           (atom false)
             execution-time-namespace           "execution-time"
