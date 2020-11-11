@@ -90,12 +90,12 @@
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
-              new-relic-notice-error-called?  (atom false)
+              new-relic-report-error-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"
               config  (ziggurat-config)]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
-                        nr/report-error    (fn [_ _] (reset! new-relic-notice-error-called? true))
+                        nr/report-error    (fn [_ _] (reset! new-relic-report-error-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
                                                                  (= metric-namespace [expected-metric-namespace]))
@@ -106,7 +106,7 @@
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
-            (is @new-relic-notice-error-called?)
+            (is @new-relic-report-error-called?)
             (is @sentry-report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
@@ -167,9 +167,11 @@
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
               sentry-report-fn-called?  (atom false)
+              new-relic-report-error-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+                        nr/report-error    (fn [_ _] (reset! new-relic-report-error-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace expected-increment-count-namespaces)
                                                                  (= metric-namespace [increment-count-namespace]))
@@ -180,7 +182,9 @@
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
-            (is @sentry-report-fn-called?)))))
+            (is @sentry-report-fn-called?)
+            (is @new-relic-report-error-called?)))))
+
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?           (atom false)
