@@ -5,7 +5,8 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]]))
+            [ziggurat.sentry :refer [sentry-reporter]])
+  (:import (java.time Instant)))
 
 (defn- send-msg-to-channel [channels message-payload return-code]
   (when-not (contains? (set channels) return-code)
