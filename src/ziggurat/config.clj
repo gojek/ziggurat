@@ -37,7 +37,7 @@
                                 :http-server          {:middlewares  {:swagger {:enabled false}}
                                                        :port         8080
                                                        :thread-count 100}
-                                :new-relic            {:enabled true}}})
+                                :new-relic            {:report-errors true}}})
 
 (defn- interpolate-val [val app-name]
   (if (string? val)

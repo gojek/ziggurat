@@ -87,5 +87,5 @@
                                                  :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}}
             :tracer               {:enabled         [true :bool]
                                    :custom-provider ""}
-            :new-relic            {:enabled true}}}
+            :new-relic            {:report-errors true}}}
 

@@ -11,13 +11,13 @@
   (let [config (ziggurat-config)]
     (testing "When new-relic is enabled in the config, error is reported"
       (let [error-reported? (atom false)]
-        (with-redefs [ziggurat-config (fn [] (assoc-in config [:new-relic :enabled] true))
+        (with-redefs [ziggurat-config (fn [] (assoc-in config [:new-relic :report-errors] true))
                       nr/notice-error (fn [_ _] (reset! error-reported? true))]
           (nr/report-error (Exception. "Error") nil)
           (is @error-reported?))))
     (testing "When new-relic is disabled in the config, error isn't reported"
       (let [error-reported? (atom false)]
-        (with-redefs [ziggurat-config (fn [] (assoc-in config [:new-relic :enabled] false))
+        (with-redefs [ziggurat-config (fn [] (assoc-in config [:new-relic :report-errors] false))
                       nr/notice-error (fn [_ _] (reset! error-reported? true))]
           (nr/report-error (Exception. "Error") nil)
           (is (false? @error-reported?)))))))

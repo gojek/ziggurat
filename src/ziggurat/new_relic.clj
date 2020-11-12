@@ -12,6 +12,6 @@
   (NewRelic/noticeError throwable (HashMap. {"error_message" message}) false))
 
 (defn report-error [throwable message]
-  (when (get-in (ziggurat-config) [:new-relic :enabled])
+  (when (get-in (ziggurat-config) [:new-relic :report-errors])
     (notice-error throwable message)))
 
