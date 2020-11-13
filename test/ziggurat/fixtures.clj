@@ -99,11 +99,11 @@
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (mount-tracer)
-    (mount/start)
+
     (->
-     (mount/only [#'connection])
+     (mount/only [#'connection #'ziggurat.metrics/statsd-reporter])
      (mount/with-args {:stream-routes stream-routes})
-     )
+     (mount/start))
     (f)
     (mount/stop)))
 
