@@ -101,7 +101,7 @@
     (mount-tracer)
 
     (->
-     (mount/only [#'connection #'ziggurat.metrics/statsd-reporter])
+     (mount/only [#'connection])
      (mount/with-args {:stream-routes stream-routes})
      (mount/start))
     (f)

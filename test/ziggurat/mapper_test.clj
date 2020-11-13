@@ -13,7 +13,8 @@
             [ziggurat.new-relic :as nr]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
-                                    fix/silence-logging]))
+                                    fix/silence-logging
+                                    fix/mount-metrics]))
 
 (deftest ^:integration mapper-func-test
   (let [service-name                    (:app-name (ziggurat-config))
