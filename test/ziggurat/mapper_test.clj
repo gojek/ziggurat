@@ -92,8 +92,7 @@
               sentry-report-fn-called?  (atom false)
               new-relic-report-error-called?  (atom false)
               unsuccessfully-processed? (atom false)
-              expected-metric           "failure"
-              config  (ziggurat-config)]
+              expected-metric           "failure"]
           (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
                         nr/report-error    (fn [_ _] (reset! new-relic-report-error-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
