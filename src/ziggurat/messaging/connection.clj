@@ -8,7 +8,8 @@
             [ziggurat.channel :refer [get-keys-for-topic]]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.util :as util]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [ziggurat.util.error :refer [report-error]])
   (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver]
            [java.util.concurrent Executors ExecutorService]
            [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
@@ -55,7 +56,7 @@
                (when-not (.isInitiatedByApplication cause)
                  (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
-        (sentry/report-error sentry-reporter e "Error while starting RabbitMQ connection")
+        (report-error e "Error while starting RabbitMQ connection")
         (throw e)))))
 
 (defn- stop-connection [conn]

@@ -9,7 +9,8 @@
             [ziggurat.util.map :as umap]
             [ziggurat.metrics :as metrics]
             [ring.swagger.swagger-ui :as rsui]
-            [ziggurat.config :refer [get-in-config]]))
+            [ziggurat.config :refer [get-in-config]]
+            [ziggurat.util.error :refer [report-error]]))
 
 (defn wrap-default-content-type-json [handler]
   (fn [request]
@@ -32,7 +33,7 @@
     (try
       (handler request)
       (catch Exception ex
-        (sentry/report-error sentry-reporter ex "Uncaught error in server")
+        (report-error ex "Uncaught error in server")
         {:status 500 :body (json/encode {:Error (st/pst-str ex)})}))))
 
 (defn wrap-with-metrics [handler]
