@@ -1,10 +1,7 @@
 (ns ziggurat.new-relic
   (:require [new-reliquary.core :as newrelic]
-            [ziggurat.config :refer [ziggurat-config]]
-            [clojure.core.async :refer [go]]
-            [clojure.tools.logging :as log])
+            [ziggurat.config :refer [ziggurat-config]])
   (:import (java.util HashMap)
-           (java.util.concurrent ExecutorService)
            [com.newrelic.api.agent NewRelic]))
 
 (defmacro with-tracing [category transaction-name & body]
@@ -17,4 +14,3 @@
 (defn report-error [throwable message]
   (when (get-in (ziggurat-config) [:new-relic :report-errors])
     (notice-error throwable message)))
-
