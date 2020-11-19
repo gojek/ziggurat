@@ -9,11 +9,18 @@
             [schema.core :as s]
             [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
-            [ziggurat.config :refer [get-in-config]]
+            [ziggurat.config :refer [get-in-config  rabbitmq-config]]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]))
+
+(defn- publish-to-dead-letter
+  [topic-entity payload]
+  (with-open [ch (lch/open connection)]
+    (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+          exchange-name (prefixed-queue-name topic-entity exchange-name)]
+      (lb/publish ch exchange-name "" payload {:persistent true :content-type "application/octet-stream"}))))
 
 (defn- convert-to-message-payload
   "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
@@ -40,9 +47,9 @@
         (lb/ack ch delivery-tag))
       (convert-to-message-payload message topic-entity))
     (catch Exception e
-      (lb/reject ch delivery-tag false)
-      (sentry/report-error sentry-reporter e "Error while decoding message")
+      (sentry/report-error sentry-reporter e "Error while decoding message. Publishing it to the dead-letter")
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
+      (publish-to-dead-letter topic-entity payload)
       nil)))
 
 (defn- ack-message

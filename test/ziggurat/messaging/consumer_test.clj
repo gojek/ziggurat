@@ -11,7 +11,8 @@
             [langohr.basic :as lb]
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.message-payload :as mpr]
-            [taoensso.nippy :as nippy]))
+            [taoensso.nippy :as nippy])
+  (:import [java.util Arrays]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
@@ -292,20 +293,20 @@
                 _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message message)))))))
-  (testing "process-message function should reject and discard a message if message conversion fails"
+  (testing "process-message function should send the message to dead-set if message conversion/deserialization fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [message       (gen-message-payload topic-entity)
             processing-fn (fn [_] ())
             topic-entity-name (name topic-entity)]
-        (producer/publish-to-dead-queue message)
+        (producer/publish-to-instant-queue message)
         (with-open [ch (lch/open connection)]
-          (with-redefs [ziggurat.messaging.consumer/convert-to-message-payload (fn [] (throw (Exception. "exception message")))]
-            (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
-                  prefixed-queue-name (str topic-entity-name "_" queue-name)
-                  [meta payload]      (lb/get ch prefixed-queue-name false)
-                  _                   (process-message-from-queue ch meta payload topic-entity processing-fn)
-                  consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-              (is (= consumed-message nil)))))))))
+          (with-redefs [nippy/thaw (fn [] (throw (Exception. "nippy exception message")))]
+            (let [instant-queue-name  (str topic-entity-name "_" (get-in (rabbitmq-config) [:instant :queue-name]))
+                  [meta payload]      (lb/get ch instant-queue-name false)
+                  _                   (convert-and-ack-message ch meta payload true topic-entity)
+                  dead-queue-name     (str topic-entity-name "_" (get-in (rabbitmq-config) [:dead-letter :queue-name]))
+                  [_ payload]         (lb/get ch dead-queue-name false)]
+              (is (Arrays/equals ^bytes payload ^bytes (nippy/freeze message))))))))))
 
 (deftest convert-and-ack-message-test
   (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
