@@ -47,7 +47,7 @@
         (lb/ack ch delivery-tag))
       (convert-to-message-payload message topic-entity))
     (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while decoding message. Publishing it to the dead-letter")
+      (sentry/report-error sentry-reporter e "Error while decoding message. Publishing it to the dead-letter queue")
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
       (publish-to-dead-letter topic-entity payload)
       nil)))
@@ -57,8 +57,8 @@
   (lb/ack ch delivery-tag))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
-  (let [delivery-tag (:delivery-tag meta)
-        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+  (let [delivery-tag     (:delivery-tag meta)
+        message-payload  (convert-and-ack-message ch meta payload false topic-entity)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
@@ -66,9 +66,9 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
-          (lb/reject ch delivery-tag true)
-          (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
-          (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
+          (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ. Sending it to dead-letter queue.")
+          (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)})
+          (publish-to-dead-letter topic-entity payload))))))
 
 (defn read-message-from-queue [ch queue-name topic-entity ack?]
   (try
