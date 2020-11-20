@@ -10,11 +10,10 @@
      ~category ~transaction-name (^{:once true} fn* [] ~@body)))
 
 (defn- notice-error [^Throwable throwable message]
-  (future (try
-            (with-tracing "reporting" "Error Reported"
-              (NewRelic/noticeError throwable (HashMap. {"error_message" message}) false))
-            (catch Exception e
-              (log/warn e "Error while reporting error to new-relic")))))
+  (try
+    (NewRelic/noticeError throwable (HashMap. {"error_message" message}) false)
+    (catch Exception e
+      (log/warn e "Error while reporting error to new-relic"))))
 
 (defn report-error [throwable message]
   (when (get-in (ziggurat-config) [:new-relic :report-errors])
