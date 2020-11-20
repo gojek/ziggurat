@@ -1,12 +1,12 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
-            [schema.core :as s]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]])
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.util.error :refer [report-error]])
   (:import (java.time Instant)))
 
 (defn- send-msg-to-channel [channels message-payload return-code]
@@ -49,7 +49,7 @@
                 (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags))))
           (catch Throwable e
             (producer/retry message-payload)
-            (sentry/report-error sentry-reporter e (str "Actor execution failed for " topic-entity-name))
+            (report-error e (str "Actor execution failed for " topic-entity-name))
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
 (defn channel-mapper-func [mapper-fn channel]
@@ -86,7 +86,7 @@
               (throw (ex-info "Invalid mapper return code" {:code return-code}))))
           (catch Throwable e
             (producer/retry-for-channel message-payload channel)
-            (sentry/report-error sentry-reporter e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
+            (report-error e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
 (defrecord MessagePayload [message topic-entity])

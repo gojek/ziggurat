@@ -99,6 +99,7 @@
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
     (mount-tracer)
+
     (->
      (mount/only [#'connection])
      (mount/with-args {:stream-routes stream-routes})

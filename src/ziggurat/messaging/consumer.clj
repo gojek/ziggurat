@@ -13,7 +13,8 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.util :refer :all]
-            [ziggurat.metrics :as metrics]))
+            [ziggurat.metrics :as metrics]
+            [ziggurat.util.error :refer [report-error]]))
 
 (defn- convert-to-message-payload
   "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
@@ -41,7 +42,7 @@
       (convert-to-message-payload message topic-entity))
     (catch Exception e
       (lb/reject ch delivery-tag false)
-      (sentry/report-error sentry-reporter e "Error while decoding message")
+      (report-error e "Error while decoding message")
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
       nil)))
 
@@ -60,7 +61,7 @@
         (ack-message ch delivery-tag)
         (catch Exception e
           (lb/reject ch delivery-tag true)
-          (sentry/report-error sentry-reporter e "Error while processing message-payload from RabbitMQ")
+          (report-error e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
 
 (defn read-message-from-queue [ch queue-name topic-entity ack?]
@@ -69,7 +70,7 @@
       (when (some? payload)
         (convert-and-ack-message ch meta payload ack? topic-entity)))
     (catch Exception e
-      (sentry/report-error sentry-reporter e "Error while consuming the dead set message")
+      (report-error e "Error while consuming the dead set message")
       (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
 
 (defn- construct-queue-name

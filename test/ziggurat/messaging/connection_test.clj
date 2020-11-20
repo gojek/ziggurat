@@ -4,7 +4,8 @@
             [langohr.core :as rmq]
             [mount.core :as mount]
             [ziggurat.config :as config]
-            [ziggurat.messaging.connection :as mc :refer [connection]]))
+            [ziggurat.messaging.connection :as mc :refer [connection, create-connection]]
+            [ziggurat.util.error :refer [report-error]]))
 
 (use-fixtures :once fix/mount-config-with-tracer)
 
@@ -262,3 +263,17 @@
         (mount/start (mount/only [#'connection]))
         (mount/stop #'connection)
         (is (= @thread-count 26))))))
+(deftest start-connection-test-with-errors
+  (testing "if rabbitmq connect throws an error, it gets reported"
+    (let [stream-routes       {:default {:handler-fn (constantly :success)}}
+          report-fn-called?  (atom false)]
+      (with-redefs [create-connection (fn [_ _]
+                                        (throw (Exception. "Error")))
+                    report-error (fn [_ _] (reset! report-fn-called? true))]
+        (try
+          (-> (mount/only #{#'connection})
+              (mount/with-args {:stream-routes stream-routes})
+              (mount/start))
+          (catch Exception e
+            (mount/stop #'connection)))
+        (is @report-fn-called?)))))
