@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.6.0
+- Error reporting done to newrelic along with sentry.
+
 ## 3.5.3
 - Refactored and simplified the code for retrying, publishing and consuming using RabbitMQ.
 - The config `{:messaging {:constructor` has been removed from `:ziggurat` config space
