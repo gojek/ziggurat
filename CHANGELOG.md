@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.6.1
+- Changed the logic for committing offsets to only commit only when non-zero records are polled while 
+consuming via Kafka Consumer API
+
 ## 3.6.0
 - Error reporting done to newrelic along with sentry.
 
