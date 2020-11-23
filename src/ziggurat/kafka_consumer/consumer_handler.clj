@@ -75,7 +75,7 @@
   [^Consumer consumer handler-fn topic-entity consumer-config]
   (try
     (loop [records []]
-      (when (not (empty? records))
+      (when (not-empty records)
         (let [batch-payload (create-batch-payload records topic-entity)]
           (process handler-fn batch-payload))
         (commit-offsets consumer topic-entity))
