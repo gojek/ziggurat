@@ -143,38 +143,37 @@
 
 (deftest validate-events-routes-test
   (with-redefs [config/config-file "config.test.edn"]
-    (mount/start #'config/config)
-    (let [exception-message "Invalid stream routes"]
-      (testing "Validate Stream Routes should raise exception if stream routes is nil and stream worker is one of the modes"
-        (is (thrown? RuntimeException exception-message (init/validate-routes nil {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
+    (with-config
+      (do
+        (let [exception-message "Invalid stream routes"]
+          (testing "Validate Stream Routes should raise exception if stream routes is nil and stream worker is one of the modes"
+            (is (thrown? RuntimeException exception-message (init/validate-routes nil {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
-      (testing "Validate Stream Routes should raise exception if stream routes are empty and stream worker is one of the modes"
-        (is (thrown? RuntimeException exception-message (init/validate-routes {} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
+          (testing "Validate Stream Routes should raise exception if stream routes are empty and stream worker is one of the modes"
+            (is (thrown? RuntimeException exception-message (init/validate-routes {} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
-      (testing "Validate Stream Routes should raise exception if stream route does not have handler-fn and stream worker is one of the modes"
-        (is (thrown? RuntimeException exception-message (init/validate-routes {:default {}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
+          (testing "Validate Stream Routes should raise exception if stream route does not have handler-fn and stream worker is one of the modes"
+            (is (thrown? RuntimeException exception-message (init/validate-routes {:default {}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
-      (testing "Validate Stream Routes should raise exception if stream route does have nil value and stream worker is one of the modes"
-        (is (thrown? RuntimeException exception-message (init/validate-routes {:default nil} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
+          (testing "Validate Stream Routes should raise exception if stream route does have nil value and stream worker is one of the modes"
+            (is (thrown? RuntimeException exception-message (init/validate-routes {:default nil} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
-      (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and stream worker is one of the modes"
-        (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
+          (testing "Validate Stream Routes should raise exception if stream route has nil handler-fn and stream worker is one of the modes"
+            (is (thrown? RuntimeException exception-message (init/validate-routes {:default {:handler-fn nil}} {:consumer-1 {:handler-fn #()}} [:stream-worker]))))
 
-      (testing "Does not throw an exception if validation is successful"
-        (let [stream-route {:default {:handler-fn (fn [])
-                                      :channel-1  (fn [])}}
-              batch-route  {:consumer-1 {:handler-fn #()}}]
-          (init/validate-routes stream-route batch-route [:stream-worker :batch-worker])))
-      (testing "stream-worker present in modes and stream routes not present should throw an exception"
-        (is (thrown? Exception (init/validate-routes nil nil [:api-server :stream-worker]))))
-      (testing "batch-worker present in modes and batch routes not present should throw an exception"
-        (is (thrown? Exception (init/validate-routes nil nil [:api-server :batch-worker]))))
-      (testing "batch-worker and stream-worker present in modes and batch routes and stream routes present should not throw an exception"
-        (init/validate-routes {:default {:handler-fn (fn [])}} {:consumer-1 {:handler-fn (fn [])}} [:api-server :stream-worker :batch-worker]))
-      (testing "actor routes present in modes and arguments should return nil"
-        (is (nil? (init/validate-routes nil nil [:api-server])))))
-
-    (mount/stop #'config/config)))
+          (testing "Does not throw an exception if validation is successful"
+            (let [stream-route {:default {:handler-fn (fn [])
+                                          :channel-1  (fn [])}}
+                  batch-route  {:consumer-1 {:handler-fn #()}}]
+              (init/validate-routes stream-route batch-route [:stream-worker :batch-worker])))
+          (testing "stream-worker present in modes and stream routes not present should throw an exception"
+            (is (thrown? Exception (init/validate-routes nil nil [:api-server :stream-worker]))))
+          (testing "batch-worker present in modes and batch routes not present should throw an exception"
+            (is (thrown? Exception (init/validate-routes nil nil [:api-server :batch-worker]))))
+          (testing "batch-worker and stream-worker present in modes and batch routes and stream routes present should not throw an exception"
+            (init/validate-routes {:default {:handler-fn (fn [])}} {:consumer-1 {:handler-fn (fn [])}} [:api-server :stream-worker :batch-worker]))
+          (testing "actor routes present in modes and arguments should return nil"
+            (is (nil? (init/validate-routes nil nil [:api-server])))))))))
 
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"
