@@ -139,7 +139,8 @@
             #'tracer/tracer}))
 
 (defn stop-common-states []
-  (mount/stop #'metrics/statsd-reporter
+  (mount/stop #'config/config
+              #'metrics/statsd-reporter
               #'connection
               #'nrepl-server/server
               #'tracer/tracer))
