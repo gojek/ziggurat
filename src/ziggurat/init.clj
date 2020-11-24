@@ -142,10 +142,27 @@
               #'nrepl-server/server
               #'tracer/tracer))
 
+(defn- validate-routes-against-config
+  ([routes route-type configs]
+   (doseq [route routes]
+     (let [topic-entity (first route)
+           route-config (-> configs
+                            (get-in [route-type topic-entity]))]
+       (when (nil? route-config)
+         (throw (IllegalArgumentException. (str "Error! Route " topic-entity " isn't present in the " route-type " config"))))))))
+
+(defn validate-stream-and-batch-routes-against-config
+  [stream-routes batch-routes modes configs]
+  (when (contains? (set modes) :stream-worker)
+    (validate-routes-against-config stream-routes :stream-router configs))
+  (when (contains? (set modes) :batch-worker)
+    (validate-routes-against-config batch-routes :batch-routes configs)))
+
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"
   [actor-start-fn stream-routes batch-routes actor-routes modes]
   (start-common-states)
+  (validate-stream-and-batch-routes-against-config stream-routes batch-routes modes (ziggurat-config))
   (actor-start-fn)
   (execute-function modes
                     :start-fn

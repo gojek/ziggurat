@@ -24,6 +24,7 @@
       (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
                     streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
+                    init/validate-stream-and-batch-routes-against-config (constantly nil)
                     rmqc/start-connection (fn [] (reset! result (* @result 2)))
                     rmqc/stop-connection  (constantly nil)
                     config/config-file         "config.test.edn"
@@ -63,6 +64,7 @@
           expected-batch-routes {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
+                    init/validate-stream-and-batch-routes-against-config (constantly nil)
                     messaging-producer/make-queues       (fn [all-routes]
                                                            (swap! make-queues-called + 1)
                                                            (is (= all-routes (merge expected-stream-routes expected-batch-routes))))
@@ -80,6 +82,7 @@
           expected-batch-routes  {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
+                    init/validate-stream-and-batch-routes-against-config (constantly nil)
                     messaging-consumer/start-subscribers (fn [stream-routes batch-routes]
                                                            (swap! start-subscriber-called + 1)
                                                            (is (= stream-routes expected-stream-routes))
@@ -90,6 +93,22 @@
         (init/start #() expected-stream-routes expected-batch-routes [] nil)
         (init/stop #() nil)
         (is (= 1 @start-subscriber-called))))))
+
+(deftest start-calls-validate-stream-and-batch-routes-against-config-test
+  (testing "Start calls a method to validate stream and batch routes"
+    (let [validate-routes-called?     (atom false)
+          expected-stream-routes {:default {:handler-fn #()}}
+          expected-batch-routes {:consumer-1 {:handler-fn #()}}]
+      (with-redefs [streams/start-streams                (constantly nil)
+                    streams/stop-streams                 (constantly nil)
+                    messaging-producer/make-queues       (constantly nil)
+                    init/validate-stream-and-batch-routes-against-config (fn [_ _ _ _] (reset! validate-routes-called? true))
+                    messaging-consumer/start-subscribers (constantly nil)
+                    config/config-file                   "config.test.edn"
+                    tracer/create-tracer                 (fn [] (MockTracer.))]
+        (init/start #() expected-stream-routes expected-batch-routes [] nil)
+        (init/stop #() nil)
+        (is @validate-routes-called?)))))
 
 (deftest main-test
   (testing "Main function should call start (arity: 3)"
@@ -115,6 +134,7 @@
           batch-routes                           {:consumer-1 {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
                     init/start-common-states (constantly nil)
+                    init/validate-stream-and-batch-routes-against-config (constantly nil)
                     init/valid-modes-fns    (assoc-in mock-modes [:batch-worker :start-fn] (fn [_] (reset! start-batch-consumers-was-called true)))]
         (init/main {:start-fn #() :stop-fn #() :stream-routes expected-stream-routes :batch-routes batch-routes :actor-routes []})
         (is @start-batch-consumers-was-called)))))
@@ -124,6 +144,7 @@
     (let [start-streams-called       (atom false)
           expected-stream-routes     {:default {:handler-fn #(constantly nil)}}]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
+                    init/validate-stream-and-batch-routes-against-config (constantly nil)
                     init/start-common-states (constantly nil)
                     init/valid-modes-fns    (assoc-in mock-modes [:stream-worker :start-fn] (fn [_] (reset! start-streams-called true)))]
         (init/main #() #() expected-stream-routes)
@@ -260,3 +281,18 @@
         (is (= true @producer-has-stopped)))
       (mount/stop))))
 
+(deftest validate-stream-and-batch-routes-against-config-test
+  (let [stream-routes {:test-router {:handler-fn #(constantly nil)}}
+        batch-routes  {:test-consumer {:handler-fn #(constantly nil)}}
+        config (-> (config/ziggurat-config)
+                   (assoc-in [:stream-router] stream-routes)
+                   (assoc-in [:batch-routes] batch-routes))
+        modes [:stream-worker :batch-worker]]
+    (testing "when routes which are present in the config are passed, there isn't any exception"
+      (init/validate-stream-and-batch-routes-against-config stream-routes batch-routes modes config))
+    (testing "when invalid stream-routes is passed, there is any exception"
+      (let [stream-routes {:test-router-invalid {:handler-fn #(constantly nil)}}]
+        (is (thrown? IllegalArgumentException (init/validate-stream-and-batch-routes-against-config stream-routes batch-routes modes config)))))
+    (testing "when invalid batch-routes is passed, there is any exception"
+      (let [batch-routes {:test-consumer-invalid {:handler-fn #(constantly nil)}}]
+        (is (thrown? IllegalArgumentException (init/validate-stream-and-batch-routes-against-config stream-routes batch-routes modes config)))))))
