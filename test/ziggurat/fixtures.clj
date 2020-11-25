@@ -127,6 +127,11 @@
        (delete-queues ~stream-routes)
        (delete-exchanges ~stream-routes))))
 
+(defmacro with-config [body]
+  `(do (mount-config)
+       ~body
+       (mount/stop #'config/config)))
+
 (defn mount-producer []
   (-> (mount/only [#'producer/kafka-producers])
       (mount/start)))

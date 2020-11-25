@@ -3,6 +3,7 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
+            [clojure.set :as set]
             [ziggurat.config :refer [ziggurat-config] :as config]
             [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
@@ -128,9 +129,11 @@
        ((fnk (get valid-modes-fns mode)))
        ((fnk (get valid-modes-fns mode)) args)))))
 
+(defn initialize-config []
+  (start* #{#'config/config}))
+
 (defn start-common-states []
-  (start* #{#'config/config
-            #'metrics/statsd-reporter
+  (start* #{#'metrics/statsd-reporter
             #'sentry-reporter
             #'nrepl-server/server
             #'tracer/tracer}))
@@ -182,11 +185,29 @@
          (map? %))
    {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
 
+(defn- validate-routes-against-config
+  ([routes route-type]
+   (doseq [[topic-entity handler-map] routes]
+     (let [route-config (-> (ziggurat-config)
+                            (get-in [route-type topic-entity]))
+           channels      (-> handler-map (dissoc :handler-fn) (keys) (set))
+           config-channels (-> (ziggurat-config)
+                               (get-in [route-type topic-entity :channels])
+                               (keys)
+                               (set))]
+       (if (nil? route-config)
+         (throw (IllegalArgumentException. (format "Error! Route %s isn't present in the %s config" topic-entity route-type)))
+         (when-not (set/subset? channels config-channels)
+           (let [diff (set/difference channels config-channels)]
+             (throw (IllegalArgumentException. (format "Error! The channel(s) %s aren't present in the channels config of %s " (clojure.string/join "," diff) route-type))))))))))
+
 (defn validate-routes [stream-routes batch-routes modes]
   (when (contains? (set modes) :stream-worker)
-    (s/validate StreamRoute stream-routes))
+    (s/validate StreamRoute stream-routes)
+    (validate-routes-against-config stream-routes :stream-router))
   (when (contains? (set modes) :batch-worker)
-    (s/validate BatchRoute batch-routes)))
+    (s/validate BatchRoute batch-routes)
+    (validate-routes-against-config batch-routes :batch-routes)))
 
 (defn- derive-modes [stream-routes batch-routes actor-routes]
   (let [base-modes    [:management-api :worker]]
@@ -225,6 +246,7 @@
   ([{:keys [start-fn stop-fn stream-routes batch-routes actor-routes modes]}]
    (try
      (let [derived-modes (validate-modes modes stream-routes batch-routes actor-routes)]
+       (initialize-config)
        (validate-routes stream-routes batch-routes derived-modes)
        (add-shutdown-hook stop-fn derived-modes)
        (start start-fn stream-routes batch-routes actor-routes derived-modes))
