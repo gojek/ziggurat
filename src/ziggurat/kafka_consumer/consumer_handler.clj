@@ -53,7 +53,7 @@
               (retry messages-to-be-retried current-retry-count topic-entity)))))
       (catch Exception e
         (do
-          (metrics/increment-count batch-consumption-metric-ns "exception" 1 {:topic-entity (name topic-entity)})
+          (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})
           (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
           (retry batch-payload))))))
 
@@ -75,9 +75,10 @@
   [^Consumer consumer handler-fn topic-entity consumer-config]
   (try
     (loop [records []]
-      (let [batch-payload (create-batch-payload records topic-entity)]
-        (process handler-fn batch-payload))
-      (commit-offsets consumer topic-entity)
+      (when (not-empty records)
+        (let [batch-payload (create-batch-payload records topic-entity)]
+          (process handler-fn batch-payload))
+        (commit-offsets consumer topic-entity))
       (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
     (catch WakeupException e)
     (catch Exception e

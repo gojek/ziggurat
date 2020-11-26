@@ -14,18 +14,54 @@
 
 (use-fixtures :once fix/mount-only-config)
 
+(def dummy-consumer-records
+  (let [topic-partition (TopicPartition. "string" 1)
+        individual-consumer-record (ConsumerRecord. "topic" 1 2 "hello" "world")
+        list-of-consumer-records (doto (ArrayList.) (.add individual-consumer-record))
+        map-of-partition-and-records (doto (HashMap.) (.put topic-partition list-of-consumer-records))]
+    (ConsumerRecords. map-of-partition-and-records)))
+
 (deftest consumer-polling-test
+  (testing "should commit only if non-zero records are polled"
+    (let [expected-calls 2
+          actual-calls   (atom 0)
+          commit-called  (atom false)
+          kafka-consumer (reify Consumer
+                           (^ConsumerRecords poll [_ ^Duration _]
+                             dummy-consumer-records)
+                           (commitSync [_] (reset! commit-called true))
+                           (close [_]))]
+      (with-redefs [ch/process (fn [_ _]
+                                 (if (< @actual-calls 2)
+                                   (swap! actual-calls inc)
+                                   (throw (WakeupException.))))
+                    metrics/increment-count (constantly nil)]
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
+        (is (= expected-calls @actual-calls))
+        (is (true? @commit-called)))))
+  (testing "should not commit if no records are polled"
+    (let [expected-calls 0
+          actual-calls   (atom 0)
+          commit-called  (atom false)
+          kafka-consumer (reify Consumer
+                           (^ConsumerRecords poll [_ ^Duration _]
+                             [])
+                           (commitSync [_] (reset! commit-called true))
+                           (close [_]))]
+      (with-redefs [ch/process (fn [_ _]
+                                 (if (< @actual-calls 2)
+                                   (swap! actual-calls inc)
+                                   (throw (WakeupException.))))
+                    metrics/increment-count (constantly nil)]
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
+        (is (= expected-calls @actual-calls))
+        (is (false? @commit-called)))))
   (testing "should keep on polling even if commitSync call on KafkaConsumer throws an exception and publishes the metrics"
-    (let [topic-partition (TopicPartition. "string" 1)
-          individual-consumer-record (ConsumerRecord. "topic" 1 2 "hello" "world")
-          list-of-consumer-records (doto (ArrayList.) (.add individual-consumer-record))
-          map-of-partition-and-records (doto (HashMap.) (.put topic-partition list-of-consumer-records))
-          records (ConsumerRecords. map-of-partition-and-records)
-          expected-calls 2
+    (let [expected-calls 2
           actual-calls (atom 0)
           kafka-consumer (reify Consumer
                            (^ConsumerRecords poll [_ ^Duration _]
-                             records)
+                             dummy-consumer-records)
                            (commitSync [_]
                              (throw (Exception. "Commit exception")))
                            (close [_]))]
@@ -40,14 +76,9 @@
         (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
         (is (= expected-calls @actual-calls)))))
   (testing "Exceptions other than WakeupException are caught"
-    (let [topic-partition (TopicPartition. "string" 1)
-          individual-consumer-record (ConsumerRecord. "topic" 1 2 "hello" "world")
-          list-of-consumer-records (doto (ArrayList.) (.add individual-consumer-record))
-          map-of-partition-and-records (doto (HashMap.) (.put topic-partition list-of-consumer-records))
-          records (ConsumerRecords. map-of-partition-and-records)
-          kafka-consumer (reify Consumer
+    (let [kafka-consumer (reify Consumer
                            (^ConsumerRecords poll [_ ^Duration _]
-                             records)
+                             dummy-consumer-records)
                            (commitSync [_])
                            (close [_]))]
       (with-redefs [ch/process (fn [_ _] (throw (Exception.)))
@@ -125,7 +156,8 @@
   (testing "should publish metrics for exception in process message"
     (let [expected-batch-size    10
           batch-handler          (fn [_] (throw (Exception. "exception in batch-handler")))]
-      (with-redefs [metrics/increment-count (fn [metric-namespace metrics _ tags]
+      (with-redefs [metrics/increment-count (fn [metric-namespace metrics count tags]
+                                              (is (= count expected-batch-size))
                                               (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
                                               (is (= metrics "exception"))
                                               (is (= "consumer-1" (:topic-entity tags))))

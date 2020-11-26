@@ -6,7 +6,8 @@
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.metrics :as metrics]))
+            [ziggurat.metrics :as metrics]
+            [ziggurat.util.error :refer [report-error]]))
 
 (defn- deserialize-json
   [message topic-entity key-fn]
@@ -18,7 +19,7 @@
             default-namespace "json-message-parsing"
             metric-namespaces [service-name topic-entity default-namespace]
             multi-namespaces  [metric-namespaces [default-namespace]]]
-        (sentry/report-error sentry-reporter e (str "Could not parse JSON message " message))
+        (report-error e (str "Could not parse JSON message " message))
         (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
         nil))))
 

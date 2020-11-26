@@ -3,7 +3,8 @@
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [get-in-config ziggurat-config]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]))
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.util.error :refer [report-error]]))
 
 (defn protobuf-struct->persistent-map [struct]
   "This functions converts a protobuf struct in to clojure persistent map recursively"
@@ -70,7 +71,7 @@
                default-namespace "message-parsing"
                metric-namespaces [service-name topic-entity-name default-namespace]
                multi-namespaces  [metric-namespaces [default-namespace]]]
-           (sentry/report-error sentry-reporter e (str "Couldn't parse the message with proto - " proto-class))
+           (report-error e (str "Couldn't parse the message with proto - " proto-class))
            (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
            nil)))
      message)))

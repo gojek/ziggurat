@@ -1,18 +1,20 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all]
             [schema.core :as s]
-            [sentry-clj.async :refer [sentry-report]]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
-            [ziggurat.messaging.rabbitmq-wrapper :refer [connection]]
+            [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
             [ziggurat.message-payload :as mp]
-            [langohr.basic :as lb]))
+            [langohr.basic :as lb]
+            [ziggurat.new-relic :as nr]
+            [ziggurat.util.error :refer [report-error]]))
 
-(use-fixtures :once (join-fixtures [fix/init-messaging
-                                    fix/silence-logging]))
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
+                                    fix/silence-logging
+                                    fix/mount-metrics]))
 
 (deftest ^:integration mapper-func-test
   (let [service-name                    (:app-name (ziggurat-config))
@@ -60,10 +62,10 @@
     (testing "message process should raise exception if channel not in list"
       (fix/with-queues
         (assoc-in stream-routes [:default :channel-1] (constantly :success))
-        (with-redefs [sentry-report (fn [_ _ e & _]
-                                      (let [err (Throwable->map e)]
-                                        (is (= (:cause err) "Invalid mapper return code"))
-                                        (is (= (-> err :data :code) :channel-1))))]
+        (with-redefs [report-error (fn [e _]
+                                     (let [err (Throwable->map e)]
+                                       (is (= (:cause err) "Invalid mapper return code"))
+                                       (is (= (-> err :data :code) :channel-1))))]
           ((mapper-func (constantly :channel-1) [:some-other-channel]) message-payload)
           (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
             (is (nil? message-from-mq))))))
@@ -85,13 +87,13 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
-    (testing "reports error to sentry, publishes message to retry queue if mapper-fn raises exception"
+    (testing "reports error, publishes message to retry queue if mapper-fn raises exception"
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
-              sentry-report-fn-called?  (atom false)
+              report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
-          (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+          (with-redefs [report-error (fn [_ _] (reset! report-fn-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
                                                                  (= metric-namespace [expected-metric-namespace]))
@@ -102,7 +104,7 @@
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
-            (is @sentry-report-fn-called?)))))
+            (is @report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?   (atom false)
@@ -158,13 +160,13 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
-    (testing "message should raise exception"
+    (testing "message should raise exception and report the error"
       (fix/with-queues stream-routes
         (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
-              sentry-report-fn-called?  (atom false)
+              report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
-          (with-redefs [sentry-report           (fn [_ _ _ & _] (reset! sentry-report-fn-called? true))
+          (with-redefs [report-error (fn [_ _] (reset! report-fn-called? true))
                         metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace expected-increment-count-namespaces)
                                                                  (= metric-namespace [increment-count-namespace]))
@@ -175,7 +177,7 @@
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)
-            (is @sentry-report-fn-called?)))))
+            (is @report-fn-called?)))))
 
     (testing "reports execution time with topic prefix"
       (let [reported-execution-time?           (atom false)

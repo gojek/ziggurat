@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 3.6.2
+- Validation of stream and batch route arguments against the configuration, when starting the application.
+
+## 3.6.1
+- Changed the logic for committing offsets to only commit only when non-zero records are polled while 
+consuming via Kafka Consumer API
+
+## 3.6.0
+- Error reporting done to newrelic along with sentry.
+
+## 3.5.3
+- Refactored and simplified the code for retrying, publishing and consuming using RabbitMQ.
+- The config `{:messaging {:constructor` has been removed from `:ziggurat` config space
+- Both, `{:ziggurat :rabbit-mq-connection {:hosts`  and `{:ziggurat :rabbit-mq-connection {:host` configs 
+are accepted for connecting to RabbitMQ. But, `:hosts` is preferred over `:host`. `:hosts` should be used
+to define cluster hosts.
+- defrecord `ziggurat.mapper.MessagePayload` has been added back to preserve backward compatibility
+- Fixed a bug in calculation of exponential backoff timeout where casting the timeout to integer 
+was throwing an IllegalArgumentException  
+
+## 3.5.2
+- If there's an exception in the batch handler function, the failure metrics is published with a count of "total batch 
+size" (which was being processed by the function) instead of just 1 as was being done before this change. 
+
 ## 3.5.1
 - Fixed publishing of metrics for batch consumption
 - Fixed the startup logic for batch consumption - only routes provided in Ziggurat init-args will be started

@@ -1,4 +1,4 @@
-(defproject tech.gojek/ziggurat "3.5.1"
+(defproject tech.gojek/ziggurat "3.6.2"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -42,6 +42,7 @@
                  [ring/ring-json "0.4.0"]
                  [ring-logger "0.7.7"]
                  [tech.gojek/sentry-clj.async "1.0.0" :exclusions [org.clojure/clojure]]
+                 [com.newrelic.agent.java/newrelic-api "4.0.0"]
                  [yleisradio/new-reliquary "1.1.0" :exclusions [org.clojure/clojure]]
                  [metosin/ring-swagger "0.26.2"
                   :exclusions [cheshire

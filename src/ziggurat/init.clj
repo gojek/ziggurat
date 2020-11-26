@@ -3,8 +3,9 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
+            [clojure.set :as set]
             [ziggurat.config :refer [ziggurat-config] :as config]
-            [ziggurat.messaging.messaging :as messaging]
+            [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
@@ -32,15 +33,15 @@
        (mount/with-args args)
        (mount/start))))
 
-(defn- start-messaging-connection [args]
-  (messaging/start-connection config/config (:stream-routes args)))
+(defn- start-rabbitmq-connection [args]
+  (start* #{#'messaging-connection/connection} args))
 
-(defn- start-messaging-consumers [args]
-  (start-messaging-connection args)
-  (messaging-consumer/start-subscribers (get args :stream-routes) (get args :batch-routes) (ziggurat-config)))
+(defn- start-rabbitmq-consumers [args]
+  (start-rabbitmq-connection args)
+  (messaging-consumer/start-subscribers (get args :stream-routes) (get args :batch-routes)))
 
-(defn- start-messaging-producers [args]
-  (start-messaging-connection args)
+(defn- start-rabbitmq-producers [args]
+  (start-rabbitmq-connection args)
   (messaging-producer/make-queues (event-routes args)))
 
 (defn start-kafka-producers []
@@ -51,24 +52,24 @@
 
 (defn start-stream [args]
   (start-kafka-producers)
-  (start-messaging-producers args)
+  (start-rabbitmq-producers args)
   (start-kafka-streams args))
 
 (defn start-management-apis [args]
-  (start-messaging-connection args)
+  (start-rabbitmq-connection args)
   (start* #{#'server/server} (dissoc args :actor-routes)))
 
 (defn start-server [args]
-  (start-messaging-connection args)
+  (start-rabbitmq-connection args)
   (start* #{#'server/server} args))
 
 (defn start-workers [args]
   (start-kafka-producers)
-  (start-messaging-producers args)
-  (start-messaging-consumers args))
+  (start-rabbitmq-producers args)
+  (start-rabbitmq-consumers args))
 
-(defn- stop-messaging []
-  (messaging/stop-connection config/config (:stream-routes mount/args)))
+(defn- stop-rabbitmq-connection []
+  (mount/stop #'connection))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))
@@ -77,21 +78,21 @@
   (mount/stop #'streams/stream))
 
 (defn stop-workers []
-  (stop-messaging)
+  (stop-rabbitmq-connection)
   (stop-kafka-producers))
 
 (defn stop-server []
   (mount/stop #'server/server)
-  (stop-messaging))
+  (stop-rabbitmq-connection))
 
 (defn stop-stream []
   (stop-kafka-streams)
-  (stop-messaging)
+  (stop-rabbitmq-connection)
   (stop-kafka-producers))
 
 (defn stop-management-apis []
   (mount/stop #'server/server)
-  (stop-messaging))
+  (stop-rabbitmq-connection))
 
 (defn start-batch-consumer [args]
   (-> (mount/only #{#'executor-service/thread-pool
@@ -128,9 +129,11 @@
        ((fnk (get valid-modes-fns mode)))
        ((fnk (get valid-modes-fns mode)) args)))))
 
+(defn initialize-config []
+  (start* #{#'config/config}))
+
 (defn start-common-states []
-  (start* #{#'config/config
-            #'metrics/statsd-reporter
+  (start* #{#'metrics/statsd-reporter
             #'sentry-reporter
             #'nrepl-server/server
             #'tracer/tracer}))
@@ -138,9 +141,9 @@
 (defn stop-common-states []
   (mount/stop #'config/config
               #'metrics/statsd-reporter
+              #'connection
               #'nrepl-server/server
-              #'tracer/tracer)
-  (stop-messaging))
+              #'tracer/tracer))
 
 (defn start
   "Starts up Ziggurat's config, reporters, actor fn, rabbitmq connection and then streams, server etc"
@@ -182,11 +185,29 @@
          (map? %))
    {s/Keyword {:handler-fn (s/pred #(fn? %))}}))
 
+(defn- validate-routes-against-config
+  ([routes route-type]
+   (doseq [[topic-entity handler-map] routes]
+     (let [route-config (-> (ziggurat-config)
+                            (get-in [route-type topic-entity]))
+           channels      (-> handler-map (dissoc :handler-fn) (keys) (set))
+           config-channels (-> (ziggurat-config)
+                               (get-in [route-type topic-entity :channels])
+                               (keys)
+                               (set))]
+       (if (nil? route-config)
+         (throw (IllegalArgumentException. (format "Error! Route %s isn't present in the %s config" topic-entity route-type)))
+         (when-not (set/subset? channels config-channels)
+           (let [diff (set/difference channels config-channels)]
+             (throw (IllegalArgumentException. (format "Error! The channel(s) %s aren't present in the channels config of %s " (clojure.string/join "," diff) route-type))))))))))
+
 (defn validate-routes [stream-routes batch-routes modes]
   (when (contains? (set modes) :stream-worker)
-    (s/validate StreamRoute stream-routes))
+    (s/validate StreamRoute stream-routes)
+    (validate-routes-against-config stream-routes :stream-router))
   (when (contains? (set modes) :batch-worker)
-    (s/validate BatchRoute batch-routes)))
+    (s/validate BatchRoute batch-routes)
+    (validate-routes-against-config batch-routes :batch-routes)))
 
 (defn- derive-modes [stream-routes batch-routes actor-routes]
   (let [base-modes    [:management-api :worker]]
@@ -225,6 +246,7 @@
   ([{:keys [start-fn stop-fn stream-routes batch-routes actor-routes modes]}]
    (try
      (let [derived-modes (validate-modes modes stream-routes batch-routes actor-routes)]
+       (initialize-config)
        (validate-routes stream-routes batch-routes derived-modes)
        (add-shutdown-hook stop-fn derived-modes)
        (start start-fn stream-routes batch-routes actor-routes derived-modes))
