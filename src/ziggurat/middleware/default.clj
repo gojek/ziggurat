@@ -18,7 +18,7 @@
                                                           (= :list-value type)
                                                           (reduce #(conj %1 (flatten-value %2))
                                                                   []
-                                                                  val)
+                                                                  (:values val))
                                                           :else
                                                           val))
                                                       value)))
