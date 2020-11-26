@@ -10,21 +10,19 @@
         value                        {:id 7 :path "/photos/h2k3j4h9h23"}
         key-with-struct              {:id         100
                                       :characters {:fields
-                                                   [{:key "hobbies",
-                                                     :value
-                                                          {:list-value {:values [{:string-value "eating"}
-                                                                                 {:string-value "sleeping"}]}}}]}}
+                                                   [{:key   "hobbies",
+                                                     :value {:list-value {:values [{:string-value "eating"}
+                                                                                   {:string-value "sleeping"}]}}}]}}
         flattened-key-with-struct    {:id         100
                                       :characters {:hobbies ["eating" "sleeping"]}}
         value-with-struct            {:id         100
                                       :name       "John"
                                       :characters {:fields
-                                                   [{:key "physique",
-                                                     :value
-                                                          {:struct-value
-                                                           {:fields
-                                                            [{:key "height", :value {:number-value 180.12}}
-                                                             {:key "weight", :value {:number-value 80.34}}]}}}
+                                                   [{:key   "physique",
+                                                     :value {:struct-value
+                                                             {:fields
+                                                              [{:key "height", :value {:number-value 180.12}}
+                                                               {:key "weight", :value {:number-value 80.34}}]}}}
                                                     {:key "age", :value {:number-value 50.5}}
                                                     {:key "gender", :value {:string-value "male"}}]}}
         flattened-value-with-struct  {:id         100

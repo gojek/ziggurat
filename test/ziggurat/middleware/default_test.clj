@@ -40,16 +40,14 @@
                            :email      "john@gmail.com"
                            :likes      "cricket"
                            :characters {:fields
-                                        [{:key "physique",
-                                          :value
-                                               {:struct-value
-                                                {:fields
-                                                 [{:key "height", :value {:number-value 180.12}}
-                                                  {:key "weight", :value {:number-value 80.34}}]}}}
-                                         {:key "hobbies",
-                                          :value
-                                               {:list-value {:values [{:string-value "eating"}
-                                                                      {:string-value "sleeping"}]}}}
+                                        [{:key   "physique",
+                                          :value {:struct-value
+                                                  {:fields
+                                                   [{:key "height", :value {:number-value 180.12}}
+                                                    {:key "weight", :value {:number-value 80.34}}]}}}
+                                         {:key   "hobbies",
+                                          :value {:list-value {:values [{:string-value "eating"}
+                                                                        {:string-value "sleeping"}]}}}
                                          {:key "age", :value {:number-value 50.5}}
                                          {:key "gender", :value {:string-value "male"}}
                                          {:key "employed", :value {:bool-value false}}
