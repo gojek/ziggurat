@@ -42,6 +42,7 @@
         (let [start-time             (Instant/now)
               result                 (batch-handler batch)
               time-taken-in-millis   (.toMillis (Duration/between start-time (Instant/now)))]
+          (throw (ex-info "Invalid handler return type" {:type "" :cause ""}))
           (when (map? result)
             (let [messages-to-be-retried (:retry result)
                   to-be-retried-count    (count messages-to-be-retried)
@@ -51,6 +52,8 @@
                          topic-entity success-count skip-count to-be-retried-count)
               (publish-batch-process-metrics topic-entity batch-size success-count skip-count to-be-retried-count time-taken-in-millis)
               (retry messages-to-be-retried current-retry-count topic-entity)))))
+      (catch clojure.lang.ExceptionInfo e
+        (throw e))
       (catch Exception e
         (do
           (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})

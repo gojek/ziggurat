@@ -215,3 +215,10 @@
                     metrics/report-time (constantly nil)]
         (ch/process batch-handler batch-payload)
         (is (= true @retried))))))
+
+(deftest handler-return-type-test
+  (testing "when batch handler does not return a map consumer handler throws an error"
+    (let [expected-batch-size    10
+          batch-handler (fn [_] :success)
+          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})]
+      (is (thrown? clojure.lang.ExceptionInfo (ch/process batch-handler batch-payload))))))
