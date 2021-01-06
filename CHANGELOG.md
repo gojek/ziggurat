@@ -2,7 +2,8 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## Unreleased Changes
+## 3.7.0
+- Added support to flatten protobuf-struct during deserialization
 
 ## 3.6.2
 - Validation of stream and batch route arguments against the configuration, when starting the application.
