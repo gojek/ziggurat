@@ -167,12 +167,13 @@
   (testing "should process the batch only when its non-empty"
     (let [batch-size     10
           processed      (atom false)
-          batch-handler  (fn [_] (reset! processed true))]
+          batch-handler  (fn [_] (reset! processed true) {:retry [] :skip []})]
+      (with-redefs [metrics/increment-count (constantly nil)]
       (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))
-      (is (true? @processed))))
+      (is (true? @processed)))))
   (testing "should NOT process the batch if its empty"
     (let [processed      (atom false)
-          batch-handler  (fn [_] (reset! processed true))]
+          batch-handler  (fn [_] (reset! processed true) {:retry [] :skip []})]
       (ch/process batch-handler (mp/map->MessagePayload {:message [] :topic-entity :consumer-1 :retry-count nil}))
       (is (false? @processed)))))
 
@@ -217,8 +218,18 @@
         (is (= true @retried))))))
 
 (deftest handler-return-type-test
-  (testing "when batch handler does not return a map consumer handler throws an error"
+  (testing "when batch handler returns a keyword consumer handler throws an error"
     (let [expected-batch-size    10
           batch-handler (fn [_] :success)
           batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})]
-      (is (thrown? clojure.lang.ExceptionInfo (ch/process batch-handler batch-payload))))))
+      (is (thrown? tech.gojek.ziggurat.internal.InvalidReturnTypeException (ch/process batch-handler batch-payload)))))
+  (testing "when batch handler does not return a map with skip and retry keywords consumer handler throws an error"
+    (let [expected-batch-size    10
+          batch-handler (fn [_] {:random-keyword []})
+          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})]
+      (is (thrown? tech.gojek.ziggurat.internal.InvalidReturnTypeException (ch/process batch-handler batch-payload)))))
+  (testing "when batch handler does not return a map with skip and retry keywords with vector values consumer handler throws an error"
+    (let [expected-batch-size    10
+          batch-handler (fn [_] {:skip 1 :retry 2})
+          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})]
+      (is (thrown? tech.gojek.ziggurat.internal.InvalidReturnTypeException (ch/process batch-handler batch-payload))))))
