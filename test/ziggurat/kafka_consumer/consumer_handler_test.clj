@@ -12,7 +12,7 @@
            (java.util HashMap ArrayList)
            (org.apache.kafka.common TopicPartition)))
 
-(use-fixtures :once fix/mount-only-config)
+(use-fixtures :once fix/mount-only-config fix/silence-logging)
 
 (def dummy-consumer-records
   (let [topic-partition (TopicPartition. "string" 1)
@@ -169,8 +169,8 @@
           processed      (atom false)
           batch-handler  (fn [_] (reset! processed true) {:retry [] :skip []})]
       (with-redefs [metrics/increment-count (constantly nil)]
-      (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))
-      (is (true? @processed)))))
+        (ch/process batch-handler (mp/map->MessagePayload {:message (vec (replicate batch-size 0)) :topic-entity :consumer-1 :retry-count nil}))
+        (is (true? @processed)))))
   (testing "should NOT process the batch if its empty"
     (let [processed      (atom false)
           batch-handler  (fn [_] (reset! processed true) {:retry [] :skip []})]
