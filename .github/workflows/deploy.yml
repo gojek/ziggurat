@@ -23,12 +23,9 @@ jobs:
           lein: '2.8.1'
       - uses: actions/checkout@v2
 
-      - name: Deploy to cljars
-        on:
-          push:
-            tags:
-              - '*'
-        run: lein deploy clojars
+      - name: Deploy to clojars
+#        run: lein deploy clojars
+        run: ls -l
         env:
             CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
             CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}

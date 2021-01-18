@@ -1,0 +1,23 @@
+name: Lint Check
+
+# Triggers the workflow on push or pull request events
+on: [push, pull_request]
+
+jobs:
+  lint_check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '1.8'
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          lein: '2.8.1'
+      - uses: actions/checkout@v2
+
+      - name: Lint Checks
+        run: lein cljfmt check
+
+      - name: Lein Kibit Check
+        run: lein kibit
