@@ -1,0 +1,33 @@
+name: Ziggurat CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Lint Checks
+    - run: lein cljfmt check
+    - run: lein kibit
+    
+    - name: Run Tests on Kafka 1.x
+      run: ./bin/run_tests_in_ci.sh
+      env:
+        KAFKA_VERSION: 1
+        
+    - name: Run Tests on Kafka 2.x
+      run: ./bin/run_tests_in_ci.sh
+      env:
+        KAFKA_VERSION: 2
+        
+    - name: Calculate Coverage
+      run: make coverage
+
