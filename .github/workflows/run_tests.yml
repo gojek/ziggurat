@@ -42,7 +42,7 @@ jobs:
         env:
           KAFKA_VERSION: 2
 
-  calculate coverage:
+  calculate_coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-java@v1
