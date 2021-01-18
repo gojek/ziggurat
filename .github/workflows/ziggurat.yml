@@ -22,15 +22,25 @@ jobs:
       - name: Lein Kibit Check
         run: lein kibit
 
-  #    - name: Run Tests on Kafka 1.x
-  #      run: ../../bin/run_tests_in_ci.sh
-  #      env:
-  #        KAFKA_VERSION: 1
-  #
-  #    - name: Run Tests on Kafka 2.x
-  #      run: ../../bin/run_tests_in_ci.sh
-  #      env:
-  #        KAFKA_VERSION: 2
+      - name: Run Tests on Kafka 1.x
+        run: ./bin/run_tests_in_ci.sh
+        env:
+          KAFKA_VERSION: 1
+
+      - name: Run Tests on Kafka 2.x
+        run: ./bin/run_tests_in_ci.sh
+        env:
+          KAFKA_VERSION: 2
 
       - name: Calculate Coverage
         run: make coverage
+
+      - name: Deploy to cljars
+        on:
+          push:
+            tags:
+              - '*'
+        run: lein deploy clojars
+        env:
+            CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+            CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
