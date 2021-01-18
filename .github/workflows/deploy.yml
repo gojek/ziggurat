@@ -1,10 +1,17 @@
-name: Ziggurat CI
+name: Deploy to Clojars
 
 # Triggers the workflow on push or pull request events
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - '*'
+  workflow_run:
+    workflows: ["Run Tests"]
+    types:
+      - completed
 
 jobs:
-  build:
+  deploy_to_clojars:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,25 +22,6 @@ jobs:
         with:
           lein: '2.8.1'
       - uses: actions/checkout@v2
-
-      - name: Lint Checks
-        run: lein cljfmt check
-
-      - name: Lein Kibit Check
-        run: lein kibit
-
-      - name: Run Tests on Kafka 1.x
-        run: ./bin/run_tests_in_ci.sh
-        env:
-          KAFKA_VERSION: 1
-
-      - name: Run Tests on Kafka 2.x
-        run: ./bin/run_tests_in_ci.sh
-        env:
-          KAFKA_VERSION: 2
-
-      - name: Calculate Coverage
-        run: make coverage
 
       - name: Deploy to cljars
         on:
