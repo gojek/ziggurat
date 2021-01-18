@@ -1,10 +1,7 @@
 name: Ziggurat CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+# Triggers the workflow on push or pull request events
+on: [push, pull_request]
 
 jobs:
   build:
@@ -18,16 +15,16 @@ jobs:
     - run: lein cljfmt check
     - run: lein kibit
     
-    - name: Run Tests on Kafka 1.x
-      run: ./bin/run_tests_in_ci.sh
-      env:
-        KAFKA_VERSION: 1
+#     - name: Run Tests on Kafka 1.x
+#       run: ./bin/run_tests_in_ci.sh
+#       env:
+#         KAFKA_VERSION: 1
         
-    - name: Run Tests on Kafka 2.x
-      run: ./bin/run_tests_in_ci.sh
-      env:
-        KAFKA_VERSION: 2
+#     - name: Run Tests on Kafka 2.x
+#       run: ./bin/run_tests_in_ci.sh
+#       env:
+#         KAFKA_VERSION: 2
         
-    - name: Calculate Coverage
-      run: make coverage
+#     - name: Calculate Coverage
+#       run: make coverage
 
