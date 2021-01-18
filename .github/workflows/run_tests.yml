@@ -2,6 +2,8 @@ name: Run Tests
 
 # Triggers the workflow on push or pull request events
 on:
+  push:
+  pull_request:
   workflow_run:
     workflows: ["Lint Check"]
     types:
