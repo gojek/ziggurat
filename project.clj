@@ -1,3 +1,7 @@
+;; allow insecure downloads
+(require 'cemerick.pomegranate.aether)
+(cemerick.pomegranate.aether/register-wagon-factory!
+  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 (defproject tech.gojek/ziggurat "3.7.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
@@ -56,8 +60,7 @@
                                     :sign-releases false}]]
   :pedantic? :warn
   :java-source-paths ["src/com"]
-  :aliases {"test-all"      ["with-profile" "default:+1.8:+1.9" "test"]
-            "code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--coveralls"]}
+  :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
   :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.fixtures]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
@@ -76,6 +79,4 @@
              :dev     {:plugins [[lein-ancient "0.6.15"]
                                  [lein-cljfmt "0.6.4"]
                                  [lein-cloverage "1.0.13"]
-                                 [lein-kibit "0.1.7" :exclusions [org.clojure/tools.cli rewrite-clj org.clojure/tools.reader]]]}
-             :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
-             :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})
+                                 [lein-kibit "0.1.7" :exclusions [org.clojure/tools.cli rewrite-clj org.clojure/tools.reader]]]}})
