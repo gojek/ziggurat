@@ -86,8 +86,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Deploy to clojars
-        #        run: lein deploy clojars
-        run: ls -l
+        run: curr_branch=($(git branch --contains $GITHUB_SHA)); for branch in "${curr_branch[@]}"; do if [[ $branch == 'master' ]]; then lein deploy clojars; else echo "Can't run deploy on $branch branch"; fi; done
         env:
           CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
           CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
