@@ -72,6 +72,11 @@ jobs:
       - name: Calculate Coverage
         run: make coverage
 
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
   deploy_to_clojars:
     runs-on: ubuntu-latest
     needs: [lint_check, run_tests_with_kafka_1, run_tests_with_kafka_2, calculate_coverage]
