@@ -91,10 +91,10 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Debugging deploy to clojars
-        run: curr_branch=($(git branch --contains $GITHUB_SHA)); echo $GITHUB_SHA; echo "$(git branch --contains head | grep -v 'HEAD detached at' )";
+        run: curr_branch=($(git branch --contains $GITHUB_SHA)); echo $GITHUB_SHA; echo "$(git branch --contains $GITHUB_SHA | grep -v 'HEAD detached at' )";
 
       - name: Deploy to Clojars
-        run: curr_branch=($(git branch --contains $GITHUB_SHA)); for branch in "${curr_branch[@]}"; do if [[ $branch == 'master' ]]; then lein deploy clojars; else echo "Can't run deploy on $branch branch"; fi; done
+        run: curr_branch=($(git branch --contains $GITHUB_SHA | grep -v 'HEAD detached at')); for branch in "${curr_branch[@]}"; do if [[ $branch == 'master' ]]; then lein deploy clojars; else echo "Can't run deploy on $branch branch"; fi; done
         env:
           CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
           CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
