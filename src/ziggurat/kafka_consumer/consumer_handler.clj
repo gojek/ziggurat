@@ -36,6 +36,11 @@
   (and (map? result) (= (set (keys result)) #{:skip :retry})
        (vector? (:skip result)) (vector? (:retry result))))
 
+(defn validate-batch-processing-result
+  [result]
+  (when-not (validate-return-type result)
+    (throw (InvalidReturnTypeException. "Invalid result received from batch-handler. Please return a map with skip and retry vectors like {:skip [] :retry []}"))))
+
 (defn process
   [batch-handler batch-payload]
   (let [batch               (:message batch-payload)
@@ -48,8 +53,7 @@
         (let [start-time             (Instant/now)
               result                 (batch-handler batch)
               time-taken-in-millis   (.toMillis (Duration/between start-time (Instant/now)))]
-          (when-not (validate-return-type result)
-            (throw (InvalidReturnTypeException. "Invalid result received from batch-handler. Please return a map with skip and retry vectors like {:skip [] :retry []}")))
+          (validate-batch-processing-result result)
           (let [messages-to-be-retried (:retry result)
                 to-be-retried-count    (count messages-to-be-retried)
                 skip-count             (count (:skip result))
