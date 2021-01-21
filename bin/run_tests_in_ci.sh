@@ -4,4 +4,4 @@ set -ex
 
 lein clean
 mv -fv resources/config.test.{ci.edn,edn}
-make test-all
+make test
