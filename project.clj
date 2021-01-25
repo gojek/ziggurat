@@ -64,7 +64,6 @@
              :test    {:java-source-paths ["src/com" "test/com"]
                        :jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
                        :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
-                                      [io.confluent/kafka-schema-registry "4.1.1" :exclusions [javax.ws.rs/javax.ws.rs-api com.fasterxml.jackson.core/jackson-annotations]]
                                       [junit/junit "4.12"]
                                       [org.apache.kafka/kafka-streams "2.3.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.3.0" :classifier "test"]

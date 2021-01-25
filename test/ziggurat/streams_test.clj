@@ -13,12 +13,12 @@
             [ziggurat.config :as config])
   (:import [flatland.protobuf.test Example$Photo]
            [java.util Properties]
-           [kafka.utils MockTime]
            [org.apache.kafka.clients.producer ProducerConfig]
            [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams KafkaStreams$State]
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
-           [io.opentracing.tag Tags]))
+           [io.opentracing.tag Tags]
+           (org.apache.kafka.common.utils MockTime)))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
                                     fix/silence-logging
@@ -86,11 +86,11 @@
                                                          (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                          (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
                                                          (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
+    (Thread/sleep 5000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
                                                         (props)
-                                                        (MockTime. (- (System/currentTimeMillis) (* 1000 oldest-processed-message-in-s)) (System/nanoTime)))
+                                                        (MockTime. 0 (- (System/currentTimeMillis) (* 1000 oldest-processed-message-in-s)) (System/nanoTime)))
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= 0 @message-received-count))))
