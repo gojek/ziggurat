@@ -19,10 +19,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Lint Checks
-        run: echo $clojars_username; echo $clojars_password; echo $CLOJARS_USERNAME; echo $CLOJARS_PASSWORD; lein cljfmt check
-        env:
-          clojars_username: ${{ secrets.CLOJARS_USERNAME }}
-          clojars_password: ${{ secrets.CLOJARS_PASSWORD }}
+        run: lein cljfmt check
 
       - name: Lein Kibit Check
         run: lein kibit
