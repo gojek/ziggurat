@@ -80,8 +80,8 @@ jobs:
     needs: [lint_check, run_tests_with_kafka_1, run_tests_with_kafka_2, calculate_coverage]
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     env:
-      clojars_username: ${{ secrets.CLOJARS_USERNAME }}
-      clojars_password: ${{ secrets.CLOJARS_PASSWORD }}
+      CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+      CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
     steps:
       - uses: actions/setup-java@v1
         with:
