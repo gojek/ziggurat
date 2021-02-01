@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.7.1
+- Strict type checking for batch handler return type. Application is stopped if the type does not match the expected.   
+
 ## 3.7.0
 - Added support to flatten protobuf-struct during deserialization
 
