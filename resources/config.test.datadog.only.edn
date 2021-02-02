@@ -1,4 +1,3 @@
-;; TODO: delete this file in the future, :datadog key will be replaced by :statsd key
 {:ziggurat {:datadog {:host    "localhost"
                       :port    [8126 :int]
                       :enabled [true :bool]}}}

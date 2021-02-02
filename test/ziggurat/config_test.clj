@@ -85,7 +85,7 @@
         (mount/start #'config)
         (is (= (:statsd (:ziggurat config-values-from-env)) (statsd-config)))
         (mount/stop))))
-  (testing "returns statsd config using the :datadog key" ;; TODO: remove this test in the future since :datadog key will not be used
+  (testing "returns statsd config using the :datadog key"
     (let [config-filename        "config.test.datadog.only.edn"
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
