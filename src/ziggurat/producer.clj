@@ -57,7 +57,7 @@
    :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
               ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
-(defn *implements-serializer?* [serializer-class]
+(defn ^:dynamic *implements-serializer?* [serializer-class]
   (contains? (set (.getInterfaces (Class/forName serializer-class)))
              (Class/forName "org.apache.kafka.common.serialization.Serializer")))
 
