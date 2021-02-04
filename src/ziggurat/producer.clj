@@ -42,6 +42,7 @@
    Please see [producer configs](http://kafka.apache.org/documentation.html#producerconfigs)
    for a complete list of all producer configs available in Kafka."
 
+  (:refer-clojure :exclude [send])
   (:require [ziggurat.config :refer [ziggurat-config]]
             [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]

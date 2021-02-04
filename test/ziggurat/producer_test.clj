@@ -1,4 +1,5 @@
 (ns ziggurat.producer-test
+  (:refer-clojure :exclude [send])
   (:require [clojure.string :refer [blank?]]
             [clojure.test :refer :all]
             [clojure.test.check.generators :as gen]
