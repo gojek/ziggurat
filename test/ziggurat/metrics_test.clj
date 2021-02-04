@@ -91,29 +91,7 @@
                                                       (is (= value expected-n)))]
             (metrics/increment-count metric-namespace passed-metric-name 1 nil)
             (is (some #{metric-namespace} @metric-namespaces-called))
-            (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
-      (testing "-incrementCount calls increment-count with the correct arguments"
-        (let [metric-namespace        "namespace"
-              increment-count-called? (atom false)]
-          (with-redefs [metrics/increment-count (fn [actual-metric-namespace actual-metric]
-                                                  (if (and (= actual-metric-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name))
-                                                    (reset! increment-count-called? true)))]
-            (metrics/-incrementCount metric-namespace passed-metric-name)
-            (is (true? @increment-count-called?))))
-        (let [tags                    (doto (java.util.HashMap.)
-                                        (.put ":foo" "bar")
-                                        (.put ":bar" "foo"))
-              expected-tags           {:foo "bar" :bar "foo"}
-              increment-count-called? (atom false)
-              metric-namespace        "namespace"]
-          (with-redefs [metrics/increment-count (fn [actual-namespace actual-metric actual-additional-tags]
-                                                  (if (and (= actual-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name)
-                                                           (= actual-additional-tags expected-tags))
-                                                    (reset! increment-count-called? true)))]
-            (metrics/-incrementCount metric-namespace passed-metric-name tags)
-            (is (true? @increment-count-called?))))))
+            (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called))))))
     (mount/stop #'metrics/statsd-reporter)))
 
 (deftest decrement-count-test
@@ -172,29 +150,7 @@
                                                       (is (= value expected-n)))]
             (metrics/decrement-count metric-namespace passed-metric-name n nil)
             (is (some #{metric-namespace} @metric-namespaces-called))
-            (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
-      (testing "-decrementCount passes the correct arguments to decrement-count"
-        (let [metric-namespace        "namespace"
-              decrement-count-called? (atom false)]
-          (with-redefs [metrics/decrement-count (fn [actual-metric-namespace actual-metric]
-                                                  (if (and (= actual-metric-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name))
-                                                    (reset! decrement-count-called? true)))]
-            (metrics/-decrementCount metric-namespace passed-metric-name)
-            (is (true? @decrement-count-called?))))
-        (let [tags                    (doto (java.util.HashMap.)
-                                        (.put ":foo" "bar")
-                                        (.put ":bar" "foo"))
-              expected-tags           {:foo "bar" :bar "foo"}
-              decrement-count-called? (atom false)
-              metric-namespace        "namespace"]
-          (with-redefs [metrics/decrement-count (fn [actual-namespace actual-metric actual-additional-tags]
-                                                  (if (and (= actual-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name)
-                                                           (= actual-additional-tags expected-tags))
-                                                    (reset! decrement-count-called? true)))]
-            (metrics/-decrementCount metric-namespace passed-metric-name tags)
-            (is (true? @decrement-count-called?))))))
+            (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called))))))
     (mount/stop #'metrics/statsd-reporter)))
 
 (deftest report-histogram-test
@@ -241,30 +197,7 @@
                                                      (is (= value time-val)))]
             (metrics/report-histogram metric-namespace time-val)
             (is (some #{metric-namespace} @metric-namespaces-called))
-            (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
-      (testing "report time java function passes the correct parameters to report time"
-        (let [metric-namespace         "namespace"
-              report-histogram-called? (atom false)]
-          (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val]
-                                                   (if (and (= actual-metric-namespace metric-namespace)
-                                                            (= actual-time-val time-val))
-                                                     (reset! report-histogram-called? true)))]
-            (metrics/-reportTime metric-namespace time-val)
-            (is (true? @report-histogram-called?))))
-        (let [metric-namespace         "namespace"
-              tags                     (doto (java.util.HashMap.)
-                                         (.put ":foo" "bar")
-                                         (.put ":bar" "foo"))
-              expected-tags            {:foo "bar" :bar "foo"}
-              report-histogram-called? (atom false)]
-          (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val actual-additional-tags]
-                                                   (is (= actual-additional-tags expected-tags))
-                                                   (if (and (= actual-metric-namespace metric-namespace)
-                                                            (= actual-time-val time-val)
-                                                            (= actual-additional-tags expected-tags))
-                                                     (reset! report-histogram-called? true)))]
-            (metrics/-reportTime metric-namespace time-val tags)
-            (is (true? @report-histogram-called?))))))
+            (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called))))))
     (mount/stop #'metrics/statsd-reporter)))
 
 (deftest report-time-test

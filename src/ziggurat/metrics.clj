@@ -135,21 +135,3 @@
   [nss time-val additional-tags]
   (log/warn "Deprecation Notice: This function is deprecated in favour of ziggurat.metrics/multi-ns-report-histogram. Both functions have the same interface, so please use that function. It will be removed in future releases.")
   (multi-ns-report-histogram nss time-val additional-tags))
-
-(defn -incrementCount
-  ([metric-namespace metric]
-   (increment-count metric-namespace metric))
-  ([metric-namespace metric additional-tags]
-   (increment-count metric-namespace metric (util/java-map->clojure-map additional-tags))))
-
-(defn -decrementCount
-  ([metric-namespace metric]
-   (decrement-count metric-namespace metric))
-  ([metric-namespace metric additional-tags]
-   (decrement-count metric-namespace metric (util/java-map->clojure-map additional-tags))))
-
-(defn -reportTime
-  ([metric-namespace time-val]
-   (report-histogram metric-namespace time-val))
-  ([metric-namespace time-val additional-tags]
-   (report-histogram metric-namespace time-val (util/java-map->clojure-map additional-tags))))
