@@ -42,7 +42,7 @@
   ([message proto-class topic-entity-name]
    (deserialize-message message proto-class topic-entity-name false))
   ([message proto-class topic-entity-name flatten-protobuf-struct?]
-   (if-not (map? message)                                   ;; TODO: we should have proper dispatch logic per message type (not like this)
+   (if-not (map? message)
      (try
        (let [proto-klass  (protodef/mapdef proto-class)
              loaded-proto (protodef/parse proto-klass message)
