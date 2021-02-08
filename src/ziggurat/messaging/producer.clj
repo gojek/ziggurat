@@ -146,10 +146,14 @@
 (defn- get-channel-retry-count [topic-entity channel]
   (:count (channel-retry-config topic-entity channel)))
 
+(defn queue-timeout-ms-channel-or-default
+  [channel-queue-timeout-ms queue-timeout-ms]
+  (or channel-queue-timeout-ms queue-timeout-ms))
+
 (defn- get-channel-queue-timeout-or-default-timeout [topic-entity channel]
   (let [channel-queue-timeout-ms (:queue-timeout-ms (channel-retry-config topic-entity channel))
         queue-timeout-ms         (get-in (rabbitmq-config) [:delay :queue-timeout-ms])]
-    (or channel-queue-timeout-ms queue-timeout-ms)))
+    (queue-timeout-ms-channel-or-default channel-queue-timeout-ms queue-timeout-ms)))
 
 (defn- get-backoff-exponent [retry-count message-retry-count]
   "Calculates the exponent using the formula `retry-count` and `message-retry-count`, where `retry-count` is the total retries
