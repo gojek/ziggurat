@@ -3,8 +3,6 @@ name: Ziggurat CI
 on:
   push:
     pull_requests:
-    branches:
-    tags:
 
 jobs:
   lint_check:
