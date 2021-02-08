@@ -43,6 +43,9 @@
   (merge (:stream-routes (mount/args))
          (:batch-routes (mount/args))))
 
+(def topic-entity-error-message
+ "Topic entity/channel should be provided and must be present in stream routes")
+
 (defn get-replay []
   (let [routes (all-routes)]
     (fn [{{:keys [count topic-entity channel]} :params}]
@@ -56,7 +59,7 @@
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
+             :body   {:error topic-entity-error-message}})
           not-found-for-retry)))))
 
 (defn get-view []
@@ -72,7 +75,7 @@
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
+             :body   {:error topic-entity-error-message}})
           not-found-for-retry)))))
 
 (defn delete-messages []
@@ -88,5 +91,5 @@
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
-             :body   {:error "Topic entity/channel should be provided and must be present in stream routes"}})
+             :body   {:error topic-entity-error-message}})
           not-found-for-retry)))))
