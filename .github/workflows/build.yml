@@ -2,9 +2,10 @@ name: Ziggurat CI
 
 on:
   push:
-    pull_request:
     branches:
     tags:
+  pull_request:
+    - master
 
 jobs:
   lint_check:
