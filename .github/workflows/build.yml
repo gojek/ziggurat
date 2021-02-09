@@ -5,7 +5,8 @@ on:
     branches:
     tags:
   pull_request:
-    - master
+    branches:
+      - master
 
 jobs:
   lint_check:
