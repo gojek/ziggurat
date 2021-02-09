@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. This change
 
 ## 3.7.0
 - Added support to flatten protobuf-struct during deserialization
+- ABCDZ
 
 ## 3.6.2
 - Validation of stream and batch route arguments against the configuration, when starting the application.
