@@ -12,7 +12,9 @@
               ConsumerConfig/GROUP_ID_CONFIG                 (:consumer-group-id consumer-group-config)
               ConsumerConfig/MAX_POLL_RECORDS_CONFIG         (int (or (:max-poll-records  consumer-group-config) 500))
               ConsumerConfig/SESSION_TIMEOUT_MS_CONFIG       (int (or (:session-timeout-ms-config  consumer-group-config) 60000))
-              ConsumerConfig/ENABLE_AUTO_COMMIT_CONFIG       false
+              ConsumerConfig/ENABLE_AUTO_COMMIT_CONFIG       true
+              ConsumerConfig/AUTO_COMMIT_INTERVAL_MS_CONFIG  (int 5000)
+
               ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG   (or (:key-deserializer-class-config consumer-group-config)
                                                                  "org.apache.kafka.common.serialization.ByteArrayDeserializer")
               ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG (or (:value-deserializer-class-config consumer-group-config)
