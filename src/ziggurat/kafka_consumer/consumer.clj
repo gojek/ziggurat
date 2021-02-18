@@ -30,7 +30,6 @@
               ConsumerConfig/AUTO_COMMIT_INTERVAL_MS_CONFIG  (int commit-interval-ms)
               ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG   key-deserializer-class-config
               ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG value-deserializer-class-config})))
-
 (defn create-consumer
   [topic-entity consumer-group-config]
   (try
