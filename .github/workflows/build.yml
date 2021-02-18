@@ -110,5 +110,5 @@ jobs:
       - uses: peter-evans/repository-dispatch@v1
         with:
           token: ${{secrets.GH_TOKEN}}
-          repository: shubhang93/ziggurat-web #TODO change to gojek/ziggurat-web
+          repository: gojek/ziggurat-web
           event-type: ziggurat-release-event
