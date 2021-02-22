@@ -22,64 +22,10 @@
     (ConsumerRecords. map-of-partition-and-records)))
 
 (deftest consumer-polling-test
-  (testing "should commit only if non-zero records are polled"
-    (let [expected-calls 2
-          actual-calls   (atom 0)
-          commit-called  (atom false)
-          kafka-consumer (reify Consumer
-                           (^ConsumerRecords poll [_ ^Duration _]
-                             dummy-consumer-records)
-                           (commitSync [_] (reset! commit-called true))
-                           (close [_]))]
-      (with-redefs [ch/process (fn [_ _]
-                                 (if (< @actual-calls 2)
-                                   (swap! actual-calls inc)
-                                   (throw (WakeupException.))))
-                    metrics/increment-count (constantly nil)]
-        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
-        (is (= expected-calls @actual-calls))
-        (is (true? @commit-called)))))
-  (testing "should not commit if no records are polled"
-    (let [expected-calls 0
-          actual-calls   (atom 0)
-          commit-called  (atom false)
-          kafka-consumer (reify Consumer
-                           (^ConsumerRecords poll [_ ^Duration _]
-                             [])
-                           (commitSync [_] (reset! commit-called true))
-                           (close [_]))]
-      (with-redefs [ch/process (fn [_ _]
-                                 (if (< @actual-calls 2)
-                                   (swap! actual-calls inc)
-                                   (throw (WakeupException.))))
-                    metrics/increment-count (constantly nil)]
-        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
-        (is (= expected-calls @actual-calls))
-        (is (false? @commit-called)))))
-  (testing "should keep on polling even if commitSync call on KafkaConsumer throws an exception and publishes the metrics"
-    (let [expected-calls 2
-          actual-calls (atom 0)
-          kafka-consumer (reify Consumer
-                           (^ConsumerRecords poll [_ ^Duration _]
-                             dummy-consumer-records)
-                           (commitSync [_]
-                             (throw (Exception. "Commit exception")))
-                           (close [_]))]
-      (with-redefs [ch/process (fn [_ _]
-                                 (if (< @actual-calls 2)
-                                   (swap! actual-calls inc)
-                                   (throw (WakeupException.))))
-                    metrics/increment-count (fn [metric-namespace metrics _ tags]
-                                              (is (= metric-namespace ["ziggurat.batch.consumption" "message.processed"]))
-                                              (is (= metrics "commit.failed.exception"))
-                                              (is (= "random-consumer-id" (:topic-entity tags))))]
-        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
-        (is (= expected-calls @actual-calls)))))
   (testing "Exceptions other than WakeupException are caught"
     (let [kafka-consumer (reify Consumer
                            (^ConsumerRecords poll [_ ^Duration _]
-                             dummy-consumer-records)
-                           (commitSync [_])
+                             ziggurat.kafka-consumer.consumer-handler-test/dummy-consumer-records)
                            (close [_]))]
       (with-redefs [ch/process (fn [_ _] (throw (Exception.)))
                     metrics/increment-count (constantly nil)]
@@ -96,7 +42,6 @@
                            (^ConsumerRecords poll [_ ^Duration timeout]
                              (reset! actual-poll-timeout (.toMillis timeout))
                              records)
-                           (commitSync [_])
                            (close [_]))]
       (with-redefs [ch/process (fn [_ _]
                                  (if (< @process-calls 1)
@@ -119,7 +64,6 @@
                                  (swap! is-polled inc)
                                  records)
                                (throw (WakeupException.))))
-                           (commitSync [_])
                            (close [_]))]
       (with-redefs [ch/process (fn [batch-handler message]
                                  (when-not (empty? (:batch message))
