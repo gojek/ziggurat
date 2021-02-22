@@ -71,6 +71,7 @@
                                                  :bootstrap-servers                 "localhost:9092"
                                                  :max-poll-records                  [1000 :int]
                                                  :origin-topic                      "topic"
+                                                 :commit-interval-ms                [5000 :int]
                                                  :poll-timeout-ms-config            [1000 :int]
                                                  :thread-count                      [2 :int]
                                                  :session-timeout-ms-config         [60000 :int]
