@@ -1,19 +1,17 @@
 (ns ziggurat.kafka-consumer.consumer
   (:require [clojure.tools.logging :as log]
             [ziggurat.kafka-consumer.consumer-handler :refer :all]
-             [ziggurat.util.map :as umap])
+            [ziggurat.util.map :as umap])
   (:import (java.util Map Properties)
            (org.apache.kafka.clients.consumer KafkaConsumer ConsumerConfig)
-           (java.util.regex Pattern))
-            )
+           (java.util.regex Pattern)))
 
 (def default-consumer-config
   {:commit-interval-ms 15000
    :max-poll-records 500
    :session-timeout-ms-config 60000
    :key-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-   :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-   })
+   :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"})
 
 (defn- build-consumer-properties-map
   [{:keys [bootstrap-servers
@@ -22,8 +20,7 @@
            session-timeout-ms-config
            commit-interval-ms
            key-deserializer-class-config
-           value-deserializer-class-config
-           ]}]
+           value-deserializer-class-config]}]
   (doto (Properties.)
     (.putAll {ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG        bootstrap-servers
               ConsumerConfig/GROUP_ID_CONFIG                 consumer-group-id
