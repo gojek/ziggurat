@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.9.0
+- Added support for handling uncaught exceptions in Kafka Streams using `:enable-stream-restart-on-uncaught-exception`
+
 ## 3.8.1
 - Added support for Kafka Consumer config [default.api.timeout.ms](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#consumerconfigs_default.api.timeout.ms) for Kafka Streams
 

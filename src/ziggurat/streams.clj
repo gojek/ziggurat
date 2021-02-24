@@ -21,7 +21,6 @@
            [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerSupplier]
            [org.apache.kafka.streams.state.internals KeyValueStoreBuilder RocksDbKeyValueBytesStoreSupplier]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]
-           [io.opentracing Tracer]
            [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
            [io.opentracing.contrib.kafka TracingKafkaUtils]
            [io.opentracing.tag Tags]
@@ -277,6 +276,15 @@
     :stream-joins (assoc config :consumer-type (:consumer-type config))
     (assoc config :consumer-type :default)))
 
+(defn- handle-uncaught-exception
+  [^Thread thread ^Throwable error topic-entity]
+  (log/infof "Ziggurat Uncaught Handler Invoked for Thread: [%s] because of this exception: [%s]"
+             (.getName thread) (.getMessage error)))
+
+(defn- streams-restart-on-uncaught-exception-enabled? []
+  (or (:enable-streams-uncaught-exception-handling (ziggurat-config))
+      false))
+
 (defn start-streams
   ([stream-routes]
    (start-streams stream-routes (ziggurat-config)))
@@ -292,6 +300,11 @@
                                         (umap/deep-merge default-config-for-stream))
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (when-not (nil? stream)
+                 (if (streams-restart-on-uncaught-exception-enabled?)
+                   (.setUncaughtExceptionHandler stream
+                                                 (reify Thread$UncaughtExceptionHandler
+                                                   (^void uncaughtException [_ ^Thread thread, ^Throwable error]
+                                                     (handle-uncaught-exception thread error topic-entity)))))
                  (.start stream)
                  (assoc streams topic-entity stream))))
            {}
