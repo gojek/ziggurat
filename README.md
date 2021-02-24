@@ -473,6 +473,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                                        :enable-idempotence                    false
                                                                        :value-serializer                      "org.apache.kafka.common.serialization.StringSerializer"
                                                                        :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}}
+            :enable-streams-uncaught-exception-handling [true :bool]
             :datadog              {:host    "localhost"
                                    :port    [8125 :int]
                                    :enabled [false :bool]}
@@ -508,6 +509,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 - app-name - Refers to the name of the application. Used to namespace queues and metrics.
 - nrepl-server - Port on which the repl server will be hosted
+- enable-streams-uncaught-exception-handling - If set to true, it adds a handler to Kafka Streams for dealing with uncaught exceptions. Currently, this handler just logs the name of the stream thread and the exception message.
 - stream-router - Configs related to all the Kafka streams the application is reading from
 
   - stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different Kafka brokers and have different number of threads (depending on the throughput of the stream).
