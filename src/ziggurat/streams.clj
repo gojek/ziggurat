@@ -276,8 +276,6 @@
     :stream-joins (assoc config :consumer-type (:consumer-type config))
     (assoc config :consumer-type :default)))
 
-(declare start-streams)
-
 (defn- handle-uncaught-exception
   [^Thread thread ^Throwable error topic-entity]
   (log/infof "Ziggurat Uncaught Handler Invoked for Thread: [%s] because of this exception: [%s]"
