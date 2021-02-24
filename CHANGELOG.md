@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.8.1
+- Added support for Kafka Consumer config [default.api.timeout.ms](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#consumerconfigs_default.api.timeout.ms) for Kafka Streams
+
 ## 3.7.1
 - Strict type checking for batch handler return type. Application is stopped if the type does not match the expected.   
 
