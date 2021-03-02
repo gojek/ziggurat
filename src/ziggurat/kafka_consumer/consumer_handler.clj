@@ -85,7 +85,8 @@
           (process handler-fn batch-payload)))
       (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
     (catch WakeupException e
-      (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
+      ;(log/errorf e "WakeupException while polling for messages for: %s" topic-entity)
+      )
     (catch Exception e
       (log/errorf e "Exception while polling for messages for: %s" topic-entity))
     (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)

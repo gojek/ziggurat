@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 (defproject tech.gojek/ziggurat "3.9.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
