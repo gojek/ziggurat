@@ -10,6 +10,7 @@
   {:commit-interval-ms 15000
    :max-poll-records 500
    :session-timeout-ms-config 60000
+   :enable-auto-commit true
    :key-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"
    :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"})
 
@@ -19,6 +20,7 @@
            max-poll-records
            session-timeout-ms-config
            commit-interval-ms
+           enable-auto-commit
            key-deserializer-class-config
            value-deserializer-class-config]}]
   (doto (Properties.)
@@ -26,7 +28,7 @@
               ConsumerConfig/GROUP_ID_CONFIG                 consumer-group-id
               ConsumerConfig/MAX_POLL_RECORDS_CONFIG         (int max-poll-records)
               ConsumerConfig/SESSION_TIMEOUT_MS_CONFIG       (int session-timeout-ms-config)
-              ConsumerConfig/ENABLE_AUTO_COMMIT_CONFIG       true
+              ConsumerConfig/ENABLE_AUTO_COMMIT_CONFIG       enable-auto-commit
               ConsumerConfig/AUTO_COMMIT_INTERVAL_MS_CONFIG  (int commit-interval-ms)
               ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG   key-deserializer-class-config
               ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG value-deserializer-class-config})))

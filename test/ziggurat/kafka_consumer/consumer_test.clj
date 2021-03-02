@@ -17,14 +17,14 @@
       (.close consumer)))
   (testing "uses the config supplied by the user while creating the consumer"
     (let [ziggurat-consumer-config (get-in (ziggurat-config) [:batch-routes :consumer-1])
-          consumer-properties (#'ziggurat.kafka-consumer.consumer/build-consumer-properties-map ziggurat-consumer-config)]
+          consumer-properties (#'ziggurat.kafka-consumer.consumer/build-consumer-properties-map (assoc ziggurat-consumer-config :enable-auto-commit true))]
       (with-redefs [ziggurat.kafka-consumer.consumer/build-consumer-properties-map (fn [consumer-config] (is (= (:commit-interval-ms consumer-config) (:commit-interval-ms ziggurat-consumer-config)))
                                                                                      consumer-properties)]
         (.close (create-consumer :consumer-1 ziggurat-consumer-config)))))
   (testing "uses the default config for a specific property if the config supplied by the user does not have it"
     (let [ziggurat-consumer-config (get-in (ziggurat-config) [:batch-routes :consumer-1])
           consumer-config-without-commit-interval (dissoc ziggurat-consumer-config :commit-interval-ms)
-          consumer-properties (#'ziggurat.kafka-consumer.consumer/build-consumer-properties-map ziggurat-consumer-config)]
+          consumer-properties (#'ziggurat.kafka-consumer.consumer/build-consumer-properties-map (assoc ziggurat-consumer-config :enable-auto-commit true))]
       (with-redefs [ziggurat.kafka-consumer.consumer/build-consumer-properties-map (fn [consumer-config] (is (= (:commit-interval-ms consumer-config) (:commit-interval-ms ziggurat.kafka-consumer.consumer/default-consumer-config)))
                                                                                      consumer-properties)]
         (.close (create-consumer :consumer-1 consumer-config-without-commit-interval)))))
