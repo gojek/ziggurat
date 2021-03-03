@@ -19,10 +19,10 @@
            (org.apache.kafka.clients.consumer ConsumerConfig)
            (io.opentracing.mock MockTracer))
   (:gen-class
-   :name tech.gojek.ziggurat.internal.test.Fixtures
-   :methods [^{:static true} [mountConfig [] void]
-             ^{:static true} [mountProducer [] void]
-             ^{:static true} [unmountAll [] void]]))
+    :name tech.gojek.ziggurat.internal.test.Fixtures
+    :methods [^{:static true} [mountConfig [] void]
+              ^{:static true} [mountProducer [] void]
+              ^{:static true} [unmountAll [] void]]))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
@@ -101,18 +101,18 @@
     (mount-tracer)
 
     (->
-     (mount/only [#'connection])
-     (mount/with-args {:stream-routes stream-routes})
-     (mount/start))
+      (mount/only [#'connection])
+      (mount/with-args {:stream-routes stream-routes})
+      (mount/start))
     (f)
     (mount/stop)))
 
 (defn with-start-server* [stream-routes f]
   (mount-config)
   (->
-   (mount/only [#'server])
-   (mount/with-args {:stream-routes stream-routes})
-   (mount/start))
+    (mount/only [#'server])
+    (mount/with-args {:stream-routes stream-routes})
+    (mount/start))
   (f)
   (mount/stop))
 
@@ -145,7 +145,7 @@
     (mount-config)
     (mount-tracer)
     (mount-producer)
-    (binding [*bootstrap-servers* "localhost:9092"]
+    (binding [*bootstrap-servers* "localhost:9091,localhost:9092,localhost:9093"]
       (binding [*consumer-properties* (doto (Properties.)
                                         (.put ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG, *bootstrap-servers*)
                                         (.put ConsumerConfig/GROUP_ID_CONFIG, "ziggurat-consumer")
