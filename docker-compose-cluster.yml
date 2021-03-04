@@ -18,8 +18,8 @@ services:
       ZOO_SERVERS: server.1=zookeeper:2888:3888
       ZOO_TICK_TIME: 2000
     volumes:
-      - /tmp/data/zookeeper/data:/data
-      - /tmp/data/zookeeper/datalog:/datalog
+      - /tmp/ziggurat_kafka_cluster_data/zookeeper/data:/data
+      - /tmp/ziggurat_kafka_cluster_data/zookeeper/datalog:/datalog
 
   kafka1:
     image: confluentinc/cp-kafka:5.5.3
@@ -36,7 +36,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 1
     volumes:
-      - /tmp/data/kafka1/data:/var/lib/kafka/data
+      - /tmp/ziggurat_kafka_cluster_data/kafka1/data:/var/lib/kafka/data
     depends_on:
       - zookeeper
 
@@ -55,7 +55,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 2
     volumes:
-      - /tmp/data/kafka2/data:/var/lib/kafka/data
+      - /tmp/ziggurat_kafka_cluster_data/kafka2/data:/var/lib/kafka/data
     depends_on:
       - zookeeper
 
@@ -75,6 +75,6 @@ services:
       KAFKA_BROKER_ID: 3
 
     volumes:
-      - /tmp/data/kafka3/data:/var/lib/kafka/data
+      - /tmp/ziggurat_kafka_cluster_data/kafka3/data:/var/lib/kafka/data
     depends_on:
       - zookeeper
