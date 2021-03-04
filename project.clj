@@ -65,9 +65,9 @@
                        :jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
                        :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
                                       [junit/junit "4.12"]
+                                      [org.hamcrest/hamcrest-core "2.2"]
                                       [org.apache.kafka/kafka-streams "2.4.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                       [org.apache.kafka/kafka-clients "2.4.1" :classifier "test"]
-                                      [org.apache.kafka/kafka_2.11 "2.4.1" :classifier "test"]
                                       [org.clojure/test.check "0.10.0"]]
                        :plugins      [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
                        :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
