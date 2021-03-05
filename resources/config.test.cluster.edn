@@ -1,0 +1,87 @@
+{:ziggurat {:app-name             "application_name"
+            :env                  [:dev :keyword]
+            :nrepl-server         {:port [7011 :int]}
+            :datadog              {:host    "localhost"
+                                   :port    [8126 :int]
+                                   :enabled [false :bool]}
+            :statsd               {:host    "localhost"
+                                   :port    [8125 :int]
+                                   :enabled [false :bool]}
+            :sentry               {:enabled                   [false :bool]
+                                   :dsn                       "dummy"
+                                   :worker-count              [10 :int]
+                                   :queue-size                [10 :int]
+                                   :thread-termination-wait-s [1 :int]}
+            :rabbit-mq-connection {:host            "127.0.0.1"
+                                   :port            [5672 :int]
+                                   :username        "guest"
+                                   :password        "guest"
+                                   :channel-timeout [2000 :int]}
+            :jobs                 {:instant {:worker-count   [4 :int]
+                                             :prefetch-count [4 :int]}}
+            :rabbit-mq            {:delay       {:queue-name           "application_name_delay_queue_test"
+                                                 :exchange-name        "application_name_delay_exchange_test"
+                                                 :dead-letter-exchange "application_name_instant_exchange_test"
+                                                 :queue-timeout-ms     [100 :int]}
+                                   :instant     {:queue-name    "application_name_instant_queue_test"
+                                                 :exchange-name "application_name_instant_exchange_test"}
+                                   :dead-letter {:queue-name    "application_name_dead_letter_queue_test"
+                                                 :exchange-name "application_name_dead_letter_exchange_test"}}
+            :retry                {:type    [:linear :keyword]
+                                   :count   [5 :int]
+                                   :enabled [true :bool]}
+            :http-server          {:middlewares  {:swagger {:enabled false}}
+                                   :port         [8010 :int]
+                                   :thread-count [100 :int]}
+            :stream-router        {:default            {:application-id       "test"
+                                                        :bootstrap-servers    "localhost:9091,localhost:9092,localhost:9093"
+                                                        :stream-threads-count [1 :int]
+                                                        :origin-topic         "topic"
+                                                        :upgrade-from         "1.1"
+                                                        :changelog-topic-replication-factor [1 :int]
+                                                        :channels             {:channel-1 {:worker-count [10 :int]
+                                                                                           :retry        {:type    [:linear :keyword]
+                                                                                                          :count   [5 :int]
+                                                                                                          :enabled [true :bool]}}}
+                                                        :producer             {:bootstrap-servers                     "localhost:9091,localhost:9092,localhost:9093"
+                                                                               :acks                                  "all"
+                                                                               :retries                               5
+                                                                               :max-in-flight-requests-per-connection 5
+                                                                               :enable-idempotence                    false
+                                                                               :value-serializer-class                "org.apache.kafka.common.serialization.StringSerializer"
+                                                                               :key-serializer-class                  "org.apache.kafka.common.serialization.StringSerializer"}}
+                                   :using-string-serde {:application-id              "test"
+                                                        :bootstrap-servers           "localhost:9091,localhost:9092,localhost:9093"
+                                                        :stream-threads-count        [1 :int]
+                                                        :origin-topic                "another-test-topic"
+                                                        :default-key-serde           "org.apache.kafka.common.serialization.Serdes$StringSerde"
+                                                        :default-value-serde         "org.apache.kafka.common.serialization.Serdes$StringSerde"
+                                                        :key-deserializer-encoding   "UTF8"
+                                                        :value-deserializer-encoding "UTF8"
+                                                        :deserializer-encoding       "UTF8"
+                                                        :upgrade-from                "1.1"
+                                                        :channels                    {:channel-1 {:worker-count [10 :int]
+                                                                                                  :retry        {:count   [5 :int]
+                                                                                                                 :enabled [true :bool]}}}}}
+          :batch-routes            {:consumer-1 {:consumer-group-id                 "test-consumer-1002"
+                                                 :bootstrap-servers                 "localhost:9091,localhost:9092,localhost:9093"
+                                                 :max-poll-records                  [1000 :int]
+                                                 :origin-topic                      "topic"
+                                                 :commit-interval-ms                [5000 :int]
+                                                 :poll-timeout-ms-config            [1000 :int]
+                                                 :thread-count                      [2 :int]
+                                                 :session-timeout-ms-config         [60000 :int]
+                                                 :key-deserializer-class-config     "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+                                                 :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}
+                                    :consumer-2 {:consumer-group-id                 "test-consumer-2002"
+                                                 :bootstrap-servers                 "localhost:9091,localhost:9092,localhost:9093"
+                                                 :max-poll-records                  [2000 :int]
+                                                 :origin-topic                      "topic"
+                                                 :poll-timeout-ms-config            [1000 :int]
+                                                 :thread-count                      [4 :int]
+                                                 :session-timeout-ms-config         [60000 :int]
+                                                 :key-deserializer-class-config     "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+                                                 :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}}
+            :tracer               {:enabled         [true :bool]
+                                   :custom-provider ""}
+            :new-relic            {:report-errors false}}}
