@@ -145,7 +145,7 @@
     (mount-config)
     (mount-tracer)
     (mount-producer)
-    (binding [*bootstrap-servers* "localhost:9091,localhost:9092,localhost:9093"]
+    (binding [*bootstrap-servers* (get-in (config/ziggurat-config) [:stream-router :default :bootstrap-servers])]
       (binding [*consumer-properties* (doto (Properties.)
                                         (.put ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG, *bootstrap-servers*)
                                         (.put ConsumerConfig/GROUP_ID_CONFIG, "ziggurat-consumer")

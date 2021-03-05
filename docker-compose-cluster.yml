@@ -35,6 +35,8 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_NUM_PARTITIONS: 3
     volumes:
       - /tmp/ziggurat_kafka_cluster_data/kafka1/data:/var/lib/kafka/data
     depends_on:
@@ -54,6 +56,8 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_BROKER_ID: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_NUM_PARTITIONS: 3
     volumes:
       - /tmp/ziggurat_kafka_cluster_data/kafka2/data:/var/lib/kafka/data
     depends_on:
@@ -73,7 +77,8 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 3
-
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_NUM_PARTITIONS: 3
     volumes:
       - /tmp/ziggurat_kafka_cluster_data/kafka3/data:/var/lib/kafka/data
     depends_on:
