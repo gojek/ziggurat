@@ -24,7 +24,7 @@ test: setup
 test-cluster: setup-cluster
 	ZIGGURAT_STREAM_ROUTER_DEFAULT_ORIGIN_TOPIC=$(topic) lein test
 	docker-compose -f docker-compose-cluster.yml down
-	rm -rf /tmp/ziggurat_kafka_cluster_data
+	sudo rm -rf /tmp/ziggurat_kafka_cluster_data
 coverage: setup
 	lein code-coverage
 	docker-compose down
