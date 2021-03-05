@@ -281,7 +281,7 @@
   (log/infof "Ziggurat Uncaught Handler Invoked for Thread: [%s] because of this exception: [%s]"
              (.getName thread) (.getMessage error)))
 
-(defn- streams-restart-on-uncaught-exception-enabled? []
+(defn- uncaught-exception-handling-enabled? []
   (or (:enable-streams-uncaught-exception-handling (ziggurat-config))
       false))
 
@@ -300,7 +300,7 @@
                                         (umap/deep-merge default-config-for-stream))
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
                (when-not (nil? stream)
-                 (if (streams-restart-on-uncaught-exception-enabled?)
+                 (if (uncaught-exception-handling-enabled?)
                    (.setUncaughtExceptionHandler stream
                                                  (reify Thread$UncaughtExceptionHandler
                                                    (^void uncaughtException [_ ^Thread thread, ^Throwable error]
