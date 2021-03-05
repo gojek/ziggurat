@@ -59,6 +59,22 @@ jobs:
         env:
           KAFKA_VERSION: 2
 
+  run_tests_with_kafka_cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "1.8"
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          lein: "2.8.1"
+      - uses: actions/checkout@v2
+
+      - name: Run Tests on Kafka Cluster
+        run: ./bin/run_cluster_tests_in_ci.sh
+        env:
+          KAFKA_VERSION: 2
+
   calculate_coverage:
     runs-on: ubuntu-latest
     steps:
