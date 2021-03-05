@@ -101,6 +101,7 @@ jobs:
         lint_check,
         run_tests_with_kafka_1,
         run_tests_with_kafka_2,
+        run_tests_with_kafka_cluster,
         calculate_coverage,
       ]
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
