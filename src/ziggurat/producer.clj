@@ -53,9 +53,9 @@
            (java.util Properties)
            (io.opentracing.contrib.kafka TracingKafkaProducer))
   (:gen-class
-    :name tech.gojek.ziggurat.internal.Producer
-    :methods [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
-              ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
+   :name tech.gojek.ziggurat.internal.Producer
+   :methods [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
+             ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
 (defn *implements-serializer?* [serializer-class]
   (contains? (set (.getInterfaces (Class/forName serializer-class)))
@@ -135,28 +135,28 @@
           (seq (:stream-router (ziggurat-config)))))
 
 (defstate kafka-producers
-          :start (if (not-empty (producer-properties-map))
-                   (do (log/info "Starting Kafka producers ...")
-                       (reduce (fn [producers [stream-config-key properties]]
-                                 (do (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
-                                     (let [_   (println properties)
-                                           kp  (KafkaProducer. properties)
-                                           _   (println kp)
-                                           tkp (TracingKafkaProducer. kp tracer)]
-                                       (assoc producers stream-config-key tkp))))
-                               {}
-                               (seq (producer-properties-map))))
-                   (log/info "No producers found. Can not initiate start."))
+  :start (if (not-empty (producer-properties-map))
+           (do (log/info "Starting Kafka producers ...")
+               (reduce (fn [producers [stream-config-key properties]]
+                         (do (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
+                             (let [_   (println properties)
+                                   kp  (KafkaProducer. properties)
+                                   _   (println kp)
+                                   tkp (TracingKafkaProducer. kp tracer)]
+                               (assoc producers stream-config-key tkp))))
+                       {}
+                       (seq (producer-properties-map))))
+           (log/info "No producers found. Can not initiate start."))
 
-          :stop (if (not-empty kafka-producers)
-                  (do (log/info "Stopping Kafka producers ...")
-                      (doall (map (fn [[stream-config-key producer]]
-                                    (log/debug "Stopping Kafka producer associated with [" stream-config-key "]")
-                                    (doto producer
-                                      (.flush)
-                                      (.close)))
-                                  (seq kafka-producers))))
-                  (log/info "No producers found.n Can not initiate stop.")))
+  :stop (if (not-empty kafka-producers)
+          (do (log/info "Stopping Kafka producers ...")
+              (doall (map (fn [[stream-config-key producer]]
+                            (log/debug "Stopping Kafka producer associated with [" stream-config-key "]")
+                            (doto producer
+                              (.flush)
+                              (.close)))
+                          (seq kafka-producers))))
+          (log/info "No producers found.n Can not initiate stop.")))
 
 (defn send
   "A wrapper around `org.apache.kafka.clients.producer.KafkaProducer#send` which enables
