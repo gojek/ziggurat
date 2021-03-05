@@ -75,7 +75,7 @@
           value        "Hello World!!"]
       (.reset tracer)
       (send :default topic key value)
-      (let [result         (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 5000)
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 5000)
             finished-spans (.finishedSpans tracer)]
         (is (= value (.value (first result))))
         (is (= 1 (.size finished-spans)))

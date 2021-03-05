@@ -139,7 +139,7 @@
            (do (log/info "Starting Kafka producers ...")
                (reduce (fn [producers [stream-config-key properties]]
                          (do (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
-                             (let [_   (println properties)
+                             (let [_ (println properties)
                                    kp  (KafkaProducer. properties)
                                    _   (println kp)
                                    tkp (TracingKafkaProducer. kp tracer)]
