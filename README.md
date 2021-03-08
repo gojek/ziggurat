@@ -65,6 +65,11 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
     - 3 Kafka brokers on localhost:9091, localhost:9092 and localhost:9093
     - Zookeeper on localhost:2181
     - RabbitMQ on localhost:5672
+    
+- In case the cluster doesn't start up, one of the reasons could be
+invalid data in the volume location. Please delete the folder /tmp/ziggurat_kafka_cluster_data
+in such cases.
+    - rm -rf /tmp/ziggurat_kafka_cluster_data
 
 #### Running tests via a cluster
 - `make test-cluster`
