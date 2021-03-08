@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is testing]]
             [clonfig.core :as clonfig]
             [mount.core :as mount]
+            [ziggurat.fixtures :as f]
             [ziggurat.config :refer [-get
                                      -getIn
                                      channel-retry-config
@@ -13,15 +14,17 @@
                                      ziggurat-config]])
   (:import (java.util ArrayList)))
 
+
+
 (deftest config-from-env-test
   (testing "calls clonfig"
     (let [config-values-from-env {:key "val"}]
       (with-redefs [clonfig/read-config (fn [_] config-values-from-env)]
-        (is (= config-values-from-env (config-from-env "config.test.edn")))))))
+        (is (= config-values-from-env (config-from-env (f/get-config-file-name))))))))
 
 (deftest config-test
   (testing "returns merged config from env variables and default values with env variables taking higher precedence"
-    (let [config-filename        "config.test.edn"
+    (let [config-filename        (f/get-config-file-name)
           config-values-from-env (-> (config-from-env config-filename)
                                      (update-in [:ziggurat] dissoc :nrepl-server))]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
@@ -34,7 +37,7 @@
 
   (testing "returns default interpolated rabbitmq config when not present in env variables"
     (let [app-name                    "application_name"
-          config-filename             "config.test.edn"
+          config-filename             (f/get-config-file-name)
           config-values-from-env      (-> (config-from-env config-filename)
                                           (update-in [:ziggurat :rabbit-mq] dissoc :delay)
                                           (assoc-in [:ziggurat :app-name] app-name))
@@ -50,7 +53,7 @@
 
 (deftest ziggurat-config-test
   (testing "returns ziggurat config"
-    (let [config-filename        "config.test.edn"
+    (let [config-filename        (f/get-config-file-name)
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -60,7 +63,7 @@
 
 (deftest rabbitmq-config-test
   (testing "returns rabbitmq config"
-    (let [config-filename        "config.test.edn"
+    (let [config-filename        (f/get-config-file-name)
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -70,7 +73,7 @@
 
 (deftest statsd-config-test
   (testing "returns statsd config using the :statsd key or :datadog key"
-    (let [config-filename        "config.test.edn" ;; inside config.test.edn, both :datadog and :statsd keys are present
+    (let [config-filename        (f/get-config-file-name) ;; inside config.test.edn, both :datadog and :statsd keys are present
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -96,7 +99,7 @@
 
 (deftest get-in-config-test
   (testing "returns config for key passed"
-    (let [config-filename        "config.test.edn"
+    (let [config-filename        (f/get-config-file-name)
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -104,7 +107,7 @@
         (is (= (-> config-values-from-env :ziggurat :http-server :port) (get-in-config [:http-server :port])))
         (mount/stop))))
   (testing "returns config for key passed with default"
-    (let [config-filename        "config.test.edn"
+    (let [config-filename        (f/get-config-file-name)
           config-values-from-env (config-from-env config-filename)
           default                "test"]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
@@ -115,7 +118,7 @@
 
 (deftest channel-retry-config-test
   (testing "returns channel retry config"
-    (let [config-filename        "config.test.edn"
+    (let [config-filename        (f/get-config-file-name)
           config-values-from-env (config-from-env config-filename)
           topic-entity           :default
           channel                :channel-1]
