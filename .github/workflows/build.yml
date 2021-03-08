@@ -27,22 +27,6 @@ jobs:
       - name: Lein Kibit Check
         run: lein kibit
 
-  run_tests_with_kafka_1:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-java@v1
-        with:
-          java-version: "1.8"
-      - uses: DeLaGuardo/setup-clojure@master
-        with:
-          lein: "2.8.1"
-      - uses: actions/checkout@v2
-
-      - name: Run Tests on Kafka 1.x
-        run: ./bin/run_tests_in_ci.sh
-        env:
-          KAFKA_VERSION: 1
-
   run_tests_with_kafka_2:
     runs-on: ubuntu-latest
     steps:
@@ -99,7 +83,6 @@ jobs:
     needs:
       [
         lint_check,
-        run_tests_with_kafka_1,
         run_tests_with_kafka_2,
         run_tests_with_kafka_cluster,
         calculate_coverage,
