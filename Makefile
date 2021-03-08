@@ -16,6 +16,7 @@ setup-cluster:
 	lein deps
 	docker-compose -f docker-compose-cluster.yml up -d
 	sleep 30
+# 	Sleeping for 30s to allow the cluster to come up
 	docker exec ziggurat_kafka1_1 kafka-topics --create --topic $(topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat_zookeeper_1
 	docker exec ziggurat_kafka1_1 kafka-topics --create --topic $(another_test_topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat_zookeeper_1
 test: setup

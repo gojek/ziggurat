@@ -16,11 +16,11 @@
 
 (def valid-config {:key-serializer-class   "org.apache.kafka.common.serialization.StringSerializer"
                    :value-serializer-class "org.apache.kafka.common.serialization.StringSerializer"
-                   :bootstrap-servers      "localhost:8000"})
+                   :bootstrap-servers      "valid_bootstrap_server1, valid_bootstrap_server2, valid_bootstrap_server3"})
 
 (defn stream-router-config-without-producer [])
 (:stream-router {:default {:application-id       "test"
-                           :bootstrap-servers    "localhost:9092"
+                           :bootstrap-servers    (get-in (ziggurat-config) [:stream-router :default :bootstrap-servers])
                            :stream-threads-count [1 :int]
                            :origin-topic         "topic"
                            :channels             {:channel-1 {:worker-count [10 :int]
