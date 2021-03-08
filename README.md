@@ -57,8 +57,18 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
   - Kafka on localhost:9092
   - ZooKeeper on localhost:2181
   - RabbitMQ on localhost:5672
-
 - Run tests: `make test`
+
+#### Running a cluster set up locally
+
+- `make setup-cluster` This clears up the volume and starts
+    - 3 Kafka brokers on localhost:9091, localhost:9092 and localhost:9093
+    - Zookeeper on localhost:2181
+    - RabbitMQ on localhost:5672
+
+#### Running tests via a cluster
+- `make test-cluster`
+  - This uses `config.test.cluster.edn` instead of `config.test.edn`
 
 ## Usage
 

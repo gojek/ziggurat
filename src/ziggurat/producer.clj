@@ -54,8 +54,8 @@
            (io.opentracing.contrib.kafka TracingKafkaProducer))
   (:gen-class
    :name tech.gojek.ziggurat.internal.Producer
-   :methods  [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
-              ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
+   :methods [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
+             ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]))
 
 (defn *implements-serializer?* [serializer-class]
   (contains? (set (.getInterfaces (Class/forName serializer-class)))

@@ -16,11 +16,11 @@
 
 (def valid-config {:key-serializer-class   "org.apache.kafka.common.serialization.StringSerializer"
                    :value-serializer-class "org.apache.kafka.common.serialization.StringSerializer"
-                   :bootstrap-servers      "localhost:8000"})
+                   :bootstrap-servers      "valid_bootstrap_server1, valid_bootstrap_server2, valid_bootstrap_server3"})
 
 (defn stream-router-config-without-producer [])
 (:stream-router {:default {:application-id       "test"
-                           :bootstrap-servers    "localhost:9092"
+                           :bootstrap-servers    (get-in (ziggurat-config) [:stream-router :default :bootstrap-servers])
                            :stream-threads-count [1 :int]
                            :origin-topic         "topic"
                            :channels             {:channel-1 {:worker-count [10 :int]
@@ -34,7 +34,7 @@
           key          "message"
           value        "Hello World!!"]
       (send :default topic key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 2000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 5000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-data-with-topic-key-partition-and-value-test
@@ -45,7 +45,7 @@
           value        "Hello World!!"
           partition    (int 0)]
       (send :default topic partition key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 2000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 5000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-throws-exception-when-no-producers-are-configured
@@ -75,7 +75,7 @@
           value        "Hello World!!"]
       (.reset tracer)
       (send :default topic key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 2000)
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 5000)
             finished-spans (.finishedSpans tracer)]
         (is (= value (.value (first result))))
         (is (= 1 (.size finished-spans)))
@@ -128,9 +128,9 @@
   (testing "with incorrect config"
     (let [valid-config (assoc valid-config :linger-ms-foo "1")]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
-    (let [valid-config (update  valid-config :key-serializer-class (constantly  "java.time.Clock"))]
+    (let [valid-config (update valid-config :key-serializer-class (constantly "java.time.Clock"))]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
-    (let [valid-config (update  valid-config :key-serializer-class (constantly  "java.foo.Bar"))]
+    (let [valid-config (update valid-config :key-serializer-class (constantly "java.foo.Bar"))]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))
     (let [valid-config (dissoc valid-config :bootstrap-servers)]
       (is (thrown? java.lang.RuntimeException (producer-properties valid-config))))))

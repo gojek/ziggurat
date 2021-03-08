@@ -24,9 +24,12 @@
              ^{:static true} [mountProducer [] void]
              ^{:static true} [unmountAll [] void]]))
 
+(defn get-config-file-name []
+  (or (System/getenv "TEST_CONFIG_FILE") "config.test.edn"))
+
 (defn mount-config []
   (-> (mount/only [#'config/config])
-      (mount/swap {#'config/config (config/config-from-env "config.test.edn")})
+      (mount/swap {#'config/config (config/config-from-env (get-config-file-name))})
       (mount/start)))
 
 (defn mount-only-config [f]
@@ -145,7 +148,7 @@
     (mount-config)
     (mount-tracer)
     (mount-producer)
-    (binding [*bootstrap-servers* "localhost:9092"]
+    (binding [*bootstrap-servers* (get-in (config/ziggurat-config) [:stream-router :default :bootstrap-servers])]
       (binding [*consumer-properties* (doto (Properties.)
                                         (.put ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG, *bootstrap-servers*)
                                         (.put ConsumerConfig/GROUP_ID_CONFIG, "ziggurat-consumer")

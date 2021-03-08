@@ -54,23 +54,26 @@
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password
                                     :sign-releases false}]]
+  :plugins [[lein-shell "0.5.0"]]
   :pedantic? :warn
   :java-source-paths ["src/com"]
-  :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
+  :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]
+            "test-cluster"  ["shell" "lein" "test"]}
+  :shell {:env {"TEST_CONFIG_FILE" "config.test.cluster.edn"}}
   :aot [ziggurat.kafka-consumer.invalid-return-type-exception]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
                        :pedantic?   :abort}
              :test    {:java-source-paths ["src/com" "test/com"]
-                       :jvm-opts     ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
-                       :dependencies [[com.google.protobuf/protobuf-java "3.5.1"]
-                                      [junit/junit "4.12"]
-                                      [org.hamcrest/hamcrest-core "2.2"]
-                                      [org.apache.kafka/kafka-streams "2.4.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                                      [org.apache.kafka/kafka-clients "2.4.1" :classifier "test"]
-                                      [org.clojure/test.check "0.10.0"]]
-                       :plugins      [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
-                       :repositories [["confluent-repo" "https://packages.confluent.io/maven/"]]}
+                       :jvm-opts          ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
+                       :dependencies      [[com.google.protobuf/protobuf-java "3.5.1"]
+                                           [junit/junit "4.12"]
+                                           [org.hamcrest/hamcrest-core "2.2"]
+                                           [org.apache.kafka/kafka-streams "2.4.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                           [org.apache.kafka/kafka-clients "2.4.1" :classifier "test"]
+                                           [org.clojure/test.check "0.10.0"]]
+                       :plugins           [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
+                       :repositories      [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins [[lein-ancient "0.6.15"]
                                  [lein-cljfmt "0.6.4"]
                                  [lein-cloverage "1.0.13"]
