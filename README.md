@@ -67,10 +67,8 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
     - RabbitMQ on localhost:5672
 
 #### Running tests via a cluster
-- Rename the file config.test.cluster.edn to config.test.edn
-    - Ensure you do not commit this change
-- Run tests 
-    - `make test-cluster`
+- `make test-cluster`
+  - This uses `config.test.cluster.edn` instead of `config.test.edn`
 
 ## Usage
 
