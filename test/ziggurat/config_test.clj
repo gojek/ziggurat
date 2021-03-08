@@ -14,8 +14,6 @@
                                      ziggurat-config]])
   (:import (java.util ArrayList)))
 
-
-
 (deftest config-from-env-test
   (testing "calls clonfig"
     (let [config-values-from-env {:key "val"}]
