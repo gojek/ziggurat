@@ -11,7 +11,7 @@ setup:
 	sleep 10
 	docker exec ziggurat_kafka /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $(topic) --partitions 3 --replication-factor 1 --zookeeper ziggurat_zookeeper
 	docker exec ziggurat_kafka /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $(another_test_topic) --partitions 3 --replication-factor 1 --zookeeper ziggurat_zookeeper
-setup-cluster:
+setup-cluster: cleanup-cluster
 	docker-compose -f docker-compose-cluster.yml down
 	lein deps
 	docker-compose -f docker-compose-cluster.yml up -d
@@ -25,7 +25,9 @@ test: setup
 test-cluster: setup-cluster
 	ZIGGURAT_STREAM_ROUTER_DEFAULT_ORIGIN_TOPIC=$(topic) lein test-cluster
 	docker-compose -f docker-compose-cluster.yml down
-	sudo rm -rf /tmp/ziggurat_kafka_cluster_data
+	cleanup-cluster
+cleanup-cluster:
+	rm -rf /tmp/ziggurat_kafka_cluster_data
 coverage: setup
 	lein code-coverage
 	docker-compose down
