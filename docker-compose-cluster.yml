@@ -22,7 +22,7 @@ services:
       - /tmp/ziggurat_kafka_cluster_data/zookeeper/datalog:/datalog
 
   kafka1:
-    image: confluentinc/cp-kafka:5.5.3
+    image: confluentinc/cp-kafka:5.3.0
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -43,7 +43,7 @@ services:
       - zookeeper
 
   kafka2:
-    image: confluentinc/cp-kafka:5.5.3
+    image: confluentinc/cp-kafka:5.3.0
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -64,7 +64,7 @@ services:
       - zookeeper
 
   kafka3:
-    image: confluentinc/cp-kafka:5.5.3
+    image: confluentinc/cp-kafka:5.3.0
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
