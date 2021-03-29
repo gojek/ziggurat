@@ -57,7 +57,7 @@ jobs:
       - name: Run Tests on Kafka Cluster
         run: ./bin/run_cluster_tests_in_ci.sh
         env:
-          KAFKA_VERSION: 2.3.0
+          CONFLUENT_VERSION: 5.3.0
 
   calculate_coverage:
     runs-on: ubuntu-latest
