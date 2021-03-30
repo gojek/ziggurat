@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.11.0
+- Uses Kafka Streams client 2.5.0
+
 ## 3.10.0
 - Uses Kafka Streams client 2.4.1
 
