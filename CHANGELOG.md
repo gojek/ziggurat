@@ -85,6 +85,7 @@ during disconnection with RabbitMQ.
 ## 3.4.0 - 2020-08-21
 
 - Releases Stable Ziggurat version with support for RabbitMQ clusters
+- Upgraded the Kafka Streams library to 2.3.0
 
 ## 3.3.1-alpha.10 - 2020-08-19
 
@@ -138,7 +139,7 @@ during disconnection with RabbitMQ.
 
 - Makes metrics library configurable, exposes a metrics interface and provides an
   implementation for clj-statsd library.
-- Updates dependency of flatland/protobuf and puts the change behind a alpha-features configuration flag
+- Uses clojusc protobuf in place of flatland protobuf for deserializing proto messages
 - Adds support for all configurations of kafka-producer.
 
 _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entries)_
