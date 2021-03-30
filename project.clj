@@ -1,3 +1,7 @@
+(require 'cemerick.pomegranate.aether)
+(cemerick.pomegranate.aether/register-wagon-factory!
+  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
+
 (defproject tech.gojek/ziggurat "3.10.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
@@ -21,11 +25,11 @@
                  [io.opentracing/opentracing-api "0.33.0"]
                  [io.opentracing/opentracing-mock "0.33.0"]
                  [io.opentracing/opentracing-noop "0.33.0"]
-                 [io.opentracing.contrib/opentracing-kafka-streams "0.1.12" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.apache.kafka/kafka-streams org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
-                 [io.opentracing.contrib/opentracing-kafka-client "0.1.12" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
+                 [io.opentracing.contrib/opentracing-kafka-streams "0.1.15" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.apache.kafka/kafka-streams org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
+                 [io.opentracing.contrib/opentracing-kafka-client "0.1.15" :exclusions [org.lz4/lz4-java com.github.luben/zstd-jni org.slf4j/slf4j-api org.xerial.snappy/snappy-java]]
                  [io.opentracing.contrib/opentracing-rabbitmq-client "0.1.5" :exclusions [com.rabbitmq/amqp-client]]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
-                 [org.apache.kafka/kafka-streams "2.4.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-streams "2.5.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.apache.logging.log4j/log4j-core "2.12.1"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.12.1"]
                  [org.clojure/clojure "1.10.0"]
@@ -69,8 +73,8 @@
                        :dependencies      [[com.google.protobuf/protobuf-java "3.5.1"]
                                            [junit/junit "4.12"]
                                            [org.hamcrest/hamcrest-core "2.2"]
-                                           [org.apache.kafka/kafka-streams "2.4.1" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                                           [org.apache.kafka/kafka-clients "2.4.1" :classifier "test"]
+                                           [org.apache.kafka/kafka-streams "2.5.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                           [org.apache.kafka/kafka-clients "2.5.0" :classifier "test"]
                                            [org.clojure/test.check "0.10.0"]]
                        :plugins           [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
                        :repositories      [["confluent-repo" "https://packages.confluent.io/maven/"]]}

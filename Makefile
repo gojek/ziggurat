@@ -17,9 +17,9 @@ test: setup
 
 setup-cluster:
 	rm -rf /tmp/ziggurat_kafka_cluster_data
-	docker-compose -f docker-compose-cluster.yml down
+	docker-compose -f docker-compose-cluster.yml -p ziggurat down
 	lein deps
-	docker-compose -f docker-compose-cluster.yml up -d
+	docker-compose -f docker-compose-cluster.yml -p ziggurat up -d
 	sleep 30
 # 	Sleeping for 30s to allow the cluster to come up
 	docker exec ziggurat_kafka1_1 kafka-topics --create --topic $(topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat_zookeeper_1

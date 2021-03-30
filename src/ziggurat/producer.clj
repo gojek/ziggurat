@@ -176,7 +176,7 @@
   ([stream-config-key topic key value]
    (send stream-config-key topic nil key value))
 
-  ([stream-config-key topic partition key value]
+  ([stream-config-key topic partition key   value]
    (if (some? (get kafka-producers stream-config-key))
      (let [producer-record (ProducerRecord. topic partition key value)]
        (.send (stream-config-key kafka-producers) producer-record))
