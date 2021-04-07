@@ -1,6 +1,7 @@
 (ns ziggurat.kafka-delay
   (:require [ziggurat.metrics :as metrics]
-            [ziggurat.util.time :refer :all]))
+            [ziggurat.util.time :refer :all]
+            [clojure.tools.logging :as log]))
 
 (defn calculate-and-report-kafka-delay
   ([metric-namespaces record-timestamp]
@@ -10,4 +11,5 @@
          delay             (- now-millis record-timestamp)
          default-namespace (last metric-namespaces)
          multi-namespaces  [metric-namespaces [default-namespace]]]
+     (log/info "delay--> " delay)
      (metrics/multi-ns-report-histogram multi-namespaces delay additional-tags))))

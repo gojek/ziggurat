@@ -57,8 +57,11 @@
    (get-mapped-fn message-received-count message))
   ([message-received-count expected-message]
    (fn [message-from-kafka]
-     (when (= expected-message message-from-kafka)
-       (swap! message-received-count inc))
+     (println "expected message>>>>>>>" (type expected-message) ">>>" expected-message)
+     (println "message from kafka>>>>>>>" (type message-from-kafka) ">>>" message-from-kafka)
+     (if (= expected-message message-from-kafka)
+       (swap! message-received-count inc)
+       (println "NOOOOOOOOOTT EQUAL!!!!!"))
      :success)))
 
 (defn- poll-to-check-if-running

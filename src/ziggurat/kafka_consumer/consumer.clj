@@ -22,7 +22,9 @@
            commit-interval-ms
            enable-auto-commit
            key-deserializer-class-config
-           value-deserializer-class-config]}]
+           value-deserializer-class-config]
+    :as all}]
+  (println ">>>>>>>>>>>>>>>>>>>>" all)
   (doto (Properties.)
     (.putAll {ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG        bootstrap-servers
               ConsumerConfig/GROUP_ID_CONFIG                 consumer-group-id

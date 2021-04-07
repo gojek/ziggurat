@@ -146,17 +146,17 @@
         delay-metric-namespace "message-received-delay-histogram"
         metric-namespaces      [service-name topic-entity-name delay-metric-namespace]
         additional-tags        {:topic_name topic-entity-name}]
-    (.transform stream-builder (timestamp-transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (timestamp-transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array String []))))
 
 (defn- stream-joins-delay-metric [topic topic-entity-name oldest-processed-message-in-s stream-builder]
   (let [service-name           (:app-name (ziggurat-config))
         delay-metric-namespace "stream-joins-message-received-delay-histogram"
         metric-namespaces      [service-name topic-entity-name delay-metric-namespace]
         additional-tags        {:topic-name topic-entity-name :input-topic topic :app-name service-name}]
-    (.transform stream-builder (timestamp-transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array [(.name (store-supplier-builder))]))))
+    (.transform stream-builder (timestamp-transformer-supplier metric-namespaces oldest-processed-message-in-s additional-tags) (into-array String []))))
 
 (defn- header-transform-values [stream-builder]
-  (.transformValues stream-builder (header-transformer-supplier) (into-array [(.name (store-supplier-builder))])))
+  (.transformValues stream-builder (header-transformer-supplier) (into-array String [])))
 
 (declare stream)
 
@@ -237,7 +237,7 @@
               "Its contract can change in the future releases of Ziggurat."
               "Please refer to the README doc for more information.")
     (let [builder    (StreamsBuilder.)
-          _          (.addStateStore builder (store-supplier-builder))
+          ;; _          (.addStateStore builder (store-supplier-builder)) ;; this right here...
           stream-map (map (fn [[topic-key topic-value] [_ cfg]]
                             (let [topic-name (:name topic-value)]
                               {:stream (.stream builder topic-name) :cfg cfg :topic-name topic-name :topic-key topic-key})) input-topics (assoc join-cfg :end nil))
@@ -251,7 +251,7 @@
   (let [builder           (StreamsBuilder.)
         topic-entity-name (name topic-entity)
         topic-pattern     (Pattern/compile origin-topic)]
-    (.addStateStore builder (store-supplier-builder))
+    ;; (.addStateStore builder (store-supplier-builder))
     (->> (.stream builder topic-pattern)
          (timestamp-transform-values topic-entity-name oldest-processed-message-in-s)
          (header-transform-values)
