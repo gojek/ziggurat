@@ -69,6 +69,7 @@
                                                    :poll-timeout-ms-config            [1000 :int]
                                                    :thread-count                      [2 :int]
                                                    :session-timeout-ms-config         [60000 :int]
+                                                   :default-api-timeout-ms-config     [60000 :int]
                                                    :key-deserializer-class-config     "org.apache.kafka.common.serialization.ByteArrayDeserializer"
                                                    :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}
                                       :consumer-2 {:consumer-group-id                 "test-consumer-2002"
@@ -78,6 +79,7 @@
                                                    :poll-timeout-ms-config            [1000 :int]
                                                    :thread-count                      [4 :int]
                                                    :session-timeout-ms-config         [60000 :int]
+                                                   :default-api-timeout-ms-config     [60000 :int]
                                                    :key-deserializer-class-config     "org.apache.kafka.common.serialization.ByteArrayDeserializer"
                                                    :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}}
             :tracer               {:enabled         [true :bool]

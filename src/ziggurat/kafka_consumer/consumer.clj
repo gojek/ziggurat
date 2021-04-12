@@ -11,6 +11,7 @@
    :max-poll-records 500
    :session-timeout-ms-config 60000
    :enable-auto-commit true
+   :default-api-timeout-ms-config 60000
    :key-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"
    :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"})
 
@@ -22,7 +23,8 @@
            commit-interval-ms
            enable-auto-commit
            key-deserializer-class-config
-           value-deserializer-class-config]}]
+           value-deserializer-class-config
+           default-api-timeout-ms-config]}]
   (doto (Properties.)
     (.putAll {ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG        bootstrap-servers
               ConsumerConfig/GROUP_ID_CONFIG                 consumer-group-id
@@ -31,7 +33,8 @@
               ConsumerConfig/ENABLE_AUTO_COMMIT_CONFIG       enable-auto-commit
               ConsumerConfig/AUTO_COMMIT_INTERVAL_MS_CONFIG  (int commit-interval-ms)
               ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG   key-deserializer-class-config
-              ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG value-deserializer-class-config})))
+              ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG value-deserializer-class-config
+              ConsumerConfig/DEFAULT_API_TIMEOUT_MS_CONFIG   (int default-api-timeout-ms-config)})))
 (defn create-consumer
   [topic-entity consumer-group-config]
   (try
