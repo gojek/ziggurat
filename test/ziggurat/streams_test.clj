@@ -215,7 +215,7 @@
       (start-stream :invalid-topic-entity)
       (is (= @is-close-called 0)))))
 
-(deftest start-stream-joins-test
+(deftest start-stream-joins-test-with-inner-join
   (testing "stream joins using inner join"
     (let [orig-config (ziggurat-config)]
       (with-redefs [config/ziggurat-config (fn [] (-> orig-config
@@ -243,7 +243,9 @@
                                                               (MockTime.))
           (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
-          (is (= times @message-received-count))))))
+          (is (= times @message-received-count)))))))
+
+(deftest start-stream-joins-test-with-left-join
   (testing "stream joins using left join"
     (let [orig-config (ziggurat-config)]
       (with-redefs [config/ziggurat-config (fn [] (-> orig-config
@@ -271,7 +273,9 @@
                                                               (MockTime.))
           (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
-          (is (= times @message-received-count))))))
+          (is (= times @message-received-count)))))))
+
+(deftest start-stream-joins-test-with-outer-join
   (testing "stream joins using outer join"
     (let [orig-config (ziggurat-config)]
       (with-redefs [config/ziggurat-config (fn [] (-> orig-config
@@ -299,7 +303,9 @@
                                                               (MockTime.))
           (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
-          (is (= times @message-received-count))))))
+          (is (= times @message-received-count)))))))
+
+(deftest start-stream-joins-test-alpha-features-test
   (testing "stream-joins should not start if :alpha-features for stream-joins is `false`"
     (let [original-config (ziggurat-config)]
       (with-redefs [ziggurat-config (fn [] (-> original-config
