@@ -1,18 +1,26 @@
 (ns ziggurat.config-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing]]
             [clonfig.core :as clonfig]
             [mount.core :as mount]
-            [ziggurat.fixtures :as f]
             [ziggurat.config :refer [-get
                                      -getIn
+                                     build-properties
+                                     build-consumer-config-properties
+                                     build-streams-config-properties
                                      channel-retry-config
                                      config config-file
                                      config-from-env
+                                     consumer-config-mapping-table
+                                     producer-config-mapping-table
+                                     streams-config-mapping-table
                                      default-config get-in-config
                                      rabbitmq-config
+                                     set-property
                                      statsd-config
-                                     ziggurat-config]])
-  (:import (java.util ArrayList)))
+                                     ziggurat-config]]
+            [ziggurat.fixtures :as f])
+  (:import (java.util ArrayList Properties)))
 
 (deftest config-from-env-test
   (testing "calls clonfig"
@@ -157,3 +165,103 @@
         (mount/start #'config)
         (is (instance? java.util.HashMap (-getIn config-keys-list)))
         (mount/stop)))))
+
+(deftest test-build-properties
+  (let [config-mapping-table (merge consumer-config-mapping-table
+                                    producer-config-mapping-table
+                                    streams-config-mapping-table)
+        set-all-property (partial set-property config-mapping-table)
+        build-all-config-properties (partial build-properties set-all-property)]
+    (testing "all valid kafka configs"
+      (let [config-map         {:auto-offset-reset  :latest
+                                :replication-factor 2
+                                :group-id           "foo"
+                                :enable-idempotence true}
+            props              (build-all-config-properties config-map)
+            auto-offset-reset  (.getProperty props "auto.offset.reset")
+            group-id           (.getProperty props "group.id")
+            enable-idempotence (.getProperty props "enable.idempotence")
+            replication-factor (.getProperty props "replication.factor")]
+        (is (= auto-offset-reset "latest"))
+        (is (= replication-factor "2"))
+        (is (= enable-idempotence "true"))
+        (is (= group-id "foo"))))
+    (testing "valid kafka consumer configs converts commit-interval-ms to auto-commit-interval-ms"
+      (let [config-map              {:commit-interval-ms 5000}
+            props                   (build-consumer-config-properties config-map)
+            auto-commit-interval-ms (.getProperty props "auto.commit.interval.ms")]
+        (is (= auto-commit-interval-ms "5000"))))
+    (testing "valid kafka streams configs does not convert commit-interval-ms to auto-commit-interval-ms"
+      (let [config-map              {:commit-interval-ms 5000}
+            props                   (build-streams-config-properties config-map)
+            auto-commit-interval-ms (.getProperty props "auto.commit.interval.ms" "NOT FOUND")
+            commit-interval-ms      (.getProperty props "commit.interval.ms")]
+        (is (= auto-commit-interval-ms "NOT FOUND"))
+        (is (= commit-interval-ms "5000"))))
+    (testing "mapping table for backward compatibility"
+      (let [config-map             {:auto-offset-reset-config           "latest"
+                                    :changelog-topic-replication-factor 2
+                                    :commit-interval-ms                 20000
+                                    :consumer-group-id                  "foo"
+                                    :default-api-timeout-ms-config      3000
+                                    :default-key-serde                  "key-serde"
+                                    :default-value-serde                "value-serde"
+                                    :key-deserializer-class-config      "key-deserializer"
+                                    :key-serializer-class               "key-serializer"
+                                    :retries-config                     5
+                                    :session-timeout-ms-config          4000
+                                    :stream-threads-count               4
+                                    :value-deserializer-class-config    "value-deserializer"
+                                    :value-serializer-class             "value-serializer"}
+            props                   (build-all-config-properties config-map)
+            auto-offset-reset       (.getProperty props "auto.offset.reset")
+            auto-commit-interval-ms (.getProperty props "auto.commit.interval.ms")
+            group-id                (.getProperty props "group.id")
+            replication-factor      (.getProperty props "replication.factor")
+            default-api-timeout-ms  (.getProperty props "default.api.timeout.ms")
+            key-deserializer        (.getProperty props "key.deserializer")
+            key-serializer          (.getProperty props "key.serializer")
+            session-timeout-ms      (.getProperty props "session.timeout.ms")
+            num-stream-threads      (.getProperty props "num.stream.threads")
+            retries                 (.getProperty props "retries")
+            value-deserializer      (.getProperty props "value.deserializer")
+            value-serializer        (.getProperty props "value.serializer")]
+        (is (= auto-offset-reset "latest"))
+        (is (= auto-commit-interval-ms "20000"))
+        (is (= replication-factor "2"))
+        (is (= default-api-timeout-ms "3000"))
+        (is (= key-deserializer "key-deserializer"))
+        (is (= key-serializer "key-serializer"))
+        (is (= session-timeout-ms "4000"))
+        (is (= num-stream-threads "4"))
+        (is (= retries "5"))
+        (is (= value-deserializer "value-deserializer"))
+        (is (= value-serializer "value-serializer"))
+        (is (= group-id "foo"))))
+    (testing "non kafka config keys should not be in Properties"
+      (let [config-map {:consumer-type                 :joins
+                        :producer                      {:foo "bar"}
+                        :channels                      {:bar "foo"}
+                        :oldest-processed-message-in-s 10
+                        :origin-topic                  "origin"
+                        :input-topics                  [:foo :bar]
+                        :join-cfg                      {:foo "foo" :bar "bar"}
+                        :thread-count                  7
+                        :poll-timeout-ms-config        10000}
+            props      (build-all-config-properties config-map)]
+        (doall
+         (map (fn [[k _]]
+                (let [string-key (str/replace (name k) #"-" ".")
+                      not-found  "NOT FOUND!"
+                      v          (.getProperty props string-key not-found)]
+                  (is (= v not-found))))
+              config-map))))))
+
+(deftest test-set-property
+  (testing "set-property with empty (with spaces) value"
+    (let [properties (Properties.)
+          key        :consumer-group-id
+          value      "     "
+          out-p      (set-property consumer-config-mapping-table properties key value)
+          not-found  "NOT FOUND!"]
+      (is (= (.getProperty out-p "group.id" not-found) not-found)))))
