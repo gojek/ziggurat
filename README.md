@@ -466,6 +466,8 @@ Ziggurat Config | Default Value | Description | Mandatory?
 
 ## Configuration
 
+As of Ziggurat version 3.13.0, all the official Kafka configs Kafka configurations for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html), [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html) and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html) are supported. 
+
 All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.
 
 ```clojure

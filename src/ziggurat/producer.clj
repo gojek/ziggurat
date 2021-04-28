@@ -37,7 +37,7 @@
    - key.serializer
    - value.serializer
    - max.in.flight.requests.per.connection
-   - enable.idempotencecd
+   - enable.idempotence
 
    Please see [producer configs](http://kafka.apache.org/documentation.html#producerconfigs)
    for a complete list of all producer configs available in Kafka."
