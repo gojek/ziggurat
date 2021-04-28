@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.12.0
+- Uses Kafka Streams client 2.7.0
+- Introduces default.api.timeout.ms for Kafka Consumer API
+
 ## 3.11.0
 - Uses Kafka Streams client 2.5.0
 
