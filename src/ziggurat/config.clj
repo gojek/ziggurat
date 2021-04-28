@@ -1,9 +1,11 @@
 (ns ziggurat.config
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [clonfig.core :as clonfig]
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
+  (:import (java.util Properties))
   (:gen-class
    :methods [^{:static true} [get [String] Object]
              ^{:static true} [getIn [java.lang.Iterable] Object]]
@@ -81,7 +83,7 @@
 
 (defn statsd-config []
   (let [cfg (ziggurat-config)]
-    (get cfg :statsd (:datadog cfg))))                      ;; TODO: remove datadog in the future
+    (get cfg :statsd (:datadog cfg)))) ;; TODO: remove datadog in the future
 
 (defn get-in-config
   ([ks]
@@ -108,3 +110,74 @@
 (defn -get [^String key]
   (let [config-vals (get config (keyword key))]
     (java-response config-vals)))
+
+(def consumer-config-mapping-table
+  {:auto-offset-reset-config        :auto-offset-reset
+   :commit-interval-ms              :auto-commit-interval-ms
+   :consumer-group-id               :group-id
+   :default-api-timeout-ms-config   :default-api-timeout-ms
+   :key-deserializer-class-config   :key-deserializer
+   :session-timeout-ms-config       :session-timeout-ms
+   :value-deserializer-class-config :value-deserializer})
+
+(def producer-config-mapping-table
+  {:key-serializer-class   :key-serializer
+   :retries-config         :retries
+   :value-serializer-class :value-serializer})
+
+(def streams-config-mapping-table
+  {:auto-offset-reset-config           :auto-offset-reset
+   :default-api-timeout-ms-config      :default-api-timeout-ms
+   :changelog-topic-replication-factor :replication-factor
+   :session-timeout-ms-config          :session-timeout-ms
+   :stream-threads-count               :num-stream-threads})
+
+(def ^:private non-kafka-config-keys
+  [:channels
+   :consumer-type
+   :input-topics
+   :join-cfg
+   :oldest-processed-message-in-s
+   :origin-topic
+   :poll-timeout-ms-config
+   :producer
+   :thread-count])
+
+(defn- to-list
+  [s]
+  (if (empty? s)
+    (list)
+    (list s)))
+
+(defn- to-string-key
+  [mapping-table k]
+  (-> (get mapping-table k k)
+      (name)
+      (str/replace #"-" ".")))
+
+(defn- normalize-value
+  [v]
+  (str/trim
+   (cond
+     (keyword? v) (name v)
+     :else        (str v))))
+
+(defn set-property
+  [mapping-table p k v]
+  (when-not (some #(= k %) non-kafka-config-keys)
+    (let [string-key (to-list (to-string-key mapping-table k))
+          norm-value (to-list (normalize-value v))]
+      (doseq [sk string-key
+              nv norm-value]
+        (.setProperty p sk nv))))
+  p)
+
+(defn build-properties
+  [set-property-fn m]
+  (reduce-kv set-property-fn (Properties.) m))
+
+(def build-consumer-config-properties (partial build-properties (partial set-property consumer-config-mapping-table)))
+
+(def build-producer-config-properties (partial build-properties (partial set-property producer-config-mapping-table)))
+
+(def build-streams-config-properties (partial build-properties (partial set-property streams-config-mapping-table)))

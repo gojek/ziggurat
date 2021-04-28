@@ -1,6 +1,9 @@
-# Change Log
+# Changelog
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
+
+## 3.13.0
+- Supports all of the official Kafka configurations for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html), [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html) and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html)
 
 ## 3.12.0
 - Uses Kafka Streams client 2.7.0
