@@ -26,11 +26,11 @@
   (testing "calls clonfig"
     (let [config-values-from-env {:key "val"}]
       (with-redefs [clonfig/read-config (fn [_] config-values-from-env)]
-        (is (= config-values-from-env (config-from-env (f/get-config-file-name))))))))
+        (is (= config-values-from-env (config-from-env f/test-config-file-name)))))))
 
 (deftest config-test
   (testing "returns merged config from env variables and default values with env variables taking higher precedence"
-    (let [config-filename        (f/get-config-file-name)
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (-> (config-from-env config-filename)
                                      (update-in [:ziggurat] dissoc :nrepl-server))]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
@@ -43,7 +43,7 @@
 
   (testing "returns default interpolated rabbitmq config when not present in env variables"
     (let [app-name                    "application_name"
-          config-filename             (f/get-config-file-name)
+          config-filename             f/test-config-file-name
           config-values-from-env      (-> (config-from-env config-filename)
                                           (update-in [:ziggurat :rabbit-mq] dissoc :delay)
                                           (assoc-in [:ziggurat :app-name] app-name))
@@ -59,7 +59,7 @@
 
 (deftest ziggurat-config-test
   (testing "returns ziggurat config"
-    (let [config-filename        (f/get-config-file-name)
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -69,7 +69,7 @@
 
 (deftest rabbitmq-config-test
   (testing "returns rabbitmq config"
-    (let [config-filename        (f/get-config-file-name)
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -78,34 +78,18 @@
         (mount/stop)))))
 
 (deftest statsd-config-test
-  (testing "returns statsd config using the :statsd key or :datadog key"
-    (let [config-filename        (f/get-config-file-name) ;; inside config.test.edn, both :datadog and :statsd keys are present
-          config-values-from-env (config-from-env config-filename)]
-      (with-redefs [config-from-env (fn [_] config-values-from-env)
-                    config-file     config-filename]
-        (mount/start #'config)
-        (is (= (:statsd (:ziggurat config-values-from-env)) (statsd-config)))
-        (mount/stop))))
   (testing "returns statsd config using the :statsd key"
-    (let [config-filename        "config.test.statsd.only.edn"
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
         (mount/start #'config)
         (is (= (:statsd (:ziggurat config-values-from-env)) (statsd-config)))
-        (mount/stop))))
-  (testing "returns statsd config using the :datadog key" ;; TODO: remove this test in the future since :datadog key will not be used
-    (let [config-filename        "config.test.datadog.only.edn"
-          config-values-from-env (config-from-env config-filename)]
-      (with-redefs [config-from-env (fn [_] config-values-from-env)
-                    config-file     config-filename]
-        (mount/start #'config)
-        (is (= (:datadog (:ziggurat config-values-from-env)) (statsd-config)))
         (mount/stop)))))
 
 (deftest get-in-config-test
   (testing "returns config for key passed"
-    (let [config-filename        (f/get-config-file-name)
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (config-from-env config-filename)]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
                     config-file     config-filename]
@@ -113,7 +97,7 @@
         (is (= (-> config-values-from-env :ziggurat :http-server :port) (get-in-config [:http-server :port])))
         (mount/stop))))
   (testing "returns config for key passed with default"
-    (let [config-filename        (f/get-config-file-name)
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (config-from-env config-filename)
           default                "test"]
       (with-redefs [config-from-env (fn [_] config-values-from-env)
@@ -124,7 +108,7 @@
 
 (deftest channel-retry-config-test
   (testing "returns channel retry config"
-    (let [config-filename        (f/get-config-file-name)
+    (let [config-filename        f/test-config-file-name
           config-values-from-env (config-from-env config-filename)
           topic-entity           :default
           channel                :channel-1]

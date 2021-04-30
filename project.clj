@@ -61,9 +61,7 @@
   :plugins [[lein-shell "0.5.0"]]
   :pedantic? :warn
   :java-source-paths ["src/com"]
-  :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]
-            "test-cluster"  ["shell" "lein" "test"]}
-  :shell {:env {"TEST_CONFIG_FILE" "config.test.cluster.edn"}}
+  :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
   :aot [ziggurat.kafka-consumer.invalid-return-type-exception]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}

@@ -1,11 +1,8 @@
 {:ziggurat {:app-name             "application_name"
             :env                  [:dev :keyword]
             :nrepl-server         {:port [7011 :int]}
-            :datadog              {:host    "localhost"
-                                   :port    [8126 :int]
-                                   :enabled [false :bool]}
             :statsd               {:host    "localhost"
-                                   :port    [8125 :int]
+                                   :port    [8126 :int]
                                    :enabled [false :bool]}
             :metrics              {:constructor "ziggurat.dropwizard-metrics-wrapper/->DropwizardMetrics"}
 
@@ -15,7 +12,7 @@
                                    :worker-count              [10 :int]
                                    :queue-size                [10 :int]
                                    :thread-termination-wait-s [1 :int]}
-            :rabbit-mq-connection {:host            "localhost"
+            :rabbit-mq-connection {:host            "127.0.0.1"
                                    :port            [5672 :int]
                                    :username        "guest"
                                    :password        "guest"
@@ -30,8 +27,8 @@
                                                  :exchange-name "application_name_instant_exchange_test"}
                                    :dead-letter {:queue-name    "application_name_dead_letter_queue_test"
                                                  :exchange-name "application_name_dead_letter_exchange_test"}}
-            :retry                {:count   [5 :int]
-                                   :type    [:linear :keyword]
+            :retry                {:type    [:linear :keyword]
+                                   :count   [5 :int]
                                    :enabled [true :bool]}
             :http-server          {:middlewares  {:swagger {:enabled false}}
                                    :port         [8010 :int]

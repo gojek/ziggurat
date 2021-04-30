@@ -1,3 +1,0 @@
-{:ziggurat {:statsd {:host    "localhost"
-                     :port    [8126 :int]
-                     :enabled [true :bool]}}}     
