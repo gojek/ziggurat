@@ -14,7 +14,7 @@
 (def config-file "config.edn")
 
 (def default-config {:ziggurat {:nrepl-server         {:port 70171}
-                                :datadog              {:port    8125 ;; TODO: :datadog key will be removed in the future, will be replaced by the :statsd key
+                                :statsd               {:port    8125
                                                        :enabled false}
                                 :sentry               {:enabled                   false
                                                        :worker-count              10
@@ -83,7 +83,7 @@
 
 (defn statsd-config []
   (let [cfg (ziggurat-config)]
-    (get cfg :statsd (:datadog cfg)))) ;; TODO: remove datadog in the future
+    (get cfg :statsd)))
 
 (defn get-in-config
   ([ks]

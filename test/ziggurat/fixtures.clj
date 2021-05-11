@@ -1,35 +1,50 @@
 (ns ziggurat.fixtures
-  (:require [clojure.test :refer :all]
-            [clojure.tools.logging :as log]
-            [clojure.stacktrace :as st]
-            [mount.core :as mount]
-            [ziggurat.config :as config]
-            [ziggurat.messaging.util :as util]
-            [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.server :refer [server]]
-            [ziggurat.messaging.producer :as pr]
-            [ziggurat.producer :as producer]
+  (:require [clojure.tools.logging :as log]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
             [langohr.queue :as lq]
-            [ziggurat.tracer :as tracer]
-            [ziggurat.kafka-consumer.executor-service :refer [thread-pool]])
-  (:import (java.util Properties)
-           (org.apache.kafka.clients.producer ProducerConfig)
+            [mount.core :as mount]
+            [ziggurat.config :as config]
+            [ziggurat.kafka-consumer.executor-service :refer [thread-pool]]
+            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.producer :as pr]
+            [ziggurat.messaging.util :as util]
+            [ziggurat.metrics :as metrics]
+            [ziggurat.producer :as producer]
+            [ziggurat.server :refer [server]]
+            [ziggurat.tracer :as tracer])
+  (:import (io.opentracing.mock MockTracer)
+           (java.util Properties)
            (org.apache.kafka.clients.consumer ConsumerConfig)
-           (io.opentracing.mock MockTracer))
+           (org.apache.kafka.clients.producer ProducerConfig))
   (:gen-class
-   :name tech.gojek.ziggurat.internal.test.Fixtures
    :methods [^{:static true} [mountConfig [] void]
              ^{:static true} [mountProducer [] void]
-             ^{:static true} [unmountAll [] void]]))
+             ^{:static true} [unmountAll [] void]]
+   :name tech.gojek.ziggurat.internal.test.Fixtures))
 
-(defn get-config-file-name []
-  (or (System/getenv "TEST_CONFIG_FILE") "config.test.edn"))
+(def test-config-file-name "config.test.edn")
+
+(def ^:private bootstrap-servers
+  (if (= (System/getenv "TESTING_TYPE") "local")
+    "localhost:9092"
+    "localhost:9091,localhost:9092,localhost:9093"))
+
+(defn- get-default-or-cluster-config
+  [m]
+  (let [keys [[:ziggurat :stream-router :default :bootstrap-servers]
+              [:ziggurat :stream-router :using-string-serde :bootstrap-servers]
+              [:ziggurat :batch-routes :consumer-1 :bootstrap-servers]
+              [:ziggurat :batch-routes :consumer-2 :bootstrap-servers]
+              [:ziggurat :stream-router :default :producer :bootstrap-servers]]]
+    (reduce (fn [s k]
+              (assoc-in s k bootstrap-servers))
+            m
+            keys)))
 
 (defn mount-config []
   (-> (mount/only [#'config/config])
-      (mount/swap {#'config/config (config/config-from-env (get-config-file-name))})
+      (mount/swap {#'config/config (get-default-or-cluster-config (config/config-from-env test-config-file-name))})
       (mount/start)))
 
 (defn mount-only-config [f]
@@ -45,9 +60,9 @@
       (mount/stop)))
 
 (defn mount-metrics [f]
-  (mount/start (mount/only [#'ziggurat.metrics/statsd-reporter]))
+  (mount/start (mount/only [#'metrics/statsd-reporter]))
   (f)
-  (mount/stop #'ziggurat.metrics/statsd-reporter))
+  (mount/stop #'metrics/statsd-reporter))
 
 (defn mount-tracer []
   (with-redefs [tracer/create-tracer (fn [] (MockTracer.))]
@@ -144,24 +159,23 @@
 (def ^:dynamic *producer-properties* nil)
 
 (defn mount-producer-with-config-and-tracer [f]
-  (do
-    (mount-config)
-    (mount-tracer)
-    (mount-producer)
-    (binding [*bootstrap-servers* (get-in (config/ziggurat-config) [:stream-router :default :bootstrap-servers])]
-      (binding [*consumer-properties* (doto (Properties.)
-                                        (.put ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG, *bootstrap-servers*)
-                                        (.put ConsumerConfig/GROUP_ID_CONFIG, "ziggurat-consumer")
-                                        (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG, "earliest")
-                                        (.put ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
-                                        (.put ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer"))
-                *producer-properties* (doto (Properties.)
-                                        (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG *bootstrap-servers*)
-                                        (.put ProducerConfig/ACKS_CONFIG "all")
-                                        (.put ProducerConfig/RETRIES_CONFIG (int 0))
-                                        (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer")
-                                        (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer"))]
-        (f))))
+  (mount-config)
+  (mount-tracer)
+  (mount-producer)
+  (binding [*bootstrap-servers* (get-in (config/ziggurat-config) [:stream-router :default :bootstrap-servers])]
+    (binding [*consumer-properties* (doto (Properties.)
+                                      (.put ConsumerConfig/BOOTSTRAP_SERVERS_CONFIG, *bootstrap-servers*)
+                                      (.put ConsumerConfig/GROUP_ID_CONFIG, "ziggurat-consumer")
+                                      (.put ConsumerConfig/AUTO_OFFSET_RESET_CONFIG, "earliest")
+                                      (.put ConsumerConfig/KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer")
+                                      (.put ConsumerConfig/VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer"))
+              *producer-properties* (doto (Properties.)
+                                      (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG *bootstrap-servers*)
+                                      (.put ProducerConfig/ACKS_CONFIG "all")
+                                      (.put ProducerConfig/RETRIES_CONFIG (int 0))
+                                      (.put ProducerConfig/KEY_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer")
+                                      (.put ProducerConfig/VALUE_SERIALIZER_CLASS_CONFIG "org.apache.kafka.common.serialization.StringSerializer"))]
+      (f)))
   (mount/stop))
 
 (defn unmount-all []
