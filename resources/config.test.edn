@@ -5,7 +5,6 @@
                                    :port    [8126 :int]
                                    :enabled [false :bool]}
             :metrics              {:constructor "ziggurat.dropwizard-metrics-wrapper/->DropwizardMetrics"}
-
             :alpha-features       {}
             :sentry               {:enabled                   [false :bool]
                                    :dsn                       "dummy"
@@ -43,6 +42,7 @@
                                                                                                          :retry        {:type    [:linear :keyword]
                                                                                                                         :count   [5 :int]
                                                                                                                         :enabled [true :bool]}}}
+                                                        :stream-thread-exception-response   :shutdown-client
                                                         :producer                           {:bootstrap-servers                     "localhost:9092"
                                                                                              :acks                                  "all"
                                                                                              :retries                               5
@@ -62,28 +62,27 @@
                                                         :channels                    {:channel-1 {:worker-count [10 :int]
                                                                                                   :retry        {:count   [5 :int]
                                                                                                                  :enabled [true :bool]}}}}}
-            :batch-routes          {:consumer-1 {:consumer-group-id                 "test-consumer-1002"
-                                                 :bootstrap-servers                 "localhost:9092"
-                                                 :max-poll-records                  [1000 :int]
-                                                 :origin-topic                      "topic"
-                                                 :commit-interval-ms                [5000 :int]
-                                                 :poll-timeout-ms-config            [1000 :int]
-                                                 :thread-count                      [2 :int]
-                                                 :session-timeout-ms-config         [60000 :int]
-                                                 :default-api-timeout-ms-config     [60000 :int]
-                                                 :key-deserializer-class-config     "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-                                                 :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}
-                                    :consumer-2 {:consumer-group-id                 "test-consumer-2002"
-                                                 :bootstrap-servers                 "localhost:9092"
-                                                 :max-poll-records                  [2000 :int]
-                                                 :origin-topic                      "topic"
-                                                 :poll-timeout-ms-config            [1000 :int]
-                                                 :thread-count                      [4 :int]
-                                                 :session-timeout-ms-config         [60000 :int]
-                                                 :default-api-timeout-ms-config     [60000 :int]
-                                                 :key-deserializer-class-config     "org.apache.kafka.common.serialization.ByteArrayDeserializer"
-                                                 :value-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"}}
+            :batch-routes         {:consumer-1 {:consumer-group-id               "test-consumer-1002"
+                                                :bootstrap-servers               "localhost:9092"
+                                                :max-poll-records                [1000 :int]
+                                                :origin-topic                    "topic"
+                                                :commit-interval-ms              [5000 :int]
+                                                :poll-timeout-ms-config          [1000 :int]
+                                                :thread-count                    [2 :int]
+                                                :session-timeout-ms-config       [60000 :int]
+                                                :default-api-timeout-ms-config   [60000 :int]
+                                                :key-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+                                                :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"}
+                                   :consumer-2 {:consumer-group-id               "test-consumer-2002"
+                                                :bootstrap-servers               "localhost:9092"
+                                                :max-poll-records                [2000 :int]
+                                                :origin-topic                    "topic"
+                                                :poll-timeout-ms-config          [1000 :int]
+                                                :thread-count                    [4 :int]
+                                                :session-timeout-ms-config       [60000 :int]
+                                                :default-api-timeout-ms-config   [60000 :int]
+                                                :key-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+                                                :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"}}
             :tracer               {:enabled         [true :bool]
                                    :custom-provider ""}
             :new-relic            {:report-errors false}}}
-

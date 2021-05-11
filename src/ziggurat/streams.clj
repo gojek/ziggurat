@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [ziggurat.channel :as chl]
-            [ziggurat.config :refer [get-in-config ziggurat-config build-streams-config-properties]]
+            [ziggurat.config :refer [build-streams-config-properties get-in-config ziggurat-config]]
             [ziggurat.header-transformer :as header-transformer]
             [ziggurat.mapper :refer [mapper-func]]
             [ziggurat.message-payload :refer [->MessagePayload]]
@@ -18,6 +18,7 @@
            [java.util.regex Pattern]
            [org.apache.kafka.common.errors TimeoutException]
            [org.apache.kafka.streams KafkaStreams KafkaStreams$State StreamsConfig StreamsBuilder Topology]
+           [org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse]
            [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerSupplier]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]))
 
@@ -215,14 +216,14 @@
     :stream-joins (assoc config :consumer-type (:consumer-type config))
     (assoc config :consumer-type :default)))
 
-(defn- handle-uncaught-exception
-  [^Thread thread ^Throwable error]
-  (log/infof "Ziggurat Uncaught Handler Invoked for Thread: [%s] because of this exception: [%s]"
-             (.getName thread) (.getMessage error)))
-
-(defn- uncaught-exception-handling-enabled? []
-  (or (:enable-streams-uncaught-exception-handling (ziggurat-config))
-      false))
+(defn handle-uncaught-exception
+  [stream-thread-exception-response ^Throwable error]
+  (log/infof "Ziggurat Streams Uncaught Exception Handler Invoked: [%s]"
+             (.getMessage error))
+  (case stream-thread-exception-response
+    :shutdown-application StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/SHUTDOWN_APPLICATION
+    :replace-thread       StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD
+    StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/SHUTDOWN_CLIENT))
 
 (defn start-streams
   ([stream-routes]
@@ -238,14 +239,15 @@
                                         (merge-consumer-type-config)
                                         (umap/deep-merge default-config-for-stream))
                    stream           (start-stream* topic-handler-fn stream-config topic-entity channels)]
-               (when-not (nil? stream)
-                 (when (uncaught-exception-handling-enabled?)
+               (if-not (nil? stream)
+                 (do
                    (.setUncaughtExceptionHandler stream
-                                                 (reify Thread$UncaughtExceptionHandler
-                                                   (^void uncaughtException [_ ^Thread thread, ^Throwable error]
-                                                     (handle-uncaught-exception thread error topic-entity)))))
-                 (.start stream)
-                 (assoc streams topic-entity stream))))
+                                                 (reify StreamsUncaughtExceptionHandler
+                                                   (^StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse handle [_ ^Throwable error]
+                                                     (handle-uncaught-exception (get stream-config :stream-thread-exception-response :shutdown-client) error))))
+                   (.start stream)
+                   (assoc streams topic-entity stream))
+                 streams)))
            {}
            stream-routes)))
 

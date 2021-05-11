@@ -479,6 +479,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                           :origin-topic                   "kafka-topic-*"
                                                           :oldest-processed-message-in-s  [604800 :int]
                                                           :changelog-topic-replication-factor [3 :int]
+                                                          :stream-thread-exception-response [:shutdown-client :keyword]
                                                           :producer   {:bootstrap-servers                     "localhost:9092"
                                                                        :acks                                  "all"
                                                                        :retries-config                        5
@@ -486,7 +487,6 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                                        :enable-idempotence                    false
                                                                        :value-serializer                      "org.apache.kafka.common.serialization.StringSerializer"
                                                                        :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}}
-            :enable-streams-uncaught-exception-handling [true :bool]
             :default-api-timeout-ms-config [600000 :int]
             :statsd               {:host    "localhost"
                                    :port    [8125 :int]
@@ -523,7 +523,6 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 - app-name - Refers to the name of the application. Used to namespace queues and metrics.
 - nrepl-server - Port on which the repl server will be hosted
-- enable-streams-uncaught-exception-handling - If set to true, it adds a handler to Kafka Streams for dealing with uncaught exceptions. Currently, this handler just logs the name of the stream thread and the exception message.
 - default-api-timeout-ms-config - Specifies the timeout (in milliseconds) for client APIs. This configuration is used as the default timeout for all client operations that do not specify a timeout parameter. The recommended value for Ziggurat based apps is 600000 ms (10 minutes).
 - stream-router - Configs related to all the Kafka streams the application is reading from
 
@@ -531,6 +530,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
     - application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
     - bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
     - stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
+    - stream-thread-exception-response - This describes what particular action will be triggered if an uncaught exception is handled. Possible values are :shutdown-client (default), :shutdowm-application and :replace-thread. The 3 responses are documented [here](https://kafka-tutorials.confluent.io/error-handling/kstreams.html?_ga=2.107379330.1454767099.1620795696-1044723812.1563788148).
     - origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
     - oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
     - changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
