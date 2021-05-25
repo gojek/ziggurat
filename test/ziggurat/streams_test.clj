@@ -1,24 +1,24 @@
 (ns ziggurat.streams-test
   (:require [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
-            [protobuf.core :as proto]
             [mount.core :as mount]
-            [ziggurat.streams :refer [start-streams stop-streams stop-stream start-stream]]
-            [ziggurat.fixtures :as fix]
+            [protobuf.core :as proto]
             [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.fixtures :as fix]
             [ziggurat.middleware.default :as default-middleware]
-            [ziggurat.middleware.stream-joins :as stream-joins-middleware]
             [ziggurat.middleware.json :as json-middleware]
-            [ziggurat.tracer :refer [tracer]]
-            [ziggurat.mapper :refer [mapper-func]]
-            [ziggurat.config :as config])
+            [ziggurat.middleware.stream-joins :as stream-joins-middleware]
+            [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-streams stop-streams stop-stream start-stream]]
+            [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]]
+            [ziggurat.tracer :refer [tracer]])
   (:import [flatland.protobuf.test Example$Photo]
+           [io.opentracing.tag Tags]
            [java.util Properties]
            [org.apache.kafka.clients.producer ProducerConfig]
+           (org.apache.kafka.common.utils MockTime)
            [org.apache.kafka.streams KeyValue]
            [org.apache.kafka.streams KafkaStreams$State]
-           [org.apache.kafka.streams.integration.utils IntegrationTestUtils]
-           [io.opentracing.tag Tags]
-           (org.apache.kafka.common.utils MockTime)))
+           [org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse]
+           [org.apache.kafka.streams.integration.utils IntegrationTestUtils]))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
                                     fix/silence-logging
@@ -218,8 +218,8 @@
 (deftest start-stream-joins-test-with-inner-join
   (testing "stream joins using inner join"
     (let [orig-config (ziggurat-config)]
-      (with-redefs [config/ziggurat-config (fn [] (-> orig-config
-                                                      (assoc-in [:alpha-features :stream-joins] true)))]
+      (with-redefs [ziggurat-config (fn [] (-> orig-config
+                                               (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
               mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
               times                  1
@@ -248,8 +248,8 @@
 (deftest start-stream-joins-test-with-left-join
   (testing "stream joins using left join"
     (let [orig-config (ziggurat-config)]
-      (with-redefs [config/ziggurat-config (fn [] (-> orig-config
-                                                      (assoc-in [:alpha-features :stream-joins] true)))]
+      (with-redefs [ziggurat-config (fn [] (-> orig-config
+                                               (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
               mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
               times                  1
@@ -278,8 +278,8 @@
 (deftest start-stream-joins-test-with-outer-join
   (testing "stream joins using outer join"
     (let [orig-config (ziggurat-config)]
-      (with-redefs [config/ziggurat-config (fn [] (-> orig-config
-                                                      (assoc-in [:alpha-features :stream-joins] true)))]
+      (with-redefs [ziggurat-config (fn [] (-> orig-config
+                                               (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
               mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
               times                  1
@@ -386,3 +386,86 @@
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
+
+(deftest add-remove-stream-thread-test
+  (let [message-received-count           (atom 0)
+        mapped-fn                        (get-mapped-fn message-received-count)
+        times                            6
+        kvs                              (repeat times message-key-value)
+        handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                          (start-streams {:default {:handler-fn handler-fn}}
+                                                        (-> (ziggurat-config)
+                                                            (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                            (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))
+        _                                (Thread/sleep 20000) ;;waiting for streams to start
+        stream-thread-count-before-add   (get-stream-thread-count :default)
+        _                                (add-stream-thread :default)
+        stream-thread-count-after-add    (get-stream-thread-count :default)
+        _                                (is (= stream-thread-count-after-add (+ stream-thread-count-before-add 1)))
+        _                                (remove-stream-thread :default)
+        stream-thread-count-after-remove (get-stream-thread-count :default)
+        _                                (is (= stream-thread-count-before-add stream-thread-count-after-remove))]
+    (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                        kvs
+                                                        (props)
+                                                        (MockTime.))
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (stop-streams streams)
+    (is (= times @message-received-count))))
+
+(deftest remove-stream-thread-to-zero-test
+  (let [message-received-count           (atom 0)
+        mapped-fn                        (get-mapped-fn message-received-count)
+        times                            0
+        kvs                              (repeat times message-key-value)
+        handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                          (start-streams {:default {:handler-fn handler-fn}}
+                                                        (-> (ziggurat-config)
+                                                            (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                            (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))
+        _                                (Thread/sleep 10000) ;;waiting for streams to start
+        _                                (remove-stream-thread :default)
+        stream-thread-count-after-remove (get-stream-thread-count :default)
+        _                                (is (= stream-thread-count-after-remove 0))]
+    (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                        kvs
+                                                        (props)
+                                                        (MockTime.))
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (stop-streams streams)
+    (is (= times @message-received-count))))
+
+(deftest remove-stream-thread-with-timeout-to-zero-test
+  (let [message-received-count           (atom 0)
+        mapped-fn                        (get-mapped-fn message-received-count)
+        times                            0
+        kvs                              (repeat times message-key-value)
+        handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        streams                          (start-streams {:default {:handler-fn handler-fn}}
+                                                        (-> (ziggurat-config)
+                                                            (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                            (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))
+        _                                (Thread/sleep 10000) ;;waiting for streams to start
+        _                                (remove-stream-thread :default 5000)
+        stream-thread-count-after-remove (get-stream-thread-count :default)
+        _                                (is (= stream-thread-count-after-remove 0))]
+    (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                        kvs
+                                                        (props)
+                                                        (MockTime.))
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (stop-streams streams)
+    (is (= times @message-received-count))))
+
+(deftest handle-uncaught-exception-test
+  (let [t (Throwable. "foobar")]
+    (testing "should return SHUTDOWN_CLIENT"
+      (let [r (handle-uncaught-exception :shutdown-client t)]
+        (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/SHUTDOWN_CLIENT))))
+    (testing "should return SHUTDOWN_APPLICATION"
+      (let [r (handle-uncaught-exception :shutdown-application t)]
+        (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/SHUTDOWN_APPLICATION))))
+    (testing "should return REPLACE_THREAD"
+      (let [r (handle-uncaught-exception :replace-thread t)]
+        (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD))))))
+
