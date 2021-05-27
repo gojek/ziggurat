@@ -1,16 +1,13 @@
 (ns ziggurat.metrics-test
-  (:require [clojure.test :refer :all]
-            [clojure.walk :refer [stringify-keys]]
+  (:require [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
+            [mount.core :as mount]
+            [ziggurat.clj-statsd-metrics-wrapper]
             [ziggurat.config :refer [ziggurat-config config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.mock-metrics-implementation :as mock-metrics]
-            [clojure.tools.logging :as log]
-            [mount.core :as mount]
-            [ziggurat.clj-statsd-metrics-wrapper])
-  (:import (io.dropwizard.metrics5 Meter Histogram UniformReservoir MetricRegistry)
-           (ziggurat.dropwizard_metrics_wrapper DropwizardMetrics)
-           (ziggurat.clj_statsd_metrics_wrapper CljStatsd)))
+            [ziggurat.util.mock-metrics-implementation :as mock-metrics])
+  (:import (ziggurat.clj_statsd_metrics_wrapper CljStatsd)
+           (ziggurat.dropwizard_metrics_wrapper DropwizardMetrics)))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config]))
 
@@ -96,8 +93,8 @@
         (let [metric-namespace        "namespace"
               increment-count-called? (atom false)]
           (with-redefs [metrics/increment-count (fn [actual-metric-namespace actual-metric]
-                                                  (if (and (= actual-metric-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name))
+                                                  (when (and (= actual-metric-namespace metric-namespace)
+                                                             (= actual-metric passed-metric-name))
                                                     (reset! increment-count-called? true)))]
             (metrics/-incrementCount metric-namespace passed-metric-name)
             (is (true? @increment-count-called?))))
@@ -108,9 +105,9 @@
               increment-count-called? (atom false)
               metric-namespace        "namespace"]
           (with-redefs [metrics/increment-count (fn [actual-namespace actual-metric actual-additional-tags]
-                                                  (if (and (= actual-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name)
-                                                           (= actual-additional-tags expected-tags))
+                                                  (when (and (= actual-namespace metric-namespace)
+                                                             (= actual-metric passed-metric-name)
+                                                             (= actual-additional-tags expected-tags))
                                                     (reset! increment-count-called? true)))]
             (metrics/-incrementCount metric-namespace passed-metric-name tags)
             (is (true? @increment-count-called?))))))
@@ -149,8 +146,7 @@
             (is (some #{metric-namespace} @metric-namespaces-called))
             (is (some #{actor-prefixed-metric-ns} @metric-namespaces-called)))))
       (testing "calls metrics library update-counter with the correct args - without topic name on the namespace"
-        (let [expected-additional-tags (merge default-tags input-tags)
-              metric-namespaces        ["metric" "ns"]
+        (let [metric-namespaces        ["metric" "ns"]
               expected-namespace       "metric.ns"
               expected-tags            (merge default-tags input-tags)]
           (with-redefs [mock-metrics/update-counter (fn [namespace metric tags value]
@@ -177,8 +173,8 @@
         (let [metric-namespace        "namespace"
               decrement-count-called? (atom false)]
           (with-redefs [metrics/decrement-count (fn [actual-metric-namespace actual-metric]
-                                                  (if (and (= actual-metric-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name))
+                                                  (when (and (= actual-metric-namespace metric-namespace)
+                                                             (= actual-metric passed-metric-name))
                                                     (reset! decrement-count-called? true)))]
             (metrics/-decrementCount metric-namespace passed-metric-name)
             (is (true? @decrement-count-called?))))
@@ -189,9 +185,9 @@
               decrement-count-called? (atom false)
               metric-namespace        "namespace"]
           (with-redefs [metrics/decrement-count (fn [actual-namespace actual-metric actual-additional-tags]
-                                                  (if (and (= actual-namespace metric-namespace)
-                                                           (= actual-metric passed-metric-name)
-                                                           (= actual-additional-tags expected-tags))
+                                                  (when (and (= actual-namespace metric-namespace)
+                                                             (= actual-metric passed-metric-name)
+                                                             (= actual-additional-tags expected-tags))
                                                     (reset! decrement-count-called? true)))]
             (metrics/-decrementCount metric-namespace passed-metric-name tags)
             (is (true? @decrement-count-called?))))))
@@ -246,8 +242,8 @@
         (let [metric-namespace         "namespace"
               report-histogram-called? (atom false)]
           (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val]
-                                                   (if (and (= actual-metric-namespace metric-namespace)
-                                                            (= actual-time-val time-val))
+                                                   (when (and (= actual-metric-namespace metric-namespace)
+                                                              (= actual-time-val time-val))
                                                      (reset! report-histogram-called? true)))]
             (metrics/-reportTime metric-namespace time-val)
             (is (true? @report-histogram-called?))))
@@ -259,9 +255,9 @@
               report-histogram-called? (atom false)]
           (with-redefs [metrics/report-histogram (fn [actual-metric-namespace actual-time-val actual-additional-tags]
                                                    (is (= actual-additional-tags expected-tags))
-                                                   (if (and (= actual-metric-namespace metric-namespace)
-                                                            (= actual-time-val time-val)
-                                                            (= actual-additional-tags expected-tags))
+                                                   (when (and (= actual-metric-namespace metric-namespace)
+                                                              (= actual-time-val time-val)
+                                                              (= actual-additional-tags expected-tags))
                                                      (reset! report-histogram-called? true)))]
             (metrics/-reportTime metric-namespace time-val tags)
             (is (true? @report-histogram-called?))))))

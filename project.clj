@@ -13,8 +13,6 @@
                  [clonfig "0.2.0"]
                  [clj-http "3.12.1"]
                  [com.cemerick/url "0.1.1"]
-                 [com.datadoghq/java-dogstatsd-client "2.4"]
-                 [com.fasterxml.jackson.core/jackson-databind "2.9.9"]
                  [com.novemberain/langohr "5.2.0" :exclusions [org.clojure/clojure]]
                  [com.taoensso/nippy "3.1.1"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0" :scope "compile"]
@@ -34,6 +32,7 @@
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.14.1"]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/tools.logging "1.1.0"]
+                 [org.coursera/metrics-datadog "1.1.14"]
                  [nrepl/nrepl "0.8.3"]
                  [clojusc/protobuf "3.5.1-v1.1"]
                  [org.flatland/protobuf "0.8.1"]
@@ -60,13 +59,12 @@
                                     :sign-releases false}]]
   :plugins [[lein-shell "0.5.0"]]
   :pedantic? :warn
-  :java-source-paths ["src/com"]
   :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
   :aot [ziggurat.kafka-consumer.invalid-return-type-exception]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
                        :pedantic?   :abort}
-             :test    {:java-source-paths ["src/com" "test/com"]
+             :test    {:java-source-paths ["test/com"]
                        :jvm-opts          ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
                        :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
                                            [junit/junit "4.13.2"]

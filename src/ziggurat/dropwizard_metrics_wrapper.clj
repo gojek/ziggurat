@@ -1,13 +1,10 @@
 (ns ziggurat.dropwizard-metrics-wrapper
   (:require [clojure.tools.logging :as log]
-            [ziggurat.config :refer [ziggurat-config]]
-            [clojure.walk :refer [stringify-keys]]
             [ziggurat.metrics-interface])
-  (:import [com.gojek.metrics.datadog.transport UdpTransport UdpTransport$Builder]
-           [io.dropwizard.metrics5 MetricRegistry]
-           [com.gojek.metrics.datadog DatadogReporter]
+  (:import [com.codahale.metrics Histogram Meter MetricRegistry]
            [java.util.concurrent TimeUnit]
-           [io.dropwizard.metrics5 Histogram Meter MetricName MetricRegistry]
+           [org.coursera.metrics.datadog DatadogReporter]
+           [org.coursera.metrics.datadog.transport UdpTransport UdpTransport$Builder]
            (ziggurat.metrics_interface MetricsProtocol)))
 
 (defonce metrics-registry
@@ -37,29 +34,21 @@
     (reset! reporter-and-transport-state nil)
     (log/info "Stopped statsd reporter")))
 
-(defn- get-tagged-metric
-  [metric-name tags]
-  (.tagged ^MetricName metric-name tags))
-
 (defn mk-meter
   ([category metric]
    (mk-meter category metric {}))
-  ([category metric tags]
+  ([category metric _]
    (let [namespace        (str category "." metric)
-         metric-name      (MetricRegistry/name ^String namespace nil)
-         stringified-tags (stringify-keys tags)
-         tagged-metric    (get-tagged-metric metric-name stringified-tags)]
-     (.meter ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
+         metric-name      (MetricRegistry/name ^String namespace nil)]
+     (.meter ^MetricRegistry metrics-registry metric-name))))
 
 (defn mk-histogram
   ([category metric]
    (mk-histogram category metric {}))
-  ([category metric tags]
+  ([category metric _]
    (let [namespace        (str category "." metric)
-         metric-name      (MetricRegistry/name ^String namespace nil)
-         stringified-tags (stringify-keys tags)
-         tagged-metric    (get-tagged-metric metric-name stringified-tags)]
-     (.histogram ^MetricRegistry metrics-registry ^MetricName tagged-metric))))
+         metric-name      (MetricRegistry/name ^String namespace nil)]
+     (.histogram ^MetricRegistry metrics-registry metric-name))))
 
 (defn update-counter
   [namespace metric tags value]
@@ -73,7 +62,7 @@
 
 (deftype DropwizardMetrics []
   MetricsProtocol
-  (initialize [this statsd-config] (initialize statsd-config))
-  (terminate [this] (terminate))
-  (update-counter [this namespace metric tags value] (update-counter namespace metric tags value))
-  (update-timing [this namespace metric tags value] (update-histogram namespace metric tags value)))
+  (initialize [_ statsd-config] (initialize statsd-config))
+  (terminate [_] (terminate))
+  (update-counter [_ namespace metric tags value] (update-counter namespace metric tags value))
+  (update-timing [_ namespace metric tags value] (update-histogram namespace metric tags value)))
