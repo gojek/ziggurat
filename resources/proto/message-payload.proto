@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package com.ziggurat.proto;
+
+option java_package = "com.ziggurat.proto";
+option java_outer_classname = "MessagePayloadProto";
+
+message MessagePayload {
+  bytes  message      = 1;
+  string topic_entity = 2;
+  int32  retry_count  = 3;
+}

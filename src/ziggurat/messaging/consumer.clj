@@ -1,45 +1,33 @@
 (ns ziggurat.messaging.consumer
-  (:require [ziggurat.mapper :as mpr]
-            [ziggurat.message-payload :as mp]
-            [clojure.tools.logging :as log]
+  (:require [clojure.tools.logging :as log]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
-            [ziggurat.kafka-consumer.consumer-handler :as ch]
-            [schema.core :as s]
-            [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [get-in-config]]
+            [ziggurat.kafka-consumer.consumer-handler :as ch]
+            [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.messaging.util :refer :all]
+            [ziggurat.messaging.util :refer [prefixed-queue-name prefixed-channel-name]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.middleware.default :as mw]
+            [ziggurat.util.error :refer [report-error]])
+  (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]))
 
-(defn- convert-to-message-payload
-  "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
-   message-payload to pass onto the mapper-fn.
-
-   If the `:retry-count` key is absent in the `message`, then it puts `0` as the value for `:retry-count` in `MessagePayload`.
-   It also converts the topic-entity into a keyword while constructing MessagePayload."
-  [message topic-entity]
-  (try
-    (s/validate mp/message-payload-schema message)
-    (catch Exception e
-      (log/info "old message format read, converting to message-payload: " message)
-      (let [retry-count (or (:retry-count message) 0)
-            message-payload (mp/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
-        (assoc message-payload :retry-count retry-count)))))
+(defn- try-deserialize-message
+  [topic-entity-name message]
+  (let [from-proto (mw/deserialize-message message MessagePayloadProto$MessagePayload topic-entity-name)]
+    (if (nil? from-proto) (nippy/thaw message) from-proto)))
 
 (defn convert-and-ack-message
-  "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
-  if `ack?` is true."
-  [ch {:keys [delivery-tag] :as meta} ^bytes payload ack? topic-entity]
+  "De-serializes the message payload (`payload`) using `nippy/thaw` or `proto` (whichever of the two succeeds).
+  Acks the message if `ack?` is true."
+  [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity]
   (try
-    (let [message (nippy/thaw payload)]
+    (let [message (try-deserialize-message topic-entity payload)]
       (when ack?
         (lb/ack ch delivery-tag))
-      (convert-to-message-payload message topic-entity))
+      message)
     (catch Exception e
       (lb/reject ch delivery-tag false)
       (report-error e "Error while decoding message")
@@ -51,8 +39,8 @@
   (lb/ack ch delivery-tag))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
-  (let [delivery-tag (:delivery-tag meta)
-        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+  (let [delivery-tag    (:delivery-tag meta)
+        message-payload (convert-and-ack-message ch meta payload false topic-entity)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
@@ -112,13 +100,13 @@
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)
-  (let [consumer-tag (lcons/subscribe ch
-                                      queue-name
-                                      (message-handler wrapped-mapper-fn topic-entity)
-                                      {:handle-shutdown-signal-fn (fn [consumer_tag reason]
-                                                                    (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
-                                       :handle-consume-ok-fn      (fn [consumer_tag]
-                                                                    (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]))
+  (lcons/subscribe ch
+                   queue-name
+                   (message-handler wrapped-mapper-fn topic-entity)
+                   {:handle-shutdown-signal-fn (fn [consumer_tag reason]
+                                                 (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
+                    :handle-consume-ok-fn      (fn [consumer_tag]
+                                                 (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))}))
 
 (defn start-retry-subscriber* [handler-fn topic-entity]
   (when (get-in-config [:retry :enabled])
@@ -144,12 +132,12 @@
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes batch-routes]
   (doseq [stream-route stream-routes]
-    (let [topic-entity  (first stream-route)
-          handler       (-> stream-route second :handler-fn)
-          channels      (-> stream-route second (dissoc :handler-fn))]
+    (let [topic-entity (first stream-route)
+          handler      (-> stream-route second :handler-fn)
+          channels     (-> stream-route second (dissoc :handler-fn))]
       (start-channels-subscriber channels topic-entity)
       (start-retry-subscriber* (mpr/mapper-func handler (keys channels)) topic-entity)))
   (doseq [batch-route batch-routes]
-    (let [topic-entity  (first batch-route)
-          handler (-> batch-route second :handler-fn)]
+    (let [topic-entity (first batch-route)
+          handler      (-> batch-route second :handler-fn)]
       (start-retry-subscriber* (fn [message] (ch/process handler message)) topic-entity))))
