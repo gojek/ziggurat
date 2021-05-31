@@ -1,13 +1,16 @@
 (ns ziggurat.middleware.default
-  (:require [protobuf.impl.flatland.mapdef :as protodef]
-            [sentry-clj.async :as sentry]
-            [ziggurat.config :refer [get-in-config ziggurat-config]]
+  (:require [clojure.edn :as edn]
+            [protobuf.core :as protobuf]
+            [protobuf.impl.flatland.mapdef :as protodef]
+            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.message-payload :refer [mk-message-payload]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.util.error :refer [report-error]])
+  (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]))
 
-(defn protobuf-struct->persistent-map [struct]
+(defn protobuf-struct->persistent-map
   "This functions converts a protobuf struct in to clojure persistent map recursively"
+  [struct]
   (let [fields                          (:fields struct)
         protobuf-value-flattener        (fn flatten-value [value]
                                           (first (map (fn [[type val]]
@@ -33,6 +36,13 @@
             {}
             fields)))
 
+(defn serialize-message
+  [proto-class topic-entity message]
+  (let [message (mk-message-payload (:message message) topic-entity (:retry-count message))]
+    (protobuf/->bytes (protobuf/create proto-class message))))
+
+(def serialize-to-message-payload (partial serialize-message MessagePayloadProto$MessagePayload))
+
 (defn deserialize-message
   "This function takes in the message(proto Byte Array) and the proto-class and deserializes the proto ByteArray into a
   Clojure PersistentHashMap.
@@ -50,7 +60,13 @@
                               protodef/mapdef->schema
                               :fields
                               keys)
-             result       (select-keys loaded-proto proto-keys)]
+             result       (select-keys loaded-proto proto-keys)
+             msg          (if (:message result) ;; TODO: please read the TODO above!
+                            (edn/read-string (.toStringUtf8 (:message result)))
+                            result)
+             te           (keyword (get result :topic-entity topic-entity-name))
+             rc           (get result :retry-count 0)
+             result       {:message msg :topic-entity te :retry-count rc}]
          (if flatten-protobuf-struct?
            (let [struct-entries (-> proto-klass
                                     protodef/mapdef->schema

@@ -1,11 +1,9 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
-            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.util.error :refer [report-error]])
   (:import (java.time Instant)))
 
@@ -89,4 +87,4 @@
             (report-error e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
-(defrecord MessagePayload [message topic-entity])
+(defrecord MessagePayload [message topic-entity]) ;; NOTE: is this still needed?

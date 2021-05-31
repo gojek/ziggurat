@@ -4,7 +4,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw])
-  (:import [flatland.protobuf.test Example$Photo]
+  (:import [com.gojek.test.proto Example$Photo]
            (com.gojek.test.proto PersonTestProto$Person)))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
@@ -35,42 +35,23 @@
                                                           :value {:number-value 2.0}}]})))))
 
 (deftest deserialize-message-test
-  (let [message           {:id         1
-                           :name       "John"
-                           :email      "john@gmail.com"
-                           :likes      "cricket"
-                           :characters {:fields
-                                        [{:key   "physique",
-                                          :value {:struct-value
-                                                  {:fields
-                                                   [{:key "height", :value {:number-value 180.12}}
-                                                    {:key "weight", :value {:number-value 80.34}}]}}}
-                                         {:key   "hobbies",
-                                          :value {:list-value {:values [{:string-value "eating"}
-                                                                        {:string-value "sleeping"}]}}}
-                                         {:key "age", :value {:number-value 50.5}}
-                                         {:key "gender", :value {:string-value "male"}}
-                                         {:key "employed", :value {:bool-value false}}
-                                         {:key "qwerty", :value {}}]}}
-        flattened-message {:id         1
-                           :name       "John"
-                           :email      "john@gmail.com"
-                           :likes      "cricket"
-                           :characters {:physique {:height 180.12 :weight 80.34}
-                                        :hobbies  ["eating" "sleeping"]
-                                        :age      50.5
-                                        :gender   "male"
-                                        :employed false
-                                        :qwerty   nil}}
+  (let [message           {:id    1
+                           :name  "John"
+                           :email "john@gmail.com"
+                           :likes "cricket"}
+        flattened-message {:id    1
+                           :name  "John"
+                           :email "john@gmail.com"
+                           :likes "cricket"}
         topic-entity-name "test"
         proto-class       PersonTestProto$Person
-        proto-message     (proto/->bytes (proto/create PersonTestProto$Person message))]
+        proto-message     (proto/->bytes (proto/create proto-class message))]
     (testing "should flatten the protobuf struct if flatten-protobuf-struct? is true"
-      (is (= flattened-message (mw/deserialize-message proto-message proto-class topic-entity-name true))))
+      (is (= {:message flattened-message :topic-entity :test :retry-count 0} (mw/deserialize-message proto-message proto-class topic-entity-name true))))
     (testing "should not flatten the protobuf struct if flatten-protobuf-struct? is false"
-      (is (= message (mw/deserialize-message proto-message proto-class topic-entity-name false))))
+      (is (= {:message message :topic-entity :test :retry-count 0} (mw/deserialize-message proto-message proto-class topic-entity-name false))))
     (testing "should not flatten the protobuf struct if flatten-protobuf-struct? is not provided"
-      (is (= message (mw/deserialize-message proto-message proto-class topic-entity-name))))))
+      (is (= {:message message :topic-entity :test :retry-count 0} (mw/deserialize-message proto-message proto-class topic-entity-name))))))
 
 (deftest common-protobuf->hash-test
   (testing "Given a serialised object and corresponding proto-class it deserialises the object into a clojure map and calls the handler-fn with that message"
@@ -79,9 +60,9 @@
                               :path "/photos/h2k3j4h9h23"}
           proto-class        Example$Photo
           topic-entity-name  "test"
-          proto-message      (proto/->bytes (proto/create Example$Photo message))
+          proto-message      (proto/->bytes (proto/create proto-class message))
           handler-fn         (fn [msg]
-                               (if (= msg message)
+                               (when (= msg {:message message :topic-entity :test :retry-count 0})
                                  (reset! handler-fn-called? true)))]
       ((mw/protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
       (is (true? @handler-fn-called?))))
@@ -92,7 +73,7 @@
           proto-class        Example$Photo
           topic-entity-name  "test"
           handler-fn         (fn [msg]
-                               (if (= msg message)
+                               (when (= msg message)
                                  (reset! handler-fn-called? true)))]
       ((mw/protobuf->hash handler-fn proto-class topic-entity-name) message)
       (is (true? @handler-fn-called?))))
@@ -101,7 +82,7 @@
           metric-reporter-called? (atom false)
           topic-entity-name       "test"
           handler-fn              (fn [msg]
-                                    (if (nil? msg)
+                                    (when (nil? msg)
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]
