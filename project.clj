@@ -62,7 +62,7 @@
   :pedantic? :warn
   :java-source-paths ["src/com"]
   :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
-  :aot [ziggurat.kafka-consumer.invalid-return-type-exception]
+  :aot [ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.fixtures ziggurat.kafka-consumer.invalid-return-type-exception]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
                        :pedantic?   :abort}
