@@ -1,30 +1,30 @@
 (ns ziggurat.messaging.consumer-test
   (:require [clojure.test :refer :all])
-  (:require [langohr.channel :as lch]
+  (:require [langohr.basic :as lb]
+            [langohr.channel :as lch]
+            [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
+            [ziggurat.message-payload :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :refer :all]
+            [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.rabbitmq :as util]
-            [langohr.basic :as lb]
-            [ziggurat.messaging.consumer :as consumer]
-            [ziggurat.message-payload :as mpr]
-            [taoensso.nippy :as nippy]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.util.error :refer [report-error]]
+            [ziggurat.util.rabbitmq :as util]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
                                     fix/mount-metrics]))
 (defn- gen-message-payload [topic-entity]
-  {:message {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
+  {:message      {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
    :topic-entity topic-entity})
 
 (def topic-entity :default)
 
 (deftest process-dead-set-messages-test
-  (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
+  (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "it maps the process-message-from-queue over all the messages fetched from the queue for a topic"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
         (let [count             5
@@ -53,7 +53,7 @@
           (is (empty? (get-dead-set-messages topic-entity channel count))))))))
 
 (deftest get-dead-set-messages-test
-  (let [message-payload   (assoc (gen-message-payload topic-entity) :retry-count 0)]
+  (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "get the dead set messages from dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
         (let [count-of-messages 10
@@ -77,17 +77,15 @@
                                call-counter-atom
                                retry-limit
                                skip-promise
-                               success-promise] :as opts}]
-  (fn [message]
+                               success-promise]}]
+  (fn [message & _]
     (swap! call-counter-atom inc)
     (cond (< @retry-counter-atom (or retry-limit 5))
           (do (when retry-counter-atom (swap! retry-counter-atom inc))
               :retry)
-
           (= (:msg message) "skip")
           (do (when skip-promise (deliver skip-promise true))
               :skip)
-
           :else
           (do (when success-promise (deliver success-promise true))
               :success))))
@@ -114,7 +112,7 @@
           ch                  (lch/open connection)
           counter             (atom 0)
           stream-routes       {topic-entity {:handler-fn #(constantly nil)}
-                               :test    {:handler-fn #(constantly nil)}}]
+                               :test        {:handler-fn #(constantly nil)}}]
       (with-redefs [ziggurat-config         (fn [] (-> original-zig-config
                                                        (update-in [:retry :enabled] (constantly true))
                                                        (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
@@ -212,13 +210,13 @@
 (deftest start-retry-subscriber-test
   (testing "creates a span when tracer is enabled"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [retry-counter (atom 0)
-            call-counter (atom 0)
-            success-promise (promise)
-            retry-count 3
-            message-payload (assoc (gen-message-payload topic-entity) :retry-count 3)
+      (let [retry-counter       (atom 0)
+            call-counter        (atom 0)
+            success-promise     (promise)
+            retry-count         3
+            message-payload     (assoc (gen-message-payload topic-entity) :retry-count 3)
             original-zig-config (ziggurat-config)
-            rmq-ch (lch/open connection)]
+            rmq-ch              (lch/open connection)]
         (.reset tracer)
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :count] (constantly retry-count))
@@ -248,9 +246,9 @@
 (deftest process-message-test
   (testing "process-message function should ack message after once processing finishes"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
-            processing-fn (fn [message-arg]
-                            (is (= message-arg message)))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [message-arg]
+                                (is (= message-arg message)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
         (with-open [ch (lch/open connection)]
@@ -262,12 +260,12 @@
             (is (= consumed-message nil)))))))
   (testing "process-message function not process a message if convert-message returns nil"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
+      (let [message              (gen-message-payload topic-entity)
             processing-fn-called (atom false)
-            processing-fn (fn [message-arg]
-                            (if (nil? message-arg)
-                              (reset! processing-fn-called true)))
-            topic-entity-name (name topic-entity)]
+            processing-fn        (fn [message-arg]
+                                   (if (nil? message-arg)
+                                     (reset! processing-fn-called true)))
+            topic-entity-name    (name topic-entity)]
         (producer/publish-to-dead-queue message)
         (with-redefs [convert-and-ack-message (fn [_ _ _ _ _] nil)]
           (with-open [ch (lch/open connection)]
@@ -280,12 +278,12 @@
               (is (= consumed-message nil))))))))
   (testing "process-message function should reject and re-queue a message if processing fails. It should also report the error"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
-            processing-fn (fn [message-arg]
-                            (is (= message-arg message))
-                            (throw (Exception. "exception message")))
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [message-arg]
+                                (is (= message-arg message))
+                                (throw (Exception. "exception message")))
             topic-entity-name (name topic-entity)
-            report-fn-called?  (atom false)]
+            report-fn-called? (atom false)]
         (with-redefs [report-error (fn [_ _] (reset! report-fn-called? true))]
           (producer/publish-to-dead-queue message)
           (with-open [ch (lch/open connection)]
@@ -298,8 +296,8 @@
               (is @report-fn-called?)))))))
   (testing "process-message function should reject and discard a message if message conversion fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message       (gen-message-payload topic-entity)
-            processing-fn (fn [_] ())
+      (let [message           (gen-message-payload topic-entity)
+            processing-fn     (fn [_] ())
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
         (with-open [ch (lch/open connection)]

@@ -1,13 +1,12 @@
 (ns ziggurat.middleware.default
   (:require [protobuf.impl.flatland.mapdef :as protodef]
-            [sentry-clj.async :as sentry]
-            [ziggurat.config :refer [get-in-config ziggurat-config]]
+            [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.util.error :refer [report-error]]))
 
-(defn protobuf-struct->persistent-map [struct]
+(defn protobuf-struct->persistent-map
   "This functions converts a protobuf struct in to clojure persistent map recursively"
+  [struct]
   (let [fields                          (:fields struct)
         protobuf-value-flattener        (fn flatten-value [value]
                                           (first (map (fn [[type val]]
@@ -81,5 +80,5 @@
   ([handler-fn proto-class topic-entity-name]
    (protobuf->hash handler-fn proto-class topic-entity-name false))
   ([handler-fn proto-class topic-entity-name flatten-protobuf-struct?]
-   (fn [message]
-     (handler-fn (deserialize-message message proto-class topic-entity-name flatten-protobuf-struct?)))))
+   (fn [message & args]
+     (handler-fn (deserialize-message message proto-class topic-entity-name flatten-protobuf-struct?) args))))

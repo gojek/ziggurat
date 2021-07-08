@@ -3,9 +3,7 @@
    Please see [Ziggurat Middleware](https://github.com/gojek/ziggurat#middleware-in-ziggurat) for more details.
   "
   (:require [cheshire.core :refer [parse-string]]
-            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.error :refer [report-error]]))
 
@@ -46,5 +44,5 @@
   ([handler-fn topic-entity]
    (parse-json handler-fn topic-entity true))
   ([handler-fn topic-entity key-fn]
-   (fn [message]
-     (handler-fn (deserialize-json message topic-entity key-fn)))))
+   (fn [message & args]
+     (handler-fn (deserialize-json message topic-entity key-fn) args))))

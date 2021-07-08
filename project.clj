@@ -33,6 +33,7 @@
                  [org.apache.logging.log4j/log4j-core "2.14.1"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.14.1"]
                  [org.clojure/clojure "1.10.3"]
+                 [org.clojure/core.async "1.3.618"]
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
                  [clojusc/protobuf "3.5.1-v1.1"]

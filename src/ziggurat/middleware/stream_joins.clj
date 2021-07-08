@@ -17,5 +17,5 @@
 (defn protobuf->hash
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
-  (fn [message]
-    (handler-fn (deserialize-stream-joins-message message proto-class topic-entity-name))))
+  (fn [message & args]
+    (handler-fn (deserialize-stream-joins-message message proto-class topic-entity-name) args)))

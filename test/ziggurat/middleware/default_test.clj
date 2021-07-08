@@ -4,8 +4,8 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw])
-  (:import [flatland.protobuf.test Example$Photo]
-           (com.gojek.test.proto PersonTestProto$Person)))
+  (:import (com.gojek.test.proto PersonTestProto$Person)
+           [flatland.protobuf.test Example$Photo]))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
@@ -80,8 +80,8 @@
           proto-class        Example$Photo
           topic-entity-name  "test"
           proto-message      (proto/->bytes (proto/create Example$Photo message))
-          handler-fn         (fn [msg]
-                               (if (= msg message)
+          handler-fn         (fn [msg & _]
+                               (when (= msg message)
                                  (reset! handler-fn-called? true)))]
       ((mw/protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
       (is (true? @handler-fn-called?))))
@@ -91,8 +91,8 @@
                               :path "/photos/h2k3j4h9h23"}
           proto-class        Example$Photo
           topic-entity-name  "test"
-          handler-fn         (fn [msg]
-                               (if (= msg message)
+          handler-fn         (fn [msg & _]
+                               (when (= msg message)
                                  (reset! handler-fn-called? true)))]
       ((mw/protobuf->hash handler-fn proto-class topic-entity-name) message)
       (is (true? @handler-fn-called?))))
@@ -100,8 +100,8 @@
     (let [handler-fn-called?      (atom false)
           metric-reporter-called? (atom false)
           topic-entity-name       "test"
-          handler-fn              (fn [msg]
-                                    (if (nil? msg)
+          handler-fn              (fn [msg & _]
+                                    (when (nil? msg)
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]

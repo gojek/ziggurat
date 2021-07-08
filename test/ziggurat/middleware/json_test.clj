@@ -1,9 +1,9 @@
 (ns ziggurat.middleware.json-test
-  (:require [clojure.test :refer :all]
-            [cheshire.core :refer [generate-string]]
-            [ziggurat.middleware.json :refer [parse-json]]
+  (:require [cheshire.core :refer [generate-string]]
+            [clojure.test :refer [deftest is join-fixtures testing use-fixtures]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.metrics :as metrics]))
+            [ziggurat.metrics :as metrics]
+            [ziggurat.middleware.json :refer [parse-json]]))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
@@ -14,8 +14,8 @@
           message            {:a "A"
                               :b "B"}
           topic-entity-name  "test"
-          handler-fn         (fn [msg]
-                               (if (= msg message)
+          handler-fn         (fn [msg & _]
+                               (when (= msg message)
                                  (reset! handler-fn-called? true)))]
       ((parse-json handler-fn topic-entity-name) (generate-string message))
       (is (true? @handler-fn-called?))))
@@ -26,8 +26,8 @@
                               :b "B"}
           expected-output    {"a" "A" "b" "B"}
           topic-entity-name  "test"
-          handler-fn         (fn [msg]
-                               (if (= msg expected-output)
+          handler-fn         (fn [msg & _]
+                               (when (= msg expected-output)
                                  (reset! handler-fn-called? true)))]
       ((parse-json handler-fn topic-entity-name false) (generate-string message))
       (is (true? @handler-fn-called?))))
@@ -39,8 +39,8 @@
                               "b" "B"}
           expected-output    {"a-modified" "A" "b-modified" "B"}
           topic-entity-name  "test"
-          handler-fn         (fn [msg]
-                               (if (= msg expected-output)
+          handler-fn         (fn [msg & _]
+                               (when (= msg expected-output)
                                  (reset! handler-fn-called? true)))]
       ((parse-json handler-fn topic-entity-name key-fn) (generate-string message))
       (is (true? @handler-fn-called?))))
@@ -49,8 +49,8 @@
           metric-reporter-called? (atom false)
           topic-entity-name       "test"
           message                 "{\"foo\":\"bar"
-          handler-fn              (fn [msg]
-                                    (if (nil? msg)
+          handler-fn              (fn [msg & _]
+                                    (when (nil? msg)
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]

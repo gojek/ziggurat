@@ -1,11 +1,13 @@
 (ns ziggurat.mapper
-  (:require [clojure.string :as str]
-            [sentry-clj.async :as sentry]
+  (:require [clojure.core.async
+             :refer [>! <! >!! <!! go chan buffer close! thread
+                     alts! alts!! timeout]]
+            [clojure.string :as str]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.timestamp-transformer :refer [stream-record-metadata-channel]]
             [ziggurat.util.error :refer [report-error]])
   (:import (java.time Instant)))
 
@@ -31,7 +33,8 @@
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time                      (.toEpochMilli (Instant/now))
-                return-code                     (mapper-fn message)
+                metadata                        (<!! stream-record-metadata-channel)
+                return-code                     (mapper-fn message metadata)
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
@@ -70,7 +73,8 @@
       (nr/with-tracing "job" metric-namespace
         (try
           (let [start-time                     (.toEpochMilli (Instant/now))
-                return-code                    (mapper-fn message)
+                metadata                       (<!! stream-record-metadata-channel)
+                return-code                    (mapper-fn message metadata)
                 end-time                       (.toEpochMilli (Instant/now))
                 time-val                       (- end-time start-time)
                 execution-time-namespace       "execution-time"
