@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.15.0
+- Includes a `StreamsUncaughtExceptionHandler` which shuts down the client in case of an uncaught exception. 
+- Introduces a new stream-route config `:stream-thread-exception-response` which lets user control the behaviour of `StreamsUncaughtExceptionHandler`.
+- Restores AoT compilation for various namespaces
+
 ## 3.14.0
 - Upgrade kafka-streams library to 2.8.0
 - Replaced `:ziggurat :datadog` configuration in favour of `:ziggurat :statsd`
