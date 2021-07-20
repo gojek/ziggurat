@@ -68,7 +68,7 @@
       (let [count-of-messages       10
             message-payload         (assoc-in default-message-payload [:message :number] 0)
             message-payloads        (map #(assoc-in message-payload [:message :number] %) (range count-of-messages))
-            topic-entity              "default"
+            topic-entity            "default"
             remaining-message-count 2
             delete-count            (- count-of-messages remaining-message-count)
             _                       (doseq [message message-payloads]

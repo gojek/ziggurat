@@ -137,7 +137,7 @@
                        (.asChildOf t parent-ctx))
                      (.start t))]
     (try
-      ((mapper-func handler-fn channels) (assoc (->MessagePayload (:value message) topic-entity) :headers (:headers message)))
+      ((mapper-func handler-fn channels) (assoc (->MessagePayload (:value message) topic-entity) :headers (:headers message) :metadata (:metadata message)))
       (finally
         (.finish span)))))
 
