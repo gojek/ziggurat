@@ -35,23 +35,42 @@
                                                           :value {:number-value 2.0}}]})))))
 
 (deftest deserialize-message-test
-  (let [message           {:id    1
-                           :name  "John"
-                           :email "john@gmail.com"
-                           :likes "cricket"}
-        flattened-message {:id    1
-                           :name  "John"
-                           :email "john@gmail.com"
-                           :likes "cricket"}
+  (let [message           {:id         1
+                           :name       "John"
+                           :email      "john@gmail.com"
+                           :likes      "cricket"
+                           :characters {:fields
+                                        [{:key   "physique",
+                                          :value {:struct-value
+                                                  {:fields
+                                                   [{:key "height", :value {:number-value 180.12}}
+                                                    {:key "weight", :value {:number-value 80.34}}]}}}
+                                         {:key   "hobbies",
+                                          :value {:list-value {:values [{:string-value "eating"}
+                                                                        {:string-value "sleeping"}]}}}
+                                         {:key "age", :value {:number-value 50.5}}
+                                         {:key "gender", :value {:string-value "male"}}
+                                         {:key "employed", :value {:bool-value false}}
+                                         {:key "qwerty", :value {}}]}}
+        flattened-message {:id         1
+                           :name       "John"
+                           :email      "john@gmail.com"
+                           :likes      "cricket"
+                           :characters {:physique {:height 180.12 :weight 80.34}
+                                        :hobbies  ["eating" "sleeping"]
+                                        :age      50.5
+                                        :gender   "male"
+                                        :employed false
+                                        :qwerty   nil}}
         topic-entity-name "test"
         proto-class       PersonTestProto$Person
-        proto-message     (proto/->bytes (proto/create proto-class message))]
+        proto-message     (proto/->bytes (proto/create PersonTestProto$Person message))]
     (testing "should flatten the protobuf struct if flatten-protobuf-struct? is true"
-      (is (= {:message flattened-message :topic-entity :test :retry-count 0} (mw/deserialize-message proto-message proto-class topic-entity-name true))))
+      (is (= flattened-message (mw/deserialize-message proto-message proto-class topic-entity-name true))))
     (testing "should not flatten the protobuf struct if flatten-protobuf-struct? is false"
-      (is (= {:message message :topic-entity :test :retry-count 0} (mw/deserialize-message proto-message proto-class topic-entity-name false))))
+      (is (= message (mw/deserialize-message proto-message proto-class topic-entity-name false))))
     (testing "should not flatten the protobuf struct if flatten-protobuf-struct? is not provided"
-      (is (= {:message message :topic-entity :test :retry-count 0} (mw/deserialize-message proto-message proto-class topic-entity-name))))))
+      (is (= message (mw/deserialize-message proto-message proto-class topic-entity-name))))))
 
 (deftest common-protobuf->hash-test
   (testing "Given a serialised object and corresponding proto-class it deserialises the object into a clojure map and calls the handler-fn with that message"
@@ -62,7 +81,7 @@
           topic-entity-name  "test"
           proto-message      (proto/->bytes (proto/create proto-class message))
           handler-fn         (fn [msg]
-                               (when (= msg {:message message :topic-entity :test :retry-count 0})
+                               (when (= msg message)
                                  (reset! handler-fn-called? true)))]
       ((mw/protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
       (is (true? @handler-fn-called?))))

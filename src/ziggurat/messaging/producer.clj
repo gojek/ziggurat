@@ -111,7 +111,7 @@
   [exchange message-payload expiration]
   (try
     (with-open [ch (lch/open connection)]
-      (let [rmq-msg (mwd/serialize-to-message-payload (:topic-entity message-payload) (dissoc message-payload :headers))
+      (let [rmq-msg (mwd/serialize-to-message-payload-proto (dissoc message-payload :headers))
             props   (properties-for-publish expiration (:headers message-payload))]
         (lb/publish ch exchange "" rmq-msg props)))
     false

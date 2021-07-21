@@ -4,13 +4,18 @@
             [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.message-payload :as mpr]
+            [ziggurat.message-payload :as zmp]
+            [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.middleware.default :as zmd]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.error :refer [report-error]]
-            [ziggurat.util.rabbitmq :as util]))
+            [ziggurat.util.rabbitmq :as util]
+            [protobuf.core :as proto]
+            [taoensso.nippy :as nippy])
+  (:import (com.gojek.test.proto Example$Photo)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
@@ -307,12 +312,31 @@
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message nil))))))))
 
+(defn- msg-bytes-to-str
+  [message-payload]
+  (update message-payload :message #(String. ^"[B" %)))
+
 (deftest convert-and-ack-message-test
-  (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as 0 if message does not already has :retry-count"
-    (let [expected-message-payload  (mpr/mk-message-payload {:foo "bar"} :default 0)
-          converted-message-payload (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} expected-message-payload false "default")]
-      (is (= converted-message-payload expected-message-payload))))
-  (testing "While constructing a MessagePayload, adds topic-entity as a keyword and retry-count as it exists in the message"
-    (let [expected-message-payload  (mpr/mk-message-payload {:foo "bar" :retry-count 4} :default 4)
-          converted-message-payload (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} expected-message-payload false "default")]
-      (is (= converted-message-payload expected-message-payload)))))
+  (let [message                    {:id 7 :path "/photos/h2k3j4h9h23"}
+        proto-class                Example$Photo
+        topic-entity               "default"
+        proto-message              (proto/->bytes (proto/create proto-class message))
+        message-payload            {:message proto-message :topic-entity topic-entity :retry-count 3}]
+    (testing "should return deserialized message-payload if serialized using protobuf"
+      (let [proto-serialized-message-payload (zmd/serialize-to-message-payload-proto message-payload)
+            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
+        (is (= (msg-bytes-to-str converted-message-payload) (msg-bytes-to-str message-payload)))))
+    (testing "should return a ziggurat.message_payload/->MessagePayload if serialized using nippy"
+      (let [expected-message-payload         (assoc (zmp/->MessagePayload proto-message topic-entity) :retry-count 4)
+            nippy-serialized-message-payload (nippy/freeze expected-message-payload)
+            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
+        (is (= (msg-bytes-to-str converted-message-payload) (msg-bytes-to-str expected-message-payload)))))
+    (testing "should return a ziggurat.mapper/->MessagePayload if serialized using nippy"
+      (let [expected-message-payload         (assoc (mpr/->MessagePayload proto-message topic-entity) :retry-count 4)
+            nippy-serialized-message-payload (nippy/freeze expected-message-payload)
+            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
+        (is (= (msg-bytes-to-str converted-message-payload) (msg-bytes-to-str expected-message-payload)))))
+    (testing "should return a clojure map if serialized using nippy"
+      (let [random-bytes-as-message-payload     (.getBytes (String. "Hello World"))
+            converted-message-payload           (consumer/convert-and-ack-message nil {:delivery-tag 1} random-bytes-as-message-payload false "default")]
+        (is (= converted-message-payload nil))))))
