@@ -9,6 +9,7 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :as util]
+            [ziggurat.middleware.default :as zmd]
             [ziggurat.metrics :as metrics]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as rmq])
@@ -16,12 +17,12 @@
            (java.io IOException)
            [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
-                                    fix/silence-logging]))
+;(use-fixtures :once (join-fixtures [fix/init-rabbit-mq fix/silence-logging]))
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq]))
 
 (def topic-entity :default)
 ;; (def message-payload (mk-message-payload {:foo "bar"} topic-entity 0))
-(def message-payload {:message {:foo "bar"} :topic-entity topic-entity})
+(def message-payload {:message (.getBytes (String. "Hello Rabbit!!")) :topic-entity topic-entity})
 (defn retry-count-config [] (-> (config/ziggurat-config) :retry :count))
 
 (deftest retry-for-channel-test
@@ -614,3 +615,11 @@
                                                               :rabbit-mq            {:delay {:queue-timeout-ms 5000}}))]
          ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
         (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
+
+(deftest publish-test
+  (testing "publish should deserialize a message using proto before publishing"
+    (let [serialize-called (atom false)]
+      (with-redefs [zmd/serialize-to-message-payload-proto (fn [_ _] (reset! serialize-called true))
+                    lb/publish                             (fn [_ _ _ _ _])]
+        (producer/publish "exchange" "some-message")
+        (is (true? @serialize-called))))))
