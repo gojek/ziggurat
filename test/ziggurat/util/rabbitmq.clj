@@ -78,3 +78,8 @@
     (.close channel)
     (catch AlreadyClosedException _
       nil)))
+
+(defn bytes-to-str
+  [message-payload]
+  (-> message-payload
+      (update :message #(String. ^"[B" %))))
