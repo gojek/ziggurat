@@ -15,26 +15,33 @@
             [ziggurat.util.rabbitmq :as util]
             [protobuf.core :as proto]
             [taoensso.nippy :as nippy])
-  (:import (com.gojek.test.proto Example$Photo)))
+  (:import (com.gojek.test.proto Example$Photo)
+           (com.google.protobuf ByteString ByteString$LiteralByteString)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
                                     fix/mount-metrics]))
+
 (defn- gen-message-payload [topic-entity retry-count]
-  {:message      {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
+  {:message      (.getBytes "hello-world")
    :topic-entity topic-entity
    :retry-count  retry-count})
 
 (def topic-entity :default)
 
+(defn- bytes-to-str
+  [message-payload]
+  (-> message-payload
+      (update :message #(String. ^"[B" %))))
+
 (deftest process-dead-set-messages-test
-  (let [message-payload (assoc (gen-message-payload topic-entity 0) :retry-count 0)]
+  (let [message-payload (gen-message-payload topic-entity 4)]
     (testing "it maps the process-message-from-queue over all the messages fetched from the queue for a topic"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
         (let [count             5
               process-fn-called (atom 0)
               processing-fn     (fn [message]
-                                  (when (= message message-payload)
+                                  (when (= (bytes-to-str message) (bytes-to-str message-payload))
                                     (swap! process-fn-called inc)))
               _                 (doseq [_ (range count)]
                                   (producer/publish-to-dead-queue message-payload))]
@@ -48,7 +55,7 @@
               channel           "channel-1"
               process-fn-called (atom 0)
               processing-fn     (fn [message]
-                                  (when (= message message-payload)
+                                  (when (= (bytes-to-str message) (bytes-to-str message-payload))
                                     (swap! process-fn-called inc)))
               _                 (doseq [_ (range count)]
                                   (producer/publish-to-channel-dead-queue channel message-payload))]
@@ -57,25 +64,33 @@
           (is (empty? (consumer/get-dead-set-messages topic-entity channel count))))))))
 
 (deftest get-dead-set-messages-test
-  (let [message-payload (assoc (gen-message-payload topic-entity 0) :retry-count 0)]
+  (let [message-payload            (gen-message-payload topic-entity 5)
+        comparable-message-payload (bytes-to-str message-payload)]
     (testing "get the dead set messages from dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-        (let [count-of-messages 10
+                       (let [count-of-messages 10
               _                 (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-dead-queue message-payload))
-              dead-set-messages (consumer/get-dead-set-messages topic-entity count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (= (repeat count-of-messages message-payload) (consumer/get-dead-set-messages topic-entity count-of-messages))))))
+              dead-set-messages           (consumer/get-dead-set-messages topic-entity count-of-messages)
+              comparable-deadset-messages (map bytes-to-str dead-set-messages)]
+                         (is (= (repeat count-of-messages comparable-message-payload) comparable-deadset-messages))
+
+                         ;; dead-set messages fetched again to prove that they don't get lost on first read
+                         (is (= (repeat count-of-messages comparable-message-payload) (map bytes-to-str (consumer/get-dead-set-messages topic-entity count-of-messages)))))))
+
     (testing "get the dead set messages from a channel dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)
                                       :channel-1  (constantly nil)}}
-        (let [count-of-messages 10
+                       (let [count-of-messages 10
               channel           "channel-1"
               _                 (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-channel-dead-queue channel message-payload))
-              dead-set-messages (consumer/get-dead-set-messages topic-entity channel count-of-messages)]
-          (is (= (repeat count-of-messages message-payload) dead-set-messages))
-          (is (= (repeat count-of-messages message-payload) (consumer/get-dead-set-messages topic-entity channel count-of-messages))))))))
+              dead-set-messages           (consumer/get-dead-set-messages topic-entity channel count-of-messages)
+              comparable-deadset-messages (map bytes-to-str dead-set-messages)]
+                         (is (= (repeat count-of-messages comparable-message-payload) comparable-deadset-messages))
+
+                         ;; dead-set messages fetched again to prove that they don't get lost on first read
+                         (is (= (repeat count-of-messages comparable-message-payload) (map bytes-to-str (consumer/get-dead-set-messages topic-entity channel count-of-messages)))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom
@@ -252,7 +267,7 @@
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [message           (gen-message-payload topic-entity 0)
             processing-fn     (fn [message-arg]
-                                (is (= message-arg message)))
+                                (is (= (bytes-to-str message-arg) (bytes-to-str message))))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
         (with-open [ch (lch/open connection)]
@@ -284,7 +299,7 @@
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [message           (gen-message-payload topic-entity 0)
             processing-fn     (fn [message-arg]
-                                (is (= message-arg message))
+                                (is (= (bytes-to-str message-arg) (bytes-to-str message)))
                                 (throw (Exception. "exception message")))
             topic-entity-name (name topic-entity)
             report-fn-called? (atom false)]
@@ -296,7 +311,7 @@
                   [meta payload]      (lb/get ch prefixed-queue-name false)
                   _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
-              (is (= consumed-message message))
+              (is (= (bytes-to-str consumed-message) (bytes-to-str message)))
               (is @report-fn-called?)))))))
   (testing "process-message function should reject and discard a message if message conversion fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
@@ -312,30 +327,42 @@
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message nil))))))))
 
-(defn- msg-bytes-to-str
-  [message-payload]
-  (update message-payload :message #(String. ^"[B" %)))
-
 (deftest convert-and-ack-message-test
   (let [message                    {:id 7 :path "/photos/h2k3j4h9h23"}
         proto-class                Example$Photo
-        topic-entity               "default"
         proto-message              (proto/->bytes (proto/create proto-class message))
         message-payload            {:message proto-message :topic-entity topic-entity :retry-count 3}]
     (testing "should return deserialized message-payload if serialized using protobuf"
       (let [proto-serialized-message-payload (zmd/serialize-to-message-payload-proto message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
-        (is (= (msg-bytes-to-str converted-message-payload) (msg-bytes-to-str message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
+    (testing "should return deserialized message-payload with retry-count 0 if retry count is nil "
+      (let [expected-message-payload         (assoc message-payload :retry-count 0)
+            proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
+            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
+    (testing "should return deserialized message-payload with topic-entity as the keyword "
+      (let [expected-message-payload         (assoc message-payload :retry-count 0)
+            proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
+            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
+        (is (keyword? (:topic-entity converted-message-payload)))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
+    (testing "should return deserialized message-payload with the message as a byte array "
+      (let [expected-message-payload         (assoc message-payload :retry-count 0)
+            proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
+            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
+        (is (= "class [B" (str (type (:message converted-message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
     (testing "should return a ziggurat.message_payload/->MessagePayload if serialized using nippy"
       (let [expected-message-payload         (assoc (zmp/->MessagePayload proto-message topic-entity) :retry-count 4)
             nippy-serialized-message-payload (nippy/freeze expected-message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
-        (is (= (msg-bytes-to-str converted-message-payload) (msg-bytes-to-str expected-message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
     (testing "should return a ziggurat.mapper/->MessagePayload if serialized using nippy"
       (let [expected-message-payload         (assoc (mpr/->MessagePayload proto-message topic-entity) :retry-count 4)
             nippy-serialized-message-payload (nippy/freeze expected-message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
-        (is (= (msg-bytes-to-str converted-message-payload) (msg-bytes-to-str expected-message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
     (testing "should return a clojure map if serialized using nippy"
       (let [random-bytes-as-message-payload     (.getBytes (String. "Hello World"))
             converted-message-payload           (consumer/convert-and-ack-message nil {:delivery-tag 1} random-bytes-as-message-payload false "default")]
