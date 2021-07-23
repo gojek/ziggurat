@@ -29,7 +29,7 @@
       (nippy-deserialize message)
       (-> from-proto
           (update :message #(.toByteArray ^ByteString %))
-          (update :topic-entity #(keyword %))
+          (update :topic-entity keyword)
           (update :retry-count #(if (nil? %) 0 %))))))
 
 (defn convert-and-ack-message

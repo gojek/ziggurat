@@ -37,7 +37,7 @@
 
 (defn serialize-to-message-payload-proto
   [message]
-  (let [updated-message (update message :topic-entity #(name %))]
+  (let [updated-message (update message :topic-entity name)]
     (protobuf/->bytes (protobuf/create MessagePayloadProto$MessagePayload updated-message))))
 
 (defn deserialize-message
