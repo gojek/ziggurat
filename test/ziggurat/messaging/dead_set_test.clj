@@ -3,6 +3,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.dead-set :as ds]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.util.rabbitmq :refer [bytes-to-str]]
             [ziggurat.util.rabbitmq :as rmq]))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
@@ -10,7 +11,7 @@
                                     fix/mount-metrics]))
 
 (def topic-entity :default)
-(def default-message-payload {:message {:foo "bar"} :topic-entity topic-entity :retry-count 0})
+(def default-message-payload {:message (.getBytes "foo-bar") :topic-entity topic-entity :retry-count 0})
 
 (deftest replay-test
   (testing "puts message from dead set to instant queue"
@@ -21,7 +22,7 @@
           (producer/publish-to-dead-queue message-payload))
         (ds/replay count-of-messages topic-entity nil)
         (doseq [_ (range count-of-messages)]
-          (is (= message-payload (rmq/get-msg-from-instant-queue (name topic-entity)))))
+          (is (= (bytes-to-str message-payload) (bytes-to-str (rmq/get-msg-from-instant-queue (name topic-entity))))))
         (is (not (rmq/get-msg-from-instant-queue (name topic-entity)))))))
 
   (testing "puts message from dead set to instant channel queue"
@@ -34,7 +35,7 @@
           (producer/publish-to-channel-dead-queue channel message-payload))
         (ds/replay count-of-messages topic-entity channel)
         (doseq [_ (range count-of-messages)]
-          (is (= message-payload (rmq/get-message-from-channel-instant-queue (name topic-entity) channel))))
+          (is (= (bytes-to-str message-payload) (bytes-to-str (rmq/get-message-from-channel-instant-queue (name topic-entity) channel)))))
         (is (not (rmq/get-message-from-channel-instant-queue topic-entity channel)))))))
 
 (deftest view-test
@@ -46,7 +47,7 @@
                                 (producer/publish-to-dead-queue message-payload))
             dead-set-messages (ds/view count-of-messages topic-entity nil)]
         (doseq [dead-set-message dead-set-messages]
-          (is (= message-payload dead-set-message)))
+          (is (= (bytes-to-str message-payload) (bytes-to-str dead-set-message))))
         (is (not (empty? (rmq/get-msg-from-dead-queue (name topic-entity))))))))
 
   (testing "gets dead set messages for channel"
@@ -59,15 +60,14 @@
                                 (producer/publish-to-channel-dead-queue channel message-payload))
             dead-set-messages (ds/view count-of-messages topic-entity channel)]
         (doseq [dead-set-message dead-set-messages]
-          (is (= message-payload dead-set-message)))
+          (is (= (bytes-to-str message-payload) (bytes-to-str dead-set-message))))
         (is (not (empty? (rmq/get-msg-from-channel-dead-queue (name topic-entity) channel))))))))
 
 (deftest delete-messages-test
   (testing "deletes messages from the dead set in order for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
       (let [count-of-messages       10
-            message-payload         (assoc-in default-message-payload [:message :number] 0)
-            message-payloads        (map #(assoc-in message-payload [:message :number] %) (range count-of-messages))
+            message-payloads        (map #(assoc default-message-payload :message (.getBytes (str %))) (range count-of-messages))
             topic-entity            "default"
             remaining-message-count 2
             delete-count            (- count-of-messages remaining-message-count)
@@ -77,7 +77,7 @@
             dead-set-messages       (ds/view count-of-messages topic-entity nil)]
 
         (is (= (count dead-set-messages) remaining-message-count))
-        (is (= dead-set-messages (take-last remaining-message-count message-payloads))))))
+        (is (= (map bytes-to-str dead-set-messages) (map bytes-to-str (take-last remaining-message-count message-payloads)))))))
 
   (testing "deletes all messages from the dead set for a topic"
     (fix/with-queues {:default {:handler-fn (constantly nil)}}
