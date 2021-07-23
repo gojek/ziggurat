@@ -1,19 +1,18 @@
 (ns ziggurat.messaging.consumer
-  (:require [ziggurat.mapper :as mpr]
-            [ziggurat.message-payload :as mp]
-            [clojure.tools.logging :as log]
+  (:require [clojure.tools.logging :as log]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
-            [ziggurat.kafka-consumer.consumer-handler :as ch]
             [schema.core :as s]
-            [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [get-in-config]]
+            [ziggurat.kafka-consumer.consumer-handler :as ch]
+            [ziggurat.mapper :as mpr]
+            [ziggurat.message-payload :as mp]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]
+            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.util.error :refer [report-error]]))
 
 (defn- convert-to-message-payload
@@ -27,7 +26,7 @@
     (s/validate mp/message-payload-schema message)
     (catch Exception e
       (log/info "old message format read, converting to message-payload: " message)
-      (let [retry-count (or (:retry-count message) 0)
+      (let [retry-count     (or (:retry-count message) 0)
             message-payload (mp/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
         (assoc message-payload :retry-count retry-count)))))
 
@@ -51,13 +50,15 @@
   (lb/ack ch delivery-tag))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn]
-  (let [delivery-tag (:delivery-tag meta)
-        message-payload      (convert-and-ack-message ch meta payload false topic-entity)]
+  (let [delivery-tag    (:delivery-tag meta)
+        message-payload (convert-and-ack-message ch meta payload false topic-entity)
+        metadata        (:metadata message-payload)]
+    (println "PROCESS MESSAGE FROM QUEUE>>>>>>" message-payload)
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
         (log/debug "Calling processor-fn with the message-payload - " message-payload " with retry count - " (:retry-count message-payload))
-        (processing-fn message-payload)
+        (processing-fn message-payload metadata)
         (ack-message ch delivery-tag)
         (catch Exception e
           (lb/reject ch delivery-tag true)
@@ -144,12 +145,12 @@
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes batch-routes]
   (doseq [stream-route stream-routes]
-    (let [topic-entity  (first stream-route)
-          handler       (-> stream-route second :handler-fn)
-          channels      (-> stream-route second (dissoc :handler-fn))]
+    (let [topic-entity (first stream-route)
+          handler      (-> stream-route second :handler-fn)
+          channels     (-> stream-route second (dissoc :handler-fn))]
       (start-channels-subscriber channels topic-entity)
       (start-retry-subscriber* (mpr/mapper-func handler (keys channels)) topic-entity)))
   (doseq [batch-route batch-routes]
-    (let [topic-entity  (first batch-route)
-          handler (-> batch-route second :handler-fn)]
+    (let [topic-entity (first batch-route)
+          handler      (-> batch-route second :handler-fn)]
       (start-retry-subscriber* (fn [message] (ch/process handler message)) topic-entity))))

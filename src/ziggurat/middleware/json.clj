@@ -5,8 +5,8 @@
   (:require [cheshire.core :refer [parse-string]]
             [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.metrics :as metrics]
+            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.util.error :refer [report-error]]))
 
 (defn- deserialize-json
@@ -46,5 +46,5 @@
   ([handler-fn topic-entity]
    (parse-json handler-fn topic-entity true))
   ([handler-fn topic-entity key-fn]
-   (fn [message]
-     (handler-fn (deserialize-json message topic-entity key-fn)))))
+   (fn [message metadata]
+     (handler-fn (deserialize-json message topic-entity key-fn) metadata))))

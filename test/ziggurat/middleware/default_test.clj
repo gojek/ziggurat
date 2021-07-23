@@ -4,8 +4,8 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw])
-  (:import [flatland.protobuf.test Example$Photo]
-           (com.gojek.test.proto PersonTestProto$Person)))
+  (:import (com.gojek.test.proto PersonTestProto$Person)
+           [flatland.protobuf.test Example$Photo]))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
@@ -80,10 +80,12 @@
           proto-class        Example$Photo
           topic-entity-name  "test"
           proto-message      (proto/->bytes (proto/create Example$Photo message))
-          handler-fn         (fn [msg]
-                               (if (= msg message)
+          metadata           {:partition 1 :topic "topic" :timestamp 1234567890}
+          handler-fn         (fn [msg metadata]
+                               (when (and (= msg message)
+                                          (some? metadata))
                                  (reset! handler-fn-called? true)))]
-      ((mw/protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
+      ((mw/protobuf->hash handler-fn proto-class topic-entity-name) proto-message metadata)
       (is (true? @handler-fn-called?))))
   (testing "When an already deserialised message is passed to the function it calls the handler fn without altering it"
     (let [handler-fn-called? (atom false)
@@ -91,21 +93,25 @@
                               :path "/photos/h2k3j4h9h23"}
           proto-class        Example$Photo
           topic-entity-name  "test"
-          handler-fn         (fn [msg]
-                               (if (= msg message)
+          metadata           {:partition 1 :topic "topic" :timestamp 1234567890}
+          handler-fn         (fn [msg metadata]
+                               (when (and (= msg message)
+                                          (some? metadata))
                                  (reset! handler-fn-called? true)))]
-      ((mw/protobuf->hash handler-fn proto-class topic-entity-name) message)
+      ((mw/protobuf->hash handler-fn proto-class topic-entity-name) message metadata)
       (is (true? @handler-fn-called?))))
   (testing "When deserialisation fails, it reports to sentry, publishes metrics and passes nil to handler function"
     (let [handler-fn-called?      (atom false)
           metric-reporter-called? (atom false)
           topic-entity-name       "test"
-          handler-fn              (fn [msg]
-                                    (if (nil? msg)
+          metadata                {:partition 1 :topic "topic" :timestamp 1234567890}
+          handler-fn              (fn [msg metadata]
+                                    (when (and (nil? msg)
+                                               (some? metadata))
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]
-        ((mw/protobuf->hash handler-fn nil topic-entity-name) nil))
+        ((mw/protobuf->hash handler-fn nil topic-entity-name) nil metadata))
       (is (true? @handler-fn-called?))
       (is (true? @metric-reporter-called?))))
   (testing "using the new deserializer function"
@@ -113,8 +119,9 @@
           topic-entity-name           "test"
           message                     {:id   7
                                        :path "/photos/h2k3j4h9h23"}
+          metadata                    {:partition 1 :topic "topic" :timestamp 1234567890}
           proto-class                 Example$Photo
           proto-message               (proto/->bytes (proto/create Example$Photo message))]
       (with-redefs [mw/deserialize-message (fn [_ _ _ _] (reset! deserialize-message-called? true))]
-        ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) proto-message)
+        ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) proto-message metadata)
         (is (true? @deserialize-message-called?))))))

@@ -1,11 +1,9 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
-            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
-            [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.util.error :refer [report-error]])
   (:import (java.time Instant)))
 
@@ -15,7 +13,7 @@
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
 (defn mapper-func [mapper-fn channels]
-  (fn [{:keys [topic-entity message] :as message-payload}]
+  (fn [{:keys [topic-entity message metadata] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
           topic-entity-name                   (name topic-entity)
           new-relic-transaction-name          (str topic-entity-name ".handler-fn")
@@ -27,11 +25,12 @@
           retry-metric                        "retry"
           skip-metric                         "skip"
           failure-metric                      "failure"
+          _                                   (println "MAPPER MESSAGE PAYLOAD>>> " message-payload)
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]]
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time                      (.toEpochMilli (Instant/now))
-                return-code                     (mapper-fn message)
+                return-code                     (mapper-fn message metadata)
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
@@ -53,7 +52,7 @@
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
 (defn channel-mapper-func [mapper-fn channel]
-  (fn [{:keys [topic-entity message] :as message-payload}]
+  (fn [{:keys [topic-entity message metadata] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
           topic-entity-name                   (name topic-entity)
           channel-name                        (name channel)
@@ -70,7 +69,7 @@
       (nr/with-tracing "job" metric-namespace
         (try
           (let [start-time                     (.toEpochMilli (Instant/now))
-                return-code                    (mapper-fn message)
+                return-code                    (mapper-fn message metadata)
                 end-time                       (.toEpochMilli (Instant/now))
                 time-val                       (- end-time start-time)
                 execution-time-namespace       "execution-time"
