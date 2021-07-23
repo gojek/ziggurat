@@ -68,29 +68,29 @@
         comparable-message-payload (bytes-to-str message-payload)]
     (testing "get the dead set messages from dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-                       (let [count-of-messages 10
+        (let [count-of-messages 10
               _                 (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-dead-queue message-payload))
               dead-set-messages           (consumer/get-dead-set-messages topic-entity count-of-messages)
               comparable-deadset-messages (map bytes-to-str dead-set-messages)]
-                         (is (= (repeat count-of-messages comparable-message-payload) comparable-deadset-messages))
+          (is (= (repeat count-of-messages comparable-message-payload) comparable-deadset-messages))
 
                          ;; dead-set messages fetched again to prove that they don't get lost on first read
-                         (is (= (repeat count-of-messages comparable-message-payload) (map bytes-to-str (consumer/get-dead-set-messages topic-entity count-of-messages)))))))
+          (is (= (repeat count-of-messages comparable-message-payload) (map bytes-to-str (consumer/get-dead-set-messages topic-entity count-of-messages)))))))
 
     (testing "get the dead set messages from a channel dead set queue and don't pop the messages from the queue"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)
                                       :channel-1  (constantly nil)}}
-                       (let [count-of-messages 10
+        (let [count-of-messages 10
               channel           "channel-1"
               _                 (doseq [_ (range count-of-messages)]
                                   (producer/publish-to-channel-dead-queue channel message-payload))
               dead-set-messages           (consumer/get-dead-set-messages topic-entity channel count-of-messages)
               comparable-deadset-messages (map bytes-to-str dead-set-messages)]
-                         (is (= (repeat count-of-messages comparable-message-payload) comparable-deadset-messages))
+          (is (= (repeat count-of-messages comparable-message-payload) comparable-deadset-messages))
 
                          ;; dead-set messages fetched again to prove that they don't get lost on first read
-                         (is (= (repeat count-of-messages comparable-message-payload) (map bytes-to-str (consumer/get-dead-set-messages topic-entity channel count-of-messages)))))))))
+          (is (= (repeat count-of-messages comparable-message-payload) (map bytes-to-str (consumer/get-dead-set-messages topic-entity channel count-of-messages)))))))))
 
 (defn- mock-mapper-fn [{:keys [retry-counter-atom
                                call-counter-atom

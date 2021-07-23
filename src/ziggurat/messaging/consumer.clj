@@ -18,9 +18,9 @@
 (defn- nippy-deserialize
   [frozen]
   (try
-     (nippy/thaw frozen)
-     (catch Exception e
-       (log/error e "Failed to deserialize nippy message"))))
+    (nippy/thaw frozen)
+    (catch Exception e
+      (log/error e "Failed to deserialize nippy message"))))
 
 (defn- try-deserialize-message
   [topic-entity-name message]
