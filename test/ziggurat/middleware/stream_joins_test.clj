@@ -20,8 +20,8 @@
           left-proto-message  (proto/->bytes (proto/create Example$Photo left-message))
           right-proto-message (proto/->bytes (proto/create Example$Photo right-message))
           handler-fn          (fn [{:keys [left right]}]
-                                (when (and (= left {:message left-message :topic-entity :test :retry-count 0})
-                                           (= right {:message right-message :topic-entity :test :retry-count 0}))
+                                (if (and (= left left-message)
+                                         (= right right-message))
                                   (reset! handler-fn-called? true)))]
       ((sjmw/protobuf->hash handler-fn proto-class topic-entity-name) {:left left-proto-message :right right-proto-message})
       (is (true? @handler-fn-called?))))
@@ -36,8 +36,8 @@
           left-proto-message  (proto/->bytes (proto/create Example$Photo left-message))
           right-proto-message (proto/->bytes (proto/create Example$Photo right-message))
           handler-fn          (fn [{:keys [left right]}]
-                                (when (and (= left {:message left-message :topic-entity :test :retry-count 0})
-                                           (= right {:message right-message :topic-entity :test :retry-count 0}))
+                                (if (and (= left left-message)
+                                         (= right right-message))
                                   (reset! handler-fn-called? true)))]
       ((sjmw/protobuf->hash handler-fn [proto-class proto-class] topic-entity-name) {:left left-proto-message :right right-proto-message})
       (is (true? @handler-fn-called?)))))

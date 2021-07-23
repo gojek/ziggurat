@@ -43,7 +43,7 @@
             keys)))
 
 (defn mount-config []
-  (-> (mount/only [#'config/config #'metrics/statsd-reporter])
+  (-> (mount/only [#'config/config])
       (mount/swap {#'config/config (get-default-or-cluster-config (config/config-from-env test-config-file-name))})
       (mount/start)))
 
