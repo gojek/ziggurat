@@ -7,10 +7,9 @@
             [ziggurat.middleware.default :as default-middleware]
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.middleware.stream-joins :as stream-joins-middleware]
-            [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-streams stop-streams stop-stream start-stream]]
-            [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]]
+            [ziggurat.streams :refer [add-stream-thread get-stream-thread-count handle-uncaught-exception remove-stream-thread start-stream start-streams stop-stream stop-streams]]
             [ziggurat.tracer :refer [tracer]])
-  (:import [flatland.protobuf.test Example$Photo]
+  (:import [com.gojek.test.proto Example$Photo]
            [io.opentracing.tag Tags]
            [java.util Properties]
            [org.apache.kafka.clients.producer ProducerConfig]
@@ -76,7 +75,7 @@
 
 (deftest start-streams-with-since-test
   (let [message-received-count        (atom 0)
-        mapped-fn                     (get-mapped-fn message-received-count)
+        mapped-fn                     (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         times                         6
         oldest-processed-message-in-s 10
         kvs                           (repeat times message-key-value)
@@ -97,7 +96,7 @@
 
 (deftest start-streams-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         times                  6
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -116,24 +115,24 @@
 
 (deftest stop-stream-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
         _                      (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams #'ziggurat.streams/stream))}}))
+                                                         :stop  (fn [] (stop-streams #'ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING)))
 
 (deftest start-stopped-stream-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
         _                      (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+                                                         :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
@@ -143,12 +142,12 @@
 
 (deftest stop-restarted-stream-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
         _                      (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+                                                         :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
@@ -160,17 +159,18 @@
 
 (deftest stop-desired-stream-only-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
-    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}
-                                                                                       :using-string-serde {:handler-fn handler-fn}}
+        _                      (mount/start)
+        stream-routes          {:default            {:handler-fn handler-fn}
+                                :using-string-serde {:handler-fn handler-fn}}]
+    (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams stream-routes
                                                                                       (-> (ziggurat-config)
                                                                                           (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                                                           (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)
                                                                                           (assoc-in [:stream-router :using-string-serde :application-id] (rand-application-id))
                                                                                           (assoc-in [:stream-router :using-string-serde :changelog-topic-replication-factor] changelog-topic-replication-factor))))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+                                                         :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
@@ -178,38 +178,38 @@
 
 (deftest stop-duplicate-stream-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
         _                      (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+                                                         :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
   (poll-to-check-if-running ziggurat.streams/stream)
   (stop-stream :default)
   (is (not= (.state (get ziggurat.streams/stream :default)) KafkaStreams$State/RUNNING))
   (stop-stream :default))
 
 (deftest stop-invalid-stream-test
-  (let [is-close-called        (atom 0)
-        mapped-fn              (get-mapped-fn is-close-called)
-        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
+  (let [is-close-called (atom 0)
+        mapped-fn       (get-mapped-fn is-close-called {:message message, :topic-entity :default, :retry-count 0})
+        handler-fn      (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _               (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}})
+                                                         :stop  (fn [] (stop-streams ziggurat.streams/stream))}})
     (poll-to-check-if-running ziggurat.streams/stream)
     (with-redefs [ziggurat.streams/close-stream (fn [] (swap! is-close-called inc))]
       (stop-stream :invalid-topic-entity)
       (is (= @is-close-called 0)))))
 
 (deftest start-invalid-stream-test
-  (let [is-close-called        (atom 0)
-        mapped-fn              (get-mapped-fn is-close-called)
-        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
+  (let [is-close-called (atom 0)
+        mapped-fn       (get-mapped-fn is-close-called {:message message, :topic-entity :default, :retry-count 0})
+        handler-fn      (default-middleware/protobuf->hash mapped-fn proto-class :default)
+        _               (mount/start)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
-                                                         :stop (fn [] (stop-streams ziggurat.streams/stream))}}))
+                                                         :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
   (let [is-close-called (atom 0)]
     (with-redefs [mount/start-with-states (fn [] (swap! is-close-called inc))]
       (start-stream :invalid-topic-entity)
@@ -221,7 +221,8 @@
       (with-redefs [ziggurat-config (fn [] (-> orig-config
                                                (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
-              mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
+              mapped-fn              (get-mapped-fn message-received-count {:topic              {:message message :topic-entity :default :retry-count 0}
+                                                                            :another-test-topic {:message message :topic-entity :default, :retry-count 0}})
               times                  1
               kvs                    (repeat times message-key-value)
               handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -251,7 +252,8 @@
       (with-redefs [ziggurat-config (fn [] (-> orig-config
                                                (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
-              mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
+              mapped-fn              (get-mapped-fn message-received-count {:topic              {:message message :topic-entity :default :retry-count 0}
+                                                                            :another-test-topic {:message message :topic-entity :default :retry-count 0}})
               times                  1
               kvs                    (repeat times message-key-value)
               handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -281,7 +283,8 @@
       (with-redefs [ziggurat-config (fn [] (-> orig-config
                                                (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
-              mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
+              mapped-fn              (get-mapped-fn message-received-count {:topic              {:message message :topic-entity :default :retry-count 0}
+                                                                            :another-test-topic {:message message :topic-entity :default :retry-count 0}})
               times                  1
               kvs                    (repeat times message-key-value)
               handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -311,13 +314,13 @@
       (with-redefs [ziggurat-config (fn [] (-> original-config
                                                (assoc-in [:alpha-features :stream-joins] false)))]
         (let [handler-fn (constantly nil)
-              streams                (start-streams {:default {:handler-fn handler-fn}}
-                                                    (-> (ziggurat-config)
-                                                        (assoc-in [:stream-router :default :consumer-type] :stream-joins)
-                                                        (assoc-in [:stream-router :default :input-topics] {:topic {:name "topic"} :another-test-topic {:name "another-test-topic"}})
-                                                        (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 5000 :join-type :outer}})
-                                                        (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                        (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+              streams    (start-streams {:default {:handler-fn handler-fn}}
+                                        (-> (ziggurat-config)
+                                            (assoc-in [:stream-router :default :consumer-type] :stream-joins)
+                                            (assoc-in [:stream-router :default :input-topics] {:topic {:name "topic"} :another-test-topic {:name "another-test-topic"}})
+                                            (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 5000 :join-type :outer}})
+                                            (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                            (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
           (is (empty? streams)))))))
 
 (deftest start-streams-test-with-string-serde
@@ -341,7 +344,7 @@
 
 (deftest start-streams-test-with-tracer
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         times                  1
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -369,7 +372,7 @@
 
 (deftest start-streams-test-when-tracer-is-not-configured
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
+        mapped-fn              (get-mapped-fn message-received-count {:message message :topic-entity :default :retry-count 0})
         times                  1
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -389,7 +392,7 @@
 
 (deftest add-remove-stream-thread-test
   (let [message-received-count           (atom 0)
-        mapped-fn                        (get-mapped-fn message-received-count)
+        mapped-fn                        (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         times                            6
         kvs                              (repeat times message-key-value)
         handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -415,7 +418,7 @@
 
 (deftest remove-stream-thread-to-zero-test
   (let [message-received-count           (atom 0)
-        mapped-fn                        (get-mapped-fn message-received-count)
+        mapped-fn                        (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
         times                            0
         kvs                              (repeat times message-key-value)
         handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -468,4 +471,3 @@
     (testing "should return REPLACE_THREAD"
       (let [r (handle-uncaught-exception :replace-thread t)]
         (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD))))))
-

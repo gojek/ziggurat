@@ -3,7 +3,7 @@
             [protobuf.core :as proto]
             [ziggurat.fixtures :as fix]
             [ziggurat.middleware.stream-joins :as sjmw])
-  (:import [flatland.protobuf.test Example$Photo]))
+  (:import [com.gojek.test.proto Example$Photo]))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))
@@ -20,8 +20,8 @@
           left-proto-message  (proto/->bytes (proto/create Example$Photo left-message))
           right-proto-message (proto/->bytes (proto/create Example$Photo right-message))
           handler-fn          (fn [{:keys [left right]}]
-                                (if (and (= left left-message)
-                                         (= right right-message))
+                                (when (and (= left {:message left-message :topic-entity :test :retry-count 0})
+                                           (= right {:message right-message :topic-entity :test :retry-count 0}))
                                   (reset! handler-fn-called? true)))]
       ((sjmw/protobuf->hash handler-fn proto-class topic-entity-name) {:left left-proto-message :right right-proto-message})
       (is (true? @handler-fn-called?))))
@@ -36,8 +36,8 @@
           left-proto-message  (proto/->bytes (proto/create Example$Photo left-message))
           right-proto-message (proto/->bytes (proto/create Example$Photo right-message))
           handler-fn          (fn [{:keys [left right]}]
-                                (if (and (= left left-message)
-                                         (= right right-message))
+                                (when (and (= left {:message left-message :topic-entity :test :retry-count 0})
+                                           (= right {:message right-message :topic-entity :test :retry-count 0}))
                                   (reset! handler-fn-called? true)))]
       ((sjmw/protobuf->hash handler-fn [proto-class proto-class] topic-entity-name) {:left left-proto-message :right right-proto-message})
       (is (true? @handler-fn-called?)))))

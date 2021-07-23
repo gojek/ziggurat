@@ -1,10 +1,13 @@
 (ns ziggurat.init
   "Contains the entry point for your application."
-  (:require [clojure.tools.logging :as log]
-            [mount.core :as mount :refer [defstate]]
+  (:require [clojure.set :as set]
+            [clojure.string :as str]
+            [clojure.tools.logging :as log]
+            [mount.core :as mount]
             [schema.core :as s]
-            [clojure.set :as set]
             [ziggurat.config :refer [ziggurat-config] :as config]
+            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
+            [ziggurat.kafka-consumer.executor-service :as executor-service]
             [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
@@ -15,9 +18,7 @@
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
             [ziggurat.tracer :as tracer]
-            [ziggurat.util.java-util :as util]
-            [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver])
+            [ziggurat.util.java-util :as util])
   (:gen-class
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
@@ -179,6 +180,8 @@
    {s/Keyword {:handler-fn (s/pred #(fn? %))
                s/Keyword   (s/pred #(fn? %))}}))
 
+(declare BatchRoute)
+
 (s/defschema BatchRoute
   (s/conditional
    #(and (seq %)
@@ -188,9 +191,9 @@
 (defn- validate-routes-against-config
   ([routes route-type]
    (doseq [[topic-entity handler-map] routes]
-     (let [route-config (-> (ziggurat-config)
-                            (get-in [route-type topic-entity]))
-           channels      (-> handler-map (dissoc :handler-fn) (keys) (set))
+     (let [route-config    (-> (ziggurat-config)
+                               (get-in [route-type topic-entity]))
+           channels        (-> handler-map (dissoc :handler-fn) (keys) (set))
            config-channels (-> (ziggurat-config)
                                (get-in [route-type topic-entity :channels])
                                (keys)
@@ -199,7 +202,7 @@
          (throw (IllegalArgumentException. (format "Error! Route %s isn't present in the %s config" topic-entity route-type)))
          (when-not (set/subset? channels config-channels)
            (let [diff (set/difference channels config-channels)]
-             (throw (IllegalArgumentException. (format "Error! The channel(s) %s aren't present in the channels config of %s " (clojure.string/join "," diff) route-type))))))))))
+             (throw (IllegalArgumentException. (format "Error! The channel(s) %s aren't present in the channels config of %s " (str/join "," diff) route-type))))))))))
 
 (defn validate-routes [stream-routes batch-routes modes]
   (when (contains? (set modes) :stream-worker)
@@ -210,13 +213,13 @@
     (validate-routes-against-config batch-routes :batch-routes)))
 
 (defn- derive-modes [stream-routes batch-routes actor-routes]
-  (let [base-modes    [:management-api :worker]]
-    (if (and (nil? stream-routes) (nil? batch-routes))
+  (let [base-modes [:management-api :worker]]
+    (when (and (nil? stream-routes) (nil? batch-routes))
       (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in init args")))
     (cond-> base-modes
       (some? stream-routes) (conj :stream-worker)
-      (some? batch-routes) (conj :batch-worker)
-      (some? actor-routes) (conj :api-server))))
+      (some? batch-routes)  (conj :batch-worker)
+      (some? actor-routes)  (conj :api-server))))
 
 (defn validate-modes [modes stream-routes batch-routes actor-routes]
   (let [derived-modes (if-not (empty? modes)

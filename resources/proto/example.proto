@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package com.gojek.test.proto;
+
+option java_package = "com.gojek.test.proto";
+option java_outer_classname = "Example";
+
+message Photo {
+  int32  id     = 1;
+  string path   = 2;
+  optional bytes  image  = 6;
+
+  message Label {
+    string item   = 1;
+    bool   exists = 2;
+  }
+
+  message Attr {
+    string key = 1;
+    optional string val = 2;
+  }
+
+  message Tag {
+    int32 person_id = 1;
+    optional int32 y_coord   = 3;
+    optional int32 width     = 4;
+    optional int32 height    = 5;
+  }
+}
