@@ -15,7 +15,7 @@
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
 (defn mapper-func [mapper-fn channels]
-  (fn [{:keys [topic-entity message] :as message-payload}]
+  (fn [{:keys [topic-entity] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
           topic-entity-name                   (name topic-entity)
           new-relic-transaction-name          (str topic-entity-name ".handler-fn")
@@ -31,7 +31,7 @@
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time                      (.toEpochMilli (Instant/now))
-                return-code                     (mapper-fn message)
+                return-code                     (mapper-fn (dissoc message-payload :topic-entity))
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
@@ -53,7 +53,7 @@
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
 (defn channel-mapper-func [mapper-fn channel]
-  (fn [{:keys [topic-entity message] :as message-payload}]
+  (fn [{:keys [topic-entity] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
           topic-entity-name                   (name topic-entity)
           channel-name                        (name channel)
@@ -70,7 +70,7 @@
       (nr/with-tracing "job" metric-namespace
         (try
           (let [start-time                     (.toEpochMilli (Instant/now))
-                return-code                    (mapper-fn message)
+                return-code                    (mapper-fn (dissoc message-payload :topic-entity))
                 end-time                       (.toEpochMilli (Instant/now))
                 time-val                       (- end-time start-time)
                 execution-time-namespace       "execution-time"
