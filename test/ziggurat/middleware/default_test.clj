@@ -79,16 +79,15 @@
                               :path "/photos/h2k3j4h9h23"}
           proto-class        Example$Photo
           topic-entity-name  "test"
-          proto-message      (proto/->bytes (proto/create proto-class message))
+          proto-message      {:message (proto/->bytes (proto/create proto-class message)) :metadata {:topic "topic" :timestamp 1234567890 :partition 1}}
           handler-fn         (fn [msg]
-                               (when (= msg message)
+                               (when (= (:message msg) message)
                                  (reset! handler-fn-called? true)))]
       ((mw/protobuf->hash handler-fn proto-class topic-entity-name) proto-message)
       (is (true? @handler-fn-called?))))
   (testing "When an already deserialised message is passed to the function it calls the handler fn without altering it"
     (let [handler-fn-called? (atom false)
-          message            {:id   7
-                              :path "/photos/h2k3j4h9h23"}
+          message            {:message {:id 7 :path "/photos/h2k3j4h9h23"} :metadata {:topic "topic" :timestamp 1234567890 :partition 1}}
           proto-class        Example$Photo
           topic-entity-name  "test"
           handler-fn         (fn [msg]
@@ -101,11 +100,11 @@
           metric-reporter-called? (atom false)
           topic-entity-name       "test"
           handler-fn              (fn [msg]
-                                    (when (nil? msg)
+                                    (when (nil? (:message msg))
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]
-        ((mw/protobuf->hash handler-fn nil topic-entity-name) nil))
+        ((mw/protobuf->hash handler-fn nil topic-entity-name) {:message nil :metadata {:topic "topic" :timestamp 1234567890 :partition 1}}))
       (is (true? @handler-fn-called?))
       (is (true? @metric-reporter-called?))))
   (testing "using the new deserializer function"
@@ -114,7 +113,7 @@
           message                     {:id   7
                                        :path "/photos/h2k3j4h9h23"}
           proto-class                 Example$Photo
-          proto-message               (proto/->bytes (proto/create Example$Photo message))]
+          proto-message               {:message (proto/->bytes (proto/create Example$Photo message)) :metadata {:topic "topic" :timestamp 1234567890 :partition 1}}]
       (with-redefs [mw/deserialize-message (fn [_ _ _ _] (reset! deserialize-message-called? true))]
         ((mw/protobuf->hash (constantly nil) proto-class topic-entity-name) proto-message)
         (is (true? @deserialize-message-called?))))))
