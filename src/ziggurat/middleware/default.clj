@@ -3,7 +3,6 @@
             [protobuf.core :as protobuf]
             [protobuf.impl.flatland.mapdef :as protodef]
             [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.message-payload :refer [mk-message-payload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.error :refer [report-error]])
   (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]))
@@ -36,12 +35,10 @@
             {}
             fields)))
 
-(defn serialize-message
-  [proto-class topic-entity message]
-  (let [message (mk-message-payload (:message message) topic-entity (:retry-count message))]
-    (protobuf/->bytes (protobuf/create proto-class message))))
-
-(def serialize-to-message-payload (partial serialize-message MessagePayloadProto$MessagePayload))
+(defn serialize-to-message-payload-proto
+  [message]
+  (let [updated-message (update message :topic-entity name)]
+    (protobuf/->bytes (protobuf/create MessagePayloadProto$MessagePayload updated-message))))
 
 (defn deserialize-message
   "This function takes in the message(proto Byte Array) and the proto-class and deserializes the proto ByteArray into a
@@ -60,13 +57,7 @@
                               protodef/mapdef->schema
                               :fields
                               keys)
-             result       (select-keys loaded-proto proto-keys)
-             msg          (if (:message result) ;; TODO: please read the TODO above!
-                            (edn/read-string (.toStringUtf8 (:message result)))
-                            result)
-             te           (keyword (get result :topic-entity topic-entity-name))
-             rc           (get result :retry-count 0)
-             result       {:message msg :topic-entity te :retry-count rc}]
+             result       (select-keys loaded-proto proto-keys)]
          (if flatten-protobuf-struct?
            (let [struct-entries (-> proto-klass
                                     protodef/mapdef->schema

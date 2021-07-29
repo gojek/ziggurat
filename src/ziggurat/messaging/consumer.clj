@@ -11,13 +11,28 @@
             [ziggurat.messaging.util :refer [prefixed-queue-name prefixed-channel-name]]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw]
-            [ziggurat.util.error :refer [report-error]])
-  (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]))
+            [ziggurat.util.error :refer [report-error]]
+            [ziggurat.messaging.producer :as producer])
+  (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]
+           (com.google.protobuf ByteString)))
+
+(defn- nippy-deserialize
+  [frozen]
+  (try
+    (println "********* nippy ******************")
+    (nippy/thaw frozen)
+    (catch Exception e
+      (log/error e "Failed to deserialize nippy message"))))
 
 (defn- try-deserialize-message
   [topic-entity-name message]
   (let [from-proto (mw/deserialize-message message MessagePayloadProto$MessagePayload topic-entity-name)]
-    (if (nil? from-proto) (nippy/thaw message) from-proto)))
+    (if (nil? from-proto)
+      (nippy-deserialize message)
+      (-> from-proto
+          (update :message #(.toByteArray ^ByteString %))
+          (update :topic-entity keyword)
+          (update :retry-count #(if (nil? %) 0 %))))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` or `proto` (whichever of the two succeeds).

@@ -9,6 +9,7 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :as util]
+            [ziggurat.middleware.default :as zmd]
             [ziggurat.metrics :as metrics]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as rmq])
@@ -16,12 +17,15 @@
            (java.io IOException)
            [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]))
 
-(use-fixtures :once (join-fixtures [fix/init-rabbit-mq
-                                    fix/silence-logging]))
+(use-fixtures :once (join-fixtures [fix/init-rabbit-mq fix/silence-logging]))
+
+(defn- bytes-to-str
+  [message-payload]
+  (-> message-payload
+      (update :message #(String. ^"[B" %))))
 
 (def topic-entity :default)
-;; (def message-payload (mk-message-payload {:foo "bar"} topic-entity 0))
-(def message-payload {:message {:foo "bar"} :topic-entity topic-entity})
+(def message-payload {:message (.getBytes "hello-world") :topic-entity topic-entity})
 (defn retry-count-config [] (-> (config/ziggurat-config) :retry :count))
 
 (deftest retry-for-channel-test
@@ -38,7 +42,7 @@
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
             (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
-          (is (= expected-message-payload message-from-mq))))))
+          (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "message in channel will be retried as defined in message retry-count when message has retry-count"
     (fix/with-queues
@@ -56,7 +60,7 @@
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
             (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
-          (is (= expected-message-payload message-from-mq))))))
+          (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "message in channel will be retried in delay queue with suffix 1 if message retry-count exceeds retry count in channel config"
     (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
@@ -76,7 +80,7 @@
               expected-message-payload (assoc message-payload :retry-count 9)
               _                        (producer/retry-for-channel retry-message-payload channel)
               message-from-mq          (rmq/get-message-from-channel-retry-queue topic-entity channel 1)]
-          (is (= expected-message-payload message-from-mq))))))
+          (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "message in channel will be retried with linear queue timeout"
     (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
@@ -97,7 +101,7 @@
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
               (producer/retry-for-channel message-from-mq channel)))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
-            (is (= expected-message-payload message-from-mq)))))))
+            (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq))))))))
 
   (testing "message in channel will be retried with exponential timeout calculated from channel specific queue-timeout-ms value"
     (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
@@ -119,7 +123,7 @@
             (let [message-from-mq (rmq/get-message-from-channel-retry-queue topic-entity channel (- 5 @retry-count))]
               (producer/retry-for-channel message-from-mq channel)))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
-            (is (= expected-message-payload message-from-mq))))))))
+            (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))))
 
 (deftest retry-test
   (testing "message with a retry count of greater than 0 will publish to delay queue"
@@ -129,7 +133,7 @@
             expected-message-payload (update retry-message-payload :retry-count dec)]
         (producer/retry retry-message-payload)
         (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
-          (is (= expected-message-payload message-from-mq))))))
+          (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "message with a retry count of 0 will publish to dead queue"
     (fix/with-queues
@@ -138,7 +142,7 @@
             expected-dead-set-message (assoc message-payload :retry-count (retry-count-config))]
         (producer/retry retry-message-payload)
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= expected-dead-set-message message-from-mq))))))
+          (is (= (bytes-to-str expected-dead-set-message) (bytes-to-str message-from-mq)))))))
 
   (testing "message with no retry count will publish to delay queue"
     (fix/with-queues
@@ -146,7 +150,7 @@
       (let [expected-message (assoc message-payload :retry-count 4)]
         (producer/retry message-payload)
         (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
-          (is (= message-from-mq expected-message))))))
+          (is (= (bytes-to-str expected-message) (bytes-to-str message-from-mq)))))))
 
   (testing "publish to delay queue publishes with expiration from config"
     (fix/with-queues
@@ -182,7 +186,7 @@
           (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
             (producer/retry message-from-mq)))
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= expected-message-payload message-from-mq))))))
+          (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "message will be retried as defined in message retry-count when message has retry-count"
     (fix/with-queues
@@ -196,7 +200,7 @@
           (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
             (producer/retry message-from-mq)))
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-          (is (= expected-message-payload message-from-mq))))))
+          (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "[Backward Compatiblity] Messages will be retried even if retry type is not present in the config."
     (with-redefs [config/ziggurat-config (constantly (update-in (config/ziggurat-config) [:retry] dissoc :type))]
@@ -211,7 +215,7 @@
             (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
               (producer/retry message-from-mq)))
           (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-            (is (= expected-message-payload message-from-mq))))))))
+            (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))))
 
 (deftest retry-with-exponential-backoff-test
   (testing "message will publish to delay with retry count queue when exponential backoff enabled"
@@ -225,7 +229,7 @@
           (let [expected-message (assoc message-payload :retry-count 4)]
             (producer/retry message-payload)
             (let [message-from-mq (rmq/get-message-from-retry-queue "default" 1)]
-              (is (= message-from-mq expected-message))))))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message)))))))
 
       (testing "message with available retry counts as 4 will be published to delay queue with suffix 2"
         (fix/with-queues
@@ -234,7 +238,7 @@
                 expected-message      (assoc message-payload :retry-count 3)]
             (producer/retry retry-message-payload)
             (let [message-from-mq (rmq/get-message-from-retry-queue "default" 2)]
-              (is (= message-from-mq expected-message))))))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message)))))))
 
       (testing "message with available retry counts as 1 will be published to delay queue with suffix 5"
         (fix/with-queues
@@ -243,7 +247,7 @@
                 expected-message      (assoc message-payload :retry-count 0)]
             (producer/retry retry-message-payload)
             (let [message-from-mq (rmq/get-message-from-retry-queue "default" 5)]
-              (is (= message-from-mq expected-message))))))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message)))))))
 
       (testing "message will be retried in delay queue with suffix 1 if message retry-count exceeds retry count in config"
         (fix/with-queues
@@ -252,7 +256,7 @@
                 expected-message-payload (assoc message-payload :retry-count 9)]
             (producer/retry retry-message-payload)
             (let [message-from-mq (rmq/get-message-from-retry-queue "default" 1)]
-              (is (= message-from-mq expected-message-payload)))))))))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message-payload))))))))))
 
 (deftest make-queues-test
   (let [ziggurat-config (config/ziggurat-config)]
@@ -614,3 +618,12 @@
                                                               :rabbit-mq            {:delay {:queue-timeout-ms 5000}}))]
          ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
         (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
+
+(deftest publish-with-proto-serialization-test
+  (testing "publish should deserialize a message using proto before publishing"
+    (let [serialize-called (atom false)]
+      (with-redefs [zmd/serialize-to-message-payload-proto (fn [_] (reset! serialize-called true))
+                    lch/open                               (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish                             (fn [_ _ _ _ _])]
+        (producer/publish "exchange" message-payload)
+        (is (true? @serialize-called))))))
