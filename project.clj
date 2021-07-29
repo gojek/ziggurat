@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject tech.gojek/ziggurat "3.15.0"
+(defproject tech.gojek/ziggurat "3.16.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -62,7 +62,7 @@
   :pedantic? :warn
   :java-source-paths ["src/com"]
   :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
-  :aot [ziggurat.kafka-consumer.invalid-return-type-exception ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.fixtures]
+  :aot [ziggurat.kafka-consumer.invalid-return-type-exception]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
                        :pedantic?   :abort}

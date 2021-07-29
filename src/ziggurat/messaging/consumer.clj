@@ -11,13 +11,15 @@
             [ziggurat.messaging.util :refer [prefixed-queue-name prefixed-channel-name]]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw]
-            [ziggurat.util.error :refer [report-error]])
+            [ziggurat.util.error :refer [report-error]]
+            [ziggurat.messaging.producer :as producer])
   (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]
            (com.google.protobuf ByteString)))
 
 (defn- nippy-deserialize
   [frozen]
   (try
+    (println "********* nippy ******************")
     (nippy/thaw frozen)
     (catch Exception e
       (log/error e "Failed to deserialize nippy message"))))
