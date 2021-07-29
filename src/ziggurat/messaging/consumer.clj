@@ -31,8 +31,7 @@
       (nippy-deserialize message)
       (-> from-proto
           (update :message #(.toByteArray ^ByteString %))
-          (update :topic-entity keyword)
-          (update :retry-count #(if (nil? %) 0 %))))))
+          (update :topic-entity keyword)))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` or `proto` (whichever of the two succeeds).
@@ -104,7 +103,7 @@
   ([topic-entity channel count processing-fn]
    (with-open [ch (lch/open connection)]
      (doall (for [_ (range count)]
-              (let [queue-name     (construct-queue-name topic-entity channel)
+              (let [queue-name (construct-queue-name topic-entity channel)
                     [meta payload] (lb/get ch queue-name false)]
                 (when (some? payload)
                   (process-message-from-queue ch meta payload topic-entity processing-fn))))))))

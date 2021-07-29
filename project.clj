@@ -35,7 +35,7 @@
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
-                 [clojusc/protobuf "3.5.1-v1.1"]
+                 [clojusc/protobuf "3.5.1-v1.1" :exclusions [com.google.protobuf/protobuf-java]]
                  [prismatic/schema "1.1.12"]
                  [clj-statsd "0.4.0"]
                  [ring/ring "1.9.3"]
@@ -53,7 +53,7 @@
                                com.fasterxml.jackson.dataformat/jackson-dataformat-smile
                                com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
                  [metosin/ring-swagger-ui "3.46.0"]
-                 [com.google.protobuf/protobuf-java "3.17.3"]] ;; NOTE: protoc should have same version as this
+                 [com.google.protobuf/protobuf-java "3.17.3"] ] ;; NOTE: protoc should have same version as this
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password

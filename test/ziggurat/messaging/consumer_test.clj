@@ -16,7 +16,8 @@
             [protobuf.core :as proto]
             [taoensso.nippy :as nippy])
   (:import (com.gojek.test.proto Example$Photo)
-           (com.google.protobuf ByteString ByteString$LiteralByteString)))
+           (com.google.protobuf ByteString ByteString$LiteralByteString)
+           (com.ziggurat.proto MessagePayloadProto MessagePayloadProto$MessagePayload)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
@@ -336,14 +337,11 @@
       (let [proto-serialized-message-payload (zmd/serialize-to-message-payload-proto message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
         (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
-    (testing "should return deserialized message-payload with retry-count 0 if retry count is nil "
-      (let [expected-message-payload         (assoc message-payload :retry-count 0)
-            proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
-            converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
     (testing "should return deserialized message-payload with topic-entity as the keyword "
       (let [expected-message-payload         (assoc message-payload :retry-count 0)
             proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
+            deser-msg (zmd/deserialize-message proto-serialized-message-payload MessagePayloadProto$MessagePayload "default")
+            _ (println "DESER MESSAGE ############################################ " deser-msg)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
         (is (keyword? (:topic-entity converted-message-payload)))
         (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))

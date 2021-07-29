@@ -57,6 +57,7 @@
                               protodef/mapdef->schema
                               :fields
                               keys)
+             _            (println "MAPDEF->SCHEMA #####################################", protodef/mapdef->schema)
              result       (select-keys loaded-proto proto-keys)]
          (if flatten-protobuf-struct?
            (let [struct-entries (-> proto-klass
