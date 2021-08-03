@@ -189,17 +189,3 @@
                                                    (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) channel) message-payload)
           (is @reported-execution-time?))))))
-
-(deftest message-payload-schema-test
-  (testing "it validates the schema for a message containing retry-count"
-    (let [message {:message      {:foo "bar"}
-                   :topic-entity :topic
-                   :retry-count  2}]
-      (is (s/validate mp/message-payload-schema message))))
-  (testing "It validates the schema for a message that does not contain retry-count"
-    (let [message {:message      {:foo "bar"}
-                   :topic-entity :topic}]
-      (is (s/validate mp/message-payload-schema message))))
-  (testing "It raises exception if schema is not correct"
-    (let [message {:foo "bar"}]
-      (is (thrown? Exception (s/validate mp/message-payload-schema message))))))

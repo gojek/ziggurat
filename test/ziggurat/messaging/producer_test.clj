@@ -162,23 +162,10 @@
       {:default {:handler-fn #(constantly nil)}}
       (let [expected-props {:content-type "application/octet-stream"
                             :persistent   true
-                            :expiration   (str (get-in (rabbitmq-config) [`:delay :queue-timeout-ms]))
-                            :headers      {}}]
+                            :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
           (producer/publish-to-delay-queue message-payload)))))
-
-  (testing "publish to delay queue publishes with parsed record headers"
-    (fix/with-queues
-      {:default {:handler-fn #(constantly nil)}}
-      (let [test-message-payload (assoc message-payload :headers (RecordHeaders. (list (RecordHeader. "key" (byte-array (map byte "value"))))))
-            expected-props       {:content-type "application/octet-stream"
-                                  :persistent   true
-                                  :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))
-                                  :headers      {"key" "value"}}]
-        (with-redefs [lb/publish (fn [_ _ _ _ props]
-                                   (is (= expected-props props)))]
-          (producer/publish-to-delay-queue test-message-payload)))))
 
   (testing "message will be retried as defined in ziggurat config retry-count when message doesn't have retry-count"
     (fix/with-queues

@@ -95,10 +95,9 @@
           record-headers))
 
 (defn- properties-for-publish
-  [expiration headers]
+  [expiration]
   (let [props {:content-type "application/octet-stream"
-               :persistent   true
-               :headers      (record-headers->map headers)}]
+               :persistent   true}]
     (if expiration
       (assoc props :expiration (str expiration))
       props)))
@@ -113,8 +112,8 @@
   [exchange message-payload expiration]
   (try
     (with-open [ch (lch/open connection)]
-      (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
-                  (properties-for-publish expiration (:headers message-payload))))
+      (lb/publish ch exchange "" (nippy/freeze message-payload)
+                  (properties-for-publish expiration)))
     false
     (catch AlreadyClosedException e
       (handle-network-exception e message-payload))
