@@ -266,7 +266,7 @@
 (deftest process-message-test
   (testing "process-message function should ack message after once processing finishes"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message           (gen-message-payload topic-entity 0)
+      (let [message           (gen-message-payload topic-entity 1)
             processing-fn     (fn [message-arg]
                                 (is (= (bytes-to-str message-arg) (bytes-to-str message))))
             topic-entity-name (name topic-entity)]
@@ -298,7 +298,7 @@
               (is (= consumed-message nil))))))))
   (testing "process-message function should reject and re-queue a message if processing fails. It should also report the error"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message           (gen-message-payload topic-entity 0)
+      (let [message           (gen-message-payload topic-entity 1)
             processing-fn     (fn [message-arg]
                                 (is (= (bytes-to-str message-arg) (bytes-to-str message)))
                                 (throw (Exception. "exception message")))
@@ -316,7 +316,7 @@
               (is @report-fn-called?)))))))
   (testing "process-message function should reject and discard a message if message conversion fails"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [message           (gen-message-payload topic-entity 0)
+      (let [message           (gen-message-payload topic-entity 1)
             processing-fn     (fn [_] ())
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
@@ -338,19 +338,15 @@
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
         (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
     (testing "should return deserialized message-payload with topic-entity as the keyword "
-      (let [expected-message-payload         (assoc message-payload :retry-count 0)
-            proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
-            deser-msg (zmd/deserialize-message proto-serialized-message-payload MessagePayloadProto$MessagePayload "default")
-            _ (println "DESER MESSAGE ############################################ " deser-msg)
+      (let [proto-serialized-message-payload (zmd/serialize-to-message-payload-proto message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
         (is (keyword? (:topic-entity converted-message-payload)))
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
     (testing "should return deserialized message-payload with the message as a byte array "
-      (let [expected-message-payload         (assoc message-payload :retry-count 0)
-            proto-serialized-message-payload (zmd/serialize-to-message-payload-proto expected-message-payload)
+      (let [proto-serialized-message-payload (zmd/serialize-to-message-payload-proto message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
         (is (= "class [B" (str (type (:message converted-message-payload)))))
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
     (testing "should return a ziggurat.message_payload/->MessagePayload if serialized using nippy"
       (let [expected-message-payload         (assoc (zmp/->MessagePayload proto-message topic-entity) :retry-count 4)
             nippy-serialized-message-payload (nippy/freeze expected-message-payload)

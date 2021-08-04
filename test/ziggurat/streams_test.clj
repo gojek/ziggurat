@@ -96,7 +96,7 @@
 
 (deftest start-streams-test
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
+        mapped-fn              (get-mapped-fn message-received-count message)
         times                  6
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -221,8 +221,7 @@
       (with-redefs [ziggurat-config (fn [] (-> orig-config
                                                (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
-              mapped-fn              (get-mapped-fn message-received-count {:topic              {:message message :topic-entity :default :retry-count 0}
-                                                                            :another-test-topic {:message message :topic-entity :default, :retry-count 0}})
+              mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
               times                  1
               kvs                    (repeat times message-key-value)
               handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -252,8 +251,7 @@
       (with-redefs [ziggurat-config (fn [] (-> orig-config
                                                (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
-              mapped-fn              (get-mapped-fn message-received-count {:topic              {:message message :topic-entity :default :retry-count 0}
-                                                                            :another-test-topic {:message message :topic-entity :default :retry-count 0}})
+              mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
               times                  1
               kvs                    (repeat times message-key-value)
               handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -283,8 +281,7 @@
       (with-redefs [ziggurat-config (fn [] (-> orig-config
                                                (assoc-in [:alpha-features :stream-joins] true)))]
         (let [message-received-count (atom 0)
-              mapped-fn              (get-mapped-fn message-received-count {:topic              {:message message :topic-entity :default :retry-count 0}
-                                                                            :another-test-topic {:message message :topic-entity :default :retry-count 0}})
+              mapped-fn              (get-mapped-fn message-received-count {:topic message :another-test-topic message})
               times                  1
               kvs                    (repeat times message-key-value)
               handler-fn             (stream-joins-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -344,7 +341,7 @@
 
 (deftest start-streams-test-with-tracer
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
+        mapped-fn              (get-mapped-fn message-received-count)
         times                  1
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -372,7 +369,7 @@
 
 (deftest start-streams-test-when-tracer-is-not-configured
   (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count {:message message :topic-entity :default :retry-count 0})
+        mapped-fn              (get-mapped-fn message-received-count)
         times                  1
         kvs                    (repeat times message-key-value)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -392,7 +389,7 @@
 
 (deftest add-remove-stream-thread-test
   (let [message-received-count           (atom 0)
-        mapped-fn                        (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
+        mapped-fn                        (get-mapped-fn message-received-count)
         times                            6
         kvs                              (repeat times message-key-value)
         handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)
@@ -418,7 +415,7 @@
 
 (deftest remove-stream-thread-to-zero-test
   (let [message-received-count           (atom 0)
-        mapped-fn                        (get-mapped-fn message-received-count {:message message, :topic-entity :default, :retry-count 0})
+        mapped-fn                        (get-mapped-fn message-received-count)
         times                            0
         kvs                              (repeat times message-key-value)
         handler-fn                       (default-middleware/protobuf->hash mapped-fn proto-class :default)

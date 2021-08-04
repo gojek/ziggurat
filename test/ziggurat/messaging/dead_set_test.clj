@@ -11,7 +11,7 @@
                                     fix/mount-metrics]))
 
 (def topic-entity :default)
-(def default-message-payload {:message (.getBytes "foo-bar") :topic-entity topic-entity :retry-count 0})
+(def default-message-payload {:message (.getBytes "foo-bar") :topic-entity topic-entity :retry-count 1})
 
 (deftest replay-test
   (testing "puts message from dead set to instant queue"

@@ -18,7 +18,7 @@
   (let [service-name                    (:app-name (ziggurat-config))
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         topic-entity                    (name (first (keys stream-routes)))
-        message-payload                 {:message (.getBytes "foo-bar") :topic-entity (keyword topic-entity)}
+        message-payload                 {:message (.getBytes "foo-bar") :topic-entity (keyword topic-entity) :retry-count 5}
         expected-additional-tags        {:topic_name topic-entity}
         expected-metric-namespace       "message-processing"
         report-time-namespace           "handler-fn-execution-time"
@@ -54,7 +54,7 @@
                                                     (reset! successfully-processed? true)))]
             ((mapper/mapper-func (constantly :channel-1) [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
-              (is (= (bytes-to-str (assoc message-payload :retry-count 0)) (bytes-to-str  message-from-mq)))
+              (is (= (bytes-to-str message-payload) (bytes-to-str  message-from-mq)))
               (is @successfully-processed?))))))
 
     (testing "message process should raise exception if channel not in list"

@@ -125,13 +125,13 @@
   (testing "when batch handler returns non-empty retry vector those message should be added to rabbitmq retry queue"
     (let [expected-batch-size    10
           expected-retry-count    3
-          retry-messages          (vec (replicate expected-retry-count 0))
-          batch-handler          (fn [_] {:skip [] :retry (vec (replicate expected-retry-count 0))})
-          batch-payload        (mp/map->MessagePayload {:message (vec (replicate expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})
+          retry-messages         (vec (repeat expected-retry-count 0))
+          batch-handler          (fn [_] {:skip [] :retry (vec (repeat expected-retry-count 0))})
+          batch-payload          (mp/map->MessagePayload {:message (vec (repeat expected-batch-size 0)) :topic-entity :consumer-1 :retry-count nil})
           retried                (atom false)]
       (with-redefs [producer/retry (fn [message]
                                      (reset! retried true)
-                                     (is (= message (mp/map->MessagePayload {:message retry-messages :topic-entity :consumer-1 :retry-count nil}))))
+                                     (is (= message {:message retry-messages :topic-entity "consumer-1" :retry-count nil})))
                     metrics/increment-count (constantly nil)
                     metrics/report-time (constantly nil)]
         (ch/process batch-handler batch-payload)
