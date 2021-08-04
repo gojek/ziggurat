@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [ziggurat.config :refer :all]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.message-payload :refer [map->MessagePayload]]
+            [ziggurat.message-payload :refer [mk-message-payload]]
             [ziggurat.metrics :as metrics])
   (:import (org.apache.kafka.common.errors WakeupException)
            (java.time Duration Instant)
@@ -26,9 +26,7 @@
    (producer/retry batch-payload))
   ([batch current-retry-count topic-entity]
    (when (pos? (count batch))
-     (let [message (map->MessagePayload {:message         batch
-                                         :retry-count        current-retry-count
-                                         :topic-entity topic-entity})]
+     (let [message (mk-message-payload batch topic-entity current-retry-count)]
        (producer/retry message)))))
 
 (defn validate-return-type
@@ -74,7 +72,7 @@
   [records topic-entity]
   (let [key-value-pairs (map (fn [^ConsumerRecord m]
                                {:value (.value m) :key (.key m)}) records)]
-    (map->MessagePayload {:message key-value-pairs :topic-entity topic-entity})))
+    (mk-message-payload key-value-pairs topic-entity)))
 
 (defn poll-for-messages
   [^Consumer consumer handler-fn topic-entity consumer-config]

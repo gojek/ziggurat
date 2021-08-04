@@ -19,7 +19,6 @@
 (defn- nippy-deserialize
   [frozen]
   (try
-    (println "********* nippy ******************")
     (nippy/thaw frozen)
     (catch Exception e
       (log/error e "Failed to deserialize nippy message"))))

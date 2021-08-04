@@ -1,6 +1,6 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [ziggurat-config, channel-retry-count]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
@@ -10,7 +10,8 @@
 (defn- send-msg-to-channel [channels message-payload return-code]
   (when-not (contains? (set channels) return-code)
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
-  (producer/publish-to-channel-instant-queue return-code message-payload))
+  (let [message-payload (assoc message-payload :retry-count (channel-retry-count (:topic-entity message-payload) return-code))]
+    (producer/publish-to-channel-instant-queue return-code message-payload)))
 
 (defn mapper-func [mapper-fn channels]
   (fn [{:keys [topic-entity message] :as message-payload}]
