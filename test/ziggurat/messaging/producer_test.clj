@@ -29,7 +29,7 @@
 (defn retry-count-config [] (-> (config/ziggurat-config) :retry :count))
 
 (deftest retry-for-channel-test
-  (testing "message in channel will be retried as defined in ziggurat config channel retry when message doesn't have retry-count"
+  (testing "message in channel will be sent to dead queue when message doesn't have retry-count"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)
                  :channel-1  #(constantly nil)}}
@@ -37,10 +37,6 @@
             retry-count              (atom (:count (config/channel-retry-config topic-entity channel)))
             expected-message-payload (assoc message-payload :retry-count @retry-count)]
         (producer/retry-for-channel message-payload channel)
-        (while (> @retry-count 0)
-          (swap! retry-count dec)
-          (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-            (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
@@ -58,6 +54,7 @@
         (while (> @retry-count 0)
           (swap! retry-count dec)
           (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+            (is (= (or (:retry-count message-from-mq) 0) @retry-count))
             (producer/retry-for-channel message-from-mq channel)))
         (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
           (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
@@ -99,6 +96,7 @@
           (while (> @retry-count 0)
             (swap! retry-count dec)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
+              (is (= (or (:retry-count message-from-mq) 0) @retry-count))
               (producer/retry-for-channel message-from-mq channel)))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
             (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq))))))))
@@ -112,7 +110,8 @@
       (fix/with-queues
         {:default {:handler-fn        #(constantly nil)
                    :exponential-retry #(constantly nil)}}
-        (let [retry-count              (atom 5)
+        (let [total-retries            5
+              retry-count              (atom total-retries)
               channel                  :exponential-retry
               channel-retry-count      (:count (config/channel-retry-config topic-entity channel))
               retry-message-payload    (assoc message-payload :retry-count @retry-count)
@@ -120,7 +119,8 @@
           (producer/retry-for-channel retry-message-payload channel)
           (while (> @retry-count 0)
             (swap! retry-count dec)
-            (let [message-from-mq (rmq/get-message-from-channel-retry-queue topic-entity channel (- 5 @retry-count))]
+            (let [message-from-mq (rmq/get-message-from-channel-retry-queue topic-entity channel (- total-retries @retry-count))]
+              (is (= (or (:retry-count message-from-mq) 0) @retry-count))
               (producer/retry-for-channel message-from-mq channel)))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
             (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))))
@@ -153,6 +153,15 @@
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
           (is (= (bytes-to-str expected-dead-set-message) (bytes-to-str message-from-mq)))))))
 
+  (testing "message with negative retry count will not be published any where"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [retry-message-payload (assoc message-payload :retry-count -1)]
+        (producer/retry retry-message-payload)
+        (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
+          (is (= nil message-from-mq)))
+        (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
+          (is (= nil message-from-mq))))))
   (testing "publish to delay queue publishes with expiration from config"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
@@ -175,19 +184,6 @@
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
           (producer/publish-to-delay-queue test-message-payload)))))
-
-  ;(testing "message will be retried as defined in ziggurat config retry-count when message doesn't have retry-count"
-  ;  (fix/with-queues
-  ;    {:default {:handler-fn #(constantly nil)}}
-  ;    (let [retry-count              (atom (retry-count-config))
-  ;          expected-message-payload (assoc message-payload :retry-count (retry-count-config))]
-  ;      (producer/retry message-payload)
-  ;      (while (> @retry-count 0)
-  ;        (swap! retry-count dec)
-  ;        (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
-  ;          (producer/retry message-from-mq)))
-  ;      (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
-  ;        (is (= (bytes-to-str expected-message-payload) (bytes-to-str message-from-mq)))))))
 
   (testing "message will be retried as defined in message retry-count when message has retry-count"
     (fix/with-queues
@@ -224,14 +220,6 @@
                                                             :retry {:count   5
                                                                     :enabled true
                                                                     :type    :exponential}))]
-      ;(testing "message with no retry count will publish to delay queue with suffix 1"
-      ;  (fix/with-queues
-      ;    {:default {:handler-fn #(constantly nil)}}
-      ;    (let [expected-message (assoc message-payload :retry-count 4)]
-      ;      (producer/retry message-payload)
-      ;      (let [message-from-mq (rmq/get-message-from-retry-queue "default" 1)]
-      ;        (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message)))))))
-
       (testing "message with available retry counts as 4 will be published to delay queue with suffix 2"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}

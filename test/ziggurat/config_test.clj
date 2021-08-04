@@ -18,7 +18,8 @@
                                      rabbitmq-config
                                      set-property
                                      statsd-config
-                                     ziggurat-config]]
+                                     ziggurat-config
+                                     retry-count]]
             [ziggurat.fixtures :as f])
   (:import (java.util ArrayList Properties)))
 
@@ -117,6 +118,38 @@
         (mount/start #'config)
         (is (= (-> config-values-from-env :ziggurat :stream-router topic-entity :channels channel :retry)
                (channel-retry-config topic-entity channel)))
+        (mount/stop)))))
+
+(deftest retry-count-test
+  (testing "it returns the retry count, if retry is enabled and retry-count is present in the config"
+    (let [config-filename        f/test-config-file-name
+          config-values-from-env (assoc-in (config-from-env config-filename) [:ziggurat :retry :enabled] true)]
+      (with-redefs [config-from-env (fn [_] config-values-from-env)
+                    config-file     config-filename]
+        (mount/start #'config)
+        (is (= (-> config-values-from-env :ziggurat :retry :count)
+               (retry-count)))
+        (mount/stop))))
+
+  (testing "it returns -1, if the retry is enabled but retry count is not present"
+    (let [config-filename        f/test-config-file-name
+          config-values-from-env (assoc-in (config-from-env config-filename) [:ziggurat :retry :enabled] true)
+          config-values-from-env (assoc-in config-values-from-env [:ziggurat :retry :enabled] nil)]
+      (with-redefs [config-from-env (fn [_] config-values-from-env)
+                    config-file     config-filename]
+        (mount/start #'config)
+        (is (= -1
+               (retry-count)))
+        (mount/stop))))
+
+  (testing "it returns -1, if the retry is not enabled"
+    (let [config-filename        f/test-config-file-name
+          config-values-from-env (assoc-in (config-from-env config-filename) [:ziggurat :retry :enabled] false)]
+      (with-redefs [config-from-env (fn [_] config-values-from-env)
+                    config-file     config-filename]
+        (mount/start #'config)
+        (is (= -1
+               (retry-count)))
         (mount/stop)))))
 
 (deftest java-config-get-test
