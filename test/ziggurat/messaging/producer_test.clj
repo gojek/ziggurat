@@ -162,10 +162,23 @@
       {:default {:handler-fn #(constantly nil)}}
       (let [expected-props {:content-type "application/octet-stream"
                             :persistent   true
-                            :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))}]
+                            :expiration   (str (get-in (rabbitmq-config) [`:delay :queue-timeout-ms]))
+                            :headers      {}}]
         (with-redefs [lb/publish (fn [_ _ _ _ props]
                                    (is (= expected-props props)))]
           (producer/publish-to-delay-queue message-payload)))))
+
+  (testing "publish to delay queue publishes with parsed record headers"
+    (fix/with-queues
+      {:default {:handler-fn #(constantly nil)}}
+      (let [test-message-payload (assoc message-payload :headers (RecordHeaders. (list (RecordHeader. "key" (byte-array (map byte "value"))))))
+            expected-props       {:content-type "application/octet-stream"
+                                  :persistent   true
+                                  :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))
+                                  :headers      {"key" "value"}}]
+        (with-redefs [lb/publish (fn [_ _ _ _ props]
+                                   (is (= expected-props props)))]
+          (producer/publish-to-delay-queue test-message-payload)))))
 
   (testing "message will be retried as defined in ziggurat config retry-count when message doesn't have retry-count"
     (fix/with-queues
@@ -607,7 +620,7 @@
                                                                       :count               25
                                                                       :type                :exponential}
                                                               :rabbit-mq            {:delay       {:queue-timeout-ms   5000}}))]
-         ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
+        ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
         (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
 
 

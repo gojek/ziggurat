@@ -28,9 +28,8 @@
           skip-metric                         "skip"
           failure-metric                      "failure"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
-          retry-payload                       (-> message-payload
-                                                  (dissoc :headers))
-          user-payload                        (-> retry-payload
+          user-payload                        (-> message-payload
+                                                  (dissoc :headers)
                                                   (dissoc :topic-entity))]
       (nr/with-tracing "job" new-relic-transaction-name
         (try
@@ -45,14 +44,14 @@
             (case return-code
               :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
               :retry   (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
-                           (producer/retry retry-payload))
+                           (producer/retry message-payload))
               :skip    (metrics/multi-ns-increment-count multi-message-processing-namespaces skip-metric additional-tags)
               :block   'TODO
               (do
                 (send-msg-to-channel channels message-payload return-code)
                 (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags))))
           (catch Throwable e
-            (producer/retry retry-payload)
+            (producer/retry message-payload)
             (report-error e (str "Actor execution failed for " topic-entity-name))
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 

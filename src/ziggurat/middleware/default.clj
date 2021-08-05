@@ -81,5 +81,5 @@
   ([handler-fn proto-class topic-entity-name]
    (protobuf->hash handler-fn proto-class topic-entity-name false))
   ([handler-fn proto-class topic-entity-name flatten-protobuf-struct?]
-   (fn [message]
-     (handler-fn (update-in message [:message] deserialize-message proto-class topic-entity-name flatten-protobuf-struct?)))))
+   (fn [payload]
+     (handler-fn (update-in payload [:message] deserialize-message proto-class topic-entity-name flatten-protobuf-struct?)))))
