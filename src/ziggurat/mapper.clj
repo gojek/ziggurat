@@ -14,6 +14,13 @@
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
+(defn- create-user-payload
+  [message-payload]
+  (-> message-payload
+      (dissoc :headers)
+      (dissoc :retry-count)
+      (dissoc :topic-entity)))
+
 (defn mapper-func [user-handler-fn channels]
   (fn [{:keys [topic-entity] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
@@ -28,9 +35,7 @@
           skip-metric                         "skip"
           failure-metric                      "failure"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
-          user-payload                        (-> message-payload
-                                                  (dissoc :headers)
-                                                  (dissoc :topic-entity))]
+          user-payload                        (create-user-payload message-payload)]
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time                      (.toEpochMilli (Instant/now))
@@ -70,8 +75,7 @@
           skip-metric                         "skip"
           failure-metric                      "failure"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
-          user-payload                        (-> message-payload
-                                                  (dissoc :topic-entity))]
+          user-payload                        (create-user-payload message-payload)]
       (nr/with-tracing "job" metric-namespace
         (try
           (let [start-time                     (.toEpochMilli (Instant/now))

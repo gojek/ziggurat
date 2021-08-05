@@ -57,7 +57,11 @@
    (get-mapped-fn message-received-count message))
   ([message-received-count expected-message]
    (fn [message-from-kafka]
-     (when (= expected-message (:message message-from-kafka))
+     (when (and (= expected-message   (:message message-from-kafka))
+                (some?  (:metadata message-from-kafka))
+                (nil?   (:retry-count message-from-kafka))
+                (nil?   (:topic-entity message-from-kafka))
+                (nil?   (:headers message-from-kafka)))
        (swap! message-received-count inc)
        :success))))
 

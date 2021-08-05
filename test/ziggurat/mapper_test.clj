@@ -131,6 +131,7 @@
                                          (dissoc :topic-entity)) user-msg-payload))
                               (is (some? (:message user-msg-payload)))
                               (is (some? (:metadata user-msg-payload)))
+                              (is (nil?  (:retry-count user-msg-payload)))
                               (is (nil?  (:topic-entity user-msg-payload)))
                               (is (nil?  (:headers user-msg-payload))))]
         (with-redefs [metrics/increment-count  (constantly nil)
@@ -219,11 +220,12 @@
             user-handler-fn (fn [user-msg-payload]
                               (reset! user-handler-called true)
                               (is (= (-> message-payload
+                                         (dissoc :retry-count)
                                          (dissoc :headers)
                                          (dissoc :topic-entity)) user-msg-payload))
                               (is (some? (:message user-msg-payload)))
                               (is (some? (:metadata user-msg-payload)))
-                              (is (some? (:retry-count user-msg-payload)))
+                              (is (nil? (:retry-count user-msg-payload)))
                               (is (nil?  (:topic-entity user-msg-payload))))]
         (with-redefs [metrics/increment-count  (constantly nil)
                       metrics/report-histogram (constantly nil)]
