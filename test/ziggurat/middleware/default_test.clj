@@ -99,8 +99,8 @@
     (let [handler-fn-called?      (atom false)
           metric-reporter-called? (atom false)
           topic-entity-name       "test"
-          handler-fn              (fn [msg]
-                                    (if (nil? msg)
+          handler-fn              (fn [msg-payload]
+                                    (if (nil? (:message msg-payload))
                                       (reset! handler-fn-called? true)))]
       (with-redefs [metrics/multi-ns-increment-count (fn [_ _ _]
                                                        (reset! metric-reporter-called? true))]
