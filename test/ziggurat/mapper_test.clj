@@ -10,7 +10,8 @@
             [ziggurat.message-payload :as mp]
             [langohr.basic :as lb]
             [ziggurat.new-relic :as nr]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.util.error :refer [report-error]])
+  (:import (org.apache.kafka.common.header.internals RecordHeader RecordHeaders)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
@@ -20,7 +21,8 @@
   (let [service-name                    (:app-name (ziggurat-config))
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         topic-entity                    (name (first (keys stream-routes)))
-        message-payload                 {:message {:foo "bar"} :topic-entity (keyword topic-entity)}
+        metadata                        {:meta "data"}
+        message-payload                 {:message {:foo "bar"} :topic-entity (keyword topic-entity) :metadata metadata}
         expected-additional-tags        {:topic_name topic-entity}
         expected-metric-namespace       "message-processing"
         report-time-namespace           "handler-fn-execution-time"
@@ -56,7 +58,8 @@
                                                     (reset! successfully-processed? true)))]
             ((mapper-func (constantly :channel-1) [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
-              (is (= message-payload message-from-mq))
+              (is (= (-> message-payload
+                         (dissoc :headers)) message-from-mq))
               (is @successfully-processed?))))))
 
     (testing "message process should raise exception if channel not in list"
@@ -72,7 +75,8 @@
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (-> message-payload
+                                            (assoc :retry-count (dec (:count (:retry (ziggurat-config))))))
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
@@ -89,7 +93,8 @@
 
     (testing "reports error, publishes message to retry queue if mapper-fn raises exception"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (-> message-payload
+                                            (assoc :retry-count (dec (:count (:retry (ziggurat-config))))))
               report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
@@ -115,7 +120,23 @@
                                                            (= metric-namespaces [expected-metric-namespace]))
                                                    (reset! reported-execution-time? true)))]
           ((mapper-func (constantly :success) []) message-payload)
-          (is @reported-execution-time?))))))
+          (is @reported-execution-time?))))
+    (testing "User Handler function should have access to the proto message and metadata via :message and :metadata keywords"
+      (let [user-handler-called (atom false)
+            headers         (RecordHeaders. (list (RecordHeader. "key" (byte-array (map byte "value")))))
+            user-handler-fn (fn [user-msg-payload]
+                              (reset! user-handler-called true)
+                              (is (= (-> message-payload
+                                         (dissoc :headers)
+                                         (dissoc :topic-entity)) user-msg-payload))
+                              (is (some? (:message user-msg-payload)))
+                              (is (some? (:metadata user-msg-payload)))
+                              (is (nil?  (:topic-entity user-msg-payload)))
+                              (is (nil?  (:headers user-msg-payload))))]
+        (with-redefs [metrics/increment-count  (constantly nil)
+                      metrics/report-histogram (constantly nil)]
+          ((mapper-func user-handler-fn []) (assoc message-payload :headers headers))
+          (is @user-handler-called))))))
 
 (deftest ^:integration channel-mapper-func-test
   (let [channel                             :channel-1
@@ -124,9 +145,11 @@
         stream-routes                       {:default {:handler-fn #(constantly nil)
                                                        channel     #(constantly nil)}}
         topic                               (first (keys stream-routes))
+        metadata                            {:meta "data"}
         message-payload                     {:message      {:foo "bar"}
                                              :retry-count  (:count (:retry (ziggurat-config)))
-                                             :topic-entity topic}
+                                             :topic-entity topic
+                                             :metadata     metadata}
         expected-topic-entity-name          (name topic)
         expected-additional-tags            {:topic_name expected-topic-entity-name :channel_name channel-name}
         increment-count-namespace           "message-processing"
@@ -145,7 +168,8 @@
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (-> message-payload
+                                            (assoc :retry-count (dec (:count (:retry (ziggurat-config))))))
               unsuccessfully-processed? (atom false)
               expected-metric           "retry"]
 
@@ -162,7 +186,8 @@
 
     (testing "message should raise exception and report the error"
       (fix/with-queues stream-routes
-        (let [expected-message          (assoc message-payload :retry-count (dec (:count (:retry (ziggurat-config)))))
+        (let [expected-message          (-> message-payload
+                                            (assoc :retry-count (dec (:count (:retry (ziggurat-config))))))
               report-fn-called?  (atom false)
               unsuccessfully-processed? (atom false)
               expected-metric           "failure"]
@@ -188,4 +213,19 @@
                                                            (= metric-namespaces [execution-time-namespace]))
                                                    (reset! reported-execution-time? true)))]
           ((channel-mapper-func (constantly :success) channel) message-payload)
-          (is @reported-execution-time?))))))
+          (is @reported-execution-time?))))
+    (testing "[Channels] User Handler function should have access to the proto message and metadata via :message, :retry-count and :metadata keywords"
+      (let [user-handler-called (atom false)
+            user-handler-fn (fn [user-msg-payload]
+                              (reset! user-handler-called true)
+                              (is (= (-> message-payload
+                                         (dissoc :headers)
+                                         (dissoc :topic-entity)) user-msg-payload))
+                              (is (some? (:message user-msg-payload)))
+                              (is (some? (:metadata user-msg-payload)))
+                              (is (some? (:retry-count user-msg-payload)))
+                              (is (nil?  (:topic-entity user-msg-payload))))]
+        (with-redefs [metrics/increment-count  (constantly nil)
+                      metrics/report-histogram (constantly nil)]
+          ((channel-mapper-func user-handler-fn channel) message-payload)
+          (is @user-handler-called))))))
