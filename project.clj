@@ -36,7 +36,6 @@
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
                  [clojusc/protobuf "3.5.1-v1.1"]
-                 [org.flatland/protobuf "0.8.1"]
                  [prismatic/schema "1.1.12"]
                  [clj-statsd "0.4.0"]
                  [ring/ring "1.9.3"]
@@ -53,7 +52,8 @@
                                com.fasterxml.jackson.core/jackson-core
                                com.fasterxml.jackson.dataformat/jackson-dataformat-smile
                                com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
-                 [metosin/ring-swagger-ui "3.46.0"]]
+                 [metosin/ring-swagger-ui "3.46.0"]
+                 [com.google.protobuf/protobuf-java "3.17.3"]]
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password
@@ -62,15 +62,15 @@
   :pedantic? :warn
   :java-source-paths ["src/com"]
   :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
-  :aot [ziggurat.kafka-consumer.invalid-return-type-exception ziggurat.init ziggurat.config ziggurat.producer ziggurat.sentry ziggurat.metrics ziggurat.fixtures]
+  :aot [ziggurat.kafka-consumer.invalid-return-type-exception]
   :profiles {:uberjar {:aot         :all
                        :global-vars {*warn-on-reflection* true}
                        :pedantic?   :abort}
              :test    {:java-source-paths ["src/com" "test/com"]
                        :jvm-opts          ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
-                       :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
-                                           [junit/junit "4.13.2"]
+                       :dependencies      [[junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]
+                                           [com.google.protobuf/protobuf-java "3.17.3"]
                                            [org.apache.kafka/kafka-streams "2.8.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                            [org.apache.kafka/kafka-clients "2.8.0" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
