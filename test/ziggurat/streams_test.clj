@@ -294,7 +294,7 @@
                                                     (-> (ziggurat-config)
                                                         (assoc-in [:stream-router :default :consumer-type] :stream-joins)
                                                         (assoc-in [:stream-router :default :input-topics] {:topic {:name "topic"} :another-test-topic {:name "another-test-topic"}})
-                                                        (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 5000 :join-type :outer}})
+                                                        (assoc-in [:stream-router :default :join-cfg] {:topic-and-another-test-topic {:join-window-ms 6000 :join-type :outer}})
                                                         (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                         (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
           (Thread/sleep 10000)                              ;;waiting for streams to start
@@ -306,7 +306,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 5000)                               ;;wating for streams to consume messages
+          (Thread/sleep 10000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
