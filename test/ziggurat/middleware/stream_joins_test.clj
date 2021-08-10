@@ -19,11 +19,14 @@
           topic-entity-name   "test"
           left-proto-message  (proto/->bytes (proto/create Example$Photo left-message))
           right-proto-message (proto/->bytes (proto/create Example$Photo right-message))
-          handler-fn          (fn [{:keys [left right]}]
-                                (if (and (= left left-message)
-                                         (= right right-message))
+          handler-fn          (fn [{:keys [message metadata]}]
+                                (when (and (= (:left message) left-message)
+                                           (= (:right message) right-message)
+                                           (= (:topic metadata) "topic")
+                                           (= (:timestamp metadata) 1234567890)
+                                           (= (:partition metadata) 1))
                                   (reset! handler-fn-called? true)))]
-      ((sjmw/protobuf->hash handler-fn proto-class topic-entity-name) {:left left-proto-message :right right-proto-message})
+      ((sjmw/protobuf->hash handler-fn proto-class topic-entity-name) {:message {:left left-proto-message :right right-proto-message} :metadata {:topic "topic" :timestamp 1234567890 :partition 1}})
       (is (true? @handler-fn-called?))))
   (testing "deserialize a message from a stream join using 2 proto classes"
     (let [handler-fn-called?  (atom false)
@@ -35,9 +38,12 @@
           topic-entity-name   "test"
           left-proto-message  (proto/->bytes (proto/create Example$Photo left-message))
           right-proto-message (proto/->bytes (proto/create Example$Photo right-message))
-          handler-fn          (fn [{:keys [left right]}]
-                                (if (and (= left left-message)
-                                         (= right right-message))
+          handler-fn          (fn [{:keys [message metadata]}]
+                                (when (and (= (:left message) left-message)
+                                           (= (:right message) right-message)
+                                           (= (:topic metadata) "topic")
+                                           (= (:timestamp metadata) 1234567890)
+                                           (= (:partition metadata) 1))
                                   (reset! handler-fn-called? true)))]
-      ((sjmw/protobuf->hash handler-fn [proto-class proto-class] topic-entity-name) {:left left-proto-message :right right-proto-message})
+      ((sjmw/protobuf->hash handler-fn [proto-class proto-class] topic-entity-name) {:message {:left left-proto-message :right right-proto-message} :metadata {:topic "topic" :timestamp 1234567890 :partition 1}})
       (is (true? @handler-fn-called?)))))

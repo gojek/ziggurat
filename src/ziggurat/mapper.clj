@@ -14,8 +14,15 @@
     (throw (ex-info "Invalid mapper return code" {:code return-code})))
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
-(defn mapper-func [mapper-fn channels]
-  (fn [{:keys [topic-entity message] :as message-payload}]
+(defn- create-user-payload
+  [message-payload]
+  (-> message-payload
+      (dissoc :headers)
+      (dissoc :retry-count)
+      (dissoc :topic-entity)))
+
+(defn mapper-func [user-handler-fn channels]
+  (fn [{:keys [topic-entity] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
           topic-entity-name                   (name topic-entity)
           new-relic-transaction-name          (str topic-entity-name ".handler-fn")
@@ -27,11 +34,12 @@
           retry-metric                        "retry"
           skip-metric                         "skip"
           failure-metric                      "failure"
-          multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]]
+          multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
+          user-payload                        (create-user-payload message-payload)]
       (nr/with-tracing "job" new-relic-transaction-name
         (try
           (let [start-time                      (.toEpochMilli (Instant/now))
-                return-code                     (mapper-fn message)
+                return-code                     (user-handler-fn user-payload)
                 end-time                        (.toEpochMilli (Instant/now))
                 time-val                        (- end-time start-time)
                 execution-time-namespace        "handler-fn-execution-time"
@@ -52,8 +60,8 @@
             (report-error e (str "Actor execution failed for " topic-entity-name))
             (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags)))))))
 
-(defn channel-mapper-func [mapper-fn channel]
-  (fn [{:keys [topic-entity message] :as message-payload}]
+(defn channel-mapper-func [user-handler-fn channel]
+  (fn [{:keys [topic-entity] :as message-payload}]
     (let [service-name                        (:app-name (ziggurat-config))
           topic-entity-name                   (name topic-entity)
           channel-name                        (name channel)
@@ -66,11 +74,12 @@
           retry-metric                        "retry"
           skip-metric                         "skip"
           failure-metric                      "failure"
-          multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]]
+          multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
+          user-payload                        (create-user-payload message-payload)]
       (nr/with-tracing "job" metric-namespace
         (try
           (let [start-time                     (.toEpochMilli (Instant/now))
-                return-code                    (mapper-fn message)
+                return-code                    (user-handler-fn user-payload)
                 end-time                       (.toEpochMilli (Instant/now))
                 time-val                       (- end-time start-time)
                 execution-time-namespace       "execution-time"

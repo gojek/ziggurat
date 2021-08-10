@@ -18,4 +18,4 @@
   "This is a middleware function that takes in a message (Proto ByteArray or PersistentHashMap) and calls the handler-fn with the deserialized PersistentHashMap"
   [handler-fn proto-class topic-entity-name]
   (fn [message]
-    (handler-fn (deserialize-stream-joins-message message proto-class topic-entity-name))))
+    (handler-fn (update-in message [:message] deserialize-stream-joins-message proto-class topic-entity-name))))

@@ -46,5 +46,5 @@
   ([handler-fn topic-entity]
    (parse-json handler-fn topic-entity true))
   ([handler-fn topic-entity key-fn]
-   (fn [message]
-     (handler-fn (deserialize-json message topic-entity key-fn)))))
+   (fn [payload]
+     (handler-fn (assoc payload :message (deserialize-json (:message payload) topic-entity key-fn))))))

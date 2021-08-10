@@ -1,13 +1,10 @@
 (ns ziggurat.messaging.consumer
   (:require [ziggurat.mapper :as mpr]
-            [ziggurat.message-payload :as mp]
             [clojure.tools.logging :as log]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
             [ziggurat.kafka-consumer.consumer-handler :as ch]
-            [schema.core :as s]
-            [sentry-clj.async :as sentry]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [get-in-config]]
             [ziggurat.messaging.connection :refer [connection]]
@@ -15,21 +12,6 @@
             [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.error :refer [report-error]]))
-
-(defn- convert-to-message-payload
-  "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
-   message-payload to pass onto the mapper-fn.
-
-   If the `:retry-count` key is absent in the `message`, then it puts `0` as the value for `:retry-count` in `MessagePayload`.
-   It also converts the topic-entity into a keyword while constructing MessagePayload."
-  [message topic-entity]
-  (try
-    (s/validate mp/message-payload-schema message)
-    (catch Exception e
-      (log/info "old message format read, converting to message-payload: " message)
-      (let [retry-count (or (:retry-count message) 0)
-            message-payload (mp/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
-        (assoc message-payload :retry-count retry-count)))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
@@ -39,7 +21,7 @@
     (let [message (nippy/thaw payload)]
       (when ack?
         (lb/ack ch delivery-tag))
-      (convert-to-message-payload message topic-entity))
+      message)
     (catch Exception e
       (lb/reject ch delivery-tag false)
       (report-error e "Error while decoding message")
