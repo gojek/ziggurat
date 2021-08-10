@@ -32,7 +32,7 @@
           key          "message"
           value        "Hello World!!"]
       (send :default topic key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 7000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 8000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-data-with-topic-key-partition-and-value-test
@@ -43,7 +43,7 @@
           value        "Hello World!!"
           partition    (int 0)]
       (send :default topic partition key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 7000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 8000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-throws-exception-when-no-producers-are-configured
@@ -73,7 +73,7 @@
           value        "Hello World!!"]
       (.reset tracer)
       (send :default topic key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 7000)
+      (let [result         (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 7000)
             finished-spans (.finishedSpans tracer)]
         (is (= value (.value (first result))))
         (is (= 1 (.size finished-spans)))
