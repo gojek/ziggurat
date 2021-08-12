@@ -7,6 +7,7 @@
             [ziggurat.config :refer [ziggurat-config] :as config]
             [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
+            [clojure.string :as str]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.nrepl-server :as nrepl-server]
@@ -179,6 +180,7 @@
    {s/Keyword {:handler-fn (s/pred #(fn? %))
                s/Keyword   (s/pred #(fn? %))}}))
 
+(declare BatchRoute)
 (s/defschema BatchRoute
   (s/conditional
    #(and (seq %)
@@ -199,7 +201,7 @@
          (throw (IllegalArgumentException. (format "Error! Route %s isn't present in the %s config" topic-entity route-type)))
          (when-not (set/subset? channels config-channels)
            (let [diff (set/difference channels config-channels)]
-             (throw (IllegalArgumentException. (format "Error! The channel(s) %s aren't present in the channels config of %s " (clojure.string/join "," diff) route-type))))))))))
+             (throw (IllegalArgumentException. (format "Error! The channel(s) %s aren't present in the channels config of %s " (str/join "," diff) route-type))))))))))
 
 (defn validate-routes [stream-routes batch-routes modes]
   (when (contains? (set modes) :stream-worker)

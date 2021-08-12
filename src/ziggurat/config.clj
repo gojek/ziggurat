@@ -94,6 +94,15 @@
 (defn channel-retry-config [topic-entity channel]
   (get-in (ziggurat-config) [:stream-router topic-entity :channels channel :retry]))
 
+(defn channel-retry-count [topic-entity channel]
+  (:count (channel-retry-config topic-entity channel)))
+
+(defn retry-count
+  []
+  (if (get-in (ziggurat-config) [:retry :enabled] false)
+    (get-in (ziggurat-config) [:retry :count] -1)
+    -1))
+
 (defn- java-response
   "When returning config from -get or -getIn, we can either return a Map or string (based on the key/keys passed).
   Since we do not want to pass a ClojureMap to a Java application, we check whether the config-vals (config to be returned)
