@@ -5,7 +5,7 @@
             [ziggurat.config :refer [build-streams-config-properties get-in-config ziggurat-config]]
             [ziggurat.header-transformer :as header-transformer]
             [ziggurat.mapper :refer [mapper-func]]
-            [ziggurat.message-payload :refer [->MessagePayload]]
+            [ziggurat.message-payload :refer [mk-message-payload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.tracer :refer [tracer]]
@@ -137,7 +137,7 @@
                        (.asChildOf t parent-ctx))
                      (.start t))]
     (try
-      ((mapper-func handler-fn channels) (-> (->MessagePayload (:value message) topic-entity)
+      ((mapper-func handler-fn channels) (-> (mk-message-payload (:value message) topic-entity)
                                              (assoc :headers (:headers message))
                                              (assoc :metadata (:metadata message))))
       (finally

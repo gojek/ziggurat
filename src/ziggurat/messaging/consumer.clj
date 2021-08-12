@@ -9,8 +9,22 @@
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.util :as util]
+            [ziggurat.middleware.default :as mw]
+            [ziggurat.sentry :refer [sentry-reporter]]
+            [ziggurat.messaging.util :refer :all]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.util.error :refer [report-error]])
+  (:import (com.ziggurat.proto MessagePayloadProto$MessagePayload)
+           (com.google.protobuf ByteString)))
+
+(defn- try-deserialize-message
+  [topic-entity-name message]
+  (let [from-proto (mw/deserialize-message message MessagePayloadProto$MessagePayload topic-entity-name)]
+    (if (nil? from-proto)
+      (nippy/thaw message)
+      (-> from-proto
+          (update :message #(.toByteArray ^ByteString %))
+          (update :topic-entity keyword)))))
 
 (defn- reject-message
   [ch delivery-tag]
@@ -27,11 +41,11 @@
         (reject-message ch delivery-tag)))))
 
 (defn convert-and-ack-message
-  "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
-  if `ack?` is true."
+  "De-serializes the message payload (`payload`) using `nippy/thaw` or `proto` (whichever of the two succeeds).
+  Acks the message if `ack?` is true."
   [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity]
   (try
-    (let [message (nippy/thaw payload)]
+    (let [message (try-deserialize-message topic-entity payload)]
       (when ack?
         (lb/ack ch delivery-tag))
       message)

@@ -1,10 +1,10 @@
 (ns ziggurat.middleware.default
   (:require [protobuf.impl.flatland.mapdef :as protodef]
-            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [get-in-config ziggurat-config]]
             [ziggurat.metrics :as metrics]
-            [ziggurat.sentry :refer [sentry-reporter]]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.util.error :refer [report-error]]
+            [protobuf.core :as protobuf])
+  (:import [com.ziggurat.proto MessagePayloadProto$MessagePayload]))
 
 (defn protobuf-struct->persistent-map [struct]
   "This functions converts a protobuf struct in to clojure persistent map recursively"
@@ -32,6 +32,11 @@
     (reduce protobuf-struct-entry-flattener
             {}
             fields)))
+
+(defn serialize-to-message-payload-proto
+  [message]
+  (let [updated-message (update message :topic-entity name)]
+    (protobuf/->bytes (protobuf/create MessagePayloadProto$MessagePayload updated-message))))
 
 (defn deserialize-message
   "This function takes in the message(proto Byte Array) and the proto-class and deserializes the proto ByteArray into a

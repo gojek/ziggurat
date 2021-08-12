@@ -15,6 +15,8 @@
            [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
            [com.rabbitmq.client.impl DefaultCredentialsProvider]))
 
+(declare connection)
+
 (defn is-connection-required? []
   (let [stream-routes (:stream-routes (mount/args))
         all-channels  (reduce (fn [all-channel-vec [topic-entity _]]
