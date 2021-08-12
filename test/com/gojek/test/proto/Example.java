@@ -20,37 +20,28 @@ public final class Example {
 
     /**
      * <code>int32 id = 1;</code>
-     * @return The id.
      */
     int getId();
 
     /**
      * <code>string path = 2;</code>
-     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>string path = 2;</code>
-     * @return The bytes for path.
      */
     com.google.protobuf.ByteString
         getPathBytes();
 
     /**
-     * <code>optional bytes image = 6;</code>
-     * @return Whether the image field is set.
-     */
-    boolean hasImage();
-    /**
-     * <code>optional bytes image = 6;</code>
-     * @return The image.
+     * <code>bytes image = 6;</code>
      */
     com.google.protobuf.ByteString getImage();
   }
   /**
    * Protobuf type {@code com.gojek.test.proto.Photo}
    */
-  public static final class Photo extends
+  public  static final class Photo extends
       com.google.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:com.gojek.test.proto.Photo)
       PhotoOrBuilder {
@@ -60,15 +51,9 @@ public final class Example {
       super(builder);
     }
     private Photo() {
+      id_ = 0;
       path_ = "";
       image_ = com.google.protobuf.ByteString.EMPTY;
-    }
-
-    @java.lang.Override
-    @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
-      return new Photo();
     }
 
     @java.lang.Override
@@ -95,6 +80,13 @@ public final class Example {
             case 0:
               done = true;
               break;
+            default: {
+              if (!parseUnknownFieldProto3(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
             case 8: {
 
               id_ = input.readInt32();
@@ -107,15 +99,8 @@ public final class Example {
               break;
             }
             case 50: {
-              bitField0_ |= 0x00000001;
+
               image_ = input.readBytes();
-              break;
-            }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
               break;
             }
           }
@@ -135,7 +120,6 @@ public final class Example {
       return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_descriptor;
     }
 
-    @java.lang.Override
     protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_fieldAccessorTable
@@ -149,26 +133,23 @@ public final class Example {
 
       /**
        * <code>string item = 1;</code>
-       * @return The item.
        */
       java.lang.String getItem();
       /**
        * <code>string item = 1;</code>
-       * @return The bytes for item.
        */
       com.google.protobuf.ByteString
           getItemBytes();
 
       /**
        * <code>bool exists = 2;</code>
-       * @return The exists.
        */
       boolean getExists();
     }
     /**
      * Protobuf type {@code com.gojek.test.proto.Photo.Label}
      */
-    public static final class Label extends
+    public  static final class Label extends
         com.google.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:com.gojek.test.proto.Photo.Label)
         LabelOrBuilder {
@@ -179,13 +160,7 @@ public final class Example {
       }
       private Label() {
         item_ = "";
-      }
-
-      @java.lang.Override
-      @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
-        return new Label();
+        exists_ = false;
       }
 
       @java.lang.Override
@@ -201,6 +176,7 @@ public final class Example {
         if (extensionRegistry == null) {
           throw new java.lang.NullPointerException();
         }
+        int mutable_bitField0_ = 0;
         com.google.protobuf.UnknownFieldSet.Builder unknownFields =
             com.google.protobuf.UnknownFieldSet.newBuilder();
         try {
@@ -211,6 +187,13 @@ public final class Example {
               case 0:
                 done = true;
                 break;
+              default: {
+                if (!parseUnknownFieldProto3(
+                    input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
               case 10: {
                 java.lang.String s = input.readStringRequireUtf8();
 
@@ -220,13 +203,6 @@ public final class Example {
               case 16: {
 
                 exists_ = input.readBool();
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
                 break;
               }
             }
@@ -246,7 +222,6 @@ public final class Example {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Label_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Label_fieldAccessorTable
@@ -258,9 +233,7 @@ public final class Example {
       private volatile java.lang.Object item_;
       /**
        * <code>string item = 1;</code>
-       * @return The item.
        */
-      @java.lang.Override
       public java.lang.String getItem() {
         java.lang.Object ref = item_;
         if (ref instanceof java.lang.String) {
@@ -275,9 +248,7 @@ public final class Example {
       }
       /**
        * <code>string item = 1;</code>
-       * @return The bytes for item.
        */
-      @java.lang.Override
       public com.google.protobuf.ByteString
           getItemBytes() {
         java.lang.Object ref = item_;
@@ -296,15 +267,12 @@ public final class Example {
       private boolean exists_;
       /**
        * <code>bool exists = 2;</code>
-       * @return The exists.
        */
-      @java.lang.Override
       public boolean getExists() {
         return exists_;
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -314,7 +282,6 @@ public final class Example {
         return true;
       }
 
-      @java.lang.Override
       public void writeTo(com.google.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         if (!getItemBytes().isEmpty()) {
@@ -326,7 +293,6 @@ public final class Example {
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
@@ -354,12 +320,13 @@ public final class Example {
         }
         com.gojek.test.proto.Example.Photo.Label other = (com.gojek.test.proto.Example.Photo.Label) obj;
 
-        if (!getItem()
-            .equals(other.getItem())) return false;
-        if (getExists()
-            != other.getExists()) return false;
-        if (!unknownFields.equals(other.unknownFields)) return false;
-        return true;
+        boolean result = true;
+        result = result && getItem()
+            .equals(other.getItem());
+        result = result && (getExists()
+            == other.getExists());
+        result = result && unknownFields.equals(other.unknownFields);
+        return result;
       }
 
       @java.lang.Override
@@ -449,7 +416,6 @@ public final class Example {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
@@ -457,7 +423,6 @@ public final class Example {
       public static Builder newBuilder(com.gojek.test.proto.Example.Photo.Label prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
@@ -481,7 +446,6 @@ public final class Example {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Label_descriptor;
         }
 
-        @java.lang.Override
         protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Label_fieldAccessorTable
@@ -504,7 +468,6 @@ public final class Example {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
         public Builder clear() {
           super.clear();
           item_ = "";
@@ -514,18 +477,15 @@ public final class Example {
           return this;
         }
 
-        @java.lang.Override
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Label_descriptor;
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Label getDefaultInstanceForType() {
           return com.gojek.test.proto.Example.Photo.Label.getDefaultInstance();
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Label build() {
           com.gojek.test.proto.Example.Photo.Label result = buildPartial();
           if (!result.isInitialized()) {
@@ -534,7 +494,6 @@ public final class Example {
           return result;
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Label buildPartial() {
           com.gojek.test.proto.Example.Photo.Label result = new com.gojek.test.proto.Example.Photo.Label(this);
           result.item_ = item_;
@@ -543,39 +502,32 @@ public final class Example {
           return result;
         }
 
-        @java.lang.Override
         public Builder clone() {
-          return super.clone();
+          return (Builder) super.clone();
         }
-        @java.lang.Override
         public Builder setField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.setField(field, value);
+          return (Builder) super.setField(field, value);
         }
-        @java.lang.Override
         public Builder clearField(
             com.google.protobuf.Descriptors.FieldDescriptor field) {
-          return super.clearField(field);
+          return (Builder) super.clearField(field);
         }
-        @java.lang.Override
         public Builder clearOneof(
             com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-          return super.clearOneof(oneof);
+          return (Builder) super.clearOneof(oneof);
         }
-        @java.lang.Override
         public Builder setRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             int index, java.lang.Object value) {
-          return super.setRepeatedField(field, index, value);
+          return (Builder) super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
         public Builder addRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.addRepeatedField(field, value);
+          return (Builder) super.addRepeatedField(field, value);
         }
-        @java.lang.Override
         public Builder mergeFrom(com.google.protobuf.Message other) {
           if (other instanceof com.gojek.test.proto.Example.Photo.Label) {
             return mergeFrom((com.gojek.test.proto.Example.Photo.Label)other);
@@ -599,12 +551,10 @@ public final class Example {
           return this;
         }
 
-        @java.lang.Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
         public Builder mergeFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -626,7 +576,6 @@ public final class Example {
         private java.lang.Object item_ = "";
         /**
          * <code>string item = 1;</code>
-         * @return The item.
          */
         public java.lang.String getItem() {
           java.lang.Object ref = item_;
@@ -642,7 +591,6 @@ public final class Example {
         }
         /**
          * <code>string item = 1;</code>
-         * @return The bytes for item.
          */
         public com.google.protobuf.ByteString
             getItemBytes() {
@@ -659,8 +607,6 @@ public final class Example {
         }
         /**
          * <code>string item = 1;</code>
-         * @param value The item to set.
-         * @return This builder for chaining.
          */
         public Builder setItem(
             java.lang.String value) {
@@ -674,7 +620,6 @@ public final class Example {
         }
         /**
          * <code>string item = 1;</code>
-         * @return This builder for chaining.
          */
         public Builder clearItem() {
           
@@ -684,8 +629,6 @@ public final class Example {
         }
         /**
          * <code>string item = 1;</code>
-         * @param value The bytes for item to set.
-         * @return This builder for chaining.
          */
         public Builder setItemBytes(
             com.google.protobuf.ByteString value) {
@@ -702,16 +645,12 @@ public final class Example {
         private boolean exists_ ;
         /**
          * <code>bool exists = 2;</code>
-         * @return The exists.
          */
-        @java.lang.Override
         public boolean getExists() {
           return exists_;
         }
         /**
          * <code>bool exists = 2;</code>
-         * @param value The exists to set.
-         * @return This builder for chaining.
          */
         public Builder setExists(boolean value) {
           
@@ -721,7 +660,6 @@ public final class Example {
         }
         /**
          * <code>bool exists = 2;</code>
-         * @return This builder for chaining.
          */
         public Builder clearExists() {
           
@@ -729,13 +667,11 @@ public final class Example {
           onChanged();
           return this;
         }
-        @java.lang.Override
         public final Builder setUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
-          return super.setUnknownFields(unknownFields);
+          return super.setUnknownFieldsProto3(unknownFields);
         }
 
-        @java.lang.Override
         public final Builder mergeUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -757,7 +693,6 @@ public final class Example {
 
       private static final com.google.protobuf.Parser<Label>
           PARSER = new com.google.protobuf.AbstractParser<Label>() {
-        @java.lang.Override
         public Label parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -775,7 +710,6 @@ public final class Example {
         return PARSER;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.Example.Photo.Label getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
@@ -788,29 +722,20 @@ public final class Example {
 
       /**
        * <code>string key = 1;</code>
-       * @return The key.
        */
       java.lang.String getKey();
       /**
        * <code>string key = 1;</code>
-       * @return The bytes for key.
        */
       com.google.protobuf.ByteString
           getKeyBytes();
 
       /**
-       * <code>optional string val = 2;</code>
-       * @return Whether the val field is set.
-       */
-      boolean hasVal();
-      /**
-       * <code>optional string val = 2;</code>
-       * @return The val.
+       * <code>string val = 2;</code>
        */
       java.lang.String getVal();
       /**
-       * <code>optional string val = 2;</code>
-       * @return The bytes for val.
+       * <code>string val = 2;</code>
        */
       com.google.protobuf.ByteString
           getValBytes();
@@ -818,7 +743,7 @@ public final class Example {
     /**
      * Protobuf type {@code com.gojek.test.proto.Photo.Attr}
      */
-    public static final class Attr extends
+    public  static final class Attr extends
         com.google.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:com.gojek.test.proto.Photo.Attr)
         AttrOrBuilder {
@@ -830,13 +755,6 @@ public final class Example {
       private Attr() {
         key_ = "";
         val_ = "";
-      }
-
-      @java.lang.Override
-      @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
-        return new Attr();
       }
 
       @java.lang.Override
@@ -863,6 +781,13 @@ public final class Example {
               case 0:
                 done = true;
                 break;
+              default: {
+                if (!parseUnknownFieldProto3(
+                    input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
               case 10: {
                 java.lang.String s = input.readStringRequireUtf8();
 
@@ -871,15 +796,8 @@ public final class Example {
               }
               case 18: {
                 java.lang.String s = input.readStringRequireUtf8();
-                bitField0_ |= 0x00000001;
+
                 val_ = s;
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
                 break;
               }
             }
@@ -899,7 +817,6 @@ public final class Example {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Attr_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Attr_fieldAccessorTable
@@ -907,14 +824,11 @@ public final class Example {
                 com.gojek.test.proto.Example.Photo.Attr.class, com.gojek.test.proto.Example.Photo.Attr.Builder.class);
       }
 
-      private int bitField0_;
       public static final int KEY_FIELD_NUMBER = 1;
       private volatile java.lang.Object key_;
       /**
        * <code>string key = 1;</code>
-       * @return The key.
        */
-      @java.lang.Override
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
         if (ref instanceof java.lang.String) {
@@ -929,9 +843,7 @@ public final class Example {
       }
       /**
        * <code>string key = 1;</code>
-       * @return The bytes for key.
        */
-      @java.lang.Override
       public com.google.protobuf.ByteString
           getKeyBytes() {
         java.lang.Object ref = key_;
@@ -949,18 +861,8 @@ public final class Example {
       public static final int VAL_FIELD_NUMBER = 2;
       private volatile java.lang.Object val_;
       /**
-       * <code>optional string val = 2;</code>
-       * @return Whether the val field is set.
+       * <code>string val = 2;</code>
        */
-      @java.lang.Override
-      public boolean hasVal() {
-        return ((bitField0_ & 0x00000001) != 0);
-      }
-      /**
-       * <code>optional string val = 2;</code>
-       * @return The val.
-       */
-      @java.lang.Override
       public java.lang.String getVal() {
         java.lang.Object ref = val_;
         if (ref instanceof java.lang.String) {
@@ -974,10 +876,8 @@ public final class Example {
         }
       }
       /**
-       * <code>optional string val = 2;</code>
-       * @return The bytes for val.
+       * <code>string val = 2;</code>
        */
-      @java.lang.Override
       public com.google.protobuf.ByteString
           getValBytes() {
         java.lang.Object ref = val_;
@@ -993,7 +893,6 @@ public final class Example {
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -1003,19 +902,17 @@ public final class Example {
         return true;
       }
 
-      @java.lang.Override
       public void writeTo(com.google.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         if (!getKeyBytes().isEmpty()) {
           com.google.protobuf.GeneratedMessageV3.writeString(output, 1, key_);
         }
-        if (((bitField0_ & 0x00000001) != 0)) {
+        if (!getValBytes().isEmpty()) {
           com.google.protobuf.GeneratedMessageV3.writeString(output, 2, val_);
         }
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
@@ -1024,7 +921,7 @@ public final class Example {
         if (!getKeyBytes().isEmpty()) {
           size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, key_);
         }
-        if (((bitField0_ & 0x00000001) != 0)) {
+        if (!getValBytes().isEmpty()) {
           size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, val_);
         }
         size += unknownFields.getSerializedSize();
@@ -1042,15 +939,13 @@ public final class Example {
         }
         com.gojek.test.proto.Example.Photo.Attr other = (com.gojek.test.proto.Example.Photo.Attr) obj;
 
-        if (!getKey()
-            .equals(other.getKey())) return false;
-        if (hasVal() != other.hasVal()) return false;
-        if (hasVal()) {
-          if (!getVal()
-              .equals(other.getVal())) return false;
-        }
-        if (!unknownFields.equals(other.unknownFields)) return false;
-        return true;
+        boolean result = true;
+        result = result && getKey()
+            .equals(other.getKey());
+        result = result && getVal()
+            .equals(other.getVal());
+        result = result && unknownFields.equals(other.unknownFields);
+        return result;
       }
 
       @java.lang.Override
@@ -1062,10 +957,8 @@ public final class Example {
         hash = (19 * hash) + getDescriptor().hashCode();
         hash = (37 * hash) + KEY_FIELD_NUMBER;
         hash = (53 * hash) + getKey().hashCode();
-        if (hasVal()) {
-          hash = (37 * hash) + VAL_FIELD_NUMBER;
-          hash = (53 * hash) + getVal().hashCode();
-        }
+        hash = (37 * hash) + VAL_FIELD_NUMBER;
+        hash = (53 * hash) + getVal().hashCode();
         hash = (29 * hash) + unknownFields.hashCode();
         memoizedHashCode = hash;
         return hash;
@@ -1141,7 +1034,6 @@ public final class Example {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
@@ -1149,7 +1041,6 @@ public final class Example {
       public static Builder newBuilder(com.gojek.test.proto.Example.Photo.Attr prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
@@ -1173,7 +1064,6 @@ public final class Example {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Attr_descriptor;
         }
 
-        @java.lang.Override
         protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Attr_fieldAccessorTable
@@ -1196,28 +1086,24 @@ public final class Example {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
         public Builder clear() {
           super.clear();
           key_ = "";
 
           val_ = "";
-          bitField0_ = (bitField0_ & ~0x00000001);
+
           return this;
         }
 
-        @java.lang.Override
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Attr_descriptor;
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Attr getDefaultInstanceForType() {
           return com.gojek.test.proto.Example.Photo.Attr.getDefaultInstance();
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Attr build() {
           com.gojek.test.proto.Example.Photo.Attr result = buildPartial();
           if (!result.isInitialized()) {
@@ -1226,54 +1112,40 @@ public final class Example {
           return result;
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Attr buildPartial() {
           com.gojek.test.proto.Example.Photo.Attr result = new com.gojek.test.proto.Example.Photo.Attr(this);
-          int from_bitField0_ = bitField0_;
-          int to_bitField0_ = 0;
           result.key_ = key_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            to_bitField0_ |= 0x00000001;
-          }
           result.val_ = val_;
-          result.bitField0_ = to_bitField0_;
           onBuilt();
           return result;
         }
 
-        @java.lang.Override
         public Builder clone() {
-          return super.clone();
+          return (Builder) super.clone();
         }
-        @java.lang.Override
         public Builder setField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.setField(field, value);
+          return (Builder) super.setField(field, value);
         }
-        @java.lang.Override
         public Builder clearField(
             com.google.protobuf.Descriptors.FieldDescriptor field) {
-          return super.clearField(field);
+          return (Builder) super.clearField(field);
         }
-        @java.lang.Override
         public Builder clearOneof(
             com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-          return super.clearOneof(oneof);
+          return (Builder) super.clearOneof(oneof);
         }
-        @java.lang.Override
         public Builder setRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             int index, java.lang.Object value) {
-          return super.setRepeatedField(field, index, value);
+          return (Builder) super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
         public Builder addRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.addRepeatedField(field, value);
+          return (Builder) super.addRepeatedField(field, value);
         }
-        @java.lang.Override
         public Builder mergeFrom(com.google.protobuf.Message other) {
           if (other instanceof com.gojek.test.proto.Example.Photo.Attr) {
             return mergeFrom((com.gojek.test.proto.Example.Photo.Attr)other);
@@ -1289,8 +1161,7 @@ public final class Example {
             key_ = other.key_;
             onChanged();
           }
-          if (other.hasVal()) {
-            bitField0_ |= 0x00000001;
+          if (!other.getVal().isEmpty()) {
             val_ = other.val_;
             onChanged();
           }
@@ -1299,12 +1170,10 @@ public final class Example {
           return this;
         }
 
-        @java.lang.Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
         public Builder mergeFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1322,12 +1191,10 @@ public final class Example {
           }
           return this;
         }
-        private int bitField0_;
 
         private java.lang.Object key_ = "";
         /**
          * <code>string key = 1;</code>
-         * @return The key.
          */
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
@@ -1343,7 +1210,6 @@ public final class Example {
         }
         /**
          * <code>string key = 1;</code>
-         * @return The bytes for key.
          */
         public com.google.protobuf.ByteString
             getKeyBytes() {
@@ -1360,8 +1226,6 @@ public final class Example {
         }
         /**
          * <code>string key = 1;</code>
-         * @param value The key to set.
-         * @return This builder for chaining.
          */
         public Builder setKey(
             java.lang.String value) {
@@ -1375,7 +1239,6 @@ public final class Example {
         }
         /**
          * <code>string key = 1;</code>
-         * @return This builder for chaining.
          */
         public Builder clearKey() {
           
@@ -1385,8 +1248,6 @@ public final class Example {
         }
         /**
          * <code>string key = 1;</code>
-         * @param value The bytes for key to set.
-         * @return This builder for chaining.
          */
         public Builder setKeyBytes(
             com.google.protobuf.ByteString value) {
@@ -1402,15 +1263,7 @@ public final class Example {
 
         private java.lang.Object val_ = "";
         /**
-         * <code>optional string val = 2;</code>
-         * @return Whether the val field is set.
-         */
-        public boolean hasVal() {
-          return ((bitField0_ & 0x00000001) != 0);
-        }
-        /**
-         * <code>optional string val = 2;</code>
-         * @return The val.
+         * <code>string val = 2;</code>
          */
         public java.lang.String getVal() {
           java.lang.Object ref = val_;
@@ -1425,8 +1278,7 @@ public final class Example {
           }
         }
         /**
-         * <code>optional string val = 2;</code>
-         * @return The bytes for val.
+         * <code>string val = 2;</code>
          */
         public com.google.protobuf.ByteString
             getValBytes() {
@@ -1442,34 +1294,29 @@ public final class Example {
           }
         }
         /**
-         * <code>optional string val = 2;</code>
-         * @param value The val to set.
-         * @return This builder for chaining.
+         * <code>string val = 2;</code>
          */
         public Builder setVal(
             java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000001;
+  
           val_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>optional string val = 2;</code>
-         * @return This builder for chaining.
+         * <code>string val = 2;</code>
          */
         public Builder clearVal() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           val_ = getDefaultInstance().getVal();
           onChanged();
           return this;
         }
         /**
-         * <code>optional string val = 2;</code>
-         * @param value The bytes for val to set.
-         * @return This builder for chaining.
+         * <code>string val = 2;</code>
          */
         public Builder setValBytes(
             com.google.protobuf.ByteString value) {
@@ -1477,18 +1324,16 @@ public final class Example {
     throw new NullPointerException();
   }
   checkByteStringIsUtf8(value);
-          bitField0_ |= 0x00000001;
+          
           val_ = value;
           onChanged();
           return this;
         }
-        @java.lang.Override
         public final Builder setUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
-          return super.setUnknownFields(unknownFields);
+          return super.setUnknownFieldsProto3(unknownFields);
         }
 
-        @java.lang.Override
         public final Builder mergeUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -1510,7 +1355,6 @@ public final class Example {
 
       private static final com.google.protobuf.Parser<Attr>
           PARSER = new com.google.protobuf.AbstractParser<Attr>() {
-        @java.lang.Override
         public Attr parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1528,7 +1372,6 @@ public final class Example {
         return PARSER;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.Example.Photo.Attr getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
@@ -1541,47 +1384,28 @@ public final class Example {
 
       /**
        * <code>int32 person_id = 1;</code>
-       * @return The personId.
        */
       int getPersonId();
 
       /**
-       * <code>optional int32 y_coord = 3;</code>
-       * @return Whether the yCoord field is set.
-       */
-      boolean hasYCoord();
-      /**
-       * <code>optional int32 y_coord = 3;</code>
-       * @return The yCoord.
+       * <code>int32 y_coord = 3;</code>
        */
       int getYCoord();
 
       /**
-       * <code>optional int32 width = 4;</code>
-       * @return Whether the width field is set.
-       */
-      boolean hasWidth();
-      /**
-       * <code>optional int32 width = 4;</code>
-       * @return The width.
+       * <code>int32 width = 4;</code>
        */
       int getWidth();
 
       /**
-       * <code>optional int32 height = 5;</code>
-       * @return Whether the height field is set.
-       */
-      boolean hasHeight();
-      /**
-       * <code>optional int32 height = 5;</code>
-       * @return The height.
+       * <code>int32 height = 5;</code>
        */
       int getHeight();
     }
     /**
      * Protobuf type {@code com.gojek.test.proto.Photo.Tag}
      */
-    public static final class Tag extends
+    public  static final class Tag extends
         com.google.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:com.gojek.test.proto.Photo.Tag)
         TagOrBuilder {
@@ -1591,13 +1415,10 @@ public final class Example {
         super(builder);
       }
       private Tag() {
-      }
-
-      @java.lang.Override
-      @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
-        return new Tag();
+        personId_ = 0;
+        yCoord_ = 0;
+        width_ = 0;
+        height_ = 0;
       }
 
       @java.lang.Override
@@ -1624,31 +1445,31 @@ public final class Example {
               case 0:
                 done = true;
                 break;
+              default: {
+                if (!parseUnknownFieldProto3(
+                    input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
               case 8: {
 
                 personId_ = input.readInt32();
                 break;
               }
               case 24: {
-                bitField0_ |= 0x00000001;
+
                 yCoord_ = input.readInt32();
                 break;
               }
               case 32: {
-                bitField0_ |= 0x00000002;
+
                 width_ = input.readInt32();
                 break;
               }
               case 40: {
-                bitField0_ |= 0x00000004;
+
                 height_ = input.readInt32();
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
                 break;
               }
             }
@@ -1668,7 +1489,6 @@ public final class Example {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Tag_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Tag_fieldAccessorTable
@@ -1676,14 +1496,11 @@ public final class Example {
                 com.gojek.test.proto.Example.Photo.Tag.class, com.gojek.test.proto.Example.Photo.Tag.Builder.class);
       }
 
-      private int bitField0_;
       public static final int PERSON_ID_FIELD_NUMBER = 1;
       private int personId_;
       /**
        * <code>int32 person_id = 1;</code>
-       * @return The personId.
        */
-      @java.lang.Override
       public int getPersonId() {
         return personId_;
       }
@@ -1691,18 +1508,8 @@ public final class Example {
       public static final int Y_COORD_FIELD_NUMBER = 3;
       private int yCoord_;
       /**
-       * <code>optional int32 y_coord = 3;</code>
-       * @return Whether the yCoord field is set.
+       * <code>int32 y_coord = 3;</code>
        */
-      @java.lang.Override
-      public boolean hasYCoord() {
-        return ((bitField0_ & 0x00000001) != 0);
-      }
-      /**
-       * <code>optional int32 y_coord = 3;</code>
-       * @return The yCoord.
-       */
-      @java.lang.Override
       public int getYCoord() {
         return yCoord_;
       }
@@ -1710,18 +1517,8 @@ public final class Example {
       public static final int WIDTH_FIELD_NUMBER = 4;
       private int width_;
       /**
-       * <code>optional int32 width = 4;</code>
-       * @return Whether the width field is set.
+       * <code>int32 width = 4;</code>
        */
-      @java.lang.Override
-      public boolean hasWidth() {
-        return ((bitField0_ & 0x00000002) != 0);
-      }
-      /**
-       * <code>optional int32 width = 4;</code>
-       * @return The width.
-       */
-      @java.lang.Override
       public int getWidth() {
         return width_;
       }
@@ -1729,24 +1526,13 @@ public final class Example {
       public static final int HEIGHT_FIELD_NUMBER = 5;
       private int height_;
       /**
-       * <code>optional int32 height = 5;</code>
-       * @return Whether the height field is set.
+       * <code>int32 height = 5;</code>
        */
-      @java.lang.Override
-      public boolean hasHeight() {
-        return ((bitField0_ & 0x00000004) != 0);
-      }
-      /**
-       * <code>optional int32 height = 5;</code>
-       * @return The height.
-       */
-      @java.lang.Override
       public int getHeight() {
         return height_;
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -1756,25 +1542,23 @@ public final class Example {
         return true;
       }
 
-      @java.lang.Override
       public void writeTo(com.google.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         if (personId_ != 0) {
           output.writeInt32(1, personId_);
         }
-        if (((bitField0_ & 0x00000001) != 0)) {
+        if (yCoord_ != 0) {
           output.writeInt32(3, yCoord_);
         }
-        if (((bitField0_ & 0x00000002) != 0)) {
+        if (width_ != 0) {
           output.writeInt32(4, width_);
         }
-        if (((bitField0_ & 0x00000004) != 0)) {
+        if (height_ != 0) {
           output.writeInt32(5, height_);
         }
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
@@ -1784,15 +1568,15 @@ public final class Example {
           size += com.google.protobuf.CodedOutputStream
             .computeInt32Size(1, personId_);
         }
-        if (((bitField0_ & 0x00000001) != 0)) {
+        if (yCoord_ != 0) {
           size += com.google.protobuf.CodedOutputStream
             .computeInt32Size(3, yCoord_);
         }
-        if (((bitField0_ & 0x00000002) != 0)) {
+        if (width_ != 0) {
           size += com.google.protobuf.CodedOutputStream
             .computeInt32Size(4, width_);
         }
-        if (((bitField0_ & 0x00000004) != 0)) {
+        if (height_ != 0) {
           size += com.google.protobuf.CodedOutputStream
             .computeInt32Size(5, height_);
         }
@@ -1811,25 +1595,17 @@ public final class Example {
         }
         com.gojek.test.proto.Example.Photo.Tag other = (com.gojek.test.proto.Example.Photo.Tag) obj;
 
-        if (getPersonId()
-            != other.getPersonId()) return false;
-        if (hasYCoord() != other.hasYCoord()) return false;
-        if (hasYCoord()) {
-          if (getYCoord()
-              != other.getYCoord()) return false;
-        }
-        if (hasWidth() != other.hasWidth()) return false;
-        if (hasWidth()) {
-          if (getWidth()
-              != other.getWidth()) return false;
-        }
-        if (hasHeight() != other.hasHeight()) return false;
-        if (hasHeight()) {
-          if (getHeight()
-              != other.getHeight()) return false;
-        }
-        if (!unknownFields.equals(other.unknownFields)) return false;
-        return true;
+        boolean result = true;
+        result = result && (getPersonId()
+            == other.getPersonId());
+        result = result && (getYCoord()
+            == other.getYCoord());
+        result = result && (getWidth()
+            == other.getWidth());
+        result = result && (getHeight()
+            == other.getHeight());
+        result = result && unknownFields.equals(other.unknownFields);
+        return result;
       }
 
       @java.lang.Override
@@ -1841,18 +1617,12 @@ public final class Example {
         hash = (19 * hash) + getDescriptor().hashCode();
         hash = (37 * hash) + PERSON_ID_FIELD_NUMBER;
         hash = (53 * hash) + getPersonId();
-        if (hasYCoord()) {
-          hash = (37 * hash) + Y_COORD_FIELD_NUMBER;
-          hash = (53 * hash) + getYCoord();
-        }
-        if (hasWidth()) {
-          hash = (37 * hash) + WIDTH_FIELD_NUMBER;
-          hash = (53 * hash) + getWidth();
-        }
-        if (hasHeight()) {
-          hash = (37 * hash) + HEIGHT_FIELD_NUMBER;
-          hash = (53 * hash) + getHeight();
-        }
+        hash = (37 * hash) + Y_COORD_FIELD_NUMBER;
+        hash = (53 * hash) + getYCoord();
+        hash = (37 * hash) + WIDTH_FIELD_NUMBER;
+        hash = (53 * hash) + getWidth();
+        hash = (37 * hash) + HEIGHT_FIELD_NUMBER;
+        hash = (53 * hash) + getHeight();
         hash = (29 * hash) + unknownFields.hashCode();
         memoizedHashCode = hash;
         return hash;
@@ -1928,7 +1698,6 @@ public final class Example {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
@@ -1936,7 +1705,6 @@ public final class Example {
       public static Builder newBuilder(com.gojek.test.proto.Example.Photo.Tag prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
@@ -1960,7 +1728,6 @@ public final class Example {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Tag_descriptor;
         }
 
-        @java.lang.Override
         protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Tag_fieldAccessorTable
@@ -1983,32 +1750,28 @@ public final class Example {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
         public Builder clear() {
           super.clear();
           personId_ = 0;
 
           yCoord_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000001);
+
           width_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000002);
+
           height_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000004);
+
           return this;
         }
 
-        @java.lang.Override
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_Tag_descriptor;
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Tag getDefaultInstanceForType() {
           return com.gojek.test.proto.Example.Photo.Tag.getDefaultInstance();
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Tag build() {
           com.gojek.test.proto.Example.Photo.Tag result = buildPartial();
           if (!result.isInitialized()) {
@@ -2017,62 +1780,42 @@ public final class Example {
           return result;
         }
 
-        @java.lang.Override
         public com.gojek.test.proto.Example.Photo.Tag buildPartial() {
           com.gojek.test.proto.Example.Photo.Tag result = new com.gojek.test.proto.Example.Photo.Tag(this);
-          int from_bitField0_ = bitField0_;
-          int to_bitField0_ = 0;
           result.personId_ = personId_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.yCoord_ = yCoord_;
-            to_bitField0_ |= 0x00000001;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.width_ = width_;
-            to_bitField0_ |= 0x00000002;
-          }
-          if (((from_bitField0_ & 0x00000004) != 0)) {
-            result.height_ = height_;
-            to_bitField0_ |= 0x00000004;
-          }
-          result.bitField0_ = to_bitField0_;
+          result.yCoord_ = yCoord_;
+          result.width_ = width_;
+          result.height_ = height_;
           onBuilt();
           return result;
         }
 
-        @java.lang.Override
         public Builder clone() {
-          return super.clone();
+          return (Builder) super.clone();
         }
-        @java.lang.Override
         public Builder setField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.setField(field, value);
+          return (Builder) super.setField(field, value);
         }
-        @java.lang.Override
         public Builder clearField(
             com.google.protobuf.Descriptors.FieldDescriptor field) {
-          return super.clearField(field);
+          return (Builder) super.clearField(field);
         }
-        @java.lang.Override
         public Builder clearOneof(
             com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-          return super.clearOneof(oneof);
+          return (Builder) super.clearOneof(oneof);
         }
-        @java.lang.Override
         public Builder setRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             int index, java.lang.Object value) {
-          return super.setRepeatedField(field, index, value);
+          return (Builder) super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
         public Builder addRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.addRepeatedField(field, value);
+          return (Builder) super.addRepeatedField(field, value);
         }
-        @java.lang.Override
         public Builder mergeFrom(com.google.protobuf.Message other) {
           if (other instanceof com.gojek.test.proto.Example.Photo.Tag) {
             return mergeFrom((com.gojek.test.proto.Example.Photo.Tag)other);
@@ -2087,13 +1830,13 @@ public final class Example {
           if (other.getPersonId() != 0) {
             setPersonId(other.getPersonId());
           }
-          if (other.hasYCoord()) {
+          if (other.getYCoord() != 0) {
             setYCoord(other.getYCoord());
           }
-          if (other.hasWidth()) {
+          if (other.getWidth() != 0) {
             setWidth(other.getWidth());
           }
-          if (other.hasHeight()) {
+          if (other.getHeight() != 0) {
             setHeight(other.getHeight());
           }
           this.mergeUnknownFields(other.unknownFields);
@@ -2101,12 +1844,10 @@ public final class Example {
           return this;
         }
 
-        @java.lang.Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
         public Builder mergeFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2124,21 +1865,16 @@ public final class Example {
           }
           return this;
         }
-        private int bitField0_;
 
         private int personId_ ;
         /**
          * <code>int32 person_id = 1;</code>
-         * @return The personId.
          */
-        @java.lang.Override
         public int getPersonId() {
           return personId_;
         }
         /**
          * <code>int32 person_id = 1;</code>
-         * @param value The personId to set.
-         * @return This builder for chaining.
          */
         public Builder setPersonId(int value) {
           
@@ -2148,7 +1884,6 @@ public final class Example {
         }
         /**
          * <code>int32 person_id = 1;</code>
-         * @return This builder for chaining.
          */
         public Builder clearPersonId() {
           
@@ -2159,38 +1894,25 @@ public final class Example {
 
         private int yCoord_ ;
         /**
-         * <code>optional int32 y_coord = 3;</code>
-         * @return Whether the yCoord field is set.
+         * <code>int32 y_coord = 3;</code>
          */
-        @java.lang.Override
-        public boolean hasYCoord() {
-          return ((bitField0_ & 0x00000001) != 0);
-        }
-        /**
-         * <code>optional int32 y_coord = 3;</code>
-         * @return The yCoord.
-         */
-        @java.lang.Override
         public int getYCoord() {
           return yCoord_;
         }
         /**
-         * <code>optional int32 y_coord = 3;</code>
-         * @param value The yCoord to set.
-         * @return This builder for chaining.
+         * <code>int32 y_coord = 3;</code>
          */
         public Builder setYCoord(int value) {
-          bitField0_ |= 0x00000001;
+          
           yCoord_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>optional int32 y_coord = 3;</code>
-         * @return This builder for chaining.
+         * <code>int32 y_coord = 3;</code>
          */
         public Builder clearYCoord() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           yCoord_ = 0;
           onChanged();
           return this;
@@ -2198,38 +1920,25 @@ public final class Example {
 
         private int width_ ;
         /**
-         * <code>optional int32 width = 4;</code>
-         * @return Whether the width field is set.
+         * <code>int32 width = 4;</code>
          */
-        @java.lang.Override
-        public boolean hasWidth() {
-          return ((bitField0_ & 0x00000002) != 0);
-        }
-        /**
-         * <code>optional int32 width = 4;</code>
-         * @return The width.
-         */
-        @java.lang.Override
         public int getWidth() {
           return width_;
         }
         /**
-         * <code>optional int32 width = 4;</code>
-         * @param value The width to set.
-         * @return This builder for chaining.
+         * <code>int32 width = 4;</code>
          */
         public Builder setWidth(int value) {
-          bitField0_ |= 0x00000002;
+          
           width_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>optional int32 width = 4;</code>
-         * @return This builder for chaining.
+         * <code>int32 width = 4;</code>
          */
         public Builder clearWidth() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          
           width_ = 0;
           onChanged();
           return this;
@@ -2237,49 +1946,34 @@ public final class Example {
 
         private int height_ ;
         /**
-         * <code>optional int32 height = 5;</code>
-         * @return Whether the height field is set.
+         * <code>int32 height = 5;</code>
          */
-        @java.lang.Override
-        public boolean hasHeight() {
-          return ((bitField0_ & 0x00000004) != 0);
-        }
-        /**
-         * <code>optional int32 height = 5;</code>
-         * @return The height.
-         */
-        @java.lang.Override
         public int getHeight() {
           return height_;
         }
         /**
-         * <code>optional int32 height = 5;</code>
-         * @param value The height to set.
-         * @return This builder for chaining.
+         * <code>int32 height = 5;</code>
          */
         public Builder setHeight(int value) {
-          bitField0_ |= 0x00000004;
+          
           height_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>optional int32 height = 5;</code>
-         * @return This builder for chaining.
+         * <code>int32 height = 5;</code>
          */
         public Builder clearHeight() {
-          bitField0_ = (bitField0_ & ~0x00000004);
+          
           height_ = 0;
           onChanged();
           return this;
         }
-        @java.lang.Override
         public final Builder setUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
-          return super.setUnknownFields(unknownFields);
+          return super.setUnknownFieldsProto3(unknownFields);
         }
 
-        @java.lang.Override
         public final Builder mergeUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -2301,7 +1995,6 @@ public final class Example {
 
       private static final com.google.protobuf.Parser<Tag>
           PARSER = new com.google.protobuf.AbstractParser<Tag>() {
-        @java.lang.Override
         public Tag parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2319,21 +2012,17 @@ public final class Example {
         return PARSER;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.Example.Photo.Tag getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
 
     }
 
-    private int bitField0_;
     public static final int ID_FIELD_NUMBER = 1;
     private int id_;
     /**
      * <code>int32 id = 1;</code>
-     * @return The id.
      */
-    @java.lang.Override
     public int getId() {
       return id_;
     }
@@ -2342,9 +2031,7 @@ public final class Example {
     private volatile java.lang.Object path_;
     /**
      * <code>string path = 2;</code>
-     * @return The path.
      */
-    @java.lang.Override
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
@@ -2359,9 +2046,7 @@ public final class Example {
     }
     /**
      * <code>string path = 2;</code>
-     * @return The bytes for path.
      */
-    @java.lang.Override
     public com.google.protobuf.ByteString
         getPathBytes() {
       java.lang.Object ref = path_;
@@ -2379,24 +2064,13 @@ public final class Example {
     public static final int IMAGE_FIELD_NUMBER = 6;
     private com.google.protobuf.ByteString image_;
     /**
-     * <code>optional bytes image = 6;</code>
-     * @return Whether the image field is set.
+     * <code>bytes image = 6;</code>
      */
-    @java.lang.Override
-    public boolean hasImage() {
-      return ((bitField0_ & 0x00000001) != 0);
-    }
-    /**
-     * <code>optional bytes image = 6;</code>
-     * @return The image.
-     */
-    @java.lang.Override
     public com.google.protobuf.ByteString getImage() {
       return image_;
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -2406,7 +2080,6 @@ public final class Example {
       return true;
     }
 
-    @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (id_ != 0) {
@@ -2415,13 +2088,12 @@ public final class Example {
       if (!getPathBytes().isEmpty()) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 2, path_);
       }
-      if (((bitField0_ & 0x00000001) != 0)) {
+      if (!image_.isEmpty()) {
         output.writeBytes(6, image_);
       }
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -2434,7 +2106,7 @@ public final class Example {
       if (!getPathBytes().isEmpty()) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, path_);
       }
-      if (((bitField0_ & 0x00000001) != 0)) {
+      if (!image_.isEmpty()) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(6, image_);
       }
@@ -2453,17 +2125,15 @@ public final class Example {
       }
       com.gojek.test.proto.Example.Photo other = (com.gojek.test.proto.Example.Photo) obj;
 
-      if (getId()
-          != other.getId()) return false;
-      if (!getPath()
-          .equals(other.getPath())) return false;
-      if (hasImage() != other.hasImage()) return false;
-      if (hasImage()) {
-        if (!getImage()
-            .equals(other.getImage())) return false;
-      }
-      if (!unknownFields.equals(other.unknownFields)) return false;
-      return true;
+      boolean result = true;
+      result = result && (getId()
+          == other.getId());
+      result = result && getPath()
+          .equals(other.getPath());
+      result = result && getImage()
+          .equals(other.getImage());
+      result = result && unknownFields.equals(other.unknownFields);
+      return result;
     }
 
     @java.lang.Override
@@ -2477,10 +2147,8 @@ public final class Example {
       hash = (53 * hash) + getId();
       hash = (37 * hash) + PATH_FIELD_NUMBER;
       hash = (53 * hash) + getPath().hashCode();
-      if (hasImage()) {
-        hash = (37 * hash) + IMAGE_FIELD_NUMBER;
-        hash = (53 * hash) + getImage().hashCode();
-      }
+      hash = (37 * hash) + IMAGE_FIELD_NUMBER;
+      hash = (53 * hash) + getImage().hashCode();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -2556,7 +2224,6 @@ public final class Example {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
@@ -2564,7 +2231,6 @@ public final class Example {
     public static Builder newBuilder(com.gojek.test.proto.Example.Photo prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
@@ -2588,7 +2254,6 @@ public final class Example {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_fieldAccessorTable
@@ -2611,7 +2276,6 @@ public final class Example {
                 .alwaysUseFieldBuilders) {
         }
       }
-      @java.lang.Override
       public Builder clear() {
         super.clear();
         id_ = 0;
@@ -2619,22 +2283,19 @@ public final class Example {
         path_ = "";
 
         image_ = com.google.protobuf.ByteString.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
+
         return this;
       }
 
-      @java.lang.Override
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return com.gojek.test.proto.Example.internal_static_com_gojek_test_proto_Photo_descriptor;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.Example.Photo getDefaultInstanceForType() {
         return com.gojek.test.proto.Example.Photo.getDefaultInstance();
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.Example.Photo build() {
         com.gojek.test.proto.Example.Photo result = buildPartial();
         if (!result.isInitialized()) {
@@ -2643,55 +2304,41 @@ public final class Example {
         return result;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.Example.Photo buildPartial() {
         com.gojek.test.proto.Example.Photo result = new com.gojek.test.proto.Example.Photo(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
         result.id_ = id_;
         result.path_ = path_;
-        if (((from_bitField0_ & 0x00000001) != 0)) {
-          to_bitField0_ |= 0x00000001;
-        }
         result.image_ = image_;
-        result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
 
-      @java.lang.Override
       public Builder clone() {
-        return super.clone();
+        return (Builder) super.clone();
       }
-      @java.lang.Override
       public Builder setField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
-        return super.setField(field, value);
+        return (Builder) super.setField(field, value);
       }
-      @java.lang.Override
       public Builder clearField(
           com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return super.clearField(field);
+        return (Builder) super.clearField(field);
       }
-      @java.lang.Override
       public Builder clearOneof(
           com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return super.clearOneof(oneof);
+        return (Builder) super.clearOneof(oneof);
       }
-      @java.lang.Override
       public Builder setRepeatedField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           int index, java.lang.Object value) {
-        return super.setRepeatedField(field, index, value);
+        return (Builder) super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
       public Builder addRepeatedField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
-        return super.addRepeatedField(field, value);
+        return (Builder) super.addRepeatedField(field, value);
       }
-      @java.lang.Override
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof com.gojek.test.proto.Example.Photo) {
           return mergeFrom((com.gojek.test.proto.Example.Photo)other);
@@ -2710,7 +2357,7 @@ public final class Example {
           path_ = other.path_;
           onChanged();
         }
-        if (other.hasImage()) {
+        if (other.getImage() != com.google.protobuf.ByteString.EMPTY) {
           setImage(other.getImage());
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -2718,12 +2365,10 @@ public final class Example {
         return this;
       }
 
-      @java.lang.Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2741,21 +2386,16 @@ public final class Example {
         }
         return this;
       }
-      private int bitField0_;
 
       private int id_ ;
       /**
        * <code>int32 id = 1;</code>
-       * @return The id.
        */
-      @java.lang.Override
       public int getId() {
         return id_;
       }
       /**
        * <code>int32 id = 1;</code>
-       * @param value The id to set.
-       * @return This builder for chaining.
        */
       public Builder setId(int value) {
         
@@ -2765,7 +2405,6 @@ public final class Example {
       }
       /**
        * <code>int32 id = 1;</code>
-       * @return This builder for chaining.
        */
       public Builder clearId() {
         
@@ -2777,7 +2416,6 @@ public final class Example {
       private java.lang.Object path_ = "";
       /**
        * <code>string path = 2;</code>
-       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -2793,7 +2431,6 @@ public final class Example {
       }
       /**
        * <code>string path = 2;</code>
-       * @return The bytes for path.
        */
       public com.google.protobuf.ByteString
           getPathBytes() {
@@ -2810,8 +2447,6 @@ public final class Example {
       }
       /**
        * <code>string path = 2;</code>
-       * @param value The path to set.
-       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -2825,7 +2460,6 @@ public final class Example {
       }
       /**
        * <code>string path = 2;</code>
-       * @return This builder for chaining.
        */
       public Builder clearPath() {
         
@@ -2835,8 +2469,6 @@ public final class Example {
       }
       /**
        * <code>string path = 2;</code>
-       * @param value The bytes for path to set.
-       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           com.google.protobuf.ByteString value) {
@@ -2852,52 +2484,37 @@ public final class Example {
 
       private com.google.protobuf.ByteString image_ = com.google.protobuf.ByteString.EMPTY;
       /**
-       * <code>optional bytes image = 6;</code>
-       * @return Whether the image field is set.
+       * <code>bytes image = 6;</code>
        */
-      @java.lang.Override
-      public boolean hasImage() {
-        return ((bitField0_ & 0x00000001) != 0);
-      }
-      /**
-       * <code>optional bytes image = 6;</code>
-       * @return The image.
-       */
-      @java.lang.Override
       public com.google.protobuf.ByteString getImage() {
         return image_;
       }
       /**
-       * <code>optional bytes image = 6;</code>
-       * @param value The image to set.
-       * @return This builder for chaining.
+       * <code>bytes image = 6;</code>
        */
       public Builder setImage(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000001;
+  
         image_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional bytes image = 6;</code>
-       * @return This builder for chaining.
+       * <code>bytes image = 6;</code>
        */
       public Builder clearImage() {
-        bitField0_ = (bitField0_ & ~0x00000001);
+        
         image_ = getDefaultInstance().getImage();
         onChanged();
         return this;
       }
-      @java.lang.Override
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
+        return super.setUnknownFieldsProto3(unknownFields);
       }
 
-      @java.lang.Override
       public final Builder mergeUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -2919,7 +2536,6 @@ public final class Example {
 
     private static final com.google.protobuf.Parser<Photo>
         PARSER = new com.google.protobuf.AbstractParser<Photo>() {
-      @java.lang.Override
       public Photo parsePartialFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2937,7 +2553,6 @@ public final class Example {
       return PARSER;
     }
 
-    @java.lang.Override
     public com.gojek.test.proto.Example.Photo getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
@@ -2974,25 +2589,32 @@ public final class Example {
   static {
     java.lang.String[] descriptorData = {
       "\n\023proto/example.proto\022\024com.gojek.test.pr" +
-      "oto\"\217\002\n\005Photo\022\n\n\002id\030\001 \001(\005\022\014\n\004path\030\002 \001(\t\022" +
-      "\022\n\005image\030\006 \001(\014H\000\210\001\001\032%\n\005Label\022\014\n\004item\030\001 \001" +
-      "(\t\022\016\n\006exists\030\002 \001(\010\032-\n\004Attr\022\013\n\003key\030\001 \001(\t\022" +
-      "\020\n\003val\030\002 \001(\tH\000\210\001\001B\006\n\004_val\032x\n\003Tag\022\021\n\tpers" +
-      "on_id\030\001 \001(\005\022\024\n\007y_coord\030\003 \001(\005H\000\210\001\001\022\022\n\005wid" +
-      "th\030\004 \001(\005H\001\210\001\001\022\023\n\006height\030\005 \001(\005H\002\210\001\001B\n\n\010_y" +
-      "_coordB\010\n\006_widthB\t\n\007_heightB\010\n\006_imageB\037\n" +
-      "\024com.gojek.test.protoB\007Exampleb\006proto3"
+      "oto\"\303\001\n\005Photo\022\n\n\002id\030\001 \001(\005\022\014\n\004path\030\002 \001(\t\022" +
+      "\r\n\005image\030\006 \001(\014\032%\n\005Label\022\014\n\004item\030\001 \001(\t\022\016\n" +
+      "\006exists\030\002 \001(\010\032 \n\004Attr\022\013\n\003key\030\001 \001(\t\022\013\n\003va" +
+      "l\030\002 \001(\t\032H\n\003Tag\022\021\n\tperson_id\030\001 \001(\005\022\017\n\007y_c" +
+      "oord\030\003 \001(\005\022\r\n\005width\030\004 \001(\005\022\016\n\006height\030\005 \001(" +
+      "\005B\037\n\024com.gojek.test.protoB\007Exampleb\006prot" +
+      "o3"
     };
-    descriptor = com.google.protobuf.Descriptors.FileDescriptor
+    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public com.google.protobuf.ExtensionRegistry assignDescriptors(
+              com.google.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
+    com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
-        });
+        }, assigner);
     internal_static_com_gojek_test_proto_Photo_descriptor =
       getDescriptor().getMessageTypes().get(0);
     internal_static_com_gojek_test_proto_Photo_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gojek_test_proto_Photo_descriptor,
-        new java.lang.String[] { "Id", "Path", "Image", "Image", });
+        new java.lang.String[] { "Id", "Path", "Image", });
     internal_static_com_gojek_test_proto_Photo_Label_descriptor =
       internal_static_com_gojek_test_proto_Photo_descriptor.getNestedTypes().get(0);
     internal_static_com_gojek_test_proto_Photo_Label_fieldAccessorTable = new
@@ -3004,13 +2626,13 @@ public final class Example {
     internal_static_com_gojek_test_proto_Photo_Attr_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gojek_test_proto_Photo_Attr_descriptor,
-        new java.lang.String[] { "Key", "Val", "Val", });
+        new java.lang.String[] { "Key", "Val", });
     internal_static_com_gojek_test_proto_Photo_Tag_descriptor =
       internal_static_com_gojek_test_proto_Photo_descriptor.getNestedTypes().get(2);
     internal_static_com_gojek_test_proto_Photo_Tag_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_gojek_test_proto_Photo_Tag_descriptor,
-        new java.lang.String[] { "PersonId", "YCoord", "Width", "Height", "YCoord", "Width", "Height", });
+        new java.lang.String[] { "PersonId", "YCoord", "Width", "Height", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

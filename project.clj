@@ -35,7 +35,7 @@
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
-                 [clojusc/protobuf "3.5.1-v1.1"]
+                 [clojusc/protobuf "3.5.1-v1.1"]            ;Compile all the proto with only protoc version 3.5.1 since clojusc supports only till 3.5.1
                  [prismatic/schema "1.1.12"]
                  [clj-statsd "0.4.0"]
                  [ring/ring "1.9.3"]
@@ -52,8 +52,7 @@
                                com.fasterxml.jackson.core/jackson-core
                                com.fasterxml.jackson.dataformat/jackson-dataformat-smile
                                com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
-                 [metosin/ring-swagger-ui "3.46.0"]
-                 [com.google.protobuf/protobuf-java "3.17.3"]]
+                 [metosin/ring-swagger-ui "3.46.0"]]
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password
@@ -70,7 +69,6 @@
                        :jvm-opts          ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
                        :dependencies      [[junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]
-                                           [com.google.protobuf/protobuf-java "3.17.3"]
                                            [org.apache.kafka/kafka-streams "2.8.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                            [org.apache.kafka/kafka-clients "2.8.0" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]

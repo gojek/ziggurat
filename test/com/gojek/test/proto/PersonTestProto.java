@@ -20,54 +20,45 @@ public final class PersonTestProto {
 
     /**
      * <code>int32 id = 1;</code>
-     * @return The id.
      */
     int getId();
 
     /**
      * <code>string name = 2;</code>
-     * @return The name.
      */
     java.lang.String getName();
     /**
      * <code>string name = 2;</code>
-     * @return The bytes for name.
      */
     com.google.protobuf.ByteString
         getNameBytes();
 
     /**
      * <code>string email = 3;</code>
-     * @return The email.
      */
     java.lang.String getEmail();
     /**
      * <code>string email = 3;</code>
-     * @return The bytes for email.
      */
     com.google.protobuf.ByteString
         getEmailBytes();
 
     /**
      * <code>string likes = 4;</code>
-     * @return The likes.
      */
     java.lang.String getLikes();
     /**
      * <code>string likes = 4;</code>
-     * @return The bytes for likes.
      */
     com.google.protobuf.ByteString
         getLikesBytes();
 
     /**
      * <code>.google.protobuf.Struct characters = 5;</code>
-     * @return Whether the characters field is set.
      */
     boolean hasCharacters();
     /**
      * <code>.google.protobuf.Struct characters = 5;</code>
-     * @return The characters.
      */
     com.google.protobuf.Struct getCharacters();
     /**
@@ -78,7 +69,7 @@ public final class PersonTestProto {
   /**
    * Protobuf type {@code gojek.test.proto.Person}
    */
-  public static final class Person extends
+  public  static final class Person extends
       com.google.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:gojek.test.proto.Person)
       PersonOrBuilder {
@@ -88,16 +79,10 @@ public final class PersonTestProto {
       super(builder);
     }
     private Person() {
+      id_ = 0;
       name_ = "";
       email_ = "";
       likes_ = "";
-    }
-
-    @java.lang.Override
-    @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
-      return new Person();
     }
 
     @java.lang.Override
@@ -113,6 +98,7 @@ public final class PersonTestProto {
       if (extensionRegistry == null) {
         throw new java.lang.NullPointerException();
       }
+      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
@@ -123,6 +109,13 @@ public final class PersonTestProto {
             case 0:
               done = true;
               break;
+            default: {
+              if (!parseUnknownFieldProto3(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
             case 8: {
 
               id_ = input.readInt32();
@@ -159,13 +152,6 @@ public final class PersonTestProto {
 
               break;
             }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -183,7 +169,6 @@ public final class PersonTestProto {
       return com.gojek.test.proto.PersonTestProto.internal_static_gojek_test_proto_Person_descriptor;
     }
 
-    @java.lang.Override
     protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return com.gojek.test.proto.PersonTestProto.internal_static_gojek_test_proto_Person_fieldAccessorTable
@@ -195,9 +180,7 @@ public final class PersonTestProto {
     private int id_;
     /**
      * <code>int32 id = 1;</code>
-     * @return The id.
      */
-    @java.lang.Override
     public int getId() {
       return id_;
     }
@@ -206,9 +189,7 @@ public final class PersonTestProto {
     private volatile java.lang.Object name_;
     /**
      * <code>string name = 2;</code>
-     * @return The name.
      */
-    @java.lang.Override
     public java.lang.String getName() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
@@ -223,9 +204,7 @@ public final class PersonTestProto {
     }
     /**
      * <code>string name = 2;</code>
-     * @return The bytes for name.
      */
-    @java.lang.Override
     public com.google.protobuf.ByteString
         getNameBytes() {
       java.lang.Object ref = name_;
@@ -244,9 +223,7 @@ public final class PersonTestProto {
     private volatile java.lang.Object email_;
     /**
      * <code>string email = 3;</code>
-     * @return The email.
      */
-    @java.lang.Override
     public java.lang.String getEmail() {
       java.lang.Object ref = email_;
       if (ref instanceof java.lang.String) {
@@ -261,9 +238,7 @@ public final class PersonTestProto {
     }
     /**
      * <code>string email = 3;</code>
-     * @return The bytes for email.
      */
-    @java.lang.Override
     public com.google.protobuf.ByteString
         getEmailBytes() {
       java.lang.Object ref = email_;
@@ -282,9 +257,7 @@ public final class PersonTestProto {
     private volatile java.lang.Object likes_;
     /**
      * <code>string likes = 4;</code>
-     * @return The likes.
      */
-    @java.lang.Override
     public java.lang.String getLikes() {
       java.lang.Object ref = likes_;
       if (ref instanceof java.lang.String) {
@@ -299,9 +272,7 @@ public final class PersonTestProto {
     }
     /**
      * <code>string likes = 4;</code>
-     * @return The bytes for likes.
      */
-    @java.lang.Override
     public com.google.protobuf.ByteString
         getLikesBytes() {
       java.lang.Object ref = likes_;
@@ -320,30 +291,24 @@ public final class PersonTestProto {
     private com.google.protobuf.Struct characters_;
     /**
      * <code>.google.protobuf.Struct characters = 5;</code>
-     * @return Whether the characters field is set.
      */
-    @java.lang.Override
     public boolean hasCharacters() {
       return characters_ != null;
     }
     /**
      * <code>.google.protobuf.Struct characters = 5;</code>
-     * @return The characters.
      */
-    @java.lang.Override
     public com.google.protobuf.Struct getCharacters() {
       return characters_ == null ? com.google.protobuf.Struct.getDefaultInstance() : characters_;
     }
     /**
      * <code>.google.protobuf.Struct characters = 5;</code>
      */
-    @java.lang.Override
     public com.google.protobuf.StructOrBuilder getCharactersOrBuilder() {
       return getCharacters();
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -353,7 +318,6 @@ public final class PersonTestProto {
       return true;
     }
 
-    @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (id_ != 0) {
@@ -374,7 +338,6 @@ public final class PersonTestProto {
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -412,21 +375,22 @@ public final class PersonTestProto {
       }
       com.gojek.test.proto.PersonTestProto.Person other = (com.gojek.test.proto.PersonTestProto.Person) obj;
 
-      if (getId()
-          != other.getId()) return false;
-      if (!getName()
-          .equals(other.getName())) return false;
-      if (!getEmail()
-          .equals(other.getEmail())) return false;
-      if (!getLikes()
-          .equals(other.getLikes())) return false;
-      if (hasCharacters() != other.hasCharacters()) return false;
+      boolean result = true;
+      result = result && (getId()
+          == other.getId());
+      result = result && getName()
+          .equals(other.getName());
+      result = result && getEmail()
+          .equals(other.getEmail());
+      result = result && getLikes()
+          .equals(other.getLikes());
+      result = result && (hasCharacters() == other.hasCharacters());
       if (hasCharacters()) {
-        if (!getCharacters()
-            .equals(other.getCharacters())) return false;
+        result = result && getCharacters()
+            .equals(other.getCharacters());
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
-      return true;
+      result = result && unknownFields.equals(other.unknownFields);
+      return result;
     }
 
     @java.lang.Override
@@ -523,7 +487,6 @@ public final class PersonTestProto {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
@@ -531,7 +494,6 @@ public final class PersonTestProto {
     public static Builder newBuilder(com.gojek.test.proto.PersonTestProto.Person prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
@@ -555,7 +517,6 @@ public final class PersonTestProto {
         return com.gojek.test.proto.PersonTestProto.internal_static_gojek_test_proto_Person_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.gojek.test.proto.PersonTestProto.internal_static_gojek_test_proto_Person_fieldAccessorTable
@@ -578,7 +539,6 @@ public final class PersonTestProto {
                 .alwaysUseFieldBuilders) {
         }
       }
-      @java.lang.Override
       public Builder clear() {
         super.clear();
         id_ = 0;
@@ -598,18 +558,15 @@ public final class PersonTestProto {
         return this;
       }
 
-      @java.lang.Override
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return com.gojek.test.proto.PersonTestProto.internal_static_gojek_test_proto_Person_descriptor;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.PersonTestProto.Person getDefaultInstanceForType() {
         return com.gojek.test.proto.PersonTestProto.Person.getDefaultInstance();
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.PersonTestProto.Person build() {
         com.gojek.test.proto.PersonTestProto.Person result = buildPartial();
         if (!result.isInitialized()) {
@@ -618,7 +575,6 @@ public final class PersonTestProto {
         return result;
       }
 
-      @java.lang.Override
       public com.gojek.test.proto.PersonTestProto.Person buildPartial() {
         com.gojek.test.proto.PersonTestProto.Person result = new com.gojek.test.proto.PersonTestProto.Person(this);
         result.id_ = id_;
@@ -634,39 +590,32 @@ public final class PersonTestProto {
         return result;
       }
 
-      @java.lang.Override
       public Builder clone() {
-        return super.clone();
+        return (Builder) super.clone();
       }
-      @java.lang.Override
       public Builder setField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
-        return super.setField(field, value);
+        return (Builder) super.setField(field, value);
       }
-      @java.lang.Override
       public Builder clearField(
           com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return super.clearField(field);
+        return (Builder) super.clearField(field);
       }
-      @java.lang.Override
       public Builder clearOneof(
           com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return super.clearOneof(oneof);
+        return (Builder) super.clearOneof(oneof);
       }
-      @java.lang.Override
       public Builder setRepeatedField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           int index, java.lang.Object value) {
-        return super.setRepeatedField(field, index, value);
+        return (Builder) super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
       public Builder addRepeatedField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
-        return super.addRepeatedField(field, value);
+        return (Builder) super.addRepeatedField(field, value);
       }
-      @java.lang.Override
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof com.gojek.test.proto.PersonTestProto.Person) {
           return mergeFrom((com.gojek.test.proto.PersonTestProto.Person)other);
@@ -701,12 +650,10 @@ public final class PersonTestProto {
         return this;
       }
 
-      @java.lang.Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -728,16 +675,12 @@ public final class PersonTestProto {
       private int id_ ;
       /**
        * <code>int32 id = 1;</code>
-       * @return The id.
        */
-      @java.lang.Override
       public int getId() {
         return id_;
       }
       /**
        * <code>int32 id = 1;</code>
-       * @param value The id to set.
-       * @return This builder for chaining.
        */
       public Builder setId(int value) {
         
@@ -747,7 +690,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>int32 id = 1;</code>
-       * @return This builder for chaining.
        */
       public Builder clearId() {
         
@@ -759,7 +701,6 @@ public final class PersonTestProto {
       private java.lang.Object name_ = "";
       /**
        * <code>string name = 2;</code>
-       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -775,7 +716,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string name = 2;</code>
-       * @return The bytes for name.
        */
       public com.google.protobuf.ByteString
           getNameBytes() {
@@ -792,8 +732,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string name = 2;</code>
-       * @param value The name to set.
-       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -807,7 +745,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string name = 2;</code>
-       * @return This builder for chaining.
        */
       public Builder clearName() {
         
@@ -817,8 +754,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string name = 2;</code>
-       * @param value The bytes for name to set.
-       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           com.google.protobuf.ByteString value) {
@@ -835,7 +770,6 @@ public final class PersonTestProto {
       private java.lang.Object email_ = "";
       /**
        * <code>string email = 3;</code>
-       * @return The email.
        */
       public java.lang.String getEmail() {
         java.lang.Object ref = email_;
@@ -851,7 +785,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string email = 3;</code>
-       * @return The bytes for email.
        */
       public com.google.protobuf.ByteString
           getEmailBytes() {
@@ -868,8 +801,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string email = 3;</code>
-       * @param value The email to set.
-       * @return This builder for chaining.
        */
       public Builder setEmail(
           java.lang.String value) {
@@ -883,7 +814,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string email = 3;</code>
-       * @return This builder for chaining.
        */
       public Builder clearEmail() {
         
@@ -893,8 +823,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string email = 3;</code>
-       * @param value The bytes for email to set.
-       * @return This builder for chaining.
        */
       public Builder setEmailBytes(
           com.google.protobuf.ByteString value) {
@@ -911,7 +839,6 @@ public final class PersonTestProto {
       private java.lang.Object likes_ = "";
       /**
        * <code>string likes = 4;</code>
-       * @return The likes.
        */
       public java.lang.String getLikes() {
         java.lang.Object ref = likes_;
@@ -927,7 +854,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string likes = 4;</code>
-       * @return The bytes for likes.
        */
       public com.google.protobuf.ByteString
           getLikesBytes() {
@@ -944,8 +870,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string likes = 4;</code>
-       * @param value The likes to set.
-       * @return This builder for chaining.
        */
       public Builder setLikes(
           java.lang.String value) {
@@ -959,7 +883,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string likes = 4;</code>
-       * @return This builder for chaining.
        */
       public Builder clearLikes() {
         
@@ -969,8 +892,6 @@ public final class PersonTestProto {
       }
       /**
        * <code>string likes = 4;</code>
-       * @param value The bytes for likes to set.
-       * @return This builder for chaining.
        */
       public Builder setLikesBytes(
           com.google.protobuf.ByteString value) {
@@ -984,19 +905,17 @@ public final class PersonTestProto {
         return this;
       }
 
-      private com.google.protobuf.Struct characters_;
+      private com.google.protobuf.Struct characters_ = null;
       private com.google.protobuf.SingleFieldBuilderV3<
           com.google.protobuf.Struct, com.google.protobuf.Struct.Builder, com.google.protobuf.StructOrBuilder> charactersBuilder_;
       /**
        * <code>.google.protobuf.Struct characters = 5;</code>
-       * @return Whether the characters field is set.
        */
       public boolean hasCharacters() {
         return charactersBuilder_ != null || characters_ != null;
       }
       /**
        * <code>.google.protobuf.Struct characters = 5;</code>
-       * @return The characters.
        */
       public com.google.protobuf.Struct getCharacters() {
         if (charactersBuilder_ == null) {
@@ -1102,13 +1021,11 @@ public final class PersonTestProto {
         }
         return charactersBuilder_;
       }
-      @java.lang.Override
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
+        return super.setUnknownFieldsProto3(unknownFields);
       }
 
-      @java.lang.Override
       public final Builder mergeUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -1130,7 +1047,6 @@ public final class PersonTestProto {
 
     private static final com.google.protobuf.Parser<Person>
         PARSER = new com.google.protobuf.AbstractParser<Person>() {
-      @java.lang.Override
       public Person parsePartialFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1148,7 +1064,6 @@ public final class PersonTestProto {
       return PARSER;
     }
 
-    @java.lang.Override
     public com.gojek.test.proto.PersonTestProto.Person getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
@@ -1176,11 +1091,19 @@ public final class PersonTestProto {
       "gle.protobuf.StructB\'\n\024com.gojek.test.pr" +
       "otoB\017PersonTestProtob\006proto3"
     };
-    descriptor = com.google.protobuf.Descriptors.FileDescriptor
+    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public com.google.protobuf.ExtensionRegistry assignDescriptors(
+              com.google.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
+    com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
           com.google.protobuf.StructProto.getDescriptor(),
-        });
+        }, assigner);
     internal_static_gojek_test_proto_Person_descriptor =
       getDescriptor().getMessageTypes().get(0);
     internal_static_gojek_test_proto_Person_fieldAccessorTable = new

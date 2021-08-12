@@ -20,36 +20,30 @@ public final class MessagePayloadProto {
 
     /**
      * <code>bytes message = 1;</code>
-     * @return The message.
      */
     com.google.protobuf.ByteString getMessage();
 
     /**
      * <code>string topic_entity = 2;</code>
-     * @return The topicEntity.
      */
     java.lang.String getTopicEntity();
     /**
      * <code>string topic_entity = 2;</code>
-     * @return The bytes for topicEntity.
      */
     com.google.protobuf.ByteString
         getTopicEntityBytes();
 
     /**
      * <code>int32 retry_count = 3;</code>
-     * @return The retryCount.
      */
     int getRetryCount();
 
     /**
      * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
-     * @return Whether the metadata field is set.
      */
     boolean hasMetadata();
     /**
      * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
-     * @return The metadata.
      */
     com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata getMetadata();
     /**
@@ -60,7 +54,7 @@ public final class MessagePayloadProto {
   /**
    * Protobuf type {@code com.ziggurat.proto.MessagePayload}
    */
-  public static final class MessagePayload extends
+  public  static final class MessagePayload extends
       com.google.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:com.ziggurat.proto.MessagePayload)
       MessagePayloadOrBuilder {
@@ -72,13 +66,7 @@ public final class MessagePayloadProto {
     private MessagePayload() {
       message_ = com.google.protobuf.ByteString.EMPTY;
       topicEntity_ = "";
-    }
-
-    @java.lang.Override
-    @SuppressWarnings({"unused"})
-    protected java.lang.Object newInstance(
-        UnusedPrivateParameter unused) {
-      return new MessagePayload();
+      retryCount_ = 0;
     }
 
     @java.lang.Override
@@ -94,6 +82,7 @@ public final class MessagePayloadProto {
       if (extensionRegistry == null) {
         throw new java.lang.NullPointerException();
       }
+      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
@@ -104,6 +93,13 @@ public final class MessagePayloadProto {
             case 0:
               done = true;
               break;
+            default: {
+              if (!parseUnknownFieldProto3(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
             case 10: {
 
               message_ = input.readBytes();
@@ -133,13 +129,6 @@ public final class MessagePayloadProto {
 
               break;
             }
-            default: {
-              if (!parseUnknownField(
-                  input, unknownFields, extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -157,7 +146,6 @@ public final class MessagePayloadProto {
       return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_descriptor;
     }
 
-    @java.lang.Override
     protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_fieldAccessorTable
@@ -171,32 +159,28 @@ public final class MessagePayloadProto {
 
       /**
        * <code>string topic = 1;</code>
-       * @return The topic.
        */
       java.lang.String getTopic();
       /**
        * <code>string topic = 1;</code>
-       * @return The bytes for topic.
        */
       com.google.protobuf.ByteString
           getTopicBytes();
 
       /**
        * <code>int64 timestamp = 2;</code>
-       * @return The timestamp.
        */
       long getTimestamp();
 
       /**
        * <code>int32 partition = 3;</code>
-       * @return The partition.
        */
       int getPartition();
     }
     /**
      * Protobuf type {@code com.ziggurat.proto.MessagePayload.Metadata}
      */
-    public static final class Metadata extends
+    public  static final class Metadata extends
         com.google.protobuf.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:com.ziggurat.proto.MessagePayload.Metadata)
         MetadataOrBuilder {
@@ -207,13 +191,8 @@ public final class MessagePayloadProto {
       }
       private Metadata() {
         topic_ = "";
-      }
-
-      @java.lang.Override
-      @SuppressWarnings({"unused"})
-      protected java.lang.Object newInstance(
-          UnusedPrivateParameter unused) {
-        return new Metadata();
+        timestamp_ = 0L;
+        partition_ = 0;
       }
 
       @java.lang.Override
@@ -229,6 +208,7 @@ public final class MessagePayloadProto {
         if (extensionRegistry == null) {
           throw new java.lang.NullPointerException();
         }
+        int mutable_bitField0_ = 0;
         com.google.protobuf.UnknownFieldSet.Builder unknownFields =
             com.google.protobuf.UnknownFieldSet.newBuilder();
         try {
@@ -239,6 +219,13 @@ public final class MessagePayloadProto {
               case 0:
                 done = true;
                 break;
+              default: {
+                if (!parseUnknownFieldProto3(
+                    input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
               case 10: {
                 java.lang.String s = input.readStringRequireUtf8();
 
@@ -253,13 +240,6 @@ public final class MessagePayloadProto {
               case 24: {
 
                 partition_ = input.readInt32();
-                break;
-              }
-              default: {
-                if (!parseUnknownField(
-                    input, unknownFields, extensionRegistry, tag)) {
-                  done = true;
-                }
                 break;
               }
             }
@@ -279,7 +259,6 @@ public final class MessagePayloadProto {
         return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_Metadata_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_Metadata_fieldAccessorTable
@@ -291,9 +270,7 @@ public final class MessagePayloadProto {
       private volatile java.lang.Object topic_;
       /**
        * <code>string topic = 1;</code>
-       * @return The topic.
        */
-      @java.lang.Override
       public java.lang.String getTopic() {
         java.lang.Object ref = topic_;
         if (ref instanceof java.lang.String) {
@@ -308,9 +285,7 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>string topic = 1;</code>
-       * @return The bytes for topic.
        */
-      @java.lang.Override
       public com.google.protobuf.ByteString
           getTopicBytes() {
         java.lang.Object ref = topic_;
@@ -329,9 +304,7 @@ public final class MessagePayloadProto {
       private long timestamp_;
       /**
        * <code>int64 timestamp = 2;</code>
-       * @return The timestamp.
        */
-      @java.lang.Override
       public long getTimestamp() {
         return timestamp_;
       }
@@ -340,15 +313,12 @@ public final class MessagePayloadProto {
       private int partition_;
       /**
        * <code>int32 partition = 3;</code>
-       * @return The partition.
        */
-      @java.lang.Override
       public int getPartition() {
         return partition_;
       }
 
       private byte memoizedIsInitialized = -1;
-      @java.lang.Override
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized == 1) return true;
@@ -358,7 +328,6 @@ public final class MessagePayloadProto {
         return true;
       }
 
-      @java.lang.Override
       public void writeTo(com.google.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         if (!getTopicBytes().isEmpty()) {
@@ -373,7 +342,6 @@ public final class MessagePayloadProto {
         unknownFields.writeTo(output);
       }
 
-      @java.lang.Override
       public int getSerializedSize() {
         int size = memoizedSize;
         if (size != -1) return size;
@@ -405,14 +373,15 @@ public final class MessagePayloadProto {
         }
         com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata other = (com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata) obj;
 
-        if (!getTopic()
-            .equals(other.getTopic())) return false;
-        if (getTimestamp()
-            != other.getTimestamp()) return false;
-        if (getPartition()
-            != other.getPartition()) return false;
-        if (!unknownFields.equals(other.unknownFields)) return false;
-        return true;
+        boolean result = true;
+        result = result && getTopic()
+            .equals(other.getTopic());
+        result = result && (getTimestamp()
+            == other.getTimestamp());
+        result = result && (getPartition()
+            == other.getPartition());
+        result = result && unknownFields.equals(other.unknownFields);
+        return result;
       }
 
       @java.lang.Override
@@ -504,7 +473,6 @@ public final class MessagePayloadProto {
             .parseWithIOException(PARSER, input, extensionRegistry);
       }
 
-      @java.lang.Override
       public Builder newBuilderForType() { return newBuilder(); }
       public static Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
@@ -512,7 +480,6 @@ public final class MessagePayloadProto {
       public static Builder newBuilder(com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
-      @java.lang.Override
       public Builder toBuilder() {
         return this == DEFAULT_INSTANCE
             ? new Builder() : new Builder().mergeFrom(this);
@@ -536,7 +503,6 @@ public final class MessagePayloadProto {
           return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_Metadata_descriptor;
         }
 
-        @java.lang.Override
         protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_Metadata_fieldAccessorTable
@@ -559,7 +525,6 @@ public final class MessagePayloadProto {
                   .alwaysUseFieldBuilders) {
           }
         }
-        @java.lang.Override
         public Builder clear() {
           super.clear();
           topic_ = "";
@@ -571,18 +536,15 @@ public final class MessagePayloadProto {
           return this;
         }
 
-        @java.lang.Override
         public com.google.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_Metadata_descriptor;
         }
 
-        @java.lang.Override
         public com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata getDefaultInstanceForType() {
           return com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata.getDefaultInstance();
         }
 
-        @java.lang.Override
         public com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata build() {
           com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata result = buildPartial();
           if (!result.isInitialized()) {
@@ -591,7 +553,6 @@ public final class MessagePayloadProto {
           return result;
         }
 
-        @java.lang.Override
         public com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata buildPartial() {
           com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata result = new com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata(this);
           result.topic_ = topic_;
@@ -601,39 +562,32 @@ public final class MessagePayloadProto {
           return result;
         }
 
-        @java.lang.Override
         public Builder clone() {
-          return super.clone();
+          return (Builder) super.clone();
         }
-        @java.lang.Override
         public Builder setField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.setField(field, value);
+          return (Builder) super.setField(field, value);
         }
-        @java.lang.Override
         public Builder clearField(
             com.google.protobuf.Descriptors.FieldDescriptor field) {
-          return super.clearField(field);
+          return (Builder) super.clearField(field);
         }
-        @java.lang.Override
         public Builder clearOneof(
             com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-          return super.clearOneof(oneof);
+          return (Builder) super.clearOneof(oneof);
         }
-        @java.lang.Override
         public Builder setRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             int index, java.lang.Object value) {
-          return super.setRepeatedField(field, index, value);
+          return (Builder) super.setRepeatedField(field, index, value);
         }
-        @java.lang.Override
         public Builder addRepeatedField(
             com.google.protobuf.Descriptors.FieldDescriptor field,
             java.lang.Object value) {
-          return super.addRepeatedField(field, value);
+          return (Builder) super.addRepeatedField(field, value);
         }
-        @java.lang.Override
         public Builder mergeFrom(com.google.protobuf.Message other) {
           if (other instanceof com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata) {
             return mergeFrom((com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata)other);
@@ -660,12 +614,10 @@ public final class MessagePayloadProto {
           return this;
         }
 
-        @java.lang.Override
         public final boolean isInitialized() {
           return true;
         }
 
-        @java.lang.Override
         public Builder mergeFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -687,7 +639,6 @@ public final class MessagePayloadProto {
         private java.lang.Object topic_ = "";
         /**
          * <code>string topic = 1;</code>
-         * @return The topic.
          */
         public java.lang.String getTopic() {
           java.lang.Object ref = topic_;
@@ -703,7 +654,6 @@ public final class MessagePayloadProto {
         }
         /**
          * <code>string topic = 1;</code>
-         * @return The bytes for topic.
          */
         public com.google.protobuf.ByteString
             getTopicBytes() {
@@ -720,8 +670,6 @@ public final class MessagePayloadProto {
         }
         /**
          * <code>string topic = 1;</code>
-         * @param value The topic to set.
-         * @return This builder for chaining.
          */
         public Builder setTopic(
             java.lang.String value) {
@@ -735,7 +683,6 @@ public final class MessagePayloadProto {
         }
         /**
          * <code>string topic = 1;</code>
-         * @return This builder for chaining.
          */
         public Builder clearTopic() {
           
@@ -745,8 +692,6 @@ public final class MessagePayloadProto {
         }
         /**
          * <code>string topic = 1;</code>
-         * @param value The bytes for topic to set.
-         * @return This builder for chaining.
          */
         public Builder setTopicBytes(
             com.google.protobuf.ByteString value) {
@@ -763,16 +708,12 @@ public final class MessagePayloadProto {
         private long timestamp_ ;
         /**
          * <code>int64 timestamp = 2;</code>
-         * @return The timestamp.
          */
-        @java.lang.Override
         public long getTimestamp() {
           return timestamp_;
         }
         /**
          * <code>int64 timestamp = 2;</code>
-         * @param value The timestamp to set.
-         * @return This builder for chaining.
          */
         public Builder setTimestamp(long value) {
           
@@ -782,7 +723,6 @@ public final class MessagePayloadProto {
         }
         /**
          * <code>int64 timestamp = 2;</code>
-         * @return This builder for chaining.
          */
         public Builder clearTimestamp() {
           
@@ -794,16 +734,12 @@ public final class MessagePayloadProto {
         private int partition_ ;
         /**
          * <code>int32 partition = 3;</code>
-         * @return The partition.
          */
-        @java.lang.Override
         public int getPartition() {
           return partition_;
         }
         /**
          * <code>int32 partition = 3;</code>
-         * @param value The partition to set.
-         * @return This builder for chaining.
          */
         public Builder setPartition(int value) {
           
@@ -813,7 +749,6 @@ public final class MessagePayloadProto {
         }
         /**
          * <code>int32 partition = 3;</code>
-         * @return This builder for chaining.
          */
         public Builder clearPartition() {
           
@@ -821,13 +756,11 @@ public final class MessagePayloadProto {
           onChanged();
           return this;
         }
-        @java.lang.Override
         public final Builder setUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
-          return super.setUnknownFields(unknownFields);
+          return super.setUnknownFieldsProto3(unknownFields);
         }
 
-        @java.lang.Override
         public final Builder mergeUnknownFields(
             final com.google.protobuf.UnknownFieldSet unknownFields) {
           return super.mergeUnknownFields(unknownFields);
@@ -849,7 +782,6 @@ public final class MessagePayloadProto {
 
       private static final com.google.protobuf.Parser<Metadata>
           PARSER = new com.google.protobuf.AbstractParser<Metadata>() {
-        @java.lang.Override
         public Metadata parsePartialFrom(
             com.google.protobuf.CodedInputStream input,
             com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -867,7 +799,6 @@ public final class MessagePayloadProto {
         return PARSER;
       }
 
-      @java.lang.Override
       public com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata getDefaultInstanceForType() {
         return DEFAULT_INSTANCE;
       }
@@ -878,9 +809,7 @@ public final class MessagePayloadProto {
     private com.google.protobuf.ByteString message_;
     /**
      * <code>bytes message = 1;</code>
-     * @return The message.
      */
-    @java.lang.Override
     public com.google.protobuf.ByteString getMessage() {
       return message_;
     }
@@ -889,9 +818,7 @@ public final class MessagePayloadProto {
     private volatile java.lang.Object topicEntity_;
     /**
      * <code>string topic_entity = 2;</code>
-     * @return The topicEntity.
      */
-    @java.lang.Override
     public java.lang.String getTopicEntity() {
       java.lang.Object ref = topicEntity_;
       if (ref instanceof java.lang.String) {
@@ -906,9 +833,7 @@ public final class MessagePayloadProto {
     }
     /**
      * <code>string topic_entity = 2;</code>
-     * @return The bytes for topicEntity.
      */
-    @java.lang.Override
     public com.google.protobuf.ByteString
         getTopicEntityBytes() {
       java.lang.Object ref = topicEntity_;
@@ -927,9 +852,7 @@ public final class MessagePayloadProto {
     private int retryCount_;
     /**
      * <code>int32 retry_count = 3;</code>
-     * @return The retryCount.
      */
-    @java.lang.Override
     public int getRetryCount() {
       return retryCount_;
     }
@@ -938,30 +861,24 @@ public final class MessagePayloadProto {
     private com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata metadata_;
     /**
      * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
-     * @return Whether the metadata field is set.
      */
-    @java.lang.Override
     public boolean hasMetadata() {
       return metadata_ != null;
     }
     /**
      * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
-     * @return The metadata.
      */
-    @java.lang.Override
     public com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata getMetadata() {
       return metadata_ == null ? com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata.getDefaultInstance() : metadata_;
     }
     /**
      * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
      */
-    @java.lang.Override
     public com.ziggurat.proto.MessagePayloadProto.MessagePayload.MetadataOrBuilder getMetadataOrBuilder() {
       return getMetadata();
     }
 
     private byte memoizedIsInitialized = -1;
-    @java.lang.Override
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized == 1) return true;
@@ -971,7 +888,6 @@ public final class MessagePayloadProto {
       return true;
     }
 
-    @java.lang.Override
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       if (!message_.isEmpty()) {
@@ -989,7 +905,6 @@ public final class MessagePayloadProto {
       unknownFields.writeTo(output);
     }
 
-    @java.lang.Override
     public int getSerializedSize() {
       int size = memoizedSize;
       if (size != -1) return size;
@@ -1025,19 +940,20 @@ public final class MessagePayloadProto {
       }
       com.ziggurat.proto.MessagePayloadProto.MessagePayload other = (com.ziggurat.proto.MessagePayloadProto.MessagePayload) obj;
 
-      if (!getMessage()
-          .equals(other.getMessage())) return false;
-      if (!getTopicEntity()
-          .equals(other.getTopicEntity())) return false;
-      if (getRetryCount()
-          != other.getRetryCount()) return false;
-      if (hasMetadata() != other.hasMetadata()) return false;
+      boolean result = true;
+      result = result && getMessage()
+          .equals(other.getMessage());
+      result = result && getTopicEntity()
+          .equals(other.getTopicEntity());
+      result = result && (getRetryCount()
+          == other.getRetryCount());
+      result = result && (hasMetadata() == other.hasMetadata());
       if (hasMetadata()) {
-        if (!getMetadata()
-            .equals(other.getMetadata())) return false;
+        result = result && getMetadata()
+            .equals(other.getMetadata());
       }
-      if (!unknownFields.equals(other.unknownFields)) return false;
-      return true;
+      result = result && unknownFields.equals(other.unknownFields);
+      return result;
     }
 
     @java.lang.Override
@@ -1132,7 +1048,6 @@ public final class MessagePayloadProto {
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
-    @java.lang.Override
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder() {
       return DEFAULT_INSTANCE.toBuilder();
@@ -1140,7 +1055,6 @@ public final class MessagePayloadProto {
     public static Builder newBuilder(com.ziggurat.proto.MessagePayloadProto.MessagePayload prototype) {
       return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
-    @java.lang.Override
     public Builder toBuilder() {
       return this == DEFAULT_INSTANCE
           ? new Builder() : new Builder().mergeFrom(this);
@@ -1164,7 +1078,6 @@ public final class MessagePayloadProto {
         return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_descriptor;
       }
 
-      @java.lang.Override
       protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_fieldAccessorTable
@@ -1187,7 +1100,6 @@ public final class MessagePayloadProto {
                 .alwaysUseFieldBuilders) {
         }
       }
-      @java.lang.Override
       public Builder clear() {
         super.clear();
         message_ = com.google.protobuf.ByteString.EMPTY;
@@ -1205,18 +1117,15 @@ public final class MessagePayloadProto {
         return this;
       }
 
-      @java.lang.Override
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return com.ziggurat.proto.MessagePayloadProto.internal_static_com_ziggurat_proto_MessagePayload_descriptor;
       }
 
-      @java.lang.Override
       public com.ziggurat.proto.MessagePayloadProto.MessagePayload getDefaultInstanceForType() {
         return com.ziggurat.proto.MessagePayloadProto.MessagePayload.getDefaultInstance();
       }
 
-      @java.lang.Override
       public com.ziggurat.proto.MessagePayloadProto.MessagePayload build() {
         com.ziggurat.proto.MessagePayloadProto.MessagePayload result = buildPartial();
         if (!result.isInitialized()) {
@@ -1225,7 +1134,6 @@ public final class MessagePayloadProto {
         return result;
       }
 
-      @java.lang.Override
       public com.ziggurat.proto.MessagePayloadProto.MessagePayload buildPartial() {
         com.ziggurat.proto.MessagePayloadProto.MessagePayload result = new com.ziggurat.proto.MessagePayloadProto.MessagePayload(this);
         result.message_ = message_;
@@ -1240,39 +1148,32 @@ public final class MessagePayloadProto {
         return result;
       }
 
-      @java.lang.Override
       public Builder clone() {
-        return super.clone();
+        return (Builder) super.clone();
       }
-      @java.lang.Override
       public Builder setField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
-        return super.setField(field, value);
+        return (Builder) super.setField(field, value);
       }
-      @java.lang.Override
       public Builder clearField(
           com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return super.clearField(field);
+        return (Builder) super.clearField(field);
       }
-      @java.lang.Override
       public Builder clearOneof(
           com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return super.clearOneof(oneof);
+        return (Builder) super.clearOneof(oneof);
       }
-      @java.lang.Override
       public Builder setRepeatedField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           int index, java.lang.Object value) {
-        return super.setRepeatedField(field, index, value);
+        return (Builder) super.setRepeatedField(field, index, value);
       }
-      @java.lang.Override
       public Builder addRepeatedField(
           com.google.protobuf.Descriptors.FieldDescriptor field,
           java.lang.Object value) {
-        return super.addRepeatedField(field, value);
+        return (Builder) super.addRepeatedField(field, value);
       }
-      @java.lang.Override
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof com.ziggurat.proto.MessagePayloadProto.MessagePayload) {
           return mergeFrom((com.ziggurat.proto.MessagePayloadProto.MessagePayload)other);
@@ -1302,12 +1203,10 @@ public final class MessagePayloadProto {
         return this;
       }
 
-      @java.lang.Override
       public final boolean isInitialized() {
         return true;
       }
 
-      @java.lang.Override
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1329,16 +1228,12 @@ public final class MessagePayloadProto {
       private com.google.protobuf.ByteString message_ = com.google.protobuf.ByteString.EMPTY;
       /**
        * <code>bytes message = 1;</code>
-       * @return The message.
        */
-      @java.lang.Override
       public com.google.protobuf.ByteString getMessage() {
         return message_;
       }
       /**
        * <code>bytes message = 1;</code>
-       * @param value The message to set.
-       * @return This builder for chaining.
        */
       public Builder setMessage(com.google.protobuf.ByteString value) {
         if (value == null) {
@@ -1351,7 +1246,6 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>bytes message = 1;</code>
-       * @return This builder for chaining.
        */
       public Builder clearMessage() {
         
@@ -1363,7 +1257,6 @@ public final class MessagePayloadProto {
       private java.lang.Object topicEntity_ = "";
       /**
        * <code>string topic_entity = 2;</code>
-       * @return The topicEntity.
        */
       public java.lang.String getTopicEntity() {
         java.lang.Object ref = topicEntity_;
@@ -1379,7 +1272,6 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>string topic_entity = 2;</code>
-       * @return The bytes for topicEntity.
        */
       public com.google.protobuf.ByteString
           getTopicEntityBytes() {
@@ -1396,8 +1288,6 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>string topic_entity = 2;</code>
-       * @param value The topicEntity to set.
-       * @return This builder for chaining.
        */
       public Builder setTopicEntity(
           java.lang.String value) {
@@ -1411,7 +1301,6 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>string topic_entity = 2;</code>
-       * @return This builder for chaining.
        */
       public Builder clearTopicEntity() {
         
@@ -1421,8 +1310,6 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>string topic_entity = 2;</code>
-       * @param value The bytes for topicEntity to set.
-       * @return This builder for chaining.
        */
       public Builder setTopicEntityBytes(
           com.google.protobuf.ByteString value) {
@@ -1439,16 +1326,12 @@ public final class MessagePayloadProto {
       private int retryCount_ ;
       /**
        * <code>int32 retry_count = 3;</code>
-       * @return The retryCount.
        */
-      @java.lang.Override
       public int getRetryCount() {
         return retryCount_;
       }
       /**
        * <code>int32 retry_count = 3;</code>
-       * @param value The retryCount to set.
-       * @return This builder for chaining.
        */
       public Builder setRetryCount(int value) {
         
@@ -1458,7 +1341,6 @@ public final class MessagePayloadProto {
       }
       /**
        * <code>int32 retry_count = 3;</code>
-       * @return This builder for chaining.
        */
       public Builder clearRetryCount() {
         
@@ -1467,19 +1349,17 @@ public final class MessagePayloadProto {
         return this;
       }
 
-      private com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata metadata_;
+      private com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata metadata_ = null;
       private com.google.protobuf.SingleFieldBuilderV3<
           com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata, com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata.Builder, com.ziggurat.proto.MessagePayloadProto.MessagePayload.MetadataOrBuilder> metadataBuilder_;
       /**
        * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
-       * @return Whether the metadata field is set.
        */
       public boolean hasMetadata() {
         return metadataBuilder_ != null || metadata_ != null;
       }
       /**
        * <code>.com.ziggurat.proto.MessagePayload.Metadata metadata = 4;</code>
-       * @return The metadata.
        */
       public com.ziggurat.proto.MessagePayloadProto.MessagePayload.Metadata getMetadata() {
         if (metadataBuilder_ == null) {
@@ -1585,13 +1465,11 @@ public final class MessagePayloadProto {
         }
         return metadataBuilder_;
       }
-      @java.lang.Override
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
+        return super.setUnknownFieldsProto3(unknownFields);
       }
 
-      @java.lang.Override
       public final Builder mergeUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
         return super.mergeUnknownFields(unknownFields);
@@ -1613,7 +1491,6 @@ public final class MessagePayloadProto {
 
     private static final com.google.protobuf.Parser<MessagePayload>
         PARSER = new com.google.protobuf.AbstractParser<MessagePayload>() {
-      @java.lang.Override
       public MessagePayload parsePartialFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1631,7 +1508,6 @@ public final class MessagePayloadProto {
       return PARSER;
     }
 
-    @java.lang.Override
     public com.ziggurat.proto.MessagePayloadProto.MessagePayload getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
@@ -1666,10 +1542,18 @@ public final class MessagePayloadProto {
       "\tpartition\030\003 \001(\005B)\n\022com.ziggurat.protoB\023" +
       "MessagePayloadProtob\006proto3"
     };
-    descriptor = com.google.protobuf.Descriptors.FileDescriptor
+    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+        new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public com.google.protobuf.ExtensionRegistry assignDescriptors(
+              com.google.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
+    com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
-        });
+        }, assigner);
     internal_static_com_ziggurat_proto_MessagePayload_descriptor =
       getDescriptor().getMessageTypes().get(0);
     internal_static_com_ziggurat_proto_MessagePayload_fieldAccessorTable = new
