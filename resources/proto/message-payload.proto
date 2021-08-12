@@ -6,7 +6,13 @@ option java_package = "com.ziggurat.proto";
 option java_outer_classname = "MessagePayloadProto";
 
 message MessagePayload {
+  message Metadata{
+    string topic = 1;
+    int64 timestamp = 2;
+    int32 partition = 3;
+  }
   bytes message = 1;
   string topic_entity = 2;
   int32 retry_count = 3;
+  Metadata metadata = 4;
 }
