@@ -10,7 +10,7 @@
             [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-streams stop-streams stop-stream start-stream]]
             [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]]
             [ziggurat.tracer :refer [tracer]])
-  (:import [flatland.protobuf.test Example$Photo]
+  (:import [com.gojek.test.proto Example$Photo]
            [io.opentracing.tag Tags]
            [java.util Properties]
            [org.apache.kafka.clients.producer ProducerConfig]
@@ -90,12 +90,12 @@
                                                          (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                          (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
                                                          (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 5000)                                    ;;waiting for streams to start
+    (Thread/sleep 10000)                                    ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
                                                         (props)
                                                         (MockTime. 0 (- (System/currentTimeMillis) (* 1000 oldest-processed-message-in-s)) (System/nanoTime)))
-    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (Thread/sleep 10000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= 0 @message-received-count))))
 
@@ -114,7 +114,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (Thread/sleep 10000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 

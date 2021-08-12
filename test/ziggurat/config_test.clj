@@ -18,9 +18,42 @@
                                      rabbitmq-config
                                      set-property
                                      statsd-config
+                                     retry-count
                                      ziggurat-config]]
             [ziggurat.fixtures :as f])
   (:import (java.util ArrayList Properties)))
+
+(deftest retry-count-test
+  (testing "it returns the retry count, if retry is enabled and retry-count is present in the config"
+    (let [config-filename f/test-config-file-name
+          config-values-from-env (assoc-in (config-from-env config-filename) [:ziggurat :retry :enabled] true)]
+      (with-redefs [config-from-env (fn [_] config-values-from-env)
+                    config-file config-filename]
+        (mount/start #'config)
+        (is (= (-> config-values-from-env :ziggurat :retry :count)
+               (retry-count)))
+        (mount/stop)))))
+
+(testing "it returns -1, if the retry is enabled but retry count is not present"
+  (let [config-filename        f/test-config-file-name
+        config-values-from-env (assoc-in (config-from-env config-filename) [:ziggurat :retry :enabled] true)
+        config-values-from-env (assoc-in config-values-from-env [:ziggurat :retry :enabled] nil)]
+    (with-redefs [config-from-env (fn [_] config-values-from-env)
+                  config-file     config-filename]
+      (mount/start #'config)
+      (is (= -1
+             (retry-count)))
+      (mount/stop))))
+
+(testing "it returns -1, if the retry is not enabled"
+  (let [config-filename        f/test-config-file-name
+        config-values-from-env (assoc-in (config-from-env config-filename) [:ziggurat :retry :enabled] false)]
+    (with-redefs [config-from-env (fn [_] config-values-from-env)
+                  config-file     config-filename]
+      (mount/start #'config)
+      (is (= -1
+             (retry-count)))
+      (mount/stop))))
 
 (deftest config-from-env-test
   (testing "calls clonfig"

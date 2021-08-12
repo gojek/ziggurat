@@ -7,6 +7,7 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
+            [ziggurat.util.rabbitmq :refer [bytes-to-str]]
             [ziggurat.message-payload :as mp]
             [langohr.basic :as lb]
             [ziggurat.new-relic :as nr]
@@ -21,8 +22,8 @@
   (let [service-name                    (:app-name (ziggurat-config))
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         topic-entity                    (name (first (keys stream-routes)))
-        metadata                        {:meta "data"}
-        message-payload                 {:message {:foo "bar"} :topic-entity (keyword topic-entity) :metadata metadata}
+        metadata                        {:topic "x" :timestamp 123 :partition 1}
+        message-payload                 {:message (.getBytes "foo-bar") :topic-entity (keyword topic-entity) :retry-count 5 :metadata metadata}
         expected-additional-tags        {:topic_name topic-entity}
         expected-metric-namespace       "message-processing"
         report-time-namespace           "handler-fn-execution-time"
@@ -58,20 +59,19 @@
                                                     (reset! successfully-processed? true)))]
             ((mapper-func (constantly :channel-1) [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
-              (is (= (-> message-payload
-                         (dissoc :headers)) message-from-mq))
+              (is (= (bytes-to-str (-> message-payload
+                                       (dissoc :headers))) (bytes-to-str message-from-mq)))
               (is @successfully-processed?))))))
 
     (testing "message process should raise exception if channel not in list"
       (fix/with-queues
-        (assoc-in stream-routes [:default :channel-1] (constantly :success))
-        (with-redefs [report-error (fn [e _]
-                                     (let [err (Throwable->map e)]
-                                       (is (= (:cause err) "Invalid mapper return code"))
-                                       (is (= (-> err :data :code) :channel-1))))]
-          ((mapper-func (constantly :channel-1) [:some-other-channel]) message-payload)
-          (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
-            (is (nil? message-from-mq))))))
+        (assoc-in stream-routes [:default :channel-1] (constantly :success)) `(with-redefs [report-error (fn [e _]
+                                                                                                           (let [err (Throwable->map e)]
+                                                                                                             (is (= (:cause err) "Invalid mapper return code"))
+                                                                                                             (is (= (-> err :data :code) :channel-1))))]
+                                                                                ((mapper-func (constantly :channel-1) [:some-other-channel]) message-payload)
+                                                                                (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
+                                                                                  (is (nil? message-from-mq))))))
 
     (testing "message process should be unsuccessful and retry"
       (fix/with-queues stream-routes
@@ -88,7 +88,7 @@
                                                     (reset! unsuccessfully-processed? true)))]
             ((mapper-func (constantly :retry) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
-              (is (= message-from-mq expected-message)))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message))))
             (is @unsuccessfully-processed?)))))
 
     (testing "reports error, publishes message to retry queue if mapper-fn raises exception"
@@ -107,7 +107,7 @@
                                                     (reset! unsuccessfully-processed? true)))]
             ((mapper-func (fn [_] (throw (Exception. "test exception"))) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
-              (is (= message-from-mq expected-message)))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message))))
             (is @unsuccessfully-processed?)
             (is @report-fn-called?)))))
 
@@ -127,8 +127,7 @@
             user-handler-fn (fn [user-msg-payload]
                               (reset! user-handler-called true)
                               (is (= (-> message-payload
-                                         (dissoc :headers)
-                                         (dissoc :topic-entity)) user-msg-payload))
+                                         (dissoc :headers :topic-entity :retry-count)) user-msg-payload))
                               (is (some? (:message user-msg-payload)))
                               (is (some? (:metadata user-msg-payload)))
                               (is (nil?  (:retry-count user-msg-payload)))
@@ -146,8 +145,8 @@
         stream-routes                       {:default {:handler-fn #(constantly nil)
                                                        channel     #(constantly nil)}}
         topic                               (first (keys stream-routes))
-        metadata                            {:meta "data"}
-        message-payload                     {:message      {:foo "bar"}
+        metadata                            {:topic "x" :timestamp 123 :partition 1}
+        message-payload                     {:message      (.getBytes "foo-bar")
                                              :retry-count  (:count (:retry (ziggurat-config)))
                                              :topic-entity topic
                                              :metadata     metadata}
@@ -182,7 +181,7 @@
                                                     (reset! unsuccessfully-processed? true)))]
             ((channel-mapper-func (constantly :retry) channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
-              (is (= message-from-mq expected-message)))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message))))
             (is @unsuccessfully-processed?)))))
 
     (testing "message should raise exception and report the error"
@@ -201,7 +200,7 @@
                                                     (reset! unsuccessfully-processed? true)))]
             ((channel-mapper-func (fn [_] (throw (Exception. "test exception"))) channel) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic channel)]
-              (is (= message-from-mq expected-message)))
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message))))
             (is @unsuccessfully-processed?)
             (is @report-fn-called?)))))
 
