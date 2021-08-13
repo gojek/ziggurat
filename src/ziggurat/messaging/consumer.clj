@@ -21,7 +21,7 @@
   [topic-entity-name message]
   (let [from-proto (mw/deserialize-message message MessagePayloadProto$MessagePayload topic-entity-name)]
     (if (nil? from-proto)
-      (nippy/thaw message)
+      (into {} (nippy/thaw message))  ;Converting defrecord into map, since proto does not understand defrecord
       (-> from-proto
           (update :message #(.toByteArray ^ByteString %))
           (update :topic-entity keyword)))))

@@ -346,16 +346,16 @@
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
         (is (= "class [B" (str (type (:message converted-message-payload)))))
         (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
-    (testing "should return a ziggurat.message_payload/->MessagePayload if serialized using nippy"
-      (let [expected-message-payload         (assoc (zmp/->MessagePayload proto-message topic-entity) :retry-count 4)
-            nippy-serialized-message-payload (nippy/freeze expected-message-payload)
+    (testing "should return a map and not ziggurat.message_payload/->MessagePayload if original message was a ziggurat.message_payload/->MessagePayload and serialized using nippy"
+      (let [nippy-message-payload         (assoc (zmp/->MessagePayload proto-message topic-entity) :retry-count 3)
+            nippy-serialized-message-payload (nippy/freeze nippy-message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
-    (testing "should return a ziggurat.mapper/->MessagePayload if serialized using nippy"
-      (let [expected-message-payload         (assoc (mpr/->MessagePayload proto-message topic-entity) :retry-count 4)
-            nippy-serialized-message-payload (nippy/freeze expected-message-payload)
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
+    (testing "should return a map and not ziggurat.mapper/->MessagePayload if original message was a ziggurat.mapper/->MessagePayload and serialized using nippy"
+      (let [nippy-message-payload         (assoc (mpr/->MessagePayload proto-message topic-entity) :retry-count 3)
+            nippy-serialized-message-payload (nippy/freeze nippy-message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str expected-message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
     (testing "should return nil if message isn't nippy or proto serialized"
       (with-redefs [lb/publish (fn [_ _ _ _] nil)]
         (let [random-bytes-as-message-payload     (.getBytes (String. "Hello World"))
