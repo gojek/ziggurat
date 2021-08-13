@@ -10,7 +10,6 @@
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :refer [prefixed-queue-name]]
             [ziggurat.tracer :refer [tracer]]
-
             [ziggurat.util.rabbitmq :as util :refer [bytes-to-str]]
             [ziggurat.message-payload :as zmp]
             [ziggurat.mapper :as mpr]
@@ -329,9 +328,10 @@
 
 (deftest convert-and-ack-message-further-tests
   (let [message                    {:id 7 :path "/photos/h2k3j4h9h23"}
+        metadata                   {:topic "x" :partition 1 :timestamp 123}
         proto-class                Example$Photo
         proto-message              (proto/->bytes (proto/create proto-class message))
-        message-payload            {:message proto-message :topic-entity topic-entity :retry-count 3}]
+        message-payload            {:message proto-message :topic-entity topic-entity :retry-count 3 :metadata metadata}]
     (testing "should return deserialized message-payload if serialized using protobuf"
       (let [proto-serialized-message-payload (zmd/serialize-to-message-payload-proto message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} proto-serialized-message-payload false "default")]
@@ -350,12 +350,12 @@
       (let [nippy-message-payload         (assoc (zmp/->MessagePayload proto-message topic-entity) :retry-count 3)
             nippy-serialized-message-payload (nippy/freeze nippy-message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str (into {} nippy-message-payload))))))
     (testing "should return a map and not ziggurat.mapper/->MessagePayload if original message was a ziggurat.mapper/->MessagePayload and serialized using nippy"
       (let [nippy-message-payload         (assoc (mpr/->MessagePayload proto-message topic-entity) :retry-count 3)
             nippy-serialized-message-payload (nippy/freeze nippy-message-payload)
             converted-message-payload        (consumer/convert-and-ack-message nil {:delivery-tag 1} nippy-serialized-message-payload false "default")]
-        (is (= (bytes-to-str converted-message-payload) (bytes-to-str message-payload)))))
+        (is (= (bytes-to-str converted-message-payload) (bytes-to-str (into {} nippy-message-payload))))))
     (testing "should return nil if message isn't nippy or proto serialized"
       (with-redefs [lb/publish (fn [_ _ _ _] nil)]
         (let [random-bytes-as-message-payload     (.getBytes (String. "Hello World"))

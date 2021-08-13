@@ -23,7 +23,7 @@
                                     fix/silence-logging]))
 
 (def topic-entity :default)
-(def message-payload {:message (.getBytes "hello-world") :topic-entity topic-entity})
+(def message-payload {:message (.getBytes "hello-world") :topic-entity topic-entity :metadata {:topic "x" :partition 1 :timestamp 123}})
 (defn retry-count-config [] (-> (ziggurat-config) :retry :count))
 
 (deftest retry-for-channel-test
@@ -158,6 +158,8 @@
         (let [message-from-mq (rmq/get-msg-from-dead-queue "default")]
           (is (= nil message-from-mq)))
         (let [message-from-mq (rmq/get-msg-from-delay-queue "default")]
+          (is (= nil message-from-mq)))
+        (let [message-from-mq (rmq/get-msg-from-instant-queue "default")]
           (is (= nil message-from-mq))))))
 
   (testing "publish to delay queue publishes with expiration from config"
@@ -220,6 +222,17 @@
                                                      :retry {:count   5
                                                              :enabled true
                                                              :type    :exponential}))]
+
+      (testing "message with available retry counts same as that of ziggurat-config will be published to delay queue with suffix 1"
+        (fix/with-queues
+          {:default {:handler-fn #(constantly nil)}}
+          (let [retry-message-payload (assoc message-payload :retry-count (get-in (ziggurat-config) [:retry :count]))
+                expected-message      (assoc message-payload :retry-count 4)]
+            (producer/retry retry-message-payload)
+            (let [message-from-mq (rmq/get-message-from-retry-queue "default" 1)]
+              (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message)))))))
+
+
       (testing "message with available retry counts as 4 will be published to delay queue with suffix 2"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}
@@ -612,7 +625,7 @@
     (let [serialize-called (atom false)]
       (with-redefs [zmd/serialize-to-message-payload-proto (fn [_] (reset! serialize-called true))
                     lch/open                               (fn [^Connection _] (reify Channel (close [_] nil)))
-                    lb/publish                             (fn [_ _ _ _ _])]
+                    lb/publish                             (fn [_ _ _ _ _] nil)]
         (producer/publish "exchange" message-payload)
         (is (true? @serialize-called))))))
 
