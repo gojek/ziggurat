@@ -50,16 +50,23 @@
     (testing "message process should successfully push to channel queue"
       (fix/with-queues (assoc-in stream-routes [:default :channel-1] (constantly :success))
         (let [successfully-processed? (atom false)
-              expected-metric         "success"]
+              expected-metric         "success"
+              config  (ziggurat-config)
+              channel-retry-count 3]
           (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
                                                                  (= metric-namespace [expected-metric-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
-                                                    (reset! successfully-processed? true)))]
+                                                    (reset! successfully-processed? true)))
+                        ziggurat-config   (fn [] (assoc-in config [:stream-router
+                                                                   (keyword topic-entity)
+                                                                   :channels
+                                                                   :channel-1 :retry :count] channel-retry-count))]
             ((mapper-func (constantly :channel-1) [:channel-1]) message-payload)
             (let [message-from-mq (rmq/get-message-from-channel-instant-queue topic-entity :channel-1)]
               (is (= (bytes-to-str (-> message-payload
+                                       (assoc :retry-count channel-retry-count)
                                        (dissoc :headers))) (bytes-to-str message-from-mq)))
               (is @successfully-processed?))))))
 
