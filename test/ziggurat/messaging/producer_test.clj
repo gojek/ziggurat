@@ -232,7 +232,6 @@
             (let [message-from-mq (rmq/get-message-from-retry-queue "default" 1)]
               (is (= (bytes-to-str message-from-mq) (bytes-to-str expected-message)))))))
 
-
       (testing "message with available retry counts as 4 will be published to delay queue with suffix 2"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}

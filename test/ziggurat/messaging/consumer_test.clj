@@ -359,5 +359,5 @@
     (testing "should return nil if message isn't nippy or proto serialized"
       (with-redefs [lb/publish (fn [_ _ _ _] nil)]
         (let [random-bytes-as-message-payload     (.getBytes (String. "Hello World"))
-            converted-message-payload           (consumer/convert-and-ack-message nil {:delivery-tag 1} random-bytes-as-message-payload false "default")]
-        (is (= converted-message-payload nil)))))))
+              converted-message-payload           (consumer/convert-and-ack-message nil {:delivery-tag 1} random-bytes-as-message-payload false "default")]
+          (is (= converted-message-payload nil)))))))
