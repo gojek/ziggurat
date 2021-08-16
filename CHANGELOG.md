@@ -2,8 +2,11 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## 4.0.0
+## 4.1.0
+- Changed the code for consuming from RabbitMQ - on exception during de-serialization, message is sent to the dead-set 
+queues and NOT re-queued back in the queue like previous versions.
 
+## 4.0.0
 - The kafka-metadata is now exposed to the stream handler function along with the message itself`{:topic <string> :partition <int> :timestamp <long>}`
 - The stream handler receives a map containing two keys `:message` and `:metadata`
 
