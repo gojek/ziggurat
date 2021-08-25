@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="ERROR" name="ziggurat-config" shutdownHook="disable">
+<Configuration status="ERROR" name="ziggurat-config" shutdownHook="disable" monitorInterval="60">
     <Properties>
         <Property name="PATTERN">
             [%-5level] %d [%t] %c:%M: %m%n
