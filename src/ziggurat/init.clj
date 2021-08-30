@@ -46,7 +46,7 @@
   (start-rabbitmq-connection args)
   (messaging-producer/make-queues (event-routes args)))
 
-(defn- set-properties-for-structured-logging
+(defn- set-properties-for-structured-logging []
   (if (= (:log-format (ziggurat-config)) "json")
     (flat/set-decoder! codec/destringify-val)))
 
