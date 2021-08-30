@@ -30,8 +30,6 @@
                  [io.opentracing.contrib/opentracing-rabbitmq-client "0.1.11" :exclusions [com.rabbitmq/amqp-client]]
                  [org.apache.httpcomponents/fluent-hc "4.5.13"]
                  [org.apache.kafka/kafka-streams "2.8.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                 [org.apache.logging.log4j/log4j-core "2.14.1"]
-                 [org.apache.logging.log4j/log4j-slf4j-impl "2.14.1"]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
@@ -53,7 +51,14 @@
                                com.fasterxml.jackson.core/jackson-core
                                com.fasterxml.jackson.dataformat/jackson-dataformat-smile
                                com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
-                 [metosin/ring-swagger-ui "3.46.0"]]
+                 [metosin/ring-swagger-ui "3.46.0"]
+                 [cambium/cambium.core           "1.1.0"]
+                 [cambium/cambium.codec-cheshire "1.0.0"]
+                 [cambium/cambium.logback.json   "0.4.4"]
+                 [ch.qos.logback/logback-classic "1.2.3"]
+                 [ch.qos.logback.contrib/logback-json-classic "0.1.5"]
+                 [ch.qos.logback.contrib/logback-jackson "0.1.5"]
+                 [net.logstash.logback/logstash-logback-encoder "6.6"]]
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password
@@ -67,7 +72,7 @@
                        :global-vars {*warn-on-reflection* true}
                        :pedantic?   :abort}
              :test    {:java-source-paths ["src/com" "test/com"]
-                       :jvm-opts          ["-Dlog4j.configurationFile=resources/log4j2.test.xml"]
+                       :jvm-opts          ["-Dlogback.configurationFile=resources/logback.test.xml"]
                        :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
                                            [junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]

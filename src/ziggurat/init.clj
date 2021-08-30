@@ -17,7 +17,9 @@
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver])
+            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
+            [cambium.codec :as codec]
+            [cambium.logback.json.flat-layout :as flat])
   (:gen-class
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
@@ -43,6 +45,10 @@
 (defn- start-rabbitmq-producers [args]
   (start-rabbitmq-connection args)
   (messaging-producer/make-queues (event-routes args)))
+
+(defn- set-properties-for-structured-logging
+  (if (= (:log-format (ziggurat-config)) "json")
+    (flat/set-decoder! codec/destringify-val)))
 
 (defn start-kafka-producers []
   (start* #{#'kafka-producers}))
@@ -247,6 +253,7 @@
    (try
      (let [derived-modes (validate-modes modes stream-routes batch-routes actor-routes)]
        (initialize-config)
+       (set-properties-for-structured-logging)
        (validate-routes stream-routes batch-routes derived-modes)
        (add-shutdown-hook stop-fn derived-modes)
        (start start-fn stream-routes batch-routes actor-routes derived-modes))
