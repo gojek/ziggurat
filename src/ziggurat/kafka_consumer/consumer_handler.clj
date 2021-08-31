@@ -82,17 +82,16 @@
 (defn poll-for-messages
   [^Consumer consumer handler-fn topic-entity consumer-config]
   (clog/with-logging-context {:consumer-group topic-entity}
-                             (try
-
-                               (loop [records []]
-                                 (when (not-empty records)
-                                   (let [batch-payload (create-batch-payload records topic-entity)]
-                                     (process handler-fn batch-payload)))
-                                 (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
-                               (catch WakeupException e
-                                 (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
-                               (catch Exception e
-                                 (log/errorf e "Exception while polling for messages for: %s" topic-entity))
-                               (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
-                                            (.close consumer))))))
+    (try
+      (loop [records []]
+        (when (not-empty records)
+          (let [batch-payload (create-batch-payload records topic-entity)]
+            (process handler-fn batch-payload)))
+        (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
+      (catch WakeupException e
+        (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
+      (catch Exception e
+        (log/errorf e "Exception while polling for messages for: %s" topic-entity))
+      (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
+                   (.close consumer))))))
 
