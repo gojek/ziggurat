@@ -3,7 +3,8 @@
             [ziggurat.config :refer :all]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.message-payload :refer [map->MessagePayload]]
-            [ziggurat.metrics :as metrics])
+            [ziggurat.metrics :as metrics]
+            [cambium.core :as clog])
   (:import (org.apache.kafka.common.errors WakeupException)
            (java.time Duration Instant)
            (tech.gojek.ziggurat.internal InvalidReturnTypeException)
@@ -49,7 +50,8 @@
         batch-size          (count batch)]
     (try
       (when (not-empty batch)
-        (log/infof "[Consumer Group: %s] Processing the batch with %d messages" topic-entity batch-size)
+        (clog/info {:batch-size batch-size} "Processing the batch")
+        ;(log/infof "[Consumer Group: %s] Processing the batch with %d messages" topic-entity batch-size)
         (let [start-time             (Instant/now)
               result                 (batch-handler batch)
               time-taken-in-millis   (.toMillis (Duration/between start-time (Instant/now)))]
@@ -58,7 +60,9 @@
                 to-be-retried-count    (count messages-to-be-retried)
                 skip-count             (count (:skip result))
                 success-count          (- batch-size (+ to-be-retried-count skip-count))]
-            (log/infof "[Consumer Group: %s] Processed the batch with success: [%d], skip: [%d] and retries: [%d] \n" topic-entity success-count skip-count to-be-retried-count)
+
+            (clog/info {:messages-successfully-processed success-count :messages-skipped skip-count :messages-to-be-retried to-be-retried-count} "Batch processing complete")
+            ;(log/infof "[Consumer Group: %s] Processed the batch with success: [%d], skip: [%d] and retries: [%d] \n" topic-entity success-count skip-count to-be-retried-count)
             (publish-batch-process-metrics topic-entity batch-size success-count skip-count to-be-retried-count time-taken-in-millis)
             (retry messages-to-be-retried current-retry-count topic-entity))))
       (catch InvalidReturnTypeException e
@@ -77,16 +81,18 @@
 
 (defn poll-for-messages
   [^Consumer consumer handler-fn topic-entity consumer-config]
-  (try
-    (loop [records []]
-      (when (not-empty records)
-        (let [batch-payload (create-batch-payload records topic-entity)]
-          (process handler-fn batch-payload)))
-      (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
-    (catch WakeupException e
-      (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
-    (catch Exception e
-      (log/errorf e "Exception while polling for messages for: %s" topic-entity))
-    (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
-                 (.close consumer)))))
+  (clog/with-logging-context {:consumer-group topic-entity}
+                             (try
+
+                               (loop [records []]
+                                 (when (not-empty records)
+                                   (let [batch-payload (create-batch-payload records topic-entity)]
+                                     (process handler-fn batch-payload)))
+                                 (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
+                               (catch WakeupException e
+                                 (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
+                               (catch Exception e
+                                 (log/errorf e "Exception while polling for messages for: %s" topic-entity))
+                               (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
+                                            (.close consumer))))))
 

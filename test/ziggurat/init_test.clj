@@ -11,7 +11,10 @@
             [ziggurat.tracer :as tracer]
             [ziggurat.fixtures :refer [with-config]]
             [cambium.logback.json.flat-layout :as flat]
-            [cambium.codec :as codec])
+            [cambium.codec :as codec]
+            [cambium.core :as clog]
+            [clojure.tools.logging :as log])
+
   (:import (io.opentracing.mock MockTracer)))
 
 (def valid-modes-count 4)
