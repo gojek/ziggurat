@@ -10,8 +10,6 @@
             [ziggurat.server.test-utils :as tu]
             [ziggurat.tracer :as tracer]
             [ziggurat.fixtures :refer [with-config]]
-            [clojure.tools.logging :as log]
-            [cambium.core :as clog]
             [cambium.logback.json.flat-layout :as flat]
             [cambium.codec :as codec])
   (:import (io.opentracing.mock MockTracer)))
@@ -125,7 +123,6 @@
                     flat/set-decoder!  (fn [decoder] (is (= decoder codec/destringify-val))
                                          (reset! decoder-was-set true))]
         (init/main #() #() expected-stream-routes)
-        (clog/with-logging-context {:a {:b {:c "d"}}} (log/info "Hello"))
         (is @start-was-called)
         (is @decoder-was-set)))))
 
