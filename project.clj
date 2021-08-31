@@ -79,7 +79,14 @@
                                            [org.apache.kafka/kafka-streams "2.8.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                            [org.apache.kafka/kafka-clients "2.8.0" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
-                       :plugins           [[lein-cloverage "1.0.13" :exclusions [org.clojure/clojure]]]
+                       :plugins           [[lein-cloverage "1.2.2" :exclusions [org.clojure/clojure]]]
+                       :cloverage         {:exclude-call [cambium.core/info
+                                                          cambium.core/debug
+                                                          cambium.core/trace
+                                                          cambium.core/warn
+                                                          cambium.core/error
+                                                          cambium.core/fatal
+                                                          cambium.core/with-logging-context]}
                        :repositories      [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins [[lein-ancient "0.6.15"]
                                  [lein-cljfmt "0.6.4"]
