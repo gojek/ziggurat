@@ -58,8 +58,7 @@
                 to-be-retried-count    (count messages-to-be-retried)
                 skip-count             (count (:skip result))
                 success-count          (- batch-size (+ to-be-retried-count skip-count))]
-            (log/infof "[Consumer Group: %s] Processed the batch with success: [%d], skip: [%d] and retries: [%d] \n"
-                       topic-entity success-count skip-count to-be-retried-count)
+            (log/infof "[Consumer Group: %s] Processed the batch with success: [%d], skip: [%d] and retries: [%d] \n" topic-entity success-count skip-count to-be-retried-count)
             (publish-batch-process-metrics topic-entity batch-size success-count skip-count to-be-retried-count time-taken-in-millis)
             (retry messages-to-be-retried current-retry-count topic-entity))))
       (catch InvalidReturnTypeException e
