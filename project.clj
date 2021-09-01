@@ -52,9 +52,9 @@
                                com.fasterxml.jackson.dataformat/jackson-dataformat-smile
                                com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
                  [metosin/ring-swagger-ui "3.46.0"]
-                 [cambium/cambium.core           "1.1.0"]
+                 [cambium/cambium.core "1.1.0"]
                  [cambium/cambium.codec-cheshire "1.0.0"]
-                 [cambium/cambium.logback.json   "0.4.4"]
+                 [cambium/cambium.logback.json "0.4.4"]
                  [ch.qos.logback/logback-classic "1.2.3"]
                  [ch.qos.logback.contrib/logback-json-classic "0.1.5"]
                  [ch.qos.logback.contrib/logback-jackson "0.1.5"]
@@ -80,13 +80,13 @@
                                            [org.apache.kafka/kafka-clients "2.8.0" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
                        :plugins           [[lein-cloverage "1.2.2" :exclusions [org.clojure/clojure]]]
-                       :cloverage         {:exclude-call [cambium.core/info
-                                                          cambium.core/debug
-                                                          cambium.core/trace
-                                                          cambium.core/warn
-                                                          cambium.core/error
-                                                          cambium.core/fatal
-                                                          cambium.core/with-logging-context]}
+                       :cloverage         {:exclude-call ['cambium.core/info
+                                                          'cambium.core/debug
+                                                          'cambium.core/trace
+                                                          'cambium.core/warn
+                                                          'cambium.core/error
+                                                          'cambium.core/fatal
+                                                          'cambium.core/with-logging-context]}
                        :repositories      [["confluent-repo" "https://packages.confluent.io/maven/"]]}
              :dev     {:plugins [[lein-ancient "0.6.15"]
                                  [lein-cljfmt "0.6.4"]
