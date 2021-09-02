@@ -136,7 +136,8 @@
        ((fnk (get valid-modes-fns mode)) args)))))
 
 (defn initialize-config []
-  (start* #{#'config/config}))
+  (start* #{#'config/config})
+  (set-properties-for-structured-logging))
 
 (defn start-common-states []
   (start* #{#'metrics/statsd-reporter
@@ -194,9 +195,9 @@
 (defn- validate-routes-against-config
   ([routes route-type]
    (doseq [[topic-entity handler-map] routes]
-     (let [route-config (-> (ziggurat-config)
-                            (get-in [route-type topic-entity]))
-           channels      (-> handler-map (dissoc :handler-fn) (keys) (set))
+     (let [route-config    (-> (ziggurat-config)
+                               (get-in [route-type topic-entity]))
+           channels        (-> handler-map (dissoc :handler-fn) (keys) (set))
            config-channels (-> (ziggurat-config)
                                (get-in [route-type topic-entity :channels])
                                (keys)
@@ -216,7 +217,7 @@
     (validate-routes-against-config batch-routes :batch-routes)))
 
 (defn- derive-modes [stream-routes batch-routes actor-routes]
-  (let [base-modes    [:management-api :worker]]
+  (let [base-modes [:management-api :worker]]
     (if (and (nil? stream-routes) (nil? batch-routes))
       (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in init args")))
     (cond-> base-modes
@@ -253,7 +254,6 @@
    (try
      (let [derived-modes (validate-modes modes stream-routes batch-routes actor-routes)]
        (initialize-config)
-       (set-properties-for-structured-logging)
        (validate-routes stream-routes batch-routes derived-modes)
        (add-shutdown-hook stop-fn derived-modes)
        (start start-fn stream-routes batch-routes actor-routes derived-modes))

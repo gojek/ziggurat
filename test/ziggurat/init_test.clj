@@ -114,8 +114,8 @@
           expected-stream-routes {:default {:handler-fn #(constantly nil)}}
           config     config/default-config]
       (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
+                    config/config-file "config.test.edn"
                     config/ziggurat-config  (fn [] (assoc config :log-format "json"))
-                    init/initialize-config (constantly nil)
                     init/validate-routes-against-config (constantly nil)
                     init/start             (fn [_ stream-router _ _ _]
                                              (swap! start-was-called not)
