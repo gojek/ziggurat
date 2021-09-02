@@ -1,7 +1,7 @@
 <configuration>
-    <property name="type" value="${ZIGGURAT_LOG_FORMAT:-text}" />
+    <property name="type" value="${ZIGGURAT_LOG_FORMAT:-text}"/>
 
-    <if condition = 'property("type").equals("json")'>
+    <if condition='property("type").equals("json")'>
         <then>
             <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                 <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
@@ -9,9 +9,7 @@
                         <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
                             <prettyPrint>false</prettyPrint>
                         </jsonFormatter>
-                        <!-- <context>api</context> -->
                         <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampFormat>
-                        <timestampFormatTimezoneId>UTC</timestampFormatTimezoneId>
                         <appendLineSeparator>true</appendLineSeparator>
                     </layout>
                 </encoder>
@@ -19,12 +17,12 @@
         </then>
     </if>
 
-    <if condition = 'property("type").equals("text")'>
+    <if condition='property("type").equals("text")'>
         <then>
             <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
                 <layout class="ch.qos.logback.classic.PatternLayout">
                     <pattern>
-                        %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg { %mdc }%n
+                        [%-5level] %d [%t] %c:%M: %m { %mdc }%n
                     </pattern>
                 </layout>
             </appender>
