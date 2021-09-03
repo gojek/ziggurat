@@ -51,7 +51,6 @@
     (try
       (when (not-empty batch)
         (clog/info {:batch-size batch-size} (format "[Consumer Group: %s] Processing the batch with %d messages" topic-entity batch-size))
-        ;(log/infof "[Consumer Group: %s] Processing the batch with %d messages" topic-entity batch-size)
         (let [start-time           (Instant/now)
               result               (batch-handler batch)
               time-taken-in-millis (.toMillis (Duration/between start-time (Instant/now)))]
@@ -62,7 +61,6 @@
                 success-count          (- batch-size (+ to-be-retried-count skip-count))]
 
             (clog/info {:messages-successfully-processed success-count :messages-skipped skip-count :messages-to-be-retried to-be-retried-count} (format "[Consumer Group: %s] Processed the batch with success: [%d], skip: [%d] and retries: [%d] \n" topic-entity success-count skip-count to-be-retried-count))
-            ;(log/infof "[Consumer Group: %s] Processed the batch with success: [%d], skip: [%d] and retries: [%d] \n" topic-entity success-count skip-count to-be-retried-count)
             (publish-batch-process-metrics topic-entity batch-size success-count skip-count to-be-retried-count time-taken-in-millis)
             (retry messages-to-be-retried current-retry-count topic-entity))))
       (catch InvalidReturnTypeException e

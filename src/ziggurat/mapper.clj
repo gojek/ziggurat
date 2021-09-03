@@ -78,26 +78,27 @@
           failure-metric                      "failure"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
           user-payload                        (create-user-payload message-payload)]
-      (clog/with-logging-context {:consumer-group topic-entity-name :channel channel-name} (nr/with-tracing "job" metric-namespace
-                                                                                             (try
-                                                                                               (let [start-time                     (.toEpochMilli (Instant/now))
-                                                                                                     return-code                    (user-handler-fn user-payload)
-                                                                                                     end-time                       (.toEpochMilli (Instant/now))
-                                                                                                     time-val                       (- end-time start-time)
-                                                                                                     execution-time-namespace       "execution-time"
-                                                                                                     multi-execution-time-namespace [(conj base-metric-namespaces execution-time-namespace)
-                                                                                                                                     [execution-time-namespace]]]
-                                                                                                 (metrics/multi-ns-report-histogram multi-execution-time-namespace time-val additional-tags)
-                                                                                                 (case return-code
-                                                                                                   :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
-                                                                                                   :retry (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
-                                                                                                              (producer/retry-for-channel message-payload channel))
-                                                                                                   :skip (metrics/multi-ns-increment-count multi-message-processing-namespaces skip-metric additional-tags)
-                                                                                                   :block 'TODO
-                                                                                                   (throw (ex-info "Invalid mapper return code" {:code return-code}))))
-                                                                                               (catch Throwable e
-                                                                                                 (producer/retry-for-channel message-payload channel)
-                                                                                                 (report-error e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
-                                                                                                 (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags))))))))
+      (clog/with-logging-context {:consumer-group topic-entity-name :channel channel-name}
+        (nr/with-tracing "job" metric-namespace
+          (try
+            (let [start-time                     (.toEpochMilli (Instant/now))
+                  return-code                    (user-handler-fn user-payload)
+                  end-time                       (.toEpochMilli (Instant/now))
+                  time-val                       (- end-time start-time)
+                  execution-time-namespace       "execution-time"
+                  multi-execution-time-namespace [(conj base-metric-namespaces execution-time-namespace)
+                                                  [execution-time-namespace]]]
+              (metrics/multi-ns-report-histogram multi-execution-time-namespace time-val additional-tags)
+              (case return-code
+                :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
+                :retry (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
+                           (producer/retry-for-channel message-payload channel))
+                :skip (metrics/multi-ns-increment-count multi-message-processing-namespaces skip-metric additional-tags)
+                :block 'TODO
+                (throw (ex-info "Invalid mapper return code" {:code return-code}))))
+            (catch Throwable e
+              (producer/retry-for-channel message-payload channel)
+              (report-error e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
+              (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags))))))))
 
 (defrecord MessagePayload [message topic-entity])
