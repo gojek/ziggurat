@@ -1,3 +1,112 @@
+## Upgrade Guide for Ziggurat version 4.2.0
+
+Ziggurat v4.20 introduces structured-logging using cambium. Ziggurat comes pre-packaged with cambium and newly scaffolded actors come pre-configured with JSON structured logging. To enable srtuctured logging in your existing actors, the following steps are required
+
+### Steps to enable structured logging
+
+Replace log4j2.xml with the attached logback.xml file (Only for existing actors. New actors come pre-bundled with logback.xml file).
+
+Adjust the log levels as per your convenience.
+
+Sample `logback.xml`
+
+```xml
+<configuration name="ziggurat-config">
+    <property name="type" value="${ZIGGURAT_LOG_FORMAT:-text}"/>
+
+    <if condition='property("type").equals("json")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="cambium.logback.json.FlatJsonLayout">
+                        <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                            <prettyPrint>false</prettyPrint>
+                        </jsonFormatter>
+                        <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampFormat>
+                        <appendLineSeparator>true</appendLineSeparator>
+                    </layout>
+                </encoder>
+            </appender>
+        </then>
+    </if>
+
+    <if condition='property("type").equals("text")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <layout class="ch.qos.logback.classic.PatternLayout">
+                    <pattern>
+                        [%-5level] %d [%t] %c:%M: %m { %mdc }%n
+                    </pattern>
+                </layout>
+            </appender>
+        </then>
+    </if>
+
+    <logger name="ziggurat-config" level="debug" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <root level="info">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
+```
+
+Include the following logback dependencies in your project.clj and remove the log4j2 dependencies if there are any
+
+```clojure
+[ch.qos.logback/logback-classic "1.2.3"]
+[ch.qos.logback.contrib/logback-json-classic "0.1.5"]
+[ch.qos.logback.contrib/logback-jackson "0.1.5"]
+[net.logstash.logback/logstash-logback-encoder "6.6"]
+```
+
+Using the kernel config management on kernel.gojek.dev, set a new key ZIGGURAT_LOG_FORMAT with value "json" .
+
+We are using cambium to accomplish structured logging. 
+
+Prerequisite: Include [cambium.core  :as clog] in the namespace where structured logging is needed. 
+
+Ziggurat comes pre-packaged with cambium.
+
+Users have two ways to make use of structured logging. 
+
+Via the logging macros of cambium
+
+(clog/info {:cambium_key1 "value1" :cambium_key2 "value2"} "Cambium log 1")
+
+The first parameter has to be a clojure map, while the second parameter has to be a string.
+
+Sample output
+
+```json
+{
+  "timestamp" : "2021-08-25T09:50:00.832Z",
+  "level" : "INFO",
+  "thread" : "main",
+  "cambium_key1" : "value1",
+  "ns" : "dss-transport.main",
+  "line" : 59,
+  "cambium_key2" : "value2",
+  "column" : 19,
+  "logger" : "dss-transport.main",
+  "message" : "Cambium log 1",
+  "context" : "default"
+}
+```
+
+Via the context macro
+
+```clojure
+(clog/with-logging-context {:cambium_key1 "value1" :cambium_key2 "value2" 
+                            :nested_key { :key1 {:key2 "value3"}}}
+                                             (log/info "Cambium log with context")
+                                             (log/info "Cambium log 2 with context"))
+```
+
+Users just need to wrap their existing logs around a logging-context and all the logs within this will have the map supplied along with the context as additional parameters. These logs can be generated either via clojure.logging.tools or via cambium
+
+
+
 ## Upgrade Guide for Ziggurat 3.1.0
 
 ### Configuration Changes
