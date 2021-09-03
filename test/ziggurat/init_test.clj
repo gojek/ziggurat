@@ -9,7 +9,12 @@
             [ziggurat.streams :as streams :refer [stream]]
             [ziggurat.server.test-utils :as tu]
             [ziggurat.tracer :as tracer]
-            [ziggurat.fixtures :refer [with-config]])
+            [ziggurat.fixtures :refer [with-config]]
+            [cambium.logback.json.flat-layout :as flat]
+            [cambium.codec :as codec]
+            [cambium.core :as clog]
+            [clojure.tools.logging :as log])
+
   (:import (io.opentracing.mock MockTracer)))
 
 (def valid-modes-count 4)
@@ -105,7 +110,24 @@
                                              (swap! start-was-called not)
                                              (is (= expected-stream-routes stream-router)))]
         (init/main #() #() expected-stream-routes)
-        (is @start-was-called)))))
+        (is @start-was-called))))
+  (testing "Flat Json Layout decoder is set if log format is json"
+    (let [start-was-called       (atom false)
+          decoder-was-set        (atom false)
+          expected-stream-routes {:default {:handler-fn #(constantly nil)}}
+          config     config/default-config]
+      (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
+                    config/config-file "config.test.edn"
+                    config/ziggurat-config  (fn [] (assoc config :log-format "json"))
+                    init/validate-routes-against-config (constantly nil)
+                    init/start             (fn [_ stream-router _ _ _]
+                                             (swap! start-was-called not)
+                                             (is (= expected-stream-routes stream-router)))
+                    flat/set-decoder!  (fn [decoder] (is (= decoder codec/destringify-val))
+                                         (reset! decoder-was-set true))]
+        (init/main #() #() expected-stream-routes)
+        (is @start-was-called)
+        (is @decoder-was-set)))))
 
 (def mock-modes {:api-server     {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :stream-worker  {:start-fn (constantly nil) :stop-fn (constantly nil)}

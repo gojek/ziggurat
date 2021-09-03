@@ -1,0 +1,35 @@
+<configuration>
+    <property name="type" value="${ZIGGURAT_LOG_FORMAT:-text}"/>
+
+    <if condition='property("type").equals("json")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="cambium.logback.json.FlatJsonLayout">
+                        <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+                            <prettyPrint>false</prettyPrint>
+                        </jsonFormatter>
+                        <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampFormat>
+                        <appendLineSeparator>true</appendLineSeparator>
+                    </layout>
+                </encoder>
+            </appender>
+        </then>
+    </if>
+
+    <if condition='property("type").equals("text")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <layout class="ch.qos.logback.classic.PatternLayout">
+                    <pattern>
+                        [%-5level] %d [%t] %c:%M: %m { %mdc }%n
+                    </pattern>
+                </layout>
+            </appender>
+        </then>
+    </if>
+
+    <root level="error">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

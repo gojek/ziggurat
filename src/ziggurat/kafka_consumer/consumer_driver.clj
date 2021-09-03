@@ -6,12 +6,14 @@
             [clojure.tools.logging :as log]
             [ziggurat.kafka-consumer.executor-service :refer :all]
             [mount.core :as mount]
-            [ziggurat.metrics :as metrics])
+            [ziggurat.metrics :as metrics]
+            [cambium.core :as clog])
   (:import (java.util.concurrent ExecutorService RejectedExecutionException)
            (org.apache.kafka.clients.consumer Consumer)))
 
 (defn- start-polling-with-consumer
   [consumer init-arg topic-entity consumer-config]
+
   (let [message-poller (cast Runnable #(ch/poll-for-messages consumer (:handler-fn init-arg) topic-entity consumer-config))]
     (when message-poller
       (try
@@ -43,7 +45,7 @@
 (defn- stop-consumers [consumer-groups]
   (do (log/info "stopping consumers")
       (doseq [[topic-entity consumers] consumer-groups]
-        (log/info "Stopping threads for consumer group: " topic-entity)
+        (clog/info {:consumer-group topic-entity} (str "Stopping threads for consumer group: " topic-entity))
         (doseq [consumer consumers]
           (.wakeup ^Consumer consumer)))))
 

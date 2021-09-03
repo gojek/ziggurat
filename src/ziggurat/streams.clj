@@ -9,7 +9,8 @@
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.map :as umap])
+            [ziggurat.util.map :as umap]
+            [cambium.core :as clog])
   (:import [io.opentracing.contrib.kafka TracingKafkaUtils]
            [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
            [io.opentracing.tag Tags]
@@ -112,8 +113,7 @@
         stream-state))
       (do
         (.close stream)
-        (log/info
-         (str "Stopping Kafka stream with topic-entity " topic-entity))))))
+        (log/info (str "Stopping Kafka stream with topic-entity " topic-entity))))))
 
 (defn stop-stream [topic-entity]
   (let [stream (get stream topic-entity)]
@@ -220,8 +220,7 @@
 
 (defn handle-uncaught-exception
   [stream-thread-exception-response ^Throwable error]
-  (log/infof "Ziggurat Streams Uncaught Exception Handler Invoked: [%s]"
-             (.getMessage error))
+  (log/infof "Ziggurat Streams Uncaught Exception Handler Invoked: [%s]" (.getMessage error))
   (case stream-thread-exception-response
     :shutdown-application StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/SHUTDOWN_APPLICATION
     :replace-thread       StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD
@@ -245,9 +244,8 @@
                  (do
                    (.setUncaughtExceptionHandler stream
                                                  (reify StreamsUncaughtExceptionHandler
-                                                   (^StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse handle [_ ^Throwable error]
-                                                     (handle-uncaught-exception (get stream-config :stream-thread-exception-response :shutdown-client) error))))
-                   (.start stream)
+                                                   (^StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse handle [_ ^Throwable error] (handle-uncaught-exception (get stream-config :stream-thread-exception-response :shutdown-client) error))))
+                   (clog/with-logging-context {:consumer-group topic-entity} (.start stream))
                    (assoc streams topic-entity stream))
                  streams)))
            {}
