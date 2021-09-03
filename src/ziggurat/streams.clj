@@ -9,7 +9,8 @@
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.map :as umap])
+            [ziggurat.util.map :as umap]
+            [cambium.core :as clog])
   (:import [io.opentracing.contrib.kafka TracingKafkaUtils]
            [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
            [io.opentracing.tag Tags]
@@ -244,7 +245,7 @@
                    (.setUncaughtExceptionHandler stream
                                                  (reify StreamsUncaughtExceptionHandler
                                                    (^StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse handle [_ ^Throwable error] (handle-uncaught-exception (get stream-config :stream-thread-exception-response :shutdown-client) error))))
-                   (.start stream)
+                   (clog/with-logging-context {:consumer-group topic-entity} (.start stream))
                    (assoc streams topic-entity stream))
                  streams)))
            {}

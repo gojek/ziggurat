@@ -10,7 +10,8 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
-            [ziggurat.util.error :refer [report-error]]))
+            [ziggurat.util.error :refer [report-error]]
+            [cambium.core :as clog]))
 
 (defn- reject-message
   [ch delivery-tag]
@@ -103,7 +104,7 @@
 
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
-    (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn)))
+    (clog/with-logging-context {:consumer-group topic-entity} (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn))))
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)
