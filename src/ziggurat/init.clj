@@ -1,9 +1,11 @@
 (ns ziggurat.init
   "Contains the entry point for your application."
-  (:require [clojure.tools.logging :as log]
+  (:require [cambium.codec :as codec]
+            [cambium.logback.json.flat-layout :as flat]
+            [clojure.set :as set]
+            [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [schema.core :as s]
-            [clojure.set :as set]
             [ziggurat.config :refer [ziggurat-config] :as config]
             [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
@@ -17,9 +19,7 @@
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
-            [cambium.codec :as codec]
-            [cambium.logback.json.flat-layout :as flat])
+            [ziggurat.kafka-consumer.consumer-driver :as consumer-driver])
   (:gen-class
    :methods [^{:static true} [init [java.util.Map] void]]
    :name tech.gojek.ziggurat.internal.Init))
