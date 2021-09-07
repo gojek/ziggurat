@@ -38,4 +38,3 @@ coverage: setup
 proto:
 	protoc -I=resources --java_out=test/ resources/proto/example.proto
 	protoc -I=resources --java_out=test/ resources/proto/person.proto
-	protoc -I=resources --java_out=src/ resources/proto/message-payload.proto
