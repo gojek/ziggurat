@@ -1,0 +1,12 @@
+syntax = "proto3";
+// use protoc v3.17.3 to compile the proto
+package com.ziggurat.proto;
+
+option java_package = "com.ziggurat.proto";
+option java_outer_classname = "MessagePayloadProto";
+
+message MessagePayload {
+    bytes message = 1;
+    string topic_entity = 2;
+    int32 retry_count = 3;
+}
