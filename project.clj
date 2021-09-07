@@ -34,7 +34,6 @@
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
                  [clojusc/protobuf "3.5.1-v1.1"]
-                 [org.flatland/protobuf "0.8.1"]
                  [prismatic/schema "1.1.12"]
                  [clj-statsd "0.4.0"]
                  [ring/ring "1.9.3"]
