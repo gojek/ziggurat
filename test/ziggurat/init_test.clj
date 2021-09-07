@@ -95,9 +95,10 @@
                     config/config-file                   "config.test.edn"
                     tracer/create-tracer                 (fn [] (MockTracer.))]
         (with-config
-          (do (init/start #() expected-stream-routes expected-batch-routes [] nil)
-              (init/stop #() nil)
-              (is (= 1 @start-subscriber-called))))))))
+          (do
+            (init/start #() expected-stream-routes expected-batch-routes [] nil)
+            (init/stop #() nil)
+            (is (= 1 @start-subscriber-called))))))))
 
 (deftest main-test
   (testing "Main function should call start (arity: 3)"
@@ -325,3 +326,4 @@
                                              :channel-1 #()
                                              :channel-2 #()}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))))))
+

@@ -13,7 +13,6 @@
 
 (defn- start-polling-with-consumer
   [consumer init-arg topic-entity consumer-config]
-
   (let [message-poller (cast Runnable #(ch/poll-for-messages consumer (:handler-fn init-arg) topic-entity consumer-config))]
     (when message-poller
       (try
