@@ -2,8 +2,7 @@
   (:require [clojure.test :refer :all])
   (:require [ziggurat.middleware.batch.batch-proto-deserializer :refer :all]
             [protobuf.core :as proto])
-  (:import (flatland.protobuf.test Example$Photo Example$Photo$Tag)
-           (com.gojek.test.proto PersonTestProto$Person)))
+  (:import (com.gojek.test.proto Example$Photo Example$Photo$Tag PersonTestProto$Person)))
 
 (deftest batch-proto-deserializer-test
   (let [key                          {:person-id 100}

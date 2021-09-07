@@ -10,7 +10,7 @@
             [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-streams stop-streams stop-stream start-stream]]
             [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]]
             [ziggurat.tracer :refer [tracer]])
-  (:import [flatland.protobuf.test Example$Photo]
+  (:import [com.gojek.test.proto Example$Photo]
            [io.opentracing.tag Tags]
            [java.util Properties]
            [org.apache.kafka.clients.producer ProducerConfig]
