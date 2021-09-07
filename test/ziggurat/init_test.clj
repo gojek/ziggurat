@@ -17,56 +17,54 @@
 
   (:import (io.opentracing.mock MockTracer)))
 
-(def valid-modes-count 4)
-
 (defn exp [x n]
   (if (zero? n) 1
       (* x (exp x (dec n)))))
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
-    (let [result                              (atom 1)
-          start-messaging-internal-call-count 2]
-      (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
-                    streams/stop-streams       (constantly nil)
+    (let [result                              (atom 1)]
+      (with-redefs [streams/start-streams (fn [_ _] (reset! result (* @result 2)))
+                    streams/stop-streams  (constantly nil)
                     ;; will be called valid modes number of times
                     rmqc/start-connection (fn [] (reset! result (* @result 2)))
                     rmqc/stop-connection  (constantly nil)
-                    tracer/create-tracer       (fn [] (MockTracer.))]
+                    tracer/create-tracer  (fn [] (MockTracer.))]
         (with-config
           (do (init/start #(reset! result (+ @result 3)) {} {} [] nil)
               (init/stop #() nil)
               (is (= 16 @result))))))))
 
 (deftest stop-calls-actor-stop-fn-test
-  (testing "The actor stop fn stops before the ziggurat state"
-    (let [result (atom 1)]
+  (testing "stops streaming before calling the actor stop function"
+    (let [external-state (atom true)
+          stop-fn        #(reset! external-state false)]
       (with-redefs [streams/start-streams (constantly nil)
-                    streams/stop-streams  (fn [_] (reset! result (* @result 2)))
+                    streams/stop-streams  (fn [_] (is (true? @external-state)))
+                    tracer/create-tracer  (fn [] (MockTracer.))]
+        (with-config
+          (do (init/start #() {} {} [] nil)
+              (init/stop stop-fn nil)
+              (is (false? @external-state))))))))
+
+(deftest stop-calls-idempotentcy-test
+  (testing "The stop function should be idempotent"
+    (let [result                              (atom 1)
+          expected-count 5]
+      (with-redefs [streams/start-streams (constantly nil)
+                    streams/stop-streams  (constantly nil)
+                    rmqc/stop-connection  (fn [_] (reset! result (* @result 2)))
                     tracer/create-tracer  (fn [] (MockTracer.))]
         (with-config
           (do (init/start #() {} {} [] nil)
               (init/stop #(reset! result (+ @result 3)) nil)
-              (is (= 8 @result))))))))
-
-(deftest stop-calls-idempotentcy-test
-  (testing "The stop function should be idempotent"
-    (let [result (atom 1)
-          stop-connection-internal-call-count 1]
-      (with-redefs [streams/start-streams     (constantly nil)
-                    streams/stop-streams      (constantly nil)
-                    rmqc/stop-connection (fn [_] (reset! result (* @result 2)))
-                    tracer/create-tracer      (fn [] (MockTracer.))]
-        (with-config
-          (do (init/start #() {} {} [] nil)
-              (init/stop #(reset! result (+ @result 3)) nil)
-              (is (= 8 @result))))))))
+              (is (= expected-count @result))))))))
 
 (deftest start-calls-make-queues-with-both-streams-and-batch-routes-test
   (testing "Start calls make queues with both streams and batch routes"
     (let [make-queues-called     (atom 0)
           expected-stream-routes {:default {:handler-fn #()}}
-          expected-batch-routes {:consumer-1 {:handler-fn #()}}]
+          expected-batch-routes  {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
                     messaging-producer/make-queues       (fn [all-routes]
@@ -84,7 +82,7 @@
   (testing "Start calls start subscribers"
     (let [start-subscriber-called (atom 0)
           expected-stream-routes  {:default {:handler-fn #()}}
-          expected-batch-routes  {:consumer-1 {:handler-fn #()}}]
+          expected-batch-routes   {:consumer-1 {:handler-fn #()}}]
       (with-redefs [streams/start-streams                (constantly nil)
                     streams/stop-streams                 (constantly nil)
                     messaging-consumer/start-subscribers (fn [stream-routes batch-routes]
@@ -104,28 +102,28 @@
   (testing "Main function should call start (arity: 3)"
     (let [start-was-called       (atom false)
           expected-stream-routes {:default {:handler-fn #(constantly nil)}}]
-      (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
-                    init/initialize-config (constantly nil)
+      (with-redefs [init/add-shutdown-hook              (fn [_ _] (constantly nil))
+                    init/initialize-config              (constantly nil)
                     init/validate-routes-against-config (constantly nil)
-                    init/start             (fn [_ stream-router _ _ _]
-                                             (swap! start-was-called not)
-                                             (is (= expected-stream-routes stream-router)))]
+                    init/start                          (fn [_ stream-router _ _ _]
+                                                          (swap! start-was-called not)
+                                                          (is (= expected-stream-routes stream-router)))]
         (init/main #() #() expected-stream-routes)
         (is @start-was-called))))
   (testing "Flat Json Layout decoder is set if log format is json"
     (let [start-was-called       (atom false)
           decoder-was-set        (atom false)
           expected-stream-routes {:default {:handler-fn #(constantly nil)}}
-          config     config/default-config]
-      (with-redefs [init/add-shutdown-hook (fn [_ _] (constantly nil))
-                    config/config-file "config.test.edn"
-                    config/ziggurat-config  (fn [] (assoc config :log-format "json"))
+          config                 config/default-config]
+      (with-redefs [init/add-shutdown-hook              (fn [_ _] (constantly nil))
+                    config/config-file                  "config.test.edn"
+                    config/ziggurat-config              (fn [] (assoc config :log-format "json"))
                     init/validate-routes-against-config (constantly nil)
-                    init/start             (fn [_ stream-router _ _ _]
-                                             (swap! start-was-called not)
-                                             (is (= expected-stream-routes stream-router)))
-                    flat/set-decoder!  (fn [decoder] (is (= decoder codec/destringify-val))
-                                         (reset! decoder-was-set true))]
+                    init/start                          (fn [_ stream-router _ _ _]
+                                                          (swap! start-was-called not)
+                                                          (is (= expected-stream-routes stream-router)))
+                    flat/set-decoder!                   (fn [decoder] (is (= decoder codec/destringify-val))
+                                                          (reset! decoder-was-set true))]
         (init/main #() #() expected-stream-routes)
         (is @start-was-called)
         (is @decoder-was-set)))))
@@ -133,31 +131,31 @@
 (def mock-modes {:api-server     {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :stream-worker  {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :worker         {:start-fn (constantly nil) :stop-fn (constantly nil)}
-                 :batch-worker {:start-fn (constantly nil) :stop-fn (constantly nil)}
+                 :batch-worker   {:start-fn (constantly nil) :stop-fn (constantly nil)}
                  :management-api {:start-fn (constantly nil) :stop-fn (constantly nil)}})
 
 (deftest batch-routes-test
   (testing "Main function should start batch consumption if batch-routes are provided and the modes vector is empty (arity: 1)"
-    (let [start-batch-consumers-was-called       (atom false)
-          expected-stream-routes                 {:default {:handler-fn #(constantly nil)}}
-          batch-routes                           {:consumer-1 {:handler-fn #(constantly nil)}}]
-      (with-redefs [init/add-shutdown-hook (constantly nil)
-                    init/start-common-states (constantly nil)
-                    init/initialize-config (constantly nil)
+    (let [start-batch-consumers-was-called (atom false)
+          expected-stream-routes           {:default {:handler-fn #(constantly nil)}}
+          batch-routes                     {:consumer-1 {:handler-fn #(constantly nil)}}]
+      (with-redefs [init/add-shutdown-hook              (constantly nil)
+                    init/start-common-states            (constantly nil)
+                    init/initialize-config              (constantly nil)
                     init/validate-routes-against-config (constantly nil)
-                    init/valid-modes-fns    (assoc-in mock-modes [:batch-worker :start-fn] (fn [_] (reset! start-batch-consumers-was-called true)))]
+                    init/valid-modes-fns                (assoc-in mock-modes [:batch-worker :start-fn] (fn [_] (reset! start-batch-consumers-was-called true)))]
         (init/main {:start-fn #() :stop-fn #() :stream-routes expected-stream-routes :batch-routes batch-routes :actor-routes []})
         (is @start-batch-consumers-was-called)))))
 
 (deftest stream-routes-test
   (testing "Main function should call the start the streams when the (arity: 4)"
-    (let [start-streams-called       (atom false)
-          expected-stream-routes     {:default {:handler-fn #(constantly nil)}}]
-      (with-redefs [init/add-shutdown-hook (constantly nil)
-                    init/start-common-states (constantly nil)
-                    init/initialize-config (constantly nil)
+    (let [start-streams-called   (atom false)
+          expected-stream-routes {:default {:handler-fn #(constantly nil)}}]
+      (with-redefs [init/add-shutdown-hook              (constantly nil)
+                    init/start-common-states            (constantly nil)
+                    init/initialize-config              (constantly nil)
                     init/validate-routes-against-config (constantly nil)
-                    init/valid-modes-fns    (assoc-in mock-modes [:stream-worker :start-fn] (fn [_] (reset! start-streams-called true)))]
+                    init/valid-modes-fns                (assoc-in mock-modes [:stream-worker :start-fn] (fn [_] (reset! start-streams-called true)))]
         (init/main #() #() expected-stream-routes)
         (is @start-streams-called)))))
 
@@ -298,12 +296,12 @@
   (with-config
     (let [stream-routes {:test-router {:handler-fn #(constantly nil)}}
           batch-routes  {:test-consumer {:handler-fn #(constantly nil)}}
-          modes [:stream-worker :batch-worker]]
+          modes         [:stream-worker :batch-worker]]
 
       (with-redefs [config/ziggurat-config (fn [] (-> config/config
                                                       :ziggurat
                                                       (assoc-in [:stream-router] {:test-router {:handler-fn #(constantly nil)
-                                                                                                :channels {:channel-1 {}}}})
+                                                                                                :channels   {:channel-1 {}}}})
                                                       (assoc-in [:batch-routes] {:test-consumer {:handler-fn #(constantly nil)}})))]
         (testing "when routes which are present in the config are passed, there isn't any exception"
           (init/validate-routes stream-routes batch-routes modes))
@@ -311,19 +309,19 @@
           (let [stream-routes {:test-router-invalid {:handler-fn #(constantly nil)}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))
         (testing "when invalid stream-route is passed along with a valid one, there is an exception"
-          (let [stream-routes {:test-router {:handler-fn #(constantly nil)}
+          (let [stream-routes {:test-router         {:handler-fn #(constantly nil)}
                                :test-router-invalid {:handler-fn #(constantly nil)}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))
         (testing "when invalid batch-routes is passed, there is an exception"
           (let [batch-routes {:test-consumer-invalid {:handler-fn #(constantly nil)}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))
         (testing "when invalid batch-routes is passed along with a valid one, there is an exception"
-          (let [batch-routes {:test-consumer {:handler-fn #(constantly nil)}
+          (let [batch-routes {:test-consumer         {:handler-fn #(constantly nil)}
                               :test-consumer-invalid {:handler-fn #(constantly nil)}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))
         (testing "when invalid channels in stream-routes is passed, there is an exception"
           (let [stream-routes {:test-router {:handler-fn #(constantly nil)
-                                             :channel-1 #()
-                                             :channel-2 #()}}]
+                                             :channel-1  #()
+                                             :channel-2  #()}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))))))
 

@@ -1,14 +1,14 @@
 (ns ziggurat.kafka-consumer.consumer-handler
-  (:require [clojure.tools.logging :as log]
+  (:require [cambium.core :as clog]
+            [clojure.tools.logging :as log]
             [ziggurat.config :refer :all]
-            [ziggurat.messaging.producer :as producer]
             [ziggurat.message-payload :refer [map->MessagePayload]]
-            [ziggurat.metrics :as metrics]
-            [cambium.core :as clog])
-  (:import (org.apache.kafka.common.errors WakeupException)
-           (java.time Duration Instant)
-           (tech.gojek.ziggurat.internal InvalidReturnTypeException)
-           (org.apache.kafka.clients.consumer Consumer ConsumerRecord)))
+            [ziggurat.messaging.producer :as producer]
+            [ziggurat.metrics :as metrics])
+  (:import (java.time Duration Instant)
+           (org.apache.kafka.clients.consumer Consumer ConsumerRecord)
+           (org.apache.kafka.common.errors WakeupException)
+           (tech.gojek.ziggurat.internal InvalidReturnTypeException)))
 
 (def DEFAULT_POLL_TIMEOUT_MS_CONFIG 1000)
 (def batch-consumption-metric-ns ["ziggurat.batch.consumption" "message.processed"])
@@ -66,10 +66,9 @@
       (catch InvalidReturnTypeException e
         (throw e))
       (catch Exception e
-        (do
-          (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})
-          (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
-          (retry batch-payload))))))
+        (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})
+        (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
+        (retry batch-payload)))))
 
 (defn- create-batch-payload
   [records topic-entity]
@@ -90,6 +89,5 @@
         (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
       (catch Exception e
         (log/errorf e "Exception while polling for messages for: %s" topic-entity))
-      (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
-                   (.close consumer))))))
-
+      (finally (log/info "Closing the Kafka Consumer for: " topic-entity)
+               (.close consumer)))))
