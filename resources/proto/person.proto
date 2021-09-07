@@ -8,8 +8,8 @@ option java_package = "com.gojek.test.proto";
 import "google/protobuf/struct.proto";
 
 message Person {
-  int32  id    = 1;
-  string name  = 2;
+  int32  id = 1;
+  string name = 2;
   string email = 3;
   string likes = 4;
   google.protobuf.Struct characters = 5;
