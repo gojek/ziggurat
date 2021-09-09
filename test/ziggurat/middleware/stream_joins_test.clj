@@ -3,7 +3,7 @@
             [protobuf.core :as proto]
             [ziggurat.fixtures :as fix]
             [ziggurat.middleware.stream-joins :as sjmw])
-  (:import [flatland.protobuf.test Example$Photo]))
+  (:import [com.gojek.test.proto Example$Photo]))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))

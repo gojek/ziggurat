@@ -4,8 +4,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.metrics :as metrics]
             [ziggurat.middleware.default :as mw])
-  (:import [flatland.protobuf.test Example$Photo]
-           (com.gojek.test.proto PersonTestProto$Person)))
+  (:import (com.gojek.test.proto PersonTestProto$Person Example$Photo)))
 
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/silence-logging]))

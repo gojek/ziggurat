@@ -34,3 +34,7 @@ test-cluster: setup-cluster
 coverage: setup
 	lein code-coverage
 	docker-compose down
+
+proto:
+	protoc -I=resources --java_out=test/ resources/proto/example.proto
+	protoc -I=resources --java_out=test/ resources/proto/person.proto
