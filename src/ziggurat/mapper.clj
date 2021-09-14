@@ -35,6 +35,7 @@
           retry-metric                        "retry"
           skip-metric                         "skip"
           failure-metric                      "failure"
+          dead-letter-metric                  "dead-letter"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
           user-payload                        (create-user-payload message-payload)]
       (clog/with-logging-context {:consumer-group topic-entity-name}
@@ -52,6 +53,8 @@
                 :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
                 :retry (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
                            (producer/retry message-payload))
+                :dead-letter (do (metrics/multi-ns-increment-count multi-message-processing-namespaces dead-letter-metric additional-tags)
+                                 (producer/publish-to-dead-queue message-payload))
                 :skip (metrics/multi-ns-increment-count multi-message-processing-namespaces skip-metric additional-tags)
                 :block 'TODO
                 (do
