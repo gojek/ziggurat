@@ -201,6 +201,22 @@
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
 
+    (testing "message should be published to dead-letter if handler returns :dead-letter keyword"
+      (fix/with-queues stream-routes
+        (let [unsuccessfully-processed? (atom false)
+              expected-metric           "dead-letter"]
+
+          (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
+                                                  (when (and (or (= metric-namespace expected-increment-count-namespaces)
+                                                                 (= metric-namespace [increment-count-namespace]))
+                                                             (= metric expected-metric)
+                                                             (= additional-tags expected-additional-tags))
+                                                    (reset! unsuccessfully-processed? true)))]
+            ((channel-mapper-func (constantly :dead-letter) channel) message-payload)
+            (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic channel)]
+              (is (= message-from-mq message-payload)))
+            (is @unsuccessfully-processed?)))))
+
     (testing "message should raise exception and report the error"
       (fix/with-queues stream-routes
         (let [expected-message          (-> message-payload
