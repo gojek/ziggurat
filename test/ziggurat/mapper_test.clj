@@ -87,6 +87,7 @@
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
             ((mapper-func (constantly :retry) []) message-payload)
+            ((mapper-func (constantly :retry) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
@@ -94,14 +95,14 @@
     (testing "message process should be unsuccessful and be pushed to dlq"
       (fix/with-queues stream-routes
         (let [unsuccessfully-processed? (atom false)
-             expected-metric           "dead-letter"]
+              expected-metric           "dead-letter"]
 
           (with-redefs [metrics/increment-count (fn [metric-namespace metric additional-tags]
                                                   (when (and (or (= metric-namespace [service-name topic-entity expected-metric-namespace])
                                                                  (= metric-namespace [expected-metric-namespace]))
                                                              (= metric expected-metric)
                                                              (= additional-tags expected-additional-tags))
-                                                        (reset! unsuccessfully-processed? true)))]
+                                                    (reset! unsuccessfully-processed? true)))]
             ((mapper-func (constantly :dead-letter) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-dead-queue topic-entity)]
               (is (= message-payload message-from-mq)))
