@@ -87,7 +87,6 @@
                                                              (= additional-tags expected-additional-tags))
                                                     (reset! unsuccessfully-processed? true)))]
             ((mapper-func (constantly :retry) []) message-payload)
-            ((mapper-func (constantly :retry) []) message-payload)
             (let [message-from-mq (rmq/get-msg-from-delay-queue topic-entity)]
               (is (= message-from-mq expected-message)))
             (is @unsuccessfully-processed?)))))
