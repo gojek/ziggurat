@@ -25,30 +25,6 @@
         (with-redefs [ziggurat-config (fn [] (assoc-in config [:ssl-config] ssl-configs))]
           (is (= properties (build-ssl-properties properties))))))
 
-    (testing "should throw exception when ziggurat.ssl protocol is not supported"
-      (let [ssl-configs {:enabled                   true
-                         :user-name                 "test-user"
-                         :password                  "test-password"
-                         :protocol                  "INVALID_PROTOCOL"
-                         :mechanism                 "SCRAM-SHA-512"
-                         :endpoint-algorithm-config "https"}
-            exception-message #"protocol can either be PLAINTEXT or SASL_SSL"
-            exception-cause {:protocol "INVALID_PROTOCOL"}]
-        (with-redefs [ziggurat-config (fn [] (assoc-in config [:ssl-config] ssl-configs))]
-          (is (thrown? Exception exception-message exception-cause (build-ssl-properties properties))))))
-
-    (testing "should throw exception when ziggurat.ssl mechanism is not supported"
-      (let [ssl-configs {:enabled                   true
-                         :user-name                 "test-user"
-                         :password                  "test-password"
-                         :protocol                  "SASL_SSL"
-                         :mechanism                 "INVALID_MECHANISM"
-                         :endpoint-algorithm-config "https"}
-            exception-message #"SSL mechanism can either be PLAIN or SCRAM-SHA-512"
-            exception-cause {:mechanism "INVALID_MECHANISM"}]
-        (with-redefs [ziggurat-config (fn [] (assoc-in config [:ssl-config] ssl-configs))]
-          (is (thrown? Exception exception-message exception-cause (build-ssl-properties properties))))))
-
     (testing "should build and return properties with SSL configs"
       (let [ssl-configs {:enabled                   true
                          :user-name                 "test-user"

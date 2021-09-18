@@ -1,29 +1,23 @@
 (ns ziggurat.ssl.properties
-  (:require [ziggurat.config :refer [ziggurat-config]]
-            [ziggurat.ssl.constants :as const])
+  (:require [ziggurat.config :refer [ziggurat-config]])
   (:import [org.apache.kafka.streams StreamsConfig]
            [org.apache.kafka.common.config SslConfigs SaslConfigs]))
+
+(def jaas-template
+  {"PLAIN"         "org.apache.kafka.common.security.plain.PlainLoginModule"
+   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"})
+
+(defn- get-jaas-template
+  [mechanism]
+  (get jaas-template mechanism))
 
 (defn- ssl-configs
   [key]
   (get-in (ziggurat-config) [:ssl-config key]))
 
-(defn- validate-mechanism
-  [mechanism]
-  (when-not (contains? #{const/mechanism-plain const/mechanism-scram-512} mechanism)
-    (let [message (format "SSL mechanism can either be %s or %s" const/mechanism-plain const/mechanism-scram-512)]
-      (throw (IllegalArgumentException. message {:mechanism mechanism})))))
-
-(defn- validate-protocol
-  [protocol]
-  (when-not (contains? #{const/protocol-plaintext const/protocol_sasl_ssl} protocol)
-    (let [message (format "protocol can either be %s or %s" const/protocol-plaintext const/protocol_sasl_ssl)]
-      (throw (ex-info message {:protocol protocol})))))
-
 (defn- create-jaas-properties
   [user-name password mechanism]
-  (validate-mechanism mechanism)
-  (let [jaas-template (const/get-jaas-template mechanism)]
+  (let [jaas-template (get-jaas-template mechanism)]
     (format "%s required username=\"%s\" password=\"%s\";" jaas-template user-name password)))
 
 (defn build-ssl-properties
@@ -35,10 +29,9 @@
         mechanism (ssl-configs :mechanism)
         endpoint-algorithm-config (ssl-configs :endpoint-algorithm-config)]
     (if enabled
-      (do (validate-protocol protocol)
-          (doto properties
-            (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties user-name password mechanism))
-            (.put SaslConfigs/SASL_MECHANISM mechanism)
-            (.put SslConfigs/SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG endpoint-algorithm-config)
-            (.put StreamsConfig/SECURITY_PROTOCOL_CONFIG protocol)))
+      (doto properties
+        (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties user-name password mechanism))
+        (.put SaslConfigs/SASL_MECHANISM mechanism)
+        (.put SslConfigs/SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG endpoint-algorithm-config)
+        (.put StreamsConfig/SECURITY_PROTOCOL_CONFIG protocol))
       properties)))
