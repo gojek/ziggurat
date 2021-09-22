@@ -1,20 +1,17 @@
 (ns ziggurat.init-test
-  (:require [clojure.test :refer :all]
-            [mount.core :refer [defstate] :as mount]
+  (:require [clojure.test :refer [deftest is testing]]
+            [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
             [ziggurat.messaging.connection :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
-            [ziggurat.streams :as streams :refer [stream]]
+            [ziggurat.streams :as streams]
             [ziggurat.server.test-utils :as tu]
             [ziggurat.tracer :as tracer]
             [ziggurat.fixtures :refer [with-config]]
             [cambium.logback.json.flat-layout :as flat]
-            [cambium.codec :as codec]
-            [cambium.core :as clog]
-            [clojure.tools.logging :as log])
-
+            [cambium.codec :as codec])
   (:import (io.opentracing.mock MockTracer)))
 
 (def valid-modes-count 4)
@@ -25,8 +22,7 @@
 
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
-    (let [result                              (atom 1)
-          start-messaging-internal-call-count 2]
+    (let [result (atom 1)]
       (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
                     streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
@@ -47,12 +43,11 @@
         (with-config
           (do (init/start #() {} {} [] nil)
               (init/stop #(reset! result (+ @result 3)) nil)
-              (is (= 8 @result))))))))
+              (is (= 5 @result))))))))
 
 (deftest stop-calls-idempotentcy-test
   (testing "The stop function should be idempotent"
-    (let [result (atom 1)
-          stop-connection-internal-call-count 1]
+    (let [result (atom 1)]
       (with-redefs [streams/start-streams     (constantly nil)
                     streams/stop-streams      (constantly nil)
                     rmqc/stop-connection (fn [_] (reset! result (* @result 2)))
@@ -60,7 +55,7 @@
         (with-config
           (do (init/start #() {} {} [] nil)
               (init/stop #(reset! result (+ @result 3)) nil)
-              (is (= 8 @result))))))))
+              (is (= 5 @result))))))))
 
 (deftest start-calls-make-queues-with-both-streams-and-batch-routes-test
   (testing "Start calls make queues with both streams and batch routes"
@@ -327,3 +322,15 @@
                                              :channel-2 #()}}]
             (is (thrown? IllegalArgumentException (init/validate-routes stream-routes batch-routes modes)))))))))
 
+(deftest stop-test
+  (testing "the following components execute-function -> actor-stop-fn -> stop-common-states should be stopped"
+    (let [is-execute-function-called? (atom false)
+          is-actor-stop-fn-called? (atom false)
+          is-stop-common-states-called? (atom false)
+          actor-stop-fn (fn [] (reset! is-actor-stop-fn-called? true))]
+      (with-redefs [init/execute-function (fn [_ _] (reset! is-execute-function-called? true))
+                    init/stop-common-states (fn [] (reset! is-stop-common-states-called? true))]
+        (init/stop actor-stop-fn {})
+        (is (true? @is-execute-function-called?))
+        (is (true? @is-actor-stop-fn-called?))
+        (is (true? @is-stop-common-states-called?))))))
