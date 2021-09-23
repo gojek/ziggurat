@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.3.0
+- Update on the UpgradeGuide document
+- Removed the flatland dependency
+- Allow handler function to push to dead letter queue
+
 ## 4.2.0
 - Enabled structured logging via [cambium](https://cambium-clojure.github.io/)
 - Replaced log4j with logback as the default slf4j implementation.
