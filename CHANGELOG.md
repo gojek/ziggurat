@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.3.1
+- Fixes the stop order of components to facilitate graceful shutdown of business operations
+
 ## 4.3.0
 - Update on the UpgradeGuide document
 - Removed the flatland dependency
