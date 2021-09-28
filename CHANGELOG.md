@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file. This change
 ## 4.3.0
 - Update on the UpgradeGuide document
 - Removed the flatland dependency
-- Allow handler function to push to dead letter queue
+- Allows handler function to push to dead letter queue (does not work if the handler acts on RabbitMQ channles too)
 
 ## 4.2.0
 - Enabled structured logging via [cambium](https://cambium-clojure.github.io/)
