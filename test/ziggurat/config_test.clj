@@ -8,6 +8,7 @@
                                      build-properties
                                      build-consumer-config-properties
                                      build-streams-config-properties
+                                     build-producer-config-properties
                                      channel-retry-config
                                      config config-file
                                      config-from-env
@@ -278,7 +279,7 @@
                                             :ssl-keystore-password "some-password"})]
         (let [streams-config-map {:batch.size   500
                                   :acks         1}
-              props              (build-consumer-config-properties streams-config-map)
+              props              (build-producer-config-properties streams-config-map)
               batch-size         (.getProperty props "batch.size")
               acks               (.getProperty props "acks")
               ssl-ks-location    (.getProperty props "ssl.keystore.location")
