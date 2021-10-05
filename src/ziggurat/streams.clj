@@ -10,8 +10,7 @@
             [ziggurat.timestamp-transformer :as timestamp-transformer]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.map :as umap]
-            [cambium.core :as clog]
-            [ziggurat.ssl.properties :as ssl-properties])
+            [cambium.core :as clog])
   (:import [io.opentracing.contrib.kafka TracingKafkaUtils]
            [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
            [io.opentracing.tag Tags]
@@ -210,7 +209,7 @@
 
     (when-not (nil? top)
       (KafkaStreams. ^Topology top
-                     ^Properties (ssl-properties/build-ssl-properties (properties stream-config))
+                     ^Properties (properties stream-config)
                      (new TracingKafkaClientSupplier tracer)))))
 
 (defn- merge-consumer-type-config
