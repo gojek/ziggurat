@@ -5,7 +5,8 @@
             [clonfig.core :as clonfig]
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
-  (:import (java.util Properties))
+  (:import (java.util Properties)
+           [org.apache.kafka.common.config SaslConfigs])
   (:gen-class
    :methods [^{:static true} [get [String] Object]
              ^{:static true} [getIn [java.lang.Iterable] Object]]
@@ -79,6 +80,9 @@
 (defn ziggurat-config []
   (get config :ziggurat))
 
+(defn ssl-config []
+  (get-in config [:ziggurat :ssl]))
+
 (defn rabbitmq-config []
   (get (ziggurat-config) :rabbit-mq))
 
@@ -142,7 +146,9 @@
    :origin-topic
    :poll-timeout-ms-config
    :producer
-   :thread-count])
+   :thread-count
+   :enabled
+   :jaas])
 
 (defn- to-list
   [s]
@@ -173,9 +179,74 @@
         (.setProperty p sk nv))))
   p)
 
+(def jaas-template
+  {"PLAIN"         "org.apache.kafka.common.security.plain.PlainLoginModule"
+   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"})
+
+(defn create-jaas-properties
+  [user-name password mechanism]
+  (let [jaas-template (get jaas-template mechanism)]
+    (format "%s required username=\"%s\" password=\"%s\";" jaas-template user-name password)))
+
+(defn- add-jaas-properties
+  [properties jaas-config]
+  (if (some? jaas-config)
+    (let [username (get jaas-config :username)
+          password (get jaas-config :password)
+          mechanism (get jaas-config :mechanism)]
+      (doto properties
+        (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties username password mechanism))))
+    properties))
+
+(defn build-ssl-properties
+  [properties set-property-fn ssl-config-map]
+  "Builds SSL properties from ssl-config-map which is a map where keys are
+  Clojure keywords in kebab case. These keys are converted to Kafka properties by set-property-fn.
+
+  SSL properties are set only if key sequence [:ziggurat :ssl :enabled] returns true.
+
+  Creates JAAS template if values are provided in the map provided agains this key sequence
+  [:ziggurat :ssl :jaas].
+
+  Example of a ssl-config-map
+
+  {:enabled true
+   :ssl-keystore-location <>
+   :ssl-keystore-password <>
+    {:jaas {:username <>
+            :password <>
+            :mechanism <>}}}
+  "
+  (let [ssl-configs-enabled (:enabled ssl-config-map)
+        jaas-config         (get ssl-config-map :jaas)]
+    (if (true? ssl-configs-enabled)
+      (as-> properties pr
+            (add-jaas-properties pr jaas-config)
+            (reduce-kv set-property-fn pr ssl-config-map))
+      properties)))
+
 (defn build-properties
-  [set-property-fn m]
-  (reduce-kv set-property-fn (Properties.) m))
+  "Builds Properties object from the provided config-map which is a map where keys are
+   Clojure keywords in kebab case. These keys are converted to Kafka properties by set-property-fn.
+
+   First, ssl properties are set using the config map returned by a call to `ssl-config`
+
+   Then, properties from the provided `config-map` are applied. `config-map` can carry properties for Streams,
+   Consumer or Producer APIs
+
+   The method allows individual Streams, Producer, Consumer APIs to override SSL configs
+   if ssl properties are provided in `config-map`
+
+   Example of a config-map for streams
+    {:auto-offset-reset   :latest
+     :replication-factor  2
+     :group-id            \"foo\"}
+
+   "
+  [set-property-fn config-map]
+  (as-> (Properties.) pr
+        (build-ssl-properties pr set-property-fn (ssl-config))
+        (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties (partial build-properties (partial set-property consumer-config-mapping-table)))
 

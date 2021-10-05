@@ -18,7 +18,9 @@
                                      rabbitmq-config
                                      set-property
                                      statsd-config
-                                     ziggurat-config]]
+                                     ziggurat-config
+                                     ssl-config
+                                     create-jaas-properties]]
             [ziggurat.fixtures :as f])
   (:import (java.util ArrayList Properties)))
 
@@ -239,7 +241,112 @@
                       not-found  "NOT FOUND!"
                       v          (.getProperty props string-key not-found)]
                   (is (= v not-found))))
-              config-map))))))
+              config-map))))
+    (testing "should set ssl properties for streams if enabled is set to true"
+      (with-redefs [ssl-config (constantly {:enabled true
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"})]
+        (let [streams-config-map {:auto-offset-reset  :latest
+                                  :group-id           "foo"}
+              props              (build-streams-config-properties streams-config-map)
+              auto-offset-reset  (.getProperty props "auto.offset.reset")
+              group-id           (.getProperty props "group.id")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")]
+          (is (= auto-offset-reset "latest"))
+          (is (= group-id "foo"))
+          (is (= ssl-ks-location "/some/location"))
+          (is (= ssl-ks-password "some-password")))))
+    (testing "should set ssl properties for consumer API if enabled is set to true"
+      (with-redefs [ssl-config (constantly {:enabled true
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"})]
+        (let [streams-config-map {:max-poll-records   500
+                                  :enable-auto-commit true}
+              props              (build-consumer-config-properties streams-config-map)
+              max-poll-records   (.getProperty props "max.poll.records")
+              enable-auto-comit  (.getProperty props "enable.auto.commit")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")]
+          (is (= max-poll-records  "500"))
+          (is (= enable-auto-comit "true"))
+          (is (= ssl-ks-location "/some/location"))
+          (is (= ssl-ks-password "some-password")))))
+    (testing "should set ssl properties for producer API if enabled is set to true"
+      (with-redefs [ssl-config (constantly {:enabled true
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"})]
+        (let [streams-config-map {:batch.size   500
+                                  :acks         1}
+              props              (build-consumer-config-properties streams-config-map)
+              batch-size         (.getProperty props "batch.size")
+              acks               (.getProperty props "acks")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")]
+          (is (= batch-size  "500"))
+          (is (= acks "1"))
+          (is (= ssl-ks-location "/some/location"))
+          (is (= ssl-ks-password "some-password")))))
+    (testing "should not set ssl properties for streams if eenabled is set to false"
+      (with-redefs [ssl-config (constantly {:enabled false
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"})]
+        (let [streams-config-map {:auto-offset-reset  :latest
+                                  :group-id           "foo"}
+              props              (build-streams-config-properties streams-config-map)
+              auto-offset-reset  (.getProperty props "auto.offset.reset")
+              group-id           (.getProperty props "group.id")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")]
+          (is (= auto-offset-reset "latest"))
+          (is (= group-id "foo"))
+          (is (nil? ssl-ks-location))
+          (is (nil? ssl-ks-password)))))
+    (testing "ssl properties from streams config map overrides the ssl properties provided in [:ziggurat :ssl]"
+      (with-redefs [ssl-config (constantly {:enabled true
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"})]
+        (let [streams-config-map {:auto-offset-reset  :latest
+                                  :ssl-keystore-location "/some/different/location"
+                                  :ssl-keystore-password "different-password"}
+              props              (build-streams-config-properties streams-config-map)
+              auto-offset-reset  (.getProperty props "auto.offset.reset")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")]
+          (is (= auto-offset-reset "latest"))
+          (is (= ssl-ks-location "/some/different/location"))
+          (is (= ssl-ks-password "different-password")))))
+    (testing "ssl properties create jaas template from the map provided in [:ziggurat :ssl :jaas]"
+      (with-redefs [ssl-config (constantly {:enabled true
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"
+                                            :jaas {:username "myuser"
+                                                   :password "mypassword"
+                                                   :mechanism "SCRAM-SHA-512"}})]
+        (let [streams-config-map {:auto-offset-reset  :latest}
+              props              (build-streams-config-properties streams-config-map)
+              auto-offset-reset  (.getProperty props "auto.offset.reset")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")
+              sasl-jaas-config   (.getProperty props "sasl.jaas.config")]
+          (is (= auto-offset-reset "latest"))
+          (is (= ssl-ks-location  "/some/location"))
+          (is (= ssl-ks-password  "some-password"))
+          (is (= sasl-jaas-config (create-jaas-properties "myuser" "mypassword" "SCRAM-SHA-512"))))))
+    (testing "ssl properties DO NOT create jaas template if no value is provided for key sequence [:ziggurat :ssl :jaas]"
+      (with-redefs [ssl-config (constantly {:enabled true
+                                            :ssl-keystore-location "/some/location"
+                                            :ssl-keystore-password "some-password"})]
+        (let [streams-config-map {:auto-offset-reset  :latest}
+              props              (build-streams-config-properties streams-config-map)
+              auto-offset-reset  (.getProperty props "auto.offset.reset")
+              ssl-ks-location    (.getProperty props "ssl.keystore.location")
+              ssl-ks-password    (.getProperty props "ssl.keystore.password")
+              sasl-jaas-config   (.getProperty props "sasl.jaas.config")]
+          (is (= auto-offset-reset "latest"))
+          (is (= ssl-ks-location  "/some/location"))
+          (is (= ssl-ks-password  "some-password"))
+          (is (nil? sasl-jaas-config)))))))
 
 (deftest test-set-property
   (testing "set-property with empty (with spaces) value"

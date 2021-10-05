@@ -46,8 +46,7 @@
             [mount.core :refer [defstate]]
             [ziggurat.config :refer [build-producer-config-properties ziggurat-config]]
             [ziggurat.tracer :refer [tracer]]
-            [ziggurat.util.java-util :refer [get-key]]
-            [ziggurat.ssl.properties :as ssl-properties])
+            [ziggurat.util.java-util :refer [get-key]])
   (:import (io.opentracing.contrib.kafka TracingKafkaProducer)
            (org.apache.kafka.clients.producer KafkaProducer ProducerRecord))
   (:gen-class
@@ -59,7 +58,7 @@
   (reduce (fn [producer-map [stream-config-key stream-config]]
             (let [producer-config (:producer stream-config)]
               (if (some? producer-config)
-                (assoc producer-map stream-config-key (ssl-properties/build-ssl-properties (build-producer-config-properties producer-config)))
+                (assoc producer-map stream-config-key (build-producer-config-properties producer-config))
                 producer-map)))
           {}
           (seq (:stream-router (ziggurat-config)))))
