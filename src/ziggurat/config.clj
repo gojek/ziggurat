@@ -221,8 +221,8 @@
         jaas-config         (get ssl-config-map :jaas)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
-            (add-jaas-properties pr jaas-config)
-            (reduce-kv set-property-fn pr ssl-config-map))
+        (add-jaas-properties pr jaas-config)
+        (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
 (defn build-properties
@@ -245,8 +245,8 @@
    "
   [set-property-fn config-map]
   (as-> (Properties.) pr
-        (build-ssl-properties pr set-property-fn (ssl-config))
-        (reduce-kv set-property-fn pr config-map)))
+    (build-ssl-properties pr set-property-fn (ssl-config))
+    (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties (partial build-properties (partial set-property consumer-config-mapping-table)))
 
