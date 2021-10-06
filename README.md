@@ -32,15 +32,14 @@
 ## Description
 
 Ziggurat is a framework built to simplify Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
-Ziggurat is built with the intent to abstract out
+Ziggurat is built with the intent to abstract out the following features
 
 ```
 - reading messages from Kafka
-- retrying failed messages
+- retrying failed messages via RabbitMQ
 - setting up an HTTP server
 ```
 
-from a clojure application such that a user only needs to pass a function that will be mapped to every message received from Kafka.
 
 Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
@@ -62,9 +61,9 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 #### Running a cluster set up locally
 
 - `make setup-cluster` This clears up the volume and starts
-    - 3 Kafka brokers on localhost:9091, localhost:9092 and localhost:9093
-    - Zookeeper on localhost:2181
-    - RabbitMQ on localhost:5672
+  - 3 Kafka brokers on localhost:9091, localhost:9092 and localhost:9093
+  - Zookeeper on localhost:2181
+  - RabbitMQ on localhost:5672
 
 #### Running tests via a cluster
 - `make test-cluster`
@@ -111,8 +110,9 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 - The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 - The main-fn returns a keyword which can be any of the below words
   - :success - The message was successfully processed and the stream should continue to the next message
-  - :retry - The message failed to be processed and it should be retried.
-  - :skip - The message should be skipped without reporting its failure or retrying the message
+  - :retry - The message failed to be processed and it should be retried via RabbitMQ.
+  - :dead-letter - The message is not retried and is directly pushed to the dead letter queue
+  - :skip - The message should be skipped without reporting its failure or retrying the message. Same as :success except that a different metric is published to track skipped messages
 - The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
 - The stop-fn is run at shutdown and facilitates graceful shutdown, for example, releasing db connections, shutting down http servers etc.
 - Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
@@ -202,7 +202,7 @@ The functions can be accessed via the following commands to stop and start strea
 
 where `booking` is the `topic-entity`
 
-## Middleware in Ziggurat
+## Middlewares in Ziggurat
 
 Version 3.0.0 of Ziggurat introduces the support of Middleware. Old versions of Ziggurat (< 3.0) assumed that the messages read from kafka were serialized in proto-format and thus it deserialized
 them and passed a clojure map to the mapper-fn. We have now pulled the deserialization function into a middleware and users have the freedom to use this function to deserialize their messages
@@ -258,7 +258,7 @@ Here, `message-handler-fn` calls `parse-json` with a message handler function
 `actual-message-handler-function` as the first argument and the key of a stream-route
 config (as defined in `config.edn`) as the second argument.
 
-## Publishing data to Kafka Topics in Ziggurat
+## Publishing data to Kafka Topics using Kafka Producer API
 
 To enable publishing data to kafka, Ziggurat provides producing support through ziggurat.producer namespace. This namespace defines methods for publishing data to Kafka topics. The methods defined here are essentially wrapper around variants of `send` methods defined in `org.apache.kafka.clients.producer.KafkaProducer`.
 
@@ -277,111 +277,14 @@ For publishing data using a producer which is defined for the stream router conf
 
 `(send :default "test-topic" 1 "key" "value")`
 
-## Tracing
-
-[Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
-
-Currently, the execution of the handler function is traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
-
-Tracing has been added to the following flows:
-
-1. Normal basic consume
-2. Retry via rabbitmq
-3. Produce to rabbitmq channel
-4. Produce to another kafka topic
-
-By default, tracing is done via [Jaeger](https://www.jaegertracing.io/) based on the env configs. Please refer [Jaeger Configuration](https://github.com/jaegertracing/jaeger-client-java/tree/master/jaeger-core#configuration-via-environment)
-and [Jaeger Architecture](https://www.jaegertracing.io/docs/1.13/architecture/) to set the respective env variables.
-To enable custom tracer, a custom tracer provider function name can be set in `:custom-provider`. The corresponding function will be executed in runtime to create a tracer. In the event of any errors while executing the custom tracer provider, a Noop tracer will be created.
-
-To enable tracing, the following config needs to be added to the `config.edn` under `:ziggurat` key.
-
-```clojure
-:tracer {:enabled               [true :bool]
-         :custom-provider       ""}
-```
-
-Example Jaeger Env Config:
-
-```
-JAEGER_SERVICE_NAME: "service-name"
-JAEGER_AGENT_HOST: "localhost"
-JAEGER_AGENT_PORT: 6831
-```
-
-## Alpha features
-
-We recommend that you do not use alpha features in production, as the API contract, and it's implementation is likely to change
-in the future releases.
-
-#### How to enable alpha features in Ziggurat
-
-To enable alpha features in Ziggurat add the following config to your actor's `config.edn` file under the `:ziggurat` key
-
-```clojure
-{:ziggurat {:alpha-features {:feature-name true}}}
-```
-
-All alpha features in this doc will contain an Alpha feature tag.
-
-## Stream Joins [Alpha feature]
-
-Stream joins is an alpha feature, and we recommend that you do not use it in production. It's API contract might likely change in the future.
-
-Refer to the alpha features section on how to enable Stream joins, set the keyword `:stream-joins` to `true` to enable it.
-
-Before starting with the code changes, please make sure that the kafka topics one intends to join via Kafka Stream DSL's
-join feature satisfies the following pre-conditions
-- The number of partitions for both the topics should be exactly same. 
-- Both the topics should be co-partitioned, i.e. If the messages which are produced to these 
-topics share the exact same key, these messages should land up in the same parition index. The implications
-are that while producing the data to these topics, the developer should take care to use the same Kafka Producer
-Client for both the topics. If that's not the case, please do that before attempting a Stream Joins.
-
-For more details and deeper explanation about the above points, one can refer this guide: 
-[Join Co-partitioning Requirements](https://kafka.apache.org/23/documentation/streams/developer-guide/dsl-api.html#join-co-partitioning-requirements)
-
-
-This will allow an actor to join messages from 2 topics into 1 result. To be able to use stream joins just add the configuration below to your `config.edn`
-
-```clojure
-{:ziggurat  {:stream-router        {:stream-id            {
-    :consumer-type        :stream-joins
-    :input-topics         {:topic-1-key {:name "topic-1"} :topic-2-key {:name "topic-2"}}
-    :join-cfg             {:topic-1-and-topic-2 {:join-window-ms 5000 :join-type :inner}}
-}}}}
-```
-
-- consumer-type - enables stream joins if `:stream-joins` key is provided, other possible value is `:default` which is the default actor behavior
-- input-topics - a map of topics in which you want to use for joining
-- join-cfg - a map of configurations which you define the join-window-ms and the join-type (`:inner`, `:left` or `:outer`)
-
-And your actor's handler function be like
-
-```clojure
-(ns my-actor
-  (:require [ziggurat.middleware.stream-joins :as mw]))
-
-(def handler-func
-  (-> main-func
-      (mw/protobuf->hash [com.gojek.esb.booking.BookingLogMessage com.gojek.esb.booking.BookingLogMessage] :booking)))
-```
-
-`Please take note of the vector containing the proto classes`
-
-Your handler function will receive a message in the following format/structure
-
-```clojure
-{:topic-1-key "message-from-1st-topic" :topic-2-key "message-from-2nd-topic"}
-```
 
 ## Batch Consumption using Kafka Consumer API
-With Ziggurat version 3.5.1, both Kafka Streams API and Kafka Consumer API can be used to consume the messages in real 
+With Ziggurat version 3.5.1, both Kafka Streams API and Kafka Consumer API can be used to consume the messages in real
 time. Kafka Consumer API is an efficient way to consume messages from high throughput Kafka topics.
 
-With Kafka Streams API, one message is processed at a time. But, with Kafka Consumer API integration in Ziggurat, 
-a user can consume messages in bulk and can control how many messages it wants to consume at a time. This batch size 
-can be configured using max-poll-records config 
+With Kafka Streams API, one message is processed at a time. But, with Kafka Consumer API integration in Ziggurat,
+a user can consume messages in bulk and can control how many messages it wants to consume at a time. This batch size
+can be configured using max-poll-records config
 https://docs.confluent.io/current/installation/configuration/consumer-configs.html#max.poll.records.
 
 Like Streams, Ziggurat also provides the facility to specify multiple batch routes.
@@ -446,7 +349,7 @@ Ziggurat Config | Default Value | Description | Mandatory?
 :default-api-timeout-ms | 60000 | [https://cwiki.apache.org/confluence/display/KAFKA/KIP-266%3A+Fix+consumer+indefinite+blocking+behavior](https://cwiki.apache.org/confluence/display/KAFKA/KIP-266%3A+Fix+consumer+indefinite+blocking+behavior) | No
 
 
-## Connecting to a RabbitMQ cluster
+## Connecting to a RabbitMQ cluster for retries
 
 - To connect to RabbitMQ clusters add the following config to your `config.edn`
 
@@ -464,9 +367,74 @@ Ziggurat Config | Default Value | Description | Mandatory?
 - `:port` specifies the port number on which the RabbitMQ nodes are running.
 - By default, your queues and exchanges are replicated across (n+1)/2 nodes in the cluster
 
+## Exponential Backoff based Retries
+
+In addition to linear retries, Ziggurat users can now use exponential backoff strategy for retries. This means that the message
+timeouts after every retry increase by a factor of 2. So, if your configured timeout is 100ms the backoffs will have timeouts as
+`200, 300, 700, 1500 ..`. These timeouts are calculated using the formula `(queue-timeout-ms * ((2**exponent) - 1))` where `exponent` falls in this range `[1,(min 25, configured-retry-count)]`.
+
+The number of retries possible in this case are capped at 25.
+
+The number of queues created in the RabbitMQ are equal to the configured-retry-count or 25, whichever is smaller.
+
+Exponential retries can be configured as described below.
+
+```$xslt
+:ziggurat {:stream-router {:default {:application-id "application_name"...}}}
+           :retry         {:type   [:exponential :keyword]
+                           :count  [10 :int]
+                           :enable [true :bool]}
+
+```
+
+Exponential retries can be configured for channels too. Additionally, a user can specify a custom `queue-timeout-ms` value per channel.
+Timeouts for exponential backoffs are calculated using `queue-timeout-ms`. This implies that each channel can have separate count of retries
+and different timeout values.
+
+```$xslt
+:ziggurat {:stream-router {:default {:application-id "application_name"...
+                                     :channels {:channel-1 .....
+                                                           :retry {:type   [:exponential :keyword]
+                                                                                      :count  [10 :int]
+                                                                                      :queue-timeout-ms 2000
+                                                                                      :enable [true :bool]}}}}}
+```
+
+## Tracing
+
+[Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
+
+Currently, the execution of the handler function is traced. If the message consumed has the corresponding tracing headers, then the E2E life time of the message from the time of production till the time of consumption can be traced.
+
+Tracing has been added to the following flows:
+
+1. Normal basic consume
+2. Retry via rabbitmq
+3. Produce to rabbitmq channel
+4. Produce to another kafka topic
+
+By default, tracing is done via [Jaeger](https://www.jaegertracing.io/) based on the env configs. Please refer [Jaeger Configuration](https://github.com/jaegertracing/jaeger-client-java/tree/master/jaeger-core#configuration-via-environment)
+and [Jaeger Architecture](https://www.jaegertracing.io/docs/1.13/architecture/) to set the respective env variables.
+To enable custom tracer, a custom tracer provider function name can be set in `:custom-provider`. The corresponding function will be executed in runtime to create a tracer. In the event of any errors while executing the custom tracer provider, a Noop tracer will be created.
+
+To enable tracing, the following config needs to be added to the `config.edn` under `:ziggurat` key.
+
+```clojure
+:tracer {:enabled               [true :bool]
+         :custom-provider       ""}
+```
+
+Example Jaeger Env Config:
+
+```
+JAEGER_SERVICE_NAME: "service-name"
+JAEGER_AGENT_HOST: "localhost"
+JAEGER_AGENT_PORT: 6831
+```
+
 ## Configuration
 
-As of Ziggurat version 3.13.0, all the official Kafka configs Kafka configurations for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html), [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html) and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html) are supported. 
+As of Ziggurat version 3.13.0, all the official Kafka configs Kafka configurations for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html), [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html) and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html) are supported.
 
 All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggurat` key.
 
@@ -486,7 +454,11 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                                        :max-in-flight-requests-per-connection 5
                                                                        :enable-idempotence                    false
                                                                        :value-serializer                      "org.apache.kafka.common.serialization.StringSerializer"
-                                                                       :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}}
+                                                                       :key-serializer                        "org.apache.kafka.common.serialization.StringSerializer"}}} 
+            :batch-routes         {:restaurants-updates-to-non-personalized-es
+                                    {:consumer-group-id          "restaurants-updates-consumer"
+                                     :bootstrap-servers          "g-gojek-id-mainstream.golabs.io:6668"
+                                     :origin-topic               "restaurant-updates-stream"}}
             :default-api-timeout-ms-config [600000 :int]
             :statsd               {:host    "localhost"
                                    :port    [8125 :int]
@@ -526,7 +498,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 - default-api-timeout-ms-config - Specifies the timeout (in milliseconds) for client APIs. This configuration is used as the default timeout for all client operations that do not specify a timeout parameter. The recommended value for Ziggurat based apps is 600000 ms (10 minutes).
 - stream-router - Configs related to all the Kafka streams the application is reading from
 
-  - stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different Kafka brokers and have different number of threads (depending on the throughput of the stream).
+  - stream-id - the identifier of a stream that was mentioned in main.clj. Hence each stream can read from different Kafka brokers and have different number of threads (depending on the throughput of the stream). A stream-id accepts all the properties (as kebab case keywords) provided by [Kafka Streams API](https://kafka.apache.org/28/javadoc/org/apache/kafka/streams/StreamsConfig.html).
     - application-id - The Kafka consumer group id. [Documentation](https://kafka.apache.org/intro#intro_consumers)
     - bootstrap-servers - The Kafka brokers that the application will read from. It accepts a comma seperated value.
     - stream-threads-count - The number of parallel threads that should read messages from Kafka. This can scale up to the number of partitions on the topic you wish to read from.
@@ -534,7 +506,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
     - origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
     - oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
     - changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
-    - producer - Configuration for KafkaProducer. Currently, only following options are supported. Please see [Producer Configs](https://kafka.apache.org/documentation/#producerconfigs) for detailed explanation for each of the configuration parameters.
+    - producer - Configuration for KafkaProducer. All properties supported by [Kafka Producer Config](https://kafka.apache.org/28/javadoc/org/apache/kafka/clients/producer/ProducerConfig.html) can be provided as kebab case keywords
       - bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
       - acks - The number of acknowledgments the producer requires the leader to have received before considering a request complete. Valid values are [all, -1, 0, 1].
       - retries - Setting a value greater than zero will cause the client to resend any record whose send fails with a potentially transient error.
@@ -542,8 +514,8 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
       - value.serializer - Serializer class for value that implements the org.apache.kafka.common.serialization.Serializer interface.
       - max.in.flight.requests.per.connection - The maximum number of unacknowledged requests the client will send on a single connection before blocking.
       - enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
-
-- statsd - Formerly known as datadog, The statsd host and port that metrics should be sent to.
+- batch-routes - This has been explained in the [Batch Routes](https://github.com/gojek/ziggurat/tree/master#batch-consumption-using-kafka-consumer-api) section above. All the properties provided with [Kafka Consumer Config](https://kafka.apache.org/28/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html) are accepted as kebab case keywords
+- statsd - The statsd host and port that metrics should be sent to.
 - sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
 - rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
 - rabbit-mq - The queues that are part of the retry mechanism
@@ -551,49 +523,6 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 - jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 - http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
 - new-relic - If report-errors is true, whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing it, an error is reported to new-relic. You can skip this flow by disabling it.
-## Alpha (Experimental) Features
-
-The contract and interface for experimental features in Ziggurat can be changed as we iterate towards better designs for that feature.
-For all purposes these features should be considered unstable and should only be used after understanding their risks and implementations.
-
-### Exponential Backoff based Retries
-
-In addition to linear retries, Ziggurat users can now use exponential backoff strategy for retries. This means that the message
-timeouts after every retry increase by a factor of 2. So, if your configured timeout is 100ms the backoffs will have timeouts as
-`200, 300, 700, 1500 ..`. These timeouts are calculated using the formula `(queue-timeout-ms * ((2**exponent) - 1))` where `exponent` falls in this range `[1,(min 25, configured-retry-count)]`.
-
-~~The number of retries possible in this case are capped at 25.~~ 
-
-**_Note: Due to a bug in Ziggurat ([Issue 186](https://github.com/gojek/ziggurat/issues/186)), 
-the max retries possible (with a timeout value of 5000 milliseconds) is 18. This number will vary if timeout value is increased
-or decreased. Ziggurat Team is trying to fix this ASAP. Please get in touch with Ziggurat Team to verify if your configuration is correct._**
-
-The number of queues created in the RabbitMQ are equal to the configured-retry-count or 25, whichever is smaller.
-
-Exponential retries can be configured as described below.
-
-```$xslt
-:ziggurat {:stream-router {:default {:application-id "application_name"...}}}
-           :retry         {:type   [:exponential :keyword]
-                           :count  [10 :int]
-                           :enable [true :bool]}
-
-```
-
-Exponential retries can be configured for channels too. Additionally, a user can specify a custom `queue-timeout-ms` value per channel.
-Timeouts for exponential backoffs are calculated using `queue-timeout-ms`. This implies that each channel can have separate count of retries
-and different timeout values.
-
-```$xslt
-:ziggurat {:stream-router {:default {:application-id "application_name"...
-                                     :channels {:channel-1 .....
-                                                           :retry {:type   [:exponential :keyword]
-                                                                                      :count  [10 :int]
-                                                                                      :queue-timeout-ms 2000
-                                                                                      :enable [true :bool]}}}}}
-```
-
-## Deprecation Notice
 
 ## Contribution
 
