@@ -460,7 +460,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                      :bootstrap-servers          "g-gojek-id-mainstream.golabs.io:6668"
                                      :origin-topic               "restaurant-updates-stream"}}
             :ssl                  {:enabled true
-                                   :ssl-keystore-location "/location/to/keystre"
+                                   :ssl-keystore-location "/location/to/keystore"
                                    :ssl-keystore-password "some-password"
                                    {:jaas {:username "username"
                                            :password "password"
@@ -521,7 +521,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
       - max.in.flight.requests.per.connection - The maximum number of unacknowledged requests the client will send on a single connection before blocking.
       - enable.idempotence - When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
 - batch-routes - This has been explained in the [Batch Routes](https://github.com/gojek/ziggurat/tree/master#batch-consumption-using-kafka-consumer-api) section above. All the properties provided with [Kafka Consumer Config](https://kafka.apache.org/28/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html) are accepted as kebab case keywords
-- ssl - All Kafka [SSL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SslConfigs.html) and [SASL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SaslConfigs.html) can be provided as kebab case keywords 
+- ssl - All Kafka [SSL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SslConfigs.html) and [SASL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SaslConfigs.html) can be provided as kebab case keywords. These configs are automatically applied to all kafka stream, kafka producer and kafka consumer objects created in Ziggurat. 
 - statsd - Formerly known as datadog, The statsd host and port that metrics should be sent to.
 - sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
 - rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
