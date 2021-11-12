@@ -36,7 +36,8 @@
                                                        :dead-letter {:queue-name    "%s_dead_letter_queue"
                                                                      :exchange-name "%s_dead_letter_exchange"}}
                                 :retry                {:count   5
-                                                       :enabled false}
+                                                       :enabled false
+                                                       :jitter {:%age 0}}
                                 :http-server          {:middlewares  {:swagger {:enabled false}}
                                                        :port         8080
                                                        :thread-count 100}
