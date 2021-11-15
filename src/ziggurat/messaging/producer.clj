@@ -162,7 +162,8 @@
 
 (defn- get-exponential-backoff-timeout-ms "Calculates the exponential timeout value from the number of max retries possible (`retry-count`),
    the number of retries available for a message (`message-retry-count`) and base timeout value (`queue-timeout-ms`).
-   It uses this formula `((2^n)-1)*queue-timeout-ms*(1+jitter-%age)`, where `n` is the current message retry-count.
+   It uses this formula `((2^n)-1)*queue-timeout-ms*jitter-factor`, where `n` is the current message retry-count and jitter-factor is random
+   jitter upto jitter-%age.
 
    Sample config to use exponential backoff:
    {:ziggurat {:retry {:enabled true
@@ -180,8 +181,10 @@
    _NOTE: Exponential backoff for channel retries is an experimental feature. It should not be used until released in a stable version._"
   [retry-count message-retry-count queue-timeout-ms jitter-%age]
   (let [exponential-backoff (get-backoff-exponent retry-count message-retry-count)
+        jitter-%age (min (Math/abs jitter-%age) 25)
         jitter-k (* jitter-%age 2 1000)
-        jitter-f (+ 1 (/ (/ (- (/ jitter-k 2) (rand-int jitter-k)) 1000) 100))]
+        jitter-p (/ (- (/ jitter-k 2) (rand-int jitter-k)) 1000)
+        jitter-f (+ 1 (/ jitter-p 100))]
     (long (* (dec (Math/pow 2 exponential-backoff)) queue-timeout-ms jitter-f))))
 
 (defn get-queue-timeout-ms
