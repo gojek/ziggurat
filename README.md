@@ -400,6 +400,20 @@ and different timeout values.
                                                                                       :enable [true :bool]}}}}}
 ```
 
+## Jitter in Retries
+
+Jitter can be added to retries with exponential backoffs. Users need to configure jitter percentage (sanitized to be <=25) that describes the variation in the backoff time. 
+
+```$xlst
+:ziggurat {:stream-router {:default {:application-id "application_name"...}}
+           :retry         {:type   [:exponential :keyword]
+                           :count  [10 :int]
+                           :enable [true :bool]
+                           :jitter {:%age [10 int]}}}
+```
+
+Here, the jitter percentage is `10%`, so the backoff value that was originally say 100ms changes to a random value between 90ms and 110ms.
+
 ## Tracing
 
 [Open Tracing](https://opentracing.io/docs/overview/) enables to identify the amount of time spent in various stages of the work flow.
