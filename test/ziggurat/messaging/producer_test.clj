@@ -234,7 +234,8 @@
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
                                                      :retry {:count   5
                                                              :enabled true
-                                                             :type    :exponential}))]
+                                                             :type    :exponential
+                                                             :jitter  {:%age 10}}))]
       (testing "message with no retry count will publish to delay queue with suffix 1"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}
