@@ -20,11 +20,14 @@
 (defn- publish-to-dead-set
   [ch delivery-tag topic-entity payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        exchange                (util/prefixed-queue-name topic-entity exchange-name)]
+        exchange                (util/prefixed-queue-name topic-entity exchange-name)
+        te                      {:topic_name (name topic-entity)}]
     (try
       (lb/publish ch exchange "" payload)
+      (metrics/increment-count ["rabbitmq-message" "publish-to-dead-set"] "success" te)
       (catch Exception e
         (log/error e "Exception was encountered while publishing to RabbitMQ")
+        (metrics/increment-count ["rabbitmq-message" "publish-to-dead-set"] "failure" te)
         (reject-message ch delivery-tag)))))
 
 (defn convert-and-ack-message
@@ -35,6 +38,7 @@
     (let [message (nippy/thaw payload)]
       (when ack?
         (lb/ack ch delivery-tag))
+      (metrics/increment-count ["rabbitmq-message" "conversion"] "success" {:topic_name (name topic-entity)})
       message)
     (catch Exception e
       (report-error e "Error while decoding message, publishing to dead queue...")

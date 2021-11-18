@@ -113,6 +113,7 @@
     (with-open [ch (lch/open connection)] ;; it opens a connection everytime it publishes?
       (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
                   (properties-for-publish expiration (:headers message-payload))))
+    (metrics/increment-count ["rabbitmq" "publish"] "success" {:topic-entity (name (:topic-entity message-payload))})
     false
     (catch AlreadyClosedException e
       (handle-network-exception e message-payload))
