@@ -20,7 +20,7 @@
     (metrics/increment-count batch-consumption-metric-ns "success" success-count topic-entity-tag)
     (metrics/increment-count batch-consumption-metric-ns "skip" skip-count topic-entity-tag)
     (metrics/increment-count batch-consumption-metric-ns "retry" retry-count topic-entity-tag)
-    (metrics/report-time (conj batch-consumption-metric-ns "execution-time") time-taken-in-millis topic-entity-tag)))
+    (metrics/report-histogram (conj batch-consumption-metric-ns "execution-time") time-taken-in-millis topic-entity-tag)))
 
 (defn- retry
   ([batch-payload]

@@ -1,6 +1,8 @@
 (ns ziggurat.prometheus.metrics
   (:require [iapetos.core :as prometheus]))
 
+(def bucket-sizes [0.005 0.01 0.025 0.05 0.1 0.25 0.5 1 2.5 5 10])
+
 (defn all
   []
   [
@@ -56,4 +58,28 @@
    (prometheus/counter
     :ziggurat/rabbitmq-msg-consumption-failure
     {:description "rabbitmq-msg-processed"
-     :labels      [:topic-name :actor :env]})])
+     :labels      [:topic-name :actor :env]})
+
+   (prometheus/histogram
+    :ziggurat/handler-fn-execution-time
+    {:description "handler function execution latency by topic name"
+     :labels [:topic-name :actor :env]
+     :buckets bucket-sizes})
+
+   (prometheus/histogram
+    :ziggurat/batch-handler-fn-execution-time
+    {:description "handler function execution latency by topic name"
+     :labels [:topic-name :actor :env]
+     :buckets bucket-sizes})
+
+   (prometheus/histogram
+    :ziggurat/stream-joins-message-diff
+    {:description "handler function execution latency by topic name"
+     :labels [:left :right]
+     :buckets bucket-sizes})
+
+   (prometheus/histogram
+    :ziggurat/kafka-delay-time
+    {:description "handler function execution latency by topic name"
+     :labels [:topic-name]
+     :buckets bucket-sizes})])

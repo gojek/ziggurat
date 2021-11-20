@@ -79,7 +79,30 @@
 
 (defn update-timing
   [namespace metric tags value]
-  (println "update-timing" "namespace: " namespace "metric" metric "tags" tags "value" value))
+  (println "update-timing" "namespace: " namespace "metric" metric "tags" tags "value" value)
+  (let [common-labels {:topic-name (or (get tags :topic_name) (get tags :topic-entity))
+                       :actor        (-> (ziggurat-config) :app-name)
+                       :env        (get tags :env)}]
+    (cond
+      (and (includes? namespace "ziggurat.batch.consumption") (includes? namespace "execution-time"))
+      (prometheus/observe @reg :ziggurat/batch-handler-fn-execution-time common-labels value)
+
+      (includes? namespace "stream-joins-message-diff")
+      (prometheus/observe @reg :ziggurat/stream-joins-message-diff (-> common-labels
+                                                                       (dissoc :topic-name)
+                                                                       (assoc :left (get tags :left))
+                                                                       (assoc :right (get tags :right))) value)
+
+      (includes? namespace "execution-time") ;; includes both mapper-func and channel-mapper-func
+      (prometheus/observe @reg :ziggurat/handler-fn-execution-time common-labels value)
+
+      (includes? namespace "message-received-delay-histogram") ;; includes both mapper-func and channel-mapper-func
+      (prometheus/observe @reg :ziggurat/kafka-delay-time common-labels value)
+
+      :else
+      (do
+        (println "PANIC" namespace metric tags value)
+        (System/exit 0))))  )
 
 (deftype Standalone []
   MetricsProtocol
