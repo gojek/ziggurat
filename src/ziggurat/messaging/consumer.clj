@@ -23,7 +23,10 @@
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
         exchange                (util/prefixed-queue-name topic-entity exchange-name)
         tags {:topic-entity (name topic-entity)
-              :exchange (str/replace exchange (:app-name (ziggurat-config)) "app-name")}]
+              :exchange (-> exchange
+                            (str/replace (:app-name (ziggurat-config)) "")
+                            (str/replace (name topic-entity) "")
+                            (str/replace  #"^_+|_+$" ""))}]
     (try
       (lb/publish ch exchange "" payload)
       (metrics/prom-inc :ziggurat/rabbitmq-publish-count tags)
@@ -40,7 +43,11 @@
     (let [message (nippy/thaw payload)]
       (when ack?
         (lb/ack ch delivery-tag))
-      (metrics/prom-inc :ziggurat/rabbitmq-read-count {:topic_name (name topic-entity) :queue (str/replace queue-name (:app-name (ziggurat-config)) "app-name")})
+      (metrics/prom-inc :ziggurat/rabbitmq-read-count {:topic_name (name topic-entity)
+                                                       :queue (-> queue-name
+                                                                  (str/replace (str "_" (:app-name (ziggurat-config))) "")
+                                                                  (str/replace (name topic-entity) "")
+                                                                  (str/replace  #"^_+|_+$" ""))})
       message)
     (catch Exception e
       (report-error e "Error while decoding message, publishing to dead queue...")

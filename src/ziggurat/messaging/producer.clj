@@ -111,8 +111,12 @@
 
 (defn- publish-internal
   [exchange message-payload expiration]
-  (let [tags {:topic-entity (name (:topic-entity message-payload))
-              :exchange (str/replace exchange (:app-name (ziggurat-config)) "app-name")}]
+  (let [topic-entity (name (:topic-entity message-payload))
+        tags {:topic-entity topic-entity
+              :exchange (-> exchange
+                            (str/replace (:app-name (ziggurat-config)) "")
+                            (str/replace topic-entity "")
+                            (str/replace  #"^_+|_+$" ""))}]
     (metrics/prom-inc :ziggurat/rabbitmq-publish-count tags)
     (try
       (with-open [ch (lch/open connection)] ;; it opens a connection everytime it publishes?
