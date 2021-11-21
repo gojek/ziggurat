@@ -1,85 +1,62 @@
 (ns ziggurat.prometheus.metrics
   (:require [iapetos.core :as prometheus]))
 
-(def bucket-sizes [0.005 0.01 0.025 0.05 0.1 0.25 0.5 1 2.5 5 10])
-
 (defn all
   []
   [
-   (prometheus/counter
-    :ziggurat/msg-parsed-failure-count
-    {:description "total msgs parsed failed by topic-entity"
-     :labels      [:topic-name :actor :env]})
-
-   (prometheus/counter
-    :ziggurat/msg-read-count
-    {:description "total msgs parsed failed by topic-entity"
-     :labels      [:topic-name :actor :env]})
-
-   (prometheus/counter
-    :ziggurat/json-msg-parsed-failure-count
-    {:description "total json msgs parsed by topic-entity"
-     :labels      [:topic-name :actor :env]})
-
-   (prometheus/counter
-    :ziggurat/msg-processed-count
-    {:description "total processed msg by topic-entity, status"
-     :labels      [:topic-name :actor :env :code]})
-
-   (prometheus/counter
-    :ziggurat/batch-consumption-count
-    {:description "total thread pool shutdown count for batch consumtion"
-     :labels      [:topic-name :actor :env :code]})
-   (prometheus/counter
-    :ziggurat/http-metrics
-    {:description "http metrics"
-     :labels      [:topic-name :actor :env :uri :response]})
-
-   (prometheus/counter
-    :ziggurat/rabbitmq-publish
-    {:description "rabbitmq-msg-processed"
-     :labels      [:topic-name :actor :env :code]})
-
-   (prometheus/counter
-    :ziggurat/rabbitmq-read
-    {:description "rabbitmq-msg-read"
-     :labels      [:topic-name :actor :env :code]})
-
-   (prometheus/counter
-    :ziggurat/channel-msg-processed-count
-    {:description "total processed msg by topic-entity, status"
-     :labels      [:topic-name :actor :env]})
-
-   (prometheus/counter
-    :ziggurat/rabbitmq-msg-processed-failure
-    {:description "rabbitmq-msg-processed"
-     :labels      [:topic-name :actor :env]})
-
-   (prometheus/counter
-    :ziggurat/rabbitmq-msg-consumption-failure
-    {:description "rabbitmq-msg-processed"
-     :labels      [:topic-name :actor :env]})
+   (prometheus/gauge
+    :ziggurat/kafka-delay-time
+    {:description "kafka delay gauge by topic-entity"
+     :labels [:topic-name :app :env]})
 
    (prometheus/histogram
     :ziggurat/handler-fn-execution-time
     {:description "handler function execution latency by topic name"
-     :labels [:topic-name :actor :env]
-     :buckets bucket-sizes})
+     :labels [:topic-name :app :env]
+     :buckets [100 250 500 1000 2000 5000]})
 
    (prometheus/histogram
-    :ziggurat/batch-handler-fn-execution-time
-    {:description "handler function execution latency by topic name"
-     :labels [:topic-name :actor :env]
-     :buckets bucket-sizes})
+    :ziggurat/handler-fn-batch-execution-time
+    {:description "handler function batch execution latency by topic name"
+     :labels [:topic-name :app :env]
+     :buckets [1000 2500 5000 10000 20000 50000.0]})
 
-   (prometheus/histogram
-    :ziggurat/stream-joins-message-diff
-    {:description "handler function execution latency by topic name"
-     :labels [:left :right]
-     :buckets bucket-sizes})
+   (prometheus/counter
+    :ziggurat/json-parse-failure-count
+    {:description "total json parsed failed count by topic-entity"
+     :labels      [:topic-entity :app :env]})
 
-   (prometheus/histogram
-    :ziggurat/kafka-delay-time
-    {:description "handler function execution latency by topic name"
-     :labels [:topic-name]
-     :buckets bucket-sizes})])
+   (prometheus/counter
+    :ziggurat/kafka-msg-deserialize-failure-count
+    {:description "total msgs from kafka for which deserialization failed by topic-entity"
+     :labels      [:topic-name :app :env]})
+
+   (prometheus/counter
+    :ziggurat/msg-processed-count
+    {:description "total processed msg by topic-entity, status"
+     :labels      [:topic-name :code :app :env]})
+
+   (prometheus/counter
+    :ziggurat/polling-for-batch-failure-count
+    {:description "failure count wating for batch polling by topic name"
+     :labels      [:topic-name :app :env]})
+
+   (prometheus/counter
+    :ziggurat/rabbitmq-publish-count
+    {:description "rabbitmq message publish count by exchange"
+     :labels      [:topic-name :app :env :exchange]})
+
+   (prometheus/counter
+    :ziggurat/rabbitmq-publish-failure-count
+    {:description "rabbitmq message publish failure count by exchange"
+     :labels      [:topic-name :app :env :exchange]})
+
+   (prometheus/counter
+    :ziggurat/rabbitmq-read-count
+    {:description "rabbitmq message read count by exchange"
+     :labels      [:topic-name :app :env :queue]})
+
+   (prometheus/counter
+    :ziggurat/rabbitmq-read-failure-count
+    {:description "rabbitmq message read failure count by queue"
+     :labels      [:topic-name :app :env :queue]})])

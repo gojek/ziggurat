@@ -496,6 +496,10 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
             :http-server          {:port         [8010 :int]
+            :prometheus           {:host    "localhost"
+                                   :port    [8081 :int]
+                                   :enabled [false :bool]
+                                   :path "/metrics"}
             :new-relic            {:report-errors [false :bool]}}}}
 ```
 
@@ -530,6 +534,58 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 - jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 - http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
 - new-relic - If report-errors is true, whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing it, an error is reported to new-relic. You can skip this flow by disabling it.
+- prometheus - Ziggurat can expose prometheus metrics.
+
+The metrics exposed are:
+```txt
+ziggurat_polling_for_batch_failure_count - failure count wating for batch polling by topic name
+ziggurat_handler_fn_batch_execution_time - handler function batch execution latency by topic name
+ziggurat_json_parse_failure_count - total json parsed failed count by topic-entity
+ziggurat_msg_processed_count - total processed msg by topic-entity, status
+ziggurat_kafka_delay_time - kafka delay gauge by topic-entity
+ziggurat_kafka_msg_deserialize_failure_count - total msgs from kafka for which deserialization failed by topic-entity
+ziggurat_handler_fn_execution_time - handler function execution latency by topic name
+ziggurat_rabbitmq_publish_failure_count - rabbitmq message publish failure count by exchange
+ziggurat_rabbitmq_read_failure_count - rabbitmq message read failure count by queue
+ziggurat_rabbitmq_read_count - rabbitmq message read count by exchange
+ziggurat_rabbitmq_publish_count - rabbitmq message publish count by exchange
+```
+
+Example:
+```clojure
+(ns ziggurat.demo
+  (:require [iapetos.core :as prometheus]
+            [ziggurat.init :refer [main]]
+            [mount.core :as mount]
+            [ziggurat.prometheus.core :as p]
+            [ziggurat.middleware.default :as mw])
+  (:import [foo.bar.foobar FooBarMessage])
+  (:gen-class
+   :methods [^{:static true} [init [java.util.Map] void]]
+   :name tech.gojek.ziggurat.internal.Init))
+
+(defn my-start []
+  (-> (mount/only #{#'p/server})
+      (mount/start))
+  (swap! p/reg (fn [r] (prometheus/register r (prometheus/counter :my-metric/foo-count {:description "my-metric" :labels [:topic-name]})))))
+                                                                                
+(defn my-stop []
+  (mount/stop  #{#'p/server}))
+
+(defn my-print-foo
+  [message]
+  (prometheus/inc @p/reg :my-metric/foo-count {:topic-entity "foo"})
+    (if (> (rand-int 10) 5)
+    :success
+    :retry))
+
+(def handler-fn
+  (-> my-print-foo (mw/protobuf->hash FooBarMessage :foo-bar-events)))
+
+(defn -main [& args]
+  (p/register-metrics)
+  (main my-start my-stop {:foo-bar-events {:handler-fn handler-fn}}))
+```
 
 ## Contribution
 

@@ -4,7 +4,7 @@
             :statsd               {:host    "localhost"
                                    :port    [8126 :int]
                                    :enabled [false :bool]}
-            :metrics              {:constructor "ziggurat.prometheus.standalone/->Standalone"}
+            :metrics              {:constructor "ziggurat.dropwizard-metrics-wrapper/->DropwizardMetrics"}
             :prometheus           {:host    "localhost"
                                    :port    [8081 :int]
                                    :enabled [true :bool]

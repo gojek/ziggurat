@@ -1,10 +1,11 @@
 (ns ziggurat.messaging.consumer
   (:require [clojure.tools.logging :as log]
+            [clojure.string :as str]
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
             [taoensso.nippy :as nippy]
-            [ziggurat.config :refer [get-in-config rabbitmq-config]]
+            [ziggurat.config :refer [get-in-config rabbitmq-config ziggurat-config]]
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [connection]]
@@ -21,38 +22,40 @@
   [ch delivery-tag topic-entity payload]
   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
         exchange                (util/prefixed-queue-name topic-entity exchange-name)
-        te                      {:topic_name (name topic-entity)}]
+        tags {:topic-entity (name topic-entity)
+              :exchange (str/replace exchange (:app-name (ziggurat-config)) "app-name")}]
     (try
       (lb/publish ch exchange "" payload)
-      (metrics/increment-count ["rabbitmq-message" "publish-to-dead-set"] "success" te)
+      (metrics/prom-inc :ziggurat/rabbitmq-publish-count tags)
       (catch Exception e
         (log/error e "Exception was encountered while publishing to RabbitMQ")
-        (metrics/increment-count ["rabbitmq-message" "publish-to-dead-set"] "failure" te)
+        (metrics/prom-inc :ziggurat/rabbitmq-publish-failure-count tags)
         (reject-message ch delivery-tag)))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
   if `ack?` is true."
-  [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity]
+  [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity queue-name]
   (try
     (let [message (nippy/thaw payload)]
       (when ack?
         (lb/ack ch delivery-tag))
-      (metrics/increment-count ["rabbitmq-message" "conversion"] "success" {:topic_name (name topic-entity)})
+      (metrics/prom-inc :ziggurat/rabbitmq-read-count {:topic_name (name topic-entity) :queue (str/replace queue-name (:app-name (ziggurat-config)) "app-name")})
       message)
     (catch Exception e
       (report-error e "Error while decoding message, publishing to dead queue...")
       (publish-to-dead-set ch delivery-tag topic-entity payload)
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
+      (metrics/prom-inc :ziggurat/rabbitmq-read-failure-count {:topic_name (name topic-entity) :queue queue-name})
       nil)))
 
 (defn- ack-message
   [ch delivery-tag]
   (lb/ack ch delivery-tag))
 
-(defn process-message-from-queue [ch meta payload topic-entity processing-fn]
+(defn process-message-from-queue [ch meta payload topic-entity processing-fn queue-name]
   (let [delivery-tag    (:delivery-tag meta)
-        message-payload (convert-and-ack-message ch meta payload false topic-entity)]
+        message-payload (convert-and-ack-message ch meta payload false topic-entity queue-name)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
@@ -68,7 +71,7 @@
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
       (when (some? payload)
-        (convert-and-ack-message ch meta payload ack? topic-entity)))
+        (convert-and-ack-message ch meta payload ack? topic-entity queue-name)))
     (catch Exception e
       (report-error e "Error while consuming the dead set message")
       (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
@@ -104,17 +107,17 @@
               (let [queue-name     (construct-queue-name topic-entity channel)
                     [meta payload] (lb/get ch queue-name false)]
                 (when (some? payload)
-                  (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
+                  (process-message-from-queue ch meta payload topic-entity processing-fn queue-name))))))))
 
-(defn- message-handler [wrapped-mapper-fn topic-entity]
+(defn- message-handler [wrapped-mapper-fn topic-entity queue-name]
   (fn [ch meta ^bytes payload]
-    (clog/with-logging-context {:consumer-group topic-entity} (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn))))
+    (clog/with-logging-context {:consumer-group topic-entity} (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn queue-name))))
 
 (defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
   (lb/qos ch prefetch-count)
   (lcons/subscribe ch
                    queue-name
-                   (message-handler wrapped-mapper-fn topic-entity)
+                   (message-handler wrapped-mapper-fn topic-entity queue-name)
                    {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                  (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                     :handle-consume-ok-fn      (fn [consumer_tag]

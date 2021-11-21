@@ -247,7 +247,7 @@
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload]      (lb/get ch prefixed-queue-name false)
-                _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn)
+                _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn prefixed-queue-name)
                 consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
             (is (= consumed-message nil)))))))
   (testing "process-message function not process a message if convert-message returns nil"
@@ -259,12 +259,12 @@
                                      (reset! processing-fn-called true)))
             topic-entity-name    (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-redefs [consumer/convert-and-ack-message (fn [_ _ _ _ _] nil)]
+        (with-redefs [consumer/convert-and-ack-message (fn [_ _ _ _ _ _] nil)]
           (with-open [ch (lch/open connection)]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
-                  _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn)
+                  _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn prefixed-queue-name)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= false @processing-fn-called))
               (is (= consumed-message nil))))))))
@@ -282,7 +282,7 @@
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
-                  _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn)
+                  _                   (consumer/process-message-from-queue ch meta payload topic-entity processing-fn prefixed-queue-name)
                   consumed-message    (util/get-msg-from-dead-queue-without-ack topic-entity-name)]
               (is (= consumed-message message))
               (is @report-fn-called?))))))))
@@ -298,7 +298,7 @@
                                  (is (= exchange expected-exchange))
                                  (is (= freezed-message payload))
                                  (reset! is-publish-called? true))]
-        (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false topic-entity))
+        (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false topic-entity "queue-name"))
       (is (= @is-publish-called? true))))
   (testing "should call reject when both nippy/thaw and lb/publish throws an exception"
     (let [freezed-message   (nippy/freeze {:foo "bar"})
@@ -308,5 +308,5 @@
                                               (throw (Exception. "lb/publish exception")))
                     consumer/reject-message (fn [_ _]
                                               (reset! is-reject-called? true))]
-        (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false "default"))
+        (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false "default" "queue-name"))
       (is (= @is-reject-called? true)))))

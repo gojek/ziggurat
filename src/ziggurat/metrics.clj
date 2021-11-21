@@ -4,6 +4,8 @@
             [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
+            [ziggurat.prometheus.core :refer [reg]]
+            [iapetos.core :as prometheus]
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
@@ -126,6 +128,23 @@
 (defn multi-ns-report-histogram [nss time-val additional-tags]
   (doseq [ns nss]
     (report-histogram ns time-val additional-tags)))
+
+
+(defn- prom-update [op metric labels value]
+  (op @reg metric (-> labels
+                      (assoc :app (get (ziggurat-config) :app-name))
+                      (assoc :env (name (get (ziggurat-config) :env)))) value))
+
+(defn prom-observe [metric labels value]
+  (if (get-in (ziggurat-config) [:prometheus :enabled])
+    (prom-update prometheus/observe metric labels value)))
+
+(defn prom-inc
+  ([metric labels]
+   (prom-inc metric labels 1))
+  ([metric labels value]
+   (if (get-in (ziggurat-config) [:prometheus :enabled])
+     (prom-update prometheus/inc metric labels value))))
 
 (defn multi-ns-report-time
   "This function is an alias for `multi-ns-report-histogram`.

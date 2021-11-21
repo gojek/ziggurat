@@ -72,6 +72,7 @@
                metric-namespaces [service-name topic-entity-name default-namespace]
                multi-namespaces  [metric-namespaces [default-namespace]]]
            (report-error e (str "Couldn't parse the message with proto - " proto-class))
+           (metrics/prom-inc :ziggurat/kafka-msg-deserialize-failure-count additional-tags)
            (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
            nil)))
      message)))

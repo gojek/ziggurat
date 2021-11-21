@@ -1,6 +1,7 @@
 (ns ziggurat.messaging.producer
   (:require [clojure.tools.logging :as log]
             [langohr.basic :as lb]
+            [clojure.string :as str]
             [langohr.channel :as lch]
             [langohr.exchange :as le]
             [langohr.http :as lh]
@@ -102,27 +103,30 @@
       props)))
 
 (defn- handle-network-exception
-  [e message-payload]
+  [e message-payload tags]
   (log/error e "Exception was encountered while publishing to RabbitMQ")
   (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
+  (metrics/prom-inc :ziggurat/rabbitmq-publish-failure-count tags)
   true)
 
 (defn- publish-internal
   [exchange message-payload expiration]
-  (try
-    (with-open [ch (lch/open connection)] ;; it opens a connection everytime it publishes?
-      (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
-                  (properties-for-publish expiration (:headers message-payload))))
-    (metrics/increment-count ["rabbitmq" "publish"] "success" {:topic-entity (name (:topic-entity message-payload))})
-    false
-    (catch AlreadyClosedException e
-      (handle-network-exception e message-payload))
-    (catch IOException e
-      (handle-network-exception e message-payload))
-    (catch Exception e
-      (log/error e "Exception was encountered while publishing to RabbitMQ")
-      (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})
-      false)))
+  (let [tags {:topic-entity (name (:topic-entity message-payload))
+              :exchange (str/replace exchange (:app-name (ziggurat-config)) "app-name")}]
+    (metrics/prom-inc :ziggurat/rabbitmq-publish-count tags)
+    (try
+      (with-open [ch (lch/open connection)] ;; it opens a connection everytime it publishes?
+        (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
+                    (properties-for-publish expiration (:headers message-payload))))
+      false
+      (catch AlreadyClosedException e
+        (handle-network-exception e message-payload tags))
+      (catch IOException e
+        (handle-network-exception e message-payload tags))
+      (catch Exception e
+        (log/error e "Exception was encountered while publishing to RabbitMQ")
+        (metrics/prom-inc :ziggurat/rabbitmq-publish-failure-count tags)
+        false))))
 
 (defn publish
   ([exchange message-payload]

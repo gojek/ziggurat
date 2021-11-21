@@ -25,6 +25,7 @@
                                                        :username        "guest"
                                                        :password        "guest"
                                                        :channel-timeout 2000}
+                                :prometheus           {:enabled false}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}
                                 :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"

@@ -49,6 +49,8 @@
                   multi-execution-time-namespaces [(conj base-metric-namespaces execution-time-namespace)
                                                    [execution-time-namespace]]]
               (metrics/multi-ns-report-histogram multi-execution-time-namespaces time-val additional-tags)
+              (metrics/prom-inc :ziggurat/msg-processed-count (assoc additional-tags :code (name return-code)))
+              (metrics/prom-observe :ziggurat/handler-fn-execution-time additional-tags time-val)
               (case return-code
                 :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
                 :retry (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
@@ -63,6 +65,7 @@
             (catch Throwable e
               (producer/retry message-payload)
               (report-error e (str "Actor execution failed for " topic-entity-name))
+              (metrics/prom-inc :ziggurat/msg-processed-count (assoc additional-tags :code "exception"))
               (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags))))))))
 
 (defn channel-mapper-func [user-handler-fn channel]
@@ -93,6 +96,8 @@
                   multi-execution-time-namespace [(conj base-metric-namespaces execution-time-namespace)
                                                   [execution-time-namespace]]]
               (metrics/multi-ns-report-histogram multi-execution-time-namespace time-val additional-tags)
+              (metrics/prom-inc :ziggurat/msg-processed-count (assoc additional-tags :code (name return-code)))
+              (metrics/prom-observe :ziggurat/handler-fn-execution-time additional-tags time-val)
               (case return-code
                 :success (metrics/multi-ns-increment-count multi-message-processing-namespaces success-metric additional-tags)
                 :retry (do (metrics/multi-ns-increment-count multi-message-processing-namespaces retry-metric additional-tags)
@@ -105,6 +110,7 @@
             (catch Throwable e
               (producer/retry-for-channel message-payload channel)
               (report-error e (str "Channel execution failed for " topic-entity-name " and for channel " channel-name))
+              (metrics/prom-inc :ziggurat/msg-processed-count (assoc additional-tags :code "exception"))
               (metrics/multi-ns-increment-count multi-message-processing-namespaces failure-metric additional-tags))))))))
 
 (defrecord MessagePayload [message topic-entity])

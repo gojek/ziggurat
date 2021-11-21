@@ -42,6 +42,7 @@
           request-uri       (:uri request)
           response-status   (:status response)]
       (metrics/increment-count ["http-server" "requests-served"] "count" {:request-uri request-uri :response-status (str response-status)})
+      (metrics/prom-inc :ziggurat/http-metrics {:request-uri request-uri :response-status (str response-status)})
       response)))
 
 (defn- swagger-enabled? []

@@ -20,6 +20,7 @@
             metric-namespaces [service-name topic-entity default-namespace]
             multi-namespaces  [metric-namespaces [default-namespace]]]
         (report-error e (str "Could not parse JSON message " message))
+        (metrics/prom-inc :ziggurat/json-parse-failure-count additional-tags)
         (metrics/multi-ns-increment-count multi-namespaces "failed" additional-tags)
         nil))))
 

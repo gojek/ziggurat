@@ -18,9 +18,16 @@
   (let [topic-entity-tag {:topic-entity (name topic-entity)}]
     (metrics/increment-count batch-consumption-metric-ns "total" batch-size topic-entity-tag)
     (metrics/increment-count batch-consumption-metric-ns "success" success-count topic-entity-tag)
+    (metrics/prom-inc :ziggurat/msg-processed-count {:topic-name topic-entity :code "success"} success-count)
+
     (metrics/increment-count batch-consumption-metric-ns "skip" skip-count topic-entity-tag)
+    (metrics/prom-inc :ziggurat/msg-processed-count {:topic-name topic-entity :code "retry"} skip-count)
+
     (metrics/increment-count batch-consumption-metric-ns "retry" retry-count topic-entity-tag)
-    (metrics/report-histogram (conj batch-consumption-metric-ns "execution-time") time-taken-in-millis topic-entity-tag)))
+    (metrics/prom-inc :ziggurat/msg-processed-count {:topic-name topic-entity :code "skip"} retry-count)
+
+    (metrics/report-histogram (conj batch-consumption-metric-ns "execution-time") time-taken-in-millis topic-entity-tag)
+    (metrics/prom-observe :ziggurat/handler-fn-batch-execution-time {:topic-name topic-entity} time-taken-in-millis)))
 
 (defn- retry
   ([batch-payload]
@@ -66,10 +73,9 @@
       (catch InvalidReturnTypeException e
         (throw e))
       (catch Exception e
-        (do
-          (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})
-          (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
-          (retry batch-payload))))))
+        (metrics/increment-count batch-consumption-metric-ns "exception" batch-size {:topic-entity (name topic-entity)})
+        (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
+        (retry batch-payload)))))
 
 (defn- create-batch-payload
   [records topic-entity]
@@ -90,6 +96,7 @@
         (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
       (catch Exception e
         (log/errorf e "Exception while polling for messages for: %s" topic-entity))
-      (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
-                   (.close consumer))))))
-
+      (finally
+        (log/info "Closing the Kafka Consumer for: " topic-entity)
+        (metrics/prom-inc :ziggurat/polling-for-batch-failure-count {:topic-name topic-entity})
+        (.close consumer)))))
