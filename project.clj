@@ -1,4 +1,8 @@
-(defproject tech.gojek/ziggurat "2.12.7"
+(require 'cemerick.pomegranate.aether)
+(cemerick.pomegranate.aether/register-wagon-factory!
+  "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
+
+(defproject tech.gojek/ziggurat "2.12.8"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -18,8 +22,8 @@
                  [mount "0.1.10"]
                  [org.apache.httpcomponents/fluent-hc "4.5.4"]
                  [org.apache.kafka/kafka-streams "1.1.1" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                 [org.apache.logging.log4j/log4j-core "2.7"]
-                 [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]
+                 [org.apache.logging.log4j/log4j-core "2.16.0"]
+                 [org.apache.logging.log4j/log4j-slf4j-impl "2.16.0"]
                  [org.clojure/clojure "1.10.0"]
                  [org.clojure/data.json "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
@@ -58,8 +62,6 @@
                                   [lein-cloverage "1.0.13"]
                                   [lein-githooks "0.1.0"]
                                   [lein-kibit "0.1.6"]]
-                       :githooks {:auto-install true
-                                  :pre-commit   ["lein cljfmt check && lein kibit"]
-                                  :pre-push     ["lein test"]}}
+                       :githooks {:auto-install true}}
              :1.9     {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.8     {:dependencies [[org.clojure/clojure "1.8.0"]]}})

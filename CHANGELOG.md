@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file. This change
 
 ## Unreleased Changes
 
+## 2.12.8 - 2021-12-15
+- Updates log4j to `2.16.0` which fixes this [vulnerability](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-45046)
+
 ## 2.12.7 - 2019-12-20
 - Reverting the alpha feature exponential backoff
 
