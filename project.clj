@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject tech.gojek/ziggurat "4.5.0"
+(defproject tech.gojek/ziggurat "4.5.1"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -54,7 +54,7 @@
                  [cambium/cambium.core "1.1.0"]
                  [cambium/cambium.codec-cheshire "1.0.0"]
                  [cambium/cambium.logback.json "0.4.4"]
-                 [ch.qos.logback/logback-classic "1.2.3"]
+                 [ch.qos.logback/logback-classic "1.2.9"]
                  [ch.qos.logback.contrib/logback-json-classic "0.1.5"]
                  [ch.qos.logback.contrib/logback-jackson "0.1.5"]
                  [net.logstash.logback/logstash-logback-encoder "6.6"]]
