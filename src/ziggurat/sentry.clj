@@ -13,21 +13,26 @@
                              {:sync?    false
                               :env      (:env (ziggurat-config))
                               :app-name (:app-name (ziggurat-config))})]
-    (log/info "Initialising sentry reporter with config " {:config sentry-config})
+    (log/info "[Deprecated] Initialising sentry reporter with config " {:config sentry-config})
     (sentry/create-reporter sentry-config)))
 
 (defstate sentry-reporter
-  :start (create-sentry-reporter)
+  "Sentry has been deprecated"
+  :start (do
+           (create-sentry-reporter))
   :stop (when (and (-> (ziggurat-config) :sentry :enabled) sentry-reporter)
           (log/info "Shutting down sentry reporter")
           (sentry/shutdown-reporter sentry-reporter)))
 
-(defmacro report-error
+(defmacro ^:deprecated report-error
   "Logs an exception and reports it to Sentry.
   Create an exception using ex-info if you don't have an exception but
   still want to report to Sentry."
   [^Throwable error & msgs]
-  `(sentry/report-error sentry-reporter ~error ~@msgs))
+  `(do
+     (log/warn "Sentry has been deprecated..")
+     (sentry/report-error sentry-reporter ~error ~@msgs)))
 
-(defn -reportError [^Throwable error msg]
+(defn ^:deprecated -reportError [^Throwable error msg]
+  "Sentry has been deprecated"
   (report-error error msg))
