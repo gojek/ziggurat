@@ -432,6 +432,9 @@ JAEGER_AGENT_HOST: "localhost"
 JAEGER_AGENT_PORT: 6831
 ```
 
+## Deprecation Notice
+* Sentry has been deprecated. 
+
 ## Configuration
 
 As of Ziggurat version 3.13.0, all the official Kafka configs Kafka configurations for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html), [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html) and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html) are supported.
