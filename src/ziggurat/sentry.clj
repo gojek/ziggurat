@@ -13,7 +13,7 @@
                              {:sync?    false
                               :env      (:env (ziggurat-config))
                               :app-name (:app-name (ziggurat-config))})]
-    (log/info "[Deprecated] Initialising sentry reporter with config " {:config sentry-config})
+    (log/warn "[Deprecated] Initialising sentry reporter with config " {:config sentry-config})
     (sentry/create-reporter sentry-config)))
 
 (defstate sentry-reporter
