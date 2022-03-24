@@ -25,5 +25,5 @@
   "Deletes n number of messages from dead queue"
   [count-of-message topic-entity channel]
   (log/debugf "Deleting %d number of messages from dead-letter-queue for topic [%s] and channel [%s]", count-of-message, topic-entity, channel)
-  (consumer/process-dead-set-messages topic-entity channel count-of-message (fn [message-payload])))
+  (consumer/delete-dead-set-messages topic-entity channel count-of-message))
 
