@@ -102,6 +102,16 @@
                 (when (some? payload)
                   (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
 
+
+(defn delete-dead-set-messages
+  "This method deletes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and channel
+  `channel`."
+  [topic-entity channel count]
+  (with-open [ch (lch/open connection)]
+    (let [queue-name (construct-queue-name topic-entity channel)]
+      (doall (for [_ (range count)]
+               (lb/get ch queue-name true))))))
+
 (defn- message-handler [wrapped-mapper-fn topic-entity]
   (fn [ch meta ^bytes payload]
     (clog/with-logging-context {:consumer-group topic-entity} (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn))))
