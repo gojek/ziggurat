@@ -55,11 +55,18 @@
   (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]
     (testing "it deletes messages for a specified count and topic-entity"
       (fix/with-queues {topic-entity {:handler-fn (constantly nil)}}
-                       (let [count 5]
-                         (doseq [_ (range count)]
-                           (producer/publish-to-dead-queue message-payload))
-                         (consumer/delete-dead-set-messages topic-entity nil count)
-                         (is (empty? (consumer/get-dead-set-messages topic-entity nil count))))))))
+        (let [count 5]
+          (doseq [_ (range count)]
+            (producer/publish-to-dead-queue message-payload))
+          (consumer/delete-dead-set-messages topic-entity nil count)
+          (is (empty? (consumer/get-dead-set-messages topic-entity count))))))
+    (testing "it deletes messages for a specified count, topic-entity and channel"
+      (fix/with-queues {topic-entity {:handler-fn (constantly nil) :channel-1 (constantly nil)}}
+        (let [count 5]
+          (doseq [_ (range count)]
+            (producer/publish-to-channel-dead-queue :channel-1 message-payload))
+          (consumer/delete-dead-set-messages topic-entity :channel-1 count)
+          (is (empty? (consumer/get-dead-set-messages topic-entity :channel-1 count))))))))
 
 (deftest get-dead-set-messages-test
   (let [message-payload (assoc (gen-message-payload topic-entity) :retry-count 0)]

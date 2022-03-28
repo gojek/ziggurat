@@ -102,7 +102,6 @@
                 (when (some? payload)
                   (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
 
-
 (defn delete-dead-set-messages
   "This method deletes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and channel
   `channel`."
