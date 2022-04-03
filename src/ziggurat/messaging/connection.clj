@@ -34,21 +34,28 @@
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
-(defn- create-traced-connection [config]
-  (let [connection-factory (TracingConnectionFactory. tracer)]
-    (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
-    (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config))))))
+(defn create-connection
+  [config]
+  (rmq/connect (assoc config :hosts (util/list-of-hosts config))))
 
-(defn create-connection [config tracer-enabled]
-  (if tracer-enabled
-    (create-traced-connection config)
-    (rmq/connect (assoc config :hosts (util/list-of-hosts config)))))
+(defn- get-tracer-config []
+  (get-in (ziggurat-config) [:tracer :enabled]))
 
-(defn- start-connection []
+(defn- get-connection-config
+  [is-producer?]
+  (if is-producer?
+    (:rabbit-mq-connection (ziggurat-config))
+    (assoc (:rabbit-mq-connection (ziggurat-config))
+      :executor (Executors/newFixedThreadPool (total-thread-count)))))
+
+(defn- start-connection
+  [is-producer?]
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
     (try
-      (let [connection (create-connection (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))) (get-in (ziggurat-config) [:tracer :enabled]))]
+      (let
+        [connection (create-connection (get-connection-config is-producer?))]
+        (println "Connection created " connection)
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
@@ -61,11 +68,17 @@
 
 (defn- stop-connection [conn]
   (when (is-connection-required?)
-    (if (get-in (ziggurat-config) [:tracer :enabled])
-      (.close conn)
-      (rmq/close conn))
-    (log/info "Disconnected from RabbitMQ")))
+    (log/info "Closing the RabbitMQ connection")
+    (rmq/close conn)))
+
+(defstate consumer-connection
+          :start (do (log/info "Creating consumer connection")
+                     (start-connection false))
+          :stop (do (log/info "Stopping consume connection")
+                    (stop-connection consumer-connection)))
 
 (defstate connection
-  :start (start-connection)
-  :stop (stop-connection connection))
+  :start (do (log/info "Creating producer connection")
+             (start-connection true))
+  :stop (do (log/info "Stopping producer connection")
+            (stop-connection connection)))
