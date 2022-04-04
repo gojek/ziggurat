@@ -20,6 +20,7 @@ public class RabbitMQChannelFactory extends BasePooledObjectFactory<Channel> {
 
     @Override
     public Channel create() throws Exception {
+        log.info("Creating a new channel");
         return connection.createChannel();
     }
 
@@ -32,7 +33,6 @@ public class RabbitMQChannelFactory extends BasePooledObjectFactory<Channel> {
     public void destroyObject(PooledObject<Channel> p, DestroyMode destroyMode) throws Exception {
         super.destroyObject(p, destroyMode);
         log.info("Closing the channel with id: " + p.getObject().getChannelNumber());
-        System.out.println("Closing the channel with id: " + p.getObject().getChannelNumber());
         p.getObject().close();
     }
 }
