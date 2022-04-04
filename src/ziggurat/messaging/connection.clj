@@ -28,12 +28,11 @@
   (reduce (fn [sum [_ channel-config]]
             (+ sum (:worker-count channel-config))) 0 channels))
 
-(defn- total-thread-count []
+(defn total-thread-count []
   (let [stream-routes (:stream-router (ziggurat-config))
         worker-count  (get-in (ziggurat-config) [:jobs :instant :worker-count])]
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
-
 
 (defn- create-traced-connection [config]
   (let [connection-factory (TracingConnectionFactory. tracer)]
@@ -55,7 +54,7 @@
   (if is-producer?
     (:rabbit-mq-connection (ziggurat-config))
     (assoc (:rabbit-mq-connection (ziggurat-config))
-      :executor (Executors/newFixedThreadPool (total-thread-count)))))
+           :executor (Executors/newFixedThreadPool (total-thread-count)))))
 
 (defn- start-connection
   [is-producer?]
@@ -63,7 +62,7 @@
   (when (is-connection-required?)
     (try
       (let
-        [connection (create-connection (get-connection-config is-producer?) (get-tracer-config))]
+       [connection (create-connection (get-connection-config is-producer?) (get-tracer-config))]
         (println "Connection created " connection)
         (doto connection
           (.addShutdownListener
@@ -81,10 +80,10 @@
     (rmq/close conn)))
 
 (defstate consumer-connection
-          :start (do (log/info "Creating consumer connection")
-                     (start-connection false))
-          :stop (do (log/info "Stopping consume connection")
-                    (stop-connection consumer-connection)))
+  :start (do (log/info "Creating consumer connection")
+             (start-connection false))
+  :stop (do (log/info "Stopping consume connection")
+            (stop-connection consumer-connection)))
 
 (defstate connection
   :start (do (log/info "Creating producer connection")

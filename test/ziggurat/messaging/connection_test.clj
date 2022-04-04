@@ -21,10 +21,10 @@
                                     (reset! executor-present? true))
                                   (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
-                                                         :tracer {:enabled false}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
+                                                              :tracer {:enabled false}))]
         (-> (mount/only #{#'consumer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -41,10 +41,10 @@
                                     (reset! executor-present? true))
                                   (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
-                                                         :tracer {:enabled false}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
+                                                              :tracer {:enabled false}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -88,10 +88,10 @@
                                   (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                   (orig-rmq-connect provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
-                                                         :tracer {:enabled false}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
+                                                              :tracer {:enabled false}))]
         (-> (mount/only #{#'consumer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -149,7 +149,6 @@
             (mount/start))
         (mount/stop #'consumer-connection)
         (is (not @rmq-connect-called?)))))
-
 
   (testing "if retry is disabled and channels are present it should create connection"
     (let [rmq-connect-called? (atom false)
@@ -217,9 +216,9 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}))]
         (-> (mount/only #{#'consumer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -236,7 +235,7 @@
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled true}))]
+                                                              :retry {:enabled true}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -252,7 +251,7 @@
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -271,7 +270,7 @@
                                              (reset! create-connect-called? true)
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (-> (mount/only #{#'connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -287,10 +286,10 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {:channels {:channel-1 {:worker-count 5}
-                                                                                              :channel-2 {:worker-count 10}}}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {:channels {:channel-1 {:worker-count 5}
+                                                                                                   :channel-2 {:worker-count 10}}}}))]
         (-> (mount/only #{#'consumer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
@@ -305,9 +304,9 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default {}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default {}}))]
         (mount/start (mount/only [#'consumer-connection]))
         (mount/stop #'consumer-connection)
         (is (= @thread-count 4)))))
@@ -320,10 +319,10 @@
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :jobs {:instant {:worker-count 4}}
-                                                         :retry {:enabled true}
-                                                         :stream-router {:default   {:channels {:channel-1 {:worker-count 10}}}
-                                                                         :default-1 {:channels {:channel-1 {:worker-count 8}}}}))]
+                                                              :jobs {:instant {:worker-count 4}}
+                                                              :retry {:enabled true}
+                                                              :stream-router {:default   {:channels {:channel-1 {:worker-count 10}}}
+                                                                              :default-1 {:channels {:channel-1 {:worker-count 8}}}}))]
         (mount/start (mount/only [#'consumer-connection]))
         (mount/stop #'consumer-connection)
         (is (= @thread-count 26))))))

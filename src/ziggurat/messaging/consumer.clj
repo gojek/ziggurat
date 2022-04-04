@@ -5,6 +5,7 @@
             [langohr.consumers :as lcons]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [get-in-config rabbitmq-config]]
+            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.connection :refer [consumer-connection]]
@@ -18,14 +19,16 @@
   (lb/reject ch delivery-tag))
 
 (defn- publish-to-dead-set
-  [ch delivery-tag topic-entity payload]
-  (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        exchange                (util/prefixed-queue-name topic-entity exchange-name)]
+  [delivery-tag topic-entity payload]
+  (let [ch       (.borrowObject cpool/channel-pool)
+        {:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+        exchange (util/prefixed-queue-name topic-entity exchange-name)]
     (try
       (lb/publish ch exchange "" payload)
       (catch Exception e
         (log/error e "Exception was encountered while publishing to RabbitMQ")
-        (reject-message ch delivery-tag)))))
+        (reject-message ch delivery-tag))
+      (finally (.returnObject cpool/channel-pool)))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
@@ -38,7 +41,7 @@
       message)
     (catch Exception e
       (report-error e "Error while decoding message, publishing to dead queue...")
-      (publish-to-dead-set ch delivery-tag topic-entity payload)
+      (publish-to-dead-set delivery-tag topic-entity payload)
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
       nil)))
 
@@ -56,7 +59,7 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
-          (publish-to-dead-set ch delivery-tag topic-entity payload)
+          (publish-to-dead-set delivery-tag topic-entity payload)
           (report-error e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
 
@@ -97,7 +100,7 @@
   ([topic-entity channel count processing-fn]
    (with-open [ch (lch/open consumer-connection)]
      (doall (for [_ (range count)]
-              (let [queue-name     (construct-queue-name topic-entity channel)
+              (let [queue-name (construct-queue-name topic-entity channel)
                     [meta payload] (lb/get ch queue-name false)]
                 (when (some? payload)
                   (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
