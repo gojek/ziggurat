@@ -34,12 +34,21 @@
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
 
-(defn create-connection
-  [config]
-  (rmq/connect (assoc config :hosts (util/list-of-hosts config))))
+
+(defn- create-traced-connection [config]
+  (let [connection-factory (TracingConnectionFactory. tracer)]
+    (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
+    (if (some? (:executor config))
+      (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config))))
+      (.newConnection connection-factory ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config)))))))
 
 (defn- get-tracer-config []
   (get-in (ziggurat-config) [:tracer :enabled]))
+
+(defn create-connection [config tracer-enabled]
+  (if tracer-enabled
+    (create-traced-connection config)
+    (rmq/connect (assoc config :hosts (util/list-of-hosts config)))))
 
 (defn- get-connection-config
   [is-producer?]
@@ -54,7 +63,7 @@
   (when (is-connection-required?)
     (try
       (let
-        [connection (create-connection (get-connection-config is-producer?))]
+        [connection (create-connection (get-connection-config is-producer?) (get-tracer-config))]
         (println "Connection created " connection)
         (doto connection
           (.addShutdownListener

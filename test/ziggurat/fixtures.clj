@@ -6,7 +6,7 @@
             [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.kafka-consumer.executor-service :refer [thread-pool]]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [connection consumer-connection]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
@@ -119,7 +119,7 @@
     (mount-tracer)
 
     (->
-     (mount/only [#'connection])
+     (mount/only [#'connection #'consumer-connection])
      (mount/with-args {:stream-routes stream-routes})
      (mount/start))
     (f)
