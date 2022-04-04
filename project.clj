@@ -57,7 +57,8 @@
                  [ch.qos.logback/logback-classic "1.2.9"]
                  [ch.qos.logback.contrib/logback-json-classic "0.1.5"]
                  [ch.qos.logback.contrib/logback-jackson "0.1.5"]
-                 [net.logstash.logback/logstash-logback-encoder "6.6"]]
+                 [net.logstash.logback/logstash-logback-encoder "6.6"]
+                 [org.apache.commons/commons-pool2 "2.11.1"]]
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password
