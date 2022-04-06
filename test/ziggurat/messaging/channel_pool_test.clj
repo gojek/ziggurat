@@ -1,10 +1,8 @@
 (ns ziggurat.messaging.channel-pool-test
   (:require [clojure.test :refer :all]
-            [ziggurat.config :as zc]
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.fixtures :as fix]
-            [clojure.tools.logging :as log])
+            [ziggurat.fixtures :as fix])
   (:import (org.apache.commons.pool2.impl GenericObjectPoolConfig GenericObjectPool)
            (java.time Duration)
            (com.rabbitmq.client Channel)))

@@ -28,8 +28,11 @@ public class RabbitMQChannelFactory extends BasePooledObjectFactory<Channel> {
 
     @Override
     public boolean validateObject(PooledObject<Channel> p) {
-        super.validateObject(p);
-        return p.getObject().isOpen();
+        boolean open = p.getObject().isOpen();
+        if (!open) {
+            log.info("Channel is closed, invalidating channel with id " + p.getObject().getChannelNumber());
+        }
+        return open;
     }
 
     @Override
