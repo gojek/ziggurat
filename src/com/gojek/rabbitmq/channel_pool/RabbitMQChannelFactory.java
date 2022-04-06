@@ -20,14 +20,23 @@ public class RabbitMQChannelFactory extends BasePooledObjectFactory<Channel> {
 
     @Override
     public Channel create() throws Exception {
-        log.info("Creating a new channel");
-        return connection.createChannel();
+        Channel channel = connection.createChannel();
+        log.info("Created a new channel with id: " + channel.getChannelNumber());
+        return channel;
+    }
+
+
+    @Override
+    public boolean validateObject(PooledObject<Channel> p) {
+        super.validateObject(p);
+        return p.getObject().isOpen();
     }
 
     @Override
-    public PooledObject<Channel> wrap(Channel channel) {
-        return new DefaultPooledObject<Channel>(channel);
+    public PooledObject<Channel> wrap(Channel obj) {
+        return new DefaultPooledObject<>(obj);
     }
+
 
     @Override
     public void destroyObject(PooledObject<Channel> p, DestroyMode destroyMode) throws Exception {

@@ -7,6 +7,7 @@
             [ziggurat.config :as config]
             [ziggurat.kafka-consumer.executor-service :refer [thread-pool]]
             [ziggurat.messaging.connection :refer [connection consumer-connection]]
+            [ziggurat.messaging.channel_pool :refer [channel-pool]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
@@ -18,10 +19,10 @@
            (org.apache.kafka.clients.consumer ConsumerConfig)
            (org.apache.kafka.clients.producer ProducerConfig))
   (:gen-class
-   :methods [^{:static true} [mountConfig [] void]
-             ^{:static true} [mountProducer [] void]
-             ^{:static true} [unmountAll [] void]]
-   :name tech.gojek.ziggurat.internal.test.Fixtures))
+    :methods [^{:static true} [mountConfig [] void]
+              ^{:static true} [mountProducer [] void]
+              ^{:static true} [unmountAll [] void]]
+    :name tech.gojek.ziggurat.internal.test.Fixtures))
 
 (def test-config-file-name "config.test.edn")
 
@@ -63,6 +64,8 @@
   (mount/start (mount/only [#'metrics/statsd-reporter]))
   (f)
   (mount/stop #'metrics/statsd-reporter))
+
+
 
 (defn mount-tracer []
   (with-redefs [tracer/create-tracer (fn [] (MockTracer.))]
@@ -119,18 +122,18 @@
     (mount-tracer)
 
     (->
-     (mount/only [#'connection #'consumer-connection])
-     (mount/with-args {:stream-routes stream-routes})
-     (mount/start))
+      (mount/only [#'connection #'consumer-connection #'channel-pool])
+      (mount/with-args {:stream-routes stream-routes})
+      (mount/start))
     (f)
     (mount/stop)))
 
 (defn with-start-server* [stream-routes f]
   (mount-config)
   (->
-   (mount/only [#'server])
-   (mount/with-args {:stream-routes stream-routes})
-   (mount/start))
+    (mount/only [#'server])
+    (mount/with-args {:stream-routes stream-routes})
+    (mount/start))
   (f)
   (mount/stop))
 

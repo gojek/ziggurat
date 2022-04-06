@@ -28,7 +28,7 @@
       (catch Exception e
         (log/error e "Exception was encountered while publishing to RabbitMQ")
         (reject-message ch delivery-tag))
-      (finally (.returnObject cpool/channel-pool)))))
+      (finally (.returnObject cpool/channel-pool ch)))))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
