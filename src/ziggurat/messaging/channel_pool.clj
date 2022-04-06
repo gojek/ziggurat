@@ -39,7 +39,7 @@
     rmq-chan-pool))
 
 (defstate channel-pool
-          :start (do (log/info "Creating channel pool")
-                     (create-channel-pool c/connection))
-          :stop (do (log/info "Stopping channel pool")
-                    (.close channel-pool)))
+  :start (do (log/info "Creating channel pool")
+             (create-channel-pool c/connection))
+  :stop (do (log/info "Stopping channel pool")
+            (.close channel-pool)))

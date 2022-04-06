@@ -12,8 +12,6 @@
 (use-fixtures :once (join-fixtures [fix/mount-only-config
                                     fix/mount-config-with-tracer]))
 
-
-
 (deftest calc-total-threads-test
   (testing "it should calculate the total threads configured for RabbitMQ, Kafka streams and Batch consumers"
     (let [expected-count 44
