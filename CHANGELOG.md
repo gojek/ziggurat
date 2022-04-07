@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.5.3
+- Update logic of the deadset delete API to just read and ack messages and ignore content
+
 ## 4.5.2
 - Add deprecation warnings to sentry usage
 
