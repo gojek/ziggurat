@@ -127,8 +127,7 @@
         (finally (.returnObject cpool/channel-pool ch))))
     (catch Exception e
       (log/error "Exception occurred while borrowing a channel from the pool")
-      (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
-      true)))
+      (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))}))))
 
 (defn publish
   ([exchange message-payload]
