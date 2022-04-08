@@ -49,10 +49,15 @@
   (testing "it should invalidate a closed channel and return a new channel on borrow"
     (mount.core/start #'connection)
     (let [channel-pool ^GenericObjectPool (cpool/create-channel-pool connection)
+          _            (doto channel-pool
+                         (.setMaxTotal 1)
+                         (.setMinIdle 0)
+                         (.setMaxIdle 1))
           rmq-chan     ^Channel (.borrowObject channel-pool)
           _            (.close rmq-chan)
           _            (.returnObject channel-pool rmq-chan)
           rmq-chan-2   ^Channel (.borrowObject channel-pool)]
+      (is (not (.equals rmq-chan-2 rmq-chan)))
       (is (.isOpen rmq-chan-2)))))
 
 

@@ -11,8 +11,9 @@
             [ziggurat.messaging.connection :refer [connection is-connection-required?]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics])
-  (:import (com.rabbitmq.client AlreadyClosedException)
-           (java.io IOException)))
+  (:import (com.rabbitmq.client AlreadyClosedException Channel)
+           (java.io IOException)
+           (org.apache.commons.pool2.impl GenericObjectPool)))
 
 (def MAX_EXPONENTIAL_RETRIES 25)
 
@@ -108,6 +109,9 @@
   (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
   true)
 
+(defn return-to-pool [^GenericObjectPool pool ^Channel ch]
+  (.returnObject pool ch))
+
 (defn- publish-internal
   [exchange message-payload expiration]
   (try
@@ -124,7 +128,7 @@
           (log/error e "Exception was encountered while publishing to RabbitMQ")
           (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})
           false)
-        (finally (.returnObject cpool/channel-pool ch))))
+        (finally (return-to-pool cpool/channel-pool ch))))
     (catch Exception e
       (log/error "Exception occurred while borrowing a channel from the pool")
       (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))}))))

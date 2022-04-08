@@ -15,15 +15,16 @@
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.nrepl-server :as nrepl-server]
-            [ziggurat.producer :as producer :refer [kafka-producers]]
+            [ziggurat.producer :refer [kafka-producers]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util])
   (:gen-class
-   :methods [^{:static true} [init [java.util.Map] void]]
-   :name tech.gojek.ziggurat.internal.Init))
+    :methods [^{:static true} [init [java.util.Map] void]]
+    :name tech.gojek.ziggurat.internal.Init)
+  (:import (clojure.lang ExceptionInfo)))
 
 (defn- event-routes [args]
   (merge (:stream-routes args) (:batch-routes args)))
