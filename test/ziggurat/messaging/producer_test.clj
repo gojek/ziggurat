@@ -628,14 +628,3 @@
                                                               :rabbit-mq {:delay {:queue-timeout-ms 5000}}))]
         ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
         (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
-
-;(testing "the channel borrowed from the pool should always be returned back to the pool once the publish lb/publish returns"
-;  (let [call-count          (atom 0)
-;        expected-call-count 10]
-;    (with-redefs [producer/return-to-pool (fn [_ _] (swap! call-count inc))
-;                  lb/publish              (fn [_ _ _ _ _])]
-;      (let [futures (take expected-call-count (repeatedly #(future (producer/publish "pool-test" {:a "hello world"}))))]
-;        (doall futures)
-;        (map #(deref %) futures)))
-;    (is (= @call-count expected-call-count))))
-
