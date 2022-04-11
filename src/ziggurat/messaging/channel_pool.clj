@@ -38,8 +38,11 @@
         rmq-chan-pool (GenericObjectPool. (RabbitMQChannelFactory. connection) pool-config)]
     rmq-chan-pool))
 
+(defn destroy-channel-pool [channel-pool]
+  (.close channel-pool))
+
 (defstate channel-pool
   :start (do (log/info "Creating channel pool")
              (create-channel-pool c/connection))
   :stop (do (log/info "Stopping channel pool")
-            (.close channel-pool)))
+            (destroy-channel-pool channel-pool)))

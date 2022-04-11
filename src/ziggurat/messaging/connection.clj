@@ -31,7 +31,7 @@
 (defn total-thread-count []
   (let [stream-routes                (:stream-router (ziggurat-config))
         batch-route-count            (count (:batch-routes (ziggurat-config)))
-        worker-count                 (get-in (ziggurat-config) [:jobs :instant :worker-count])
+        worker-count                 (get-in (ziggurat-config) [:jobs :instant :worker-count] 0)
         batch-routes-instant-workers (* batch-route-count worker-count)]
     (reduce (fn [sum [_ route-config]]
               (+ sum (channel-threads (:channels route-config)) worker-count))

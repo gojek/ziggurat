@@ -8,6 +8,7 @@
             [mount.core :as mount]
             [schema.core :as s]
             [ziggurat.config :refer [ziggurat-config] :as config]
+            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
             [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
@@ -38,7 +39,9 @@
        (mount/start))))
 
 (defn- start-rabbitmq-connection [args]
-  (start* #{#'messaging-connection/connection} args))
+  (start* #{#'messaging-connection/consumer-connection} args)
+  (start* #{#'messaging-connection/connection} args)
+  (start* #{#'cpool/channel-pool} args))
 
 (defn- start-rabbitmq-consumers [args]
   (start-rabbitmq-connection args)
@@ -77,7 +80,9 @@
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
-  (mount/stop #'connection))
+  (mount/stop #'cpool/channel-pool)
+  (mount/stop #'connection)
+  (mount/stop #'messaging-connection/consumer-connection))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))

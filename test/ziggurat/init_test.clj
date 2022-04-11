@@ -6,6 +6,7 @@
             [ziggurat.messaging.connection :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
+            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.streams :as streams]
             [ziggurat.server.test-utils :as tu]
             [ziggurat.tracer :as tracer]
@@ -23,16 +24,18 @@
 (deftest start-calls-actor-start-fn-test
   (testing "The actor start fn starts before the ziggurat state and can read config"
     (let [result (atom 1)]
-      (with-redefs [streams/start-streams (fn [_ _] (reset! result (* @result 2)))
-                    streams/stop-streams  (constantly nil)
+      (with-redefs [streams/start-streams      (fn [_ _] (reset! result (* @result 2)))
+                    streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
-                    rmqc/start-connection (fn [_] (reset! result (* @result 2)))
-                    rmqc/stop-connection  (constantly nil)
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+                    cpool/create-channel-pool  (fn [_] (reset! result (* @result 3)))
+                    rmqc/start-connection      (fn [_] (reset! result (* @result 2)))
+                    rmqc/stop-connection       (constantly nil)
+                    cpool/destroy-channel-pool (constantly nil)
+                    tracer/create-tracer       (fn [] (MockTracer.))]
         (with-config
           (do (init/start #(reset! result (+ @result 3)) {} {} [] nil)
               (init/stop #() nil)
-              (is (= 16 @result))))))))
+              (is (= 96 @result))))))))
 
 (deftest stop-calls-actor-stop-fn-test
   (testing "The actor stop fn stops before the ziggurat state"
@@ -55,7 +58,7 @@
         (with-config
           (do (init/start #() {} {} [] nil)
               (init/stop #(reset! result (+ @result 3)) nil)
-              (is (= 5 @result))))))))
+              (is (= 7 @result))))))))
 
 (deftest start-calls-make-queues-with-both-streams-and-batch-routes-test
   (testing "Start calls make queues with both streams and batch routes"
