@@ -39,9 +39,11 @@
        (mount/start))))
 
 (defn- start-rabbitmq-connection [args]
-  (start* #{#'messaging-connection/consumer-connection} args)
-  (start* #{#'messaging-connection/connection} args)
-  (start* #{#'cpool/channel-pool} args))
+  (-> (mount/only #{#'messaging-connection/consumer-connection
+                    #'messaging-connection/connection
+                    #'cpool/channel-pool})
+      (mount/with-args args)
+      (mount/start)))
 
 (defn- start-rabbitmq-consumers [args]
   (start-rabbitmq-connection args)
@@ -80,9 +82,10 @@
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
-  (mount/stop #'cpool/channel-pool)
-  (mount/stop #'connection)
-  (mount/stop #'messaging-connection/consumer-connection))
+  (-> (mount/only #{#'connection
+                    #'cpool/channel-pool
+                    #'messaging-connection/consumer-connection})
+      (mount/stop)))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))
