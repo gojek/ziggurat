@@ -12,7 +12,7 @@
              ^{:static true} [getIn [java.lang.Iterable] Object]]
    :name tech.gojek.ziggurat.internal.Config))
 
-(def config-file "config.test.edn")
+(def config-file "config.edn")
 
 (def default-config {:ziggurat {:nrepl-server         {:port 70171}
                                 :statsd               {:port    8125
