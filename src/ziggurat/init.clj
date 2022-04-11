@@ -22,8 +22,8 @@
             [ziggurat.tracer :as tracer]
             [ziggurat.util.java-util :as util])
   (:gen-class
-    :methods [^{:static true} [init [java.util.Map] void]]
-    :name tech.gojek.ziggurat.internal.Init)
+   :methods [^{:static true} [init [java.util.Map] void]]
+   :name tech.gojek.ziggurat.internal.Init)
   (:import (clojure.lang ExceptionInfo)))
 
 (defn- event-routes [args]
@@ -226,8 +226,8 @@
       (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in init args")))
     (cond-> base-modes
       (some? stream-routes) (conj :stream-worker)
-      (some? batch-routes)  (conj :batch-worker)
-      (some? actor-routes)  (conj :api-server))))
+      (some? batch-routes) (conj :batch-worker)
+      (some? actor-routes) (conj :api-server))))
 
 (defn validate-modes [modes stream-routes batch-routes actor-routes]
   (let [derived-modes (if-not (empty? modes)

@@ -70,14 +70,14 @@
 
   (testing "message in channel will be retried in delay queue with suffix 1 if message retry-count exceeds retry count in channel config"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router
-                                                {:default
-                                                 {:channels
-                                                  {:exponential-retry
-                                                   {:retry {:count            5
-                                                            :enabled          true
-                                                            :type             :exponential
-                                                            :queue-timeout-ms 1000}}}}}))]
+                                                     :stream-router
+                                                     {:default
+                                                      {:channels
+                                                       {:exponential-retry
+                                                        {:retry {:count            5
+                                                                 :enabled          true
+                                                                 :type             :exponential
+                                                                 :queue-timeout-ms 1000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn        #(constantly nil)
                    :exponential-retry #(constantly nil)}}
@@ -90,9 +90,9 @@
 
   (testing "message in channel will be retried with linear queue timeout"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router {:default {:channels {:linear-retry {:retry {:count            5
-                                                                                                            :enabled          true
-                                                                                                            :queue-timeout-ms 2000}}}}}))]
+                                                     :stream-router {:default {:channels {:linear-retry {:retry {:count            5
+                                                                                                                 :enabled          true
+                                                                                                                 :queue-timeout-ms 2000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn   #(constantly nil)
                    :linear-retry #(constantly nil)}}
@@ -112,10 +112,10 @@
 
   (testing "message in channel will be retried with exponential timeout calculated from channel specific queue-timeout-ms value"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :stream-router {:default {:channels {:exponential-retry {:retry {:count            5
-                                                                                                                 :enabled          true
-                                                                                                                 :type             :exponential
-                                                                                                                 :queue-timeout-ms 1000}}}}}))]
+                                                     :stream-router {:default {:channels {:exponential-retry {:retry {:count            5
+                                                                                                                      :enabled          true
+                                                                                                                      :type             :exponential
+                                                                                                                      :queue-timeout-ms 1000}}}}}))]
       (fix/with-queues
         {:default {:handler-fn        #(constantly nil)
                    :exponential-retry #(constantly nil)}}
@@ -231,9 +231,9 @@
 (deftest retry-with-exponential-backoff-test
   (testing "message will publish to delay with retry count queue when exponential backoff enabled"
     (with-redefs [ziggurat-config (constantly (assoc (ziggurat-config)
-                                                :retry {:count   5
-                                                        :enabled true
-                                                        :type    :exponential}))]
+                                                     :retry {:count   5
+                                                             :enabled true
+                                                             :type    :exponential}))]
       (testing "message with no retry count will publish to delay queue with suffix 1"
         (fix/with-queues
           {:default {:handler-fn #(constantly nil)}}
@@ -273,8 +273,8 @@
   (let [ziggurat-config (ziggurat-config)]
     (testing "When retries are enabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled true
-                                                                 :type    :linear}))]
+                                                              :retry {:enabled true
+                                                                      :type    :linear}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -435,7 +435,7 @@
 
     (testing "when retries are disabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}))]
+                                                              :retry {:enabled false}))]
         (testing "it does not create queues when stream-routes are not passed"
           (let [counter (atom 0)]
             (with-redefs [producer/create-and-bind-queue (fn
@@ -476,8 +476,8 @@
 
     (testing "when retries are disabled"
       (with-redefs [config/ziggurat-config (constantly (assoc ziggurat-config
-                                                         :retry {:enabled false}
-                                                         :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
+                                                              :retry {:enabled false}
+                                                              :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
         (testing "it creates instant queues with topic entity for channels only"
           (with-open [ch (lch/open connection)]
@@ -582,50 +582,50 @@
     (testing "when retries are enabled"
       (let [channel :linear-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                           :stream-router {topic-entity {:channels {channel {:retry {:count            5
-                                                                                                                     :enabled          true
-                                                                                                                     :queue-timeout-ms 2000}}}}}))]
+                                                                :stream-router {topic-entity {:channels {channel {:retry {:count            5
+                                                                                                                          :enabled          true
+                                                                                                                          :queue-timeout-ms 2000}}}}}))]
           (is (= 2000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
     (testing "when exponential backoff are enabled and channel queue timeout defined"
       (let [channel :exponential-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                           :stream-router {topic-entity {:channels {channel {:retry {:count            5
-                                                                                                                     :enabled          true
-                                                                                                                     :type             :exponential
-                                                                                                                     :queue-timeout-ms 1000}}}}}))]
+                                                                :stream-router {topic-entity {:channels {channel {:retry {:count            5
+                                                                                                                          :enabled          true
+                                                                                                                          :type             :exponential
+                                                                                                                          :queue-timeout-ms 1000}}}}}))]
           (is (= 7000 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))
 
     (testing "when exponential backoff are enabled and channel queue timeout is not defined"
       (let [channel :exponential-retry]
         (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                           :stream-router {topic-entity {:channels {channel {:retry {:count   5
-                                                                                                                     :enabled true
-                                                                                                                     :type    :exponential}}}}}))]
+                                                                :stream-router {topic-entity {:channels {channel {:retry {:count   5
+                                                                                                                          :enabled true
+                                                                                                                          :type    :exponential}}}}}))]
           (is (= 700 (producer/get-channel-queue-timeout-ms topic-entity channel message))))))))
 
 (deftest get-queue-timeout-ms-test
   (testing "when exponential retries are enabled"
     (let [message (assoc message-payload :retry-count 2)]
       (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                         :retry {:enabled true
-                                                                 :count   5
-                                                                 :type    :exponential}))]
+                                                              :retry {:enabled true
+                                                                      :count   5
+                                                                      :type    :exponential}))]
         (is (= 700 (producer/get-queue-timeout-ms message))))))
   (testing "when exponential retries are enabled and retry-count exceeds 25, the max possible timeouts are calculated using 25 as the retry-count"
     (let [message (assoc message-payload :retry-count 20)]
       (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                         :retry {:enabled true
-                                                                 :count   50
-                                                                 :type    :exponential}))]
+                                                              :retry {:enabled true
+                                                                      :count   50
+                                                                      :type    :exponential}))]
         ;; For 25 max exponential retries, exponent comes to 25-20=5, which makes timeout = 100*(2^5-1) = 3100
         (is (= 3100 (producer/get-queue-timeout-ms message))))))
   (testing "when exponential retries are enabled with total retries as 25 and if the message has already been retried 24 times, then the queue-timeout is calculated without any failure"
     (let [message (assoc message-payload :retry-count 1)]
       (with-redefs [config/ziggurat-config (constantly (assoc (config/ziggurat-config)
-                                                         :retry {:enabled true
-                                                                 :count   25
-                                                                 :type    :exponential}
-                                                         :rabbit-mq {:delay {:queue-timeout-ms 5000}}))]
+                                                              :retry {:enabled true
+                                                                      :count   25
+                                                                      :type    :exponential}
+                                                              :rabbit-mq {:delay {:queue-timeout-ms 5000}}))]
         ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
         (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
 

@@ -82,8 +82,7 @@
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
       (with-redefs [rmq/connect            (fn [provided-config]
-                                             (println "Tracer Disabled ********** " provided-config)
-                                             (println "Tracer Disabled ********** " (.getCorePoolSize (:executor provided-config)))
+                                             (.getCorePoolSize (:executor provided-config))
                                              (reset! rmq-connect-called? true)
                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
                                              (orig-rmq-connect provided-config))

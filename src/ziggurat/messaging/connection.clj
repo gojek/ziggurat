@@ -61,6 +61,8 @@
            :executor (Executors/newFixedThreadPool (total-thread-count)))))
 
 (defn- start-connection
+  "is-producer? - defines whether the connection is being created for producers or consumers
+  producer connections do not require the :executor option"
   [is-producer?]
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
