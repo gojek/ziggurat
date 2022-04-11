@@ -56,9 +56,11 @@
 (defn- get-connection-config
   [is-producer?]
   (if is-producer?
-    (:rabbit-mq-connection (ziggurat-config))
     (assoc (:rabbit-mq-connection (ziggurat-config))
-           :executor (Executors/newFixedThreadPool (total-thread-count)))))
+           :connection-name "producer")
+    (assoc (:rabbit-mq-connection (ziggurat-config))
+           :executor (Executors/newFixedThreadPool (total-thread-count))
+           :connection-name "consumer")))
 
 (defn- start-connection
   "is-producer? - defines whether the connection is being created for producers or consumers
