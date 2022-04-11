@@ -78,12 +78,12 @@
    (try
      (let [props (if dead-letter-exchange
                    {"x-dead-letter-exchange" dead-letter-exchange}
-                   {})
-           ch    (lch/open connection)]
-       (create-queue queue-name props ch)
-       (declare-exchange ch exchange-name)
-       (bind-queue-to-exchange ch queue-name exchange-name)
-       (set-ha-policy queue-name exchange-name (get-in config [:ziggurat :rabbit-mq-connection])))
+                   {})]
+       (with-open [ch (lch/open connection)]
+         (create-queue queue-name props ch)
+         (declare-exchange ch exchange-name)
+         (bind-queue-to-exchange ch queue-name exchange-name)
+         (set-ha-policy queue-name exchange-name (get-in config [:ziggurat :rabbit-mq-connection]))))
      (catch Exception e
        (log/error e "Error while declaring RabbitMQ queues")
        (throw e)))))
