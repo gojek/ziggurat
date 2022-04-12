@@ -11,7 +11,7 @@
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
+            [ziggurat.messaging.connection :as messaging-connection :refer [producer-connection, consumer-connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
@@ -40,7 +40,7 @@
 
 (defn- start-rabbitmq-connection [args]
   (-> (mount/only #{#'messaging-connection/consumer-connection
-                    #'messaging-connection/connection
+                    #'messaging-connection/producer-connection
                     #'cpool/channel-pool})
       (mount/with-args args)
       (mount/start)))
@@ -82,7 +82,7 @@
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
-  (-> (mount/only #{#'connection
+  (-> (mount/only #{#'producer-connection
                     #'cpool/channel-pool
                     #'messaging-connection/consumer-connection})
       (mount/stop)))
@@ -158,7 +158,8 @@
 (defn stop-common-states []
   (mount/stop #'config/config
               #'metrics/statsd-reporter
-              #'connection
+              #'producer-connection
+              #'consumer-connection
               #'nrepl-server/server
               #'tracer/tracer))
 

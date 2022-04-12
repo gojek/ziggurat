@@ -4,7 +4,7 @@
             [langohr.core :as rmq]
             [mount.core :as mount]
             [ziggurat.config :as config]
-            [ziggurat.messaging.connection :as mc :refer [connection, consumer-connection, create-connection]]
+            [ziggurat.messaging.connection :as mc :refer [producer-connection, consumer-connection, create-connection]]
             [ziggurat.util.error :refer [report-error]]))
 
 (use-fixtures :once fix/mount-config-with-tracer)
@@ -45,10 +45,10 @@
                                                               :retry {:enabled true}
                                                               :stream-router {:default {:channels {:channel-1 {:worker-count 10}}}}
                                                               :tracer {:enabled false}))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is (false? @executor-present?))))))
 
 (deftest start-connection-test-with-tracer-disabled
@@ -109,10 +109,10 @@
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled true}
                                                               :tracer {:enabled false}))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is @rmq-connect-called?))))
 
   (testing "if retry is disabled and channels are not present it should not create connection"
@@ -126,10 +126,10 @@
                     config/ziggurat-config (constantly (-> ziggurat-config
                                                            (assoc :retry {:enabled false})
                                                            (dissoc :tracer)))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is (not @rmq-connect-called?)))))
 
   (testing "[consumer-connection] if retry is disabled and channels are not present it should not create connection"
@@ -163,10 +163,10 @@
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}
                                                               :tracer {:enabled false}))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is @rmq-connect-called?))))
 
   (testing "[consumer-connection] should provide the correct number of threads for the thread pool when channels are not present"
@@ -235,10 +235,10 @@
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled true}))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is @create-connect-called?))))
 
   (testing "if retry is disabled and channels are not present it should not create connection"
@@ -251,10 +251,10 @@
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is (not @create-connect-called?)))))
 
   (testing "if retry is disabled and channels are present it should create connection"
@@ -270,10 +270,10 @@
                                              (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}))]
-        (-> (mount/only #{#'connection})
+        (-> (mount/only #{#'producer-connection})
             (mount/with-args {:stream-routes stream-routes})
             (mount/start))
-        (mount/stop #'connection)
+        (mount/stop #'producer-connection)
         (is @create-connect-called?))))
 
   (testing "should provide the correct number of threads for the thread pool for multiple channels"
@@ -334,9 +334,9 @@
                                         (throw (Exception. "Error")))
                     report-error      (fn [_ _] (reset! report-fn-called? true))]
         (try
-          (-> (mount/only #{#'connection})
+          (-> (mount/only #{#'producer-connection})
               (mount/with-args {:stream-routes stream-routes})
               (mount/start))
           (catch Exception e
-            (mount/stop #'connection)))
+            (mount/stop #'producer-connection)))
         (is @report-fn-called?)))))

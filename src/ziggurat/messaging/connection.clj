@@ -87,14 +87,16 @@
     (log/info "Closing the RabbitMQ connection")
     (rmq/close conn)))
 
+(declare consumer-connection)
 (defstate consumer-connection
   :start (do (log/info "Creating consumer connection")
              (start-connection false))
   :stop (do (log/info "Stopping consume connection")
             (stop-connection consumer-connection)))
 
-(defstate connection
+(declare producer-connection)
+(defstate producer-connection
   :start (do (log/info "Creating producer connection")
              (start-connection true))
   :stop (do (log/info "Stopping producer connection")
-            (stop-connection connection)))
+            (stop-connection producer-connection)))

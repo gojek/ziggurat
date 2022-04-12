@@ -8,7 +8,7 @@
             [ziggurat.messaging.channel_pool :as cpool]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [config ziggurat-config rabbitmq-config channel-retry-config]]
-            [ziggurat.messaging.connection :refer [connection is-connection-required?]]
+            [ziggurat.messaging.connection :refer [producer-connection is-connection-required?]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics])
   (:import (com.rabbitmq.client AlreadyClosedException Channel)
@@ -79,7 +79,7 @@
      (let [props (if dead-letter-exchange
                    {"x-dead-letter-exchange" dead-letter-exchange}
                    {})]
-       (with-open [ch (lch/open connection)]
+       (with-open [ch (lch/open producer-connection)]
          (create-queue queue-name props ch)
          (declare-exchange ch exchange-name)
          (bind-queue-to-exchange ch queue-name exchange-name)
@@ -131,7 +131,9 @@
         (finally (return-to-pool cpool/channel-pool ch))))
     (catch Exception e
       (log/error "Exception occurred while borrowing a channel from the pool")
-      (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))}))))
+      (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
+      true                                                  ;TODO Evaluate whether message needs to be retried in case of borrow exceptions
+      )))
 
 (defn publish
   ([exchange message-payload]

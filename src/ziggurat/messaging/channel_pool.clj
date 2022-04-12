@@ -46,6 +46,6 @@
 
 (defstate channel-pool
   :start (do (log/info "Creating channel pool")
-             (create-channel-pool c/connection))
+             (create-channel-pool c/producer-connection))
   :stop (do (log/info "Stopping channel pool")
             (destroy-channel-pool channel-pool)))

@@ -1,7 +1,7 @@
 (ns ziggurat.messaging.channel-pool-test
   (:require [clojure.test :refer :all]
             [ziggurat.messaging.channel_pool :as cpool]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.fixtures :as fix])
   (:import (org.apache.commons.pool2.impl GenericObjectPoolConfig GenericObjectPool)
            (java.time Duration)
@@ -47,8 +47,8 @@
 
 (deftest pool-borrow-return-test
   (testing "it should invalidate a closed channel and return a new channel on borrow"
-    (mount.core/start #'connection)
-    (let [channel-pool ^GenericObjectPool (cpool/create-channel-pool connection)
+    (mount.core/start #'producer-connection)
+    (let [channel-pool ^GenericObjectPool (cpool/create-channel-pool producer-connection)
           _            (doto channel-pool
                          (.setMaxTotal 1)
                          (.setMinIdle 0)

@@ -5,7 +5,7 @@
             [langohr.queue :as lq]
             [ziggurat.config :refer [rabbitmq-config ziggurat-config channel-retry-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
@@ -313,7 +313,7 @@
               (is (= (* (count stream-routes) 3) @counter)))))
 
         (testing "it creates queues with topic entity from stream routes"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes         {:default {:handler-fn #(constantly :success)}}
 
                   instant-queue-name    (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
@@ -340,7 +340,7 @@
               (le/delete ch instant-exchange-name)
               (le/delete ch dead-exchange-name))))
         (testing "it creates queues with suffixes in the range [1, retry-count] when exponential backoff is enabled"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes                   {:default {:handler-fn #(constantly :success)}}
                   retry-count                     (get-in ziggurat-config [:retry :count])
                   instant-queue-name              (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
@@ -369,7 +369,7 @@
                   (lq/delete ch (exponential-delay-queue-name s))
                   (le/delete ch (exponential-delay-exchange-name s)))))))
         (testing "it creates queues with suffixes in the range [1, 25] when exponential backoff is enabled and retry-count is more than 25"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes                   {:default {:handler-fn #(constantly :success)}}
                   instant-queue-name              (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
                   instant-exchange-name           (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
@@ -445,7 +445,7 @@
               (is (= 0 @counter)))))
 
         (testing "it creates queues with topic entity for channels only"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
                   instant-queue-suffix           (:queue-name (:instant (rabbitmq-config)))
                   instant-exchange-suffix        (:exchange-name (:instant (rabbitmq-config)))
@@ -480,7 +480,7 @@
                                                               :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
         (testing "it creates instant queues with topic entity for channels only"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
                   instant-queue-suffix           (:queue-name (:instant (rabbitmq-config)))
                   instant-exchange-suffix        (:exchange-name (:instant (rabbitmq-config)))

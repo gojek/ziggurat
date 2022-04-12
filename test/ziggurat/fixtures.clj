@@ -6,7 +6,7 @@
             [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.kafka-consumer.executor-service :refer [thread-pool]]
-            [ziggurat.messaging.connection :refer [connection consumer-connection]]
+            [ziggurat.messaging.connection :refer [producer-connection consumer-connection]]
             [ziggurat.messaging.channel_pool :refer [channel-pool]]
             [ziggurat.messaging.producer :as pr]
             [ziggurat.messaging.util :as util]
@@ -88,7 +88,7 @@
   (:exchange-name (exchange-type (config/rabbitmq-config))))
 
 (defn delete-queues [stream-routes]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open producer-connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
             channels         (util/get-channel-names stream-routes topic-entity)]
@@ -101,7 +101,7 @@
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :delay))))))))
 
 (defn delete-exchanges [stream-routes]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open producer-connection)]
     (doseq [topic-entity (keys stream-routes)]
       (let [topic-identifier (name topic-entity)
             channels         (util/get-channel-names stream-routes topic-entity)]
@@ -120,7 +120,7 @@
     (mount-tracer)
 
     (->
-     (mount/only [#'connection #'consumer-connection #'channel-pool])
+     (mount/only [#'producer-connection #'consumer-connection #'channel-pool])
      (mount/with-args {:stream-routes stream-routes})
      (mount/start))
     (f)
