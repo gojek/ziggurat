@@ -8,7 +8,7 @@
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
-            [ziggurat.messaging.connection :refer [consumer-connection]]
+            [ziggurat.messaging.connection :refer [consumer-connection, producer-connection]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.error :refer [report-error]]
@@ -109,7 +109,7 @@
   "This method deletes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and channel
   `channel`."
   [topic-entity channel count]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open producer-connection)]
     (let [queue-name (construct-queue-name topic-entity channel)]
       (doall (for [_ (range count)]
                (lb/get ch queue-name true))))))
