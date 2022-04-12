@@ -32,9 +32,7 @@
       (.setMaxIdle (:max-idle merged-config))
       (.setMaxTotal (+ (:min-idle merged-config) total-thread-count))
       (.setTestOnBorrow true)
-      (.setJmxEnabled true)
-      (.setJmxNameBase "rabbitmq-producer-channel-pool")
-      (.setJmxNamePrefix "ziggurat"))))
+      (.setJmxNamePrefix "zig-rabbitmq-ch-pool"))))
 
 (defn create-channel-pool [^Connection connection]
   (let [pool-config   (create-object-pool-config (get-in zc/ziggurat-config [:rabbit-mq-connection :channel-pool]))
