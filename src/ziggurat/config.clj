@@ -167,7 +167,7 @@
   (str/trim
    (cond
      (keyword? v) (name v)
-     :else        (str v))))
+     :else (str v))))
 
 (defn set-property
   [mapping-table p k v]
@@ -191,8 +191,8 @@
 (defn- add-jaas-properties
   [properties jaas-config]
   (if (some? jaas-config)
-    (let [username (get jaas-config :username)
-          password (get jaas-config :password)
+    (let [username  (get jaas-config :username)
+          password  (get jaas-config :password)
           mechanism (get jaas-config :mechanism)]
       (doto properties
         (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties username password mechanism))))

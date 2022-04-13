@@ -3,7 +3,7 @@
             [langohr.channel :as lch]
             [langohr.basic :as lb]
             [ziggurat.config :refer [rabbitmq-config]]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
             [ziggurat.messaging.producer :refer [delay-queue-name]]
@@ -13,7 +13,7 @@
   (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open producer-connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
@@ -22,7 +22,7 @@
         nil))))
 
 (defn- get-msg-from-rabbitmq-without-ack [queue-name topic-name]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open producer-connection)]
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)

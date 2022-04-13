@@ -28,27 +28,50 @@
   (reduce (fn [sum [_ channel-config]]
             (+ sum (:worker-count channel-config))) 0 channels))
 
-(defn- total-thread-count []
-  (let [stream-routes (:stream-router (ziggurat-config))
-        worker-count  (get-in (ziggurat-config) [:jobs :instant :worker-count])]
+(defn total-thread-count []
+  (let [stream-routes                (:stream-router (ziggurat-config))
+        batch-route-count            (count (:batch-routes (ziggurat-config)))
+        worker-count                 (get-in (ziggurat-config) [:jobs :instant :worker-count] 0)
+        batch-routes-instant-workers (* batch-route-count worker-count)]
     (reduce (fn [sum [_ route-config]]
-              (+ sum (channel-threads (:channels route-config)) worker-count)) 0 stream-routes)))
+              (+ sum (channel-threads (:channels route-config)) worker-count))
+            batch-routes-instant-workers
+            stream-routes)))
 
 (defn- create-traced-connection [config]
   (let [connection-factory (TracingConnectionFactory. tracer)]
     (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
-    (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config))))))
+    (if (some? (:executor config))
+      (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config))))
+      (.newConnection connection-factory ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config)))))))
+
+(defn- get-tracer-config []
+  (get-in (ziggurat-config) [:tracer :enabled]))
 
 (defn create-connection [config tracer-enabled]
   (if tracer-enabled
     (create-traced-connection config)
     (rmq/connect (assoc config :hosts (util/list-of-hosts config)))))
 
-(defn- start-connection []
+(defn- get-connection-config
+  [is-producer?]
+  (if is-producer?
+    (assoc (:rabbit-mq-connection (ziggurat-config))
+           :connection-name "producer")
+    (assoc (:rabbit-mq-connection (ziggurat-config))
+           :executor (Executors/newFixedThreadPool (total-thread-count))
+           :connection-name "consumer")))
+
+(defn- start-connection
+  "is-producer? - defines whether the connection is being created for producers or consumers
+  producer connections do not require the :executor option"
+  [is-producer?]
   (log/info "Connecting to RabbitMQ")
   (when (is-connection-required?)
     (try
-      (let [connection (create-connection (assoc (:rabbit-mq-connection (ziggurat-config)) :executor (Executors/newFixedThreadPool (total-thread-count))) (get-in (ziggurat-config) [:tracer :enabled]))]
+      (let
+       [connection (create-connection (get-connection-config is-producer?) (get-tracer-config))]
+        (println "Connection created " connection)
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
@@ -61,11 +84,19 @@
 
 (defn- stop-connection [conn]
   (when (is-connection-required?)
-    (if (get-in (ziggurat-config) [:tracer :enabled])
-      (.close conn)
-      (rmq/close conn))
-    (log/info "Disconnected from RabbitMQ")))
+    (log/info "Closing the RabbitMQ connection")
+    (rmq/close conn)))
 
-(defstate connection
-  :start (start-connection)
-  :stop (stop-connection connection))
+(declare consumer-connection)
+(defstate consumer-connection
+  :start (do (log/info "Creating consumer connection")
+             (start-connection false))
+  :stop (do (log/info "Stopping consume connection")
+            (stop-connection consumer-connection)))
+
+(declare producer-connection)
+(defstate producer-connection
+  :start (do (log/info "Creating producer connection")
+             (start-connection true))
+  :stop (do (log/info "Stopping producer connection")
+            (stop-connection producer-connection)))

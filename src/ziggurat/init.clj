@@ -8,14 +8,15 @@
             [mount.core :as mount]
             [schema.core :as s]
             [ziggurat.config :refer [ziggurat-config] :as config]
+            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.messaging.connection :as messaging-connection :refer [connection]]
+            [ziggurat.messaging.connection :as messaging-connection :refer [producer-connection, consumer-connection]]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.nrepl-server :as nrepl-server]
-            [ziggurat.producer :as producer :refer [kafka-producers]]
+            [ziggurat.producer :refer [kafka-producers]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.server :as server]
             [ziggurat.streams :as streams]
@@ -23,7 +24,8 @@
             [ziggurat.util.java-util :as util])
   (:gen-class
    :methods [^{:static true} [init [java.util.Map] void]]
-   :name tech.gojek.ziggurat.internal.Init))
+   :name tech.gojek.ziggurat.internal.Init)
+  (:import (clojure.lang ExceptionInfo)))
 
 (defn- event-routes [args]
   (merge (:stream-routes args) (:batch-routes args)))
@@ -37,7 +39,9 @@
        (mount/start))))
 
 (defn- start-rabbitmq-connection [args]
-  (start* #{#'messaging-connection/connection} args))
+  (start* #{#'consumer-connection
+            #'producer-connection
+            #'cpool/channel-pool} args))
 
 (defn- start-rabbitmq-consumers [args]
   (start-rabbitmq-connection args)
@@ -76,7 +80,10 @@
   (start-rabbitmq-consumers args))
 
 (defn- stop-rabbitmq-connection []
-  (mount/stop #'connection))
+  (-> (mount/only #{#'producer-connection
+                    #'cpool/channel-pool
+                    #'consumer-connection})
+      (mount/stop)))
 
 (defn stop-kafka-producers []
   (mount/stop #'kafka-producers))
@@ -149,7 +156,8 @@
 (defn stop-common-states []
   (mount/stop #'config/config
               #'metrics/statsd-reporter
-              #'connection
+              #'producer-connection
+              #'consumer-connection
               #'nrepl-server/server
               #'tracer/tracer))
 
@@ -225,8 +233,8 @@
       (throw (IllegalArgumentException. "Either :stream-routes or :batch-routes should be present in init args")))
     (cond-> base-modes
       (some? stream-routes) (conj :stream-worker)
-      (some? batch-routes)  (conj :batch-worker)
-      (some? actor-routes)  (conj :api-server))))
+      (some? batch-routes) (conj :batch-worker)
+      (some? actor-routes) (conj :api-server))))
 
 (defn validate-modes [modes stream-routes batch-routes actor-routes]
   (let [derived-modes (if-not (empty? modes)

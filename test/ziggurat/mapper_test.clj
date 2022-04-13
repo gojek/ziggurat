@@ -4,7 +4,7 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
             [ziggurat.message-payload :as mp]
