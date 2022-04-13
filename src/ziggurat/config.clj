@@ -160,7 +160,7 @@
   (str/trim
    (cond
      (keyword? v) (name v)
-     :else        (str v))))
+     :else (str v))))
 
 (defn set-property
   [mapping-table p k v]
@@ -171,6 +171,52 @@
               nv norm-value]
         (.setProperty p sk nv))))
   p)
+
+(def jaas-template
+  {"PLAIN"         "org.apache.kafka.common.security.plain.PlainLoginModule"
+   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"})
+
+(defn create-jaas-properties
+  [user-name password mechanism]
+  (let [jaas-template (get jaas-template mechanism)]
+    (format "%s required username=\"%s\" password=\"%s\";" jaas-template user-name password)))
+
+(defn- add-jaas-properties
+  [properties jaas-config]
+  (if (some? jaas-config)
+    (let [username  (get jaas-config :username)
+          password  (get jaas-config :password)
+          mechanism (get jaas-config :mechanism)]
+      (doto properties
+        (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties username password mechanism))))
+    properties))
+
+(defn build-ssl-properties
+  [properties set-property-fn ssl-config-map]
+  "Builds SSL properties from ssl-config-map which is a map where keys are
+  Clojure keywords in kebab case. These keys are converted to Kafka properties by set-property-fn.
+
+  SSL properties are set only if key sequence [:ziggurat :ssl :enabled] returns true.
+
+  Creates JAAS template if values are provided in the map provided agains this key sequence
+  [:ziggurat :ssl :jaas].
+
+  Example of a ssl-config-map
+
+  {:enabled true
+   :ssl-keystore-location <>
+   :ssl-keystore-password <>
+    {:jaas {:username <>
+            :password <>
+            :mechanism <>}}}
+  "
+  (let [ssl-configs-enabled (:enabled ssl-config-map)
+        jaas-config         (get ssl-config-map :jaas)]
+    (if (true? ssl-configs-enabled)
+      (as-> properties pr
+        (add-jaas-properties pr jaas-config)
+        (reduce-kv set-property-fn pr ssl-config-map))
+      properties)))
 
 (defn build-properties
   [set-property-fn m]

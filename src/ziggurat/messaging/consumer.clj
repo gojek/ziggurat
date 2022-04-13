@@ -5,6 +5,7 @@
             [langohr.basic :as lb]
             [langohr.channel :as lch]
             [langohr.consumers :as lcons]
+<<<<<<< HEAD
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [schema.core :as s]
             [sentry-clj.async :as sentry]
@@ -13,9 +14,19 @@
             [ziggurat.messaging.connection :refer [connection]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.messaging.util :refer :all]
+=======
+            [taoensso.nippy :as nippy]
+            [ziggurat.config :refer [get-in-config rabbitmq-config]]
+            [ziggurat.messaging.channel_pool :as cpool]
+            [ziggurat.kafka-consumer.consumer-handler :as ch]
+            [ziggurat.mapper :as mpr]
+            [ziggurat.messaging.connection :refer [consumer-connection, producer-connection]]
+            [ziggurat.messaging.util :as util]
+>>>>>>> 1ef9d77... Implements RabbitMQ channel pooling  (#255)
             [ziggurat.metrics :as metrics]
             [ziggurat.util.error :refer [report-error]]))
 
+<<<<<<< HEAD
 (defn- convert-to-message-payload
   "This function is used for migration from Ziggurat Version 2.x to 3.x. It checks if the message is a message payload or a message(pushed by Ziggurat version < 3.0.0) and converts messages to
    message-payload to pass onto the mapper-fn.
@@ -30,6 +41,23 @@
       (let [retry-count (or (:retry-count message) 0)
             message-payload (mp/->MessagePayload (dissoc message :retry-count) (keyword topic-entity))]
         (assoc message-payload :retry-count retry-count)))))
+=======
+(defn- reject-message
+  [ch delivery-tag]
+  (lb/reject ch delivery-tag))
+
+(defn- publish-to-dead-set
+  [delivery-tag topic-entity payload]
+  (let [ch       (.borrowObject cpool/channel-pool)
+        {:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+        exchange (util/prefixed-queue-name topic-entity exchange-name)]
+    (try
+      (lb/publish ch exchange "" payload)
+      (catch Exception e
+        (log/error e "Exception was encountered while publishing to RabbitMQ")
+        (reject-message ch delivery-tag))
+      (finally (.returnObject cpool/channel-pool ch)))))
+>>>>>>> 1ef9d77... Implements RabbitMQ channel pooling  (#255)
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
@@ -41,8 +69,13 @@
         (lb/ack ch delivery-tag))
       (convert-to-message-payload message topic-entity))
     (catch Exception e
+<<<<<<< HEAD
       (lb/reject ch delivery-tag false)
       (report-error e "Error while decoding message")
+=======
+      (report-error e "Error while decoding message, publishing to dead queue...")
+      (publish-to-dead-set delivery-tag topic-entity payload)
+>>>>>>> 1ef9d77... Implements RabbitMQ channel pooling  (#255)
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
       nil)))
 
@@ -60,7 +93,11 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
+<<<<<<< HEAD
           (lb/reject ch delivery-tag true)
+=======
+          (publish-to-dead-set delivery-tag topic-entity payload)
+>>>>>>> 1ef9d77... Implements RabbitMQ channel pooling  (#255)
           (report-error e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
 
@@ -89,7 +126,7 @@
    (get-dead-set-messages topic-entity nil count))
   ([topic-entity channel count]
    (remove nil?
-           (with-open [ch (lch/open connection)]
+           (with-open [ch (lch/open consumer-connection)]
              (doall (for [_ (range count)]
                       (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity false)))))))
 
@@ -99,9 +136,9 @@
   ([topic-entity count processing-fn]
    (process-dead-set-messages topic-entity nil count processing-fn))
   ([topic-entity channel count processing-fn]
-   (with-open [ch (lch/open connection)]
+   (with-open [ch (lch/open consumer-connection)]
      (doall (for [_ (range count)]
-              (let [queue-name     (construct-queue-name topic-entity channel)
+              (let [queue-name (construct-queue-name topic-entity channel)
                     [meta payload] (lb/get ch queue-name false)]
                 (when (some? payload)
                   (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
@@ -110,7 +147,7 @@
   "This method deletes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and channel
   `channel`."
   [topic-entity channel count]
-  (with-open [ch (lch/open connection)]
+  (with-open [ch (lch/open producer-connection)]
     (let [queue-name (construct-queue-name topic-entity channel)]
       (doall (for [_ (range count)]
                (lb/get ch queue-name true))))))
@@ -132,7 +169,7 @@
 (defn start-retry-subscriber* [handler-fn topic-entity]
   (when (get-in-config [:retry :enabled])
     (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
-      (start-subscriber* (lch/open connection)
+      (start-subscriber* (lch/open consumer-connection)
                          (get-in-config [:jobs :instant :prefetch-count])
                          (prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
                          handler-fn
@@ -143,7 +180,7 @@
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
-        (start-subscriber* (lch/open connection)
+        (start-subscriber* (lch/open consumer-connection)
                            1
                            (prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
                            (mpr/channel-mapper-func channel-handler-fn channel-key)

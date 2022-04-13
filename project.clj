@@ -1,7 +1,12 @@
 (require 'cemerick.pomegranate.aether)
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
+<<<<<<< HEAD
 (defproject tech.gojek/ziggurat "3.21.0"
+=======
+
+(defproject tech.gojek/ziggurat "4.6.0"
+>>>>>>> 1ef9d77... Implements RabbitMQ channel pooling  (#255)
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -52,7 +57,19 @@
                                com.fasterxml.jackson.core/jackson-core
                                com.fasterxml.jackson.dataformat/jackson-dataformat-smile
                                com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
+<<<<<<< HEAD
                  [metosin/ring-swagger-ui "3.46.0"]]
+=======
+                 [metosin/ring-swagger-ui "3.46.0"]
+                 [cambium/cambium.core "1.1.0"]
+                 [cambium/cambium.codec-cheshire "1.0.0"]
+                 [cambium/cambium.logback.json "0.4.4"]
+                 [ch.qos.logback/logback-classic "1.2.9"]
+                 [ch.qos.logback.contrib/logback-json-classic "0.1.5"]
+                 [ch.qos.logback.contrib/logback-jackson "0.1.5"]
+                 [net.logstash.logback/logstash-logback-encoder "6.6"]
+                 [org.apache.commons/commons-pool2 "2.11.1"]]
+>>>>>>> 1ef9d77... Implements RabbitMQ channel pooling  (#255)
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password

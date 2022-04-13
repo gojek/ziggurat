@@ -5,7 +5,7 @@
             [langohr.queue :as lq]
             [ziggurat.config :refer [rabbitmq-config ziggurat-config channel-retry-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.connection :refer [connection]]
+            [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
@@ -16,7 +16,6 @@
             [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]
            (com.rabbitmq.client Channel Connection ShutdownSignalException AlreadyClosedException)
-           (org.apache.kafka.common.header Header)
            (java.io IOException)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
@@ -307,7 +306,7 @@
               (is (= (* (count stream-routes) 3) @counter)))))
 
         (testing "it creates queues with topic entity from stream routes"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes         {:default {:handler-fn #(constantly :success)}}
 
                   instant-queue-name    (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
@@ -334,17 +333,17 @@
               (le/delete ch instant-exchange-name)
               (le/delete ch dead-exchange-name))))
         (testing "it creates queues with suffixes in the range [1, retry-count] when exponential backoff is enabled"
-          (with-open [ch (lch/open connection)]
-            (let [stream-routes         {:default {:handler-fn #(constantly :success)}}
-                  retry-count           (get-in ziggurat-config [:retry :count])
-                  instant-queue-name    (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
-                  instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
-                  delay-queue-name      (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
-                  delay-exchange-name   (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
-                  dead-queue-name       (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
-                  dead-exchange-name    (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
-                  expected-queue-status {:message-count 0 :consumer-count 0}
-                  exponential-delay-queue-name #(util/prefixed-queue-name delay-queue-name %)
+          (with-open [ch (lch/open producer-connection)]
+            (let [stream-routes                   {:default {:handler-fn #(constantly :success)}}
+                  retry-count                     (get-in ziggurat-config [:retry :count])
+                  instant-queue-name              (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
+                  instant-exchange-name           (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
+                  delay-queue-name                (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
+                  delay-exchange-name             (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
+                  dead-queue-name                 (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
+                  dead-exchange-name              (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
+                  expected-queue-status           {:message-count 0 :consumer-count 0}
+                  exponential-delay-queue-name    #(util/prefixed-queue-name delay-queue-name %)
                   exponential-delay-exchange-name #(util/prefixed-queue-name delay-exchange-name %)]
 
               (with-redefs [config/ziggurat-config (constantly (assoc-in ziggurat-config [:retry :type] :exponential))]
@@ -363,16 +362,16 @@
                   (lq/delete ch (exponential-delay-queue-name s))
                   (le/delete ch (exponential-delay-exchange-name s)))))))
         (testing "it creates queues with suffixes in the range [1, 25] when exponential backoff is enabled and retry-count is more than 25"
-          (with-open [ch (lch/open connection)]
-            (let [stream-routes         {:default {:handler-fn #(constantly :success)}}
-                  instant-queue-name    (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
-                  instant-exchange-name (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
-                  delay-queue-name      (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
-                  delay-exchange-name   (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
-                  dead-queue-name       (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
-                  dead-exchange-name    (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
-                  expected-queue-status {:message-count 0 :consumer-count 0}
-                  exponential-delay-queue-name #(util/prefixed-queue-name delay-queue-name %)
+          (with-open [ch (lch/open producer-connection)]
+            (let [stream-routes                   {:default {:handler-fn #(constantly :success)}}
+                  instant-queue-name              (util/prefixed-queue-name "default" (:queue-name (:instant (rabbitmq-config))))
+                  instant-exchange-name           (util/prefixed-queue-name "default" (:exchange-name (:instant (rabbitmq-config))))
+                  delay-queue-name                (util/prefixed-queue-name "default" (:queue-name (:delay (rabbitmq-config))))
+                  delay-exchange-name             (util/prefixed-queue-name "default" (:exchange-name (:delay (rabbitmq-config))))
+                  dead-queue-name                 (util/prefixed-queue-name "default" (:queue-name (:dead-letter (rabbitmq-config))))
+                  dead-exchange-name              (util/prefixed-queue-name "default" (:exchange-name (:dead-letter (rabbitmq-config))))
+                  expected-queue-status           {:message-count 0 :consumer-count 0}
+                  exponential-delay-queue-name    #(util/prefixed-queue-name delay-queue-name %)
                   exponential-delay-exchange-name #(util/prefixed-queue-name delay-exchange-name %)]
 
               (with-redefs [config/ziggurat-config (constantly (-> ziggurat-config
@@ -439,7 +438,7 @@
               (is (= 0 @counter)))))
 
         (testing "it creates queues with topic entity for channels only"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
                   instant-queue-suffix           (:queue-name (:instant (rabbitmq-config)))
                   instant-exchange-suffix        (:exchange-name (:instant (rabbitmq-config)))
@@ -474,7 +473,7 @@
                                                               :stream-router {:default {:channels {:channel-1 {:retry {:enabled false}}}}}))]
 
         (testing "it creates instant queues with topic entity for channels only"
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open producer-connection)]
             (let [stream-routes                  {:default {:handler-fn #(constantly :success) :channel-1 #(constantly :success)}}
                   instant-queue-suffix           (:queue-name (:instant (rabbitmq-config)))
                   instant-exchange-suffix        (:exchange-name (:instant (rabbitmq-config)))
@@ -622,6 +621,3 @@
                                                               :rabbit-mq            {:delay       {:queue-timeout-ms   5000}}))]
          ;; For 25 max exponential retries, exponent comes to 25-1=24, which makes timeout = 5000*(2^24-1) = 83886075000
         (is (= 83886075000 (producer/get-queue-timeout-ms message)))))))
-
-
-

@@ -3,8 +3,8 @@
   (:require [langohr.channel :as lch]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.connection :refer [connection]]
-            [ziggurat.messaging.consumer :refer :all]
+            [ziggurat.messaging.connection :refer [consumer-connection]]
+            [ziggurat.messaging.consumer :as consumer :refer :all]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.rabbitmq :as util]
@@ -114,7 +114,7 @@
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
-            ch                  (lch/open connection)
+            ch                  (lch/open consumer-connection)
             counter             (atom 0)]
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
                                                                   (update-in [:retry :enabled] (constantly true))
@@ -128,7 +128,7 @@
   (testing "start subscribers should call start-subscriber* according to the product of worker and mapper-fns in stream-routes"
     (let [no-of-workers       3
           original-zig-config (ziggurat-config)
-          ch                  (lch/open connection)
+          ch                  (lch/open consumer-connection)
           counter             (atom 0)
           stream-routes       {topic-entity {:handler-fn #(constantly nil)}
                                :test    {:handler-fn #(constantly nil)}}]
@@ -144,7 +144,7 @@
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
-            ch                  (lch/open connection)
+            ch                  (lch/open consumer-connection)
             counter             (atom 0)]
 
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
@@ -161,7 +161,7 @@
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [no-of-workers       3
             original-zig-config (ziggurat-config)
-            ch                  (lch/open connection)
+            ch                  (lch/open consumer-connection)
             counter             (atom 0)]
 
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
@@ -187,7 +187,7 @@
                                                :retry-limit        2
                                                :success-promise    success-promise})
           original-zig-config (ziggurat-config)
-          rmq-ch              (lch/open connection)]
+          rmq-ch              (lch/open consumer-connection)]
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
                                       channel     channel-fn}}
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
@@ -214,7 +214,7 @@
                                                :retry-limit        2
                                                :success-promise    success-promise})
           original-zig-config (ziggurat-config)
-          rmq-ch              (lch/open connection)]
+          rmq-ch              (lch/open consumer-connection)]
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
                                       channel     channel-fn}}
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
@@ -235,7 +235,7 @@
             retry-count 3
             message-payload (assoc (gen-message-payload topic-entity) :retry-count 3)
             original-zig-config (ziggurat-config)
-            rmq-ch (lch/open connection)]
+            rmq-ch              (lch/open consumer-connection)]
         (.reset tracer)
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:retry :count] (constantly retry-count))
@@ -270,7 +270,7 @@
                             (is (= message-arg message)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-open [ch (lch/open connection)]
+        (with-open [ch (lch/open consumer-connection)]
           (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                 prefixed-queue-name (str topic-entity-name "_" queue-name)
                 [meta payload]      (lb/get ch prefixed-queue-name false)
@@ -286,8 +286,8 @@
                               (reset! processing-fn-called true)))
             topic-entity-name (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-redefs [convert-and-ack-message (fn [_ _ _ _ _] nil)]
-          (with-open [ch (lch/open connection)]
+        (with-redefs [consumer/convert-and-ack-message (fn [_ _ _ _ _] nil)]
+          (with-open [ch (lch/open consumer-connection)]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
@@ -305,7 +305,7 @@
             report-fn-called?  (atom false)]
         (with-redefs [report-error (fn [_ _] (reset! report-fn-called? true))]
           (producer/publish-to-dead-queue message)
-          (with-open [ch (lch/open connection)]
+          (with-open [ch (lch/open consumer-connection)]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
                   [meta payload]      (lb/get ch prefixed-queue-name false)
