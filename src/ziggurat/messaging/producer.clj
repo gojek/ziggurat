@@ -55,8 +55,7 @@
       (let [host-endpoint   (str "http://" (first hosts) ":" (get rmq-config :admin-port 15672))
             resp            (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)
             remaining-hosts (rest hosts)]
-        (when (and (nil? resp)
-                   (pos? (count remaining-hosts)))
+        (when (and (nil? resp) (pos? (count remaining-hosts)))
           (recur remaining-hosts))))))
 
 (defn- declare-exchange [ch exchange]
@@ -83,7 +82,8 @@
          (create-queue queue-name props ch)
          (declare-exchange ch exchange-name)
          (bind-queue-to-exchange ch queue-name exchange-name)
-         (set-ha-policy queue-name exchange-name (get-in config [:ziggurat :rabbit-mq-connection]))))
+         (set-ha-policy queue-name exchange-name (get-in config [:ziggurat :rabbit-mq-connection])) ;TODO remove this
+         ))
      (catch Exception e
        (log/error e "Error while declaring RabbitMQ queues")
        (throw e)))))
