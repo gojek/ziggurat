@@ -18,7 +18,17 @@
       keys))
 
 (defn list-of-hosts [config]
-  (let [{:keys [host hosts]} config]
-    (if hosts
-      (str/split hosts #",")
-      [host])))
+  (let [{:keys [host hosts]} config
+        rabbitmq-hosts       (if (some? hosts)
+                               hosts
+                               host)]
+    (str/split rabbitmq-hosts #",")))
+
+(defn create-address-resolver
+  [rabbitmq-config]
+  (let [hosts            (util/list-of-hosts rabbitmq-config)
+        port             (:port rabbitmq-config)
+        address-resolver (get rabbitmq-config :address-resolver :dns)]
+    (if (= address-resolver :dns)
+      (DnsRecordIpAddressResolver. ^String (:hosts rabbitmq-config) ^int port)
+      (ListAddressResolver. (map #(Address. %) hosts)))))

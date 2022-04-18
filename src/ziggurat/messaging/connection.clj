@@ -10,7 +10,7 @@
             [ziggurat.messaging.util :as util]
             [clojure.string :as str]
             [ziggurat.util.error :refer [report-error]])
-  (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver]
+  (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver ConnectionFactory DnsRecordIpAddressResolver]
            [java.util.concurrent Executors ExecutorService]
            [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
            [com.rabbitmq.client.impl DefaultCredentialsProvider]))
@@ -42,8 +42,13 @@
   (let [connection-factory (TracingConnectionFactory. tracer)]
     (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
     (if (some? (:executor config))
-      (.newConnection connection-factory ^ExecutorService (:executor config) ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config))))
-      (.newConnection connection-factory ^ListAddressResolver (ListAddressResolver. (map #(Address. %) (util/list-of-hosts config)))))))
+      (.newConnection connection-factory
+                      ^ExecutorService (:executor config)
+                      ^ListAddressResolver (ListAddressResolver. (map #(Address. %)
+                                                                      (util/list-of-hosts config))))
+      (.newConnection connection-factory
+                      ^ListAddressResolver (ListAddressResolver. (map #(Address. %)
+                                                                      (util/list-of-hosts config)))))))
 
 (defn- get-tracer-config []
   (get-in (ziggurat-config) [:tracer :enabled]))
@@ -51,7 +56,10 @@
 (defn create-connection [config tracer-enabled]
   (if tracer-enabled
     (create-traced-connection config)
-    (rmq/connect (assoc config :hosts (util/list-of-hosts config)))))
+    (let [connection-factory (ConnectionFactory.)]
+      (.newConnection connection-factory
+                      ^ListAddressResolver (ListAddressResolver. (map #(Address. %)
+                                                                      (util/list-of-hosts config)))))))
 
 (defn- get-connection-config
   [is-producer?]
