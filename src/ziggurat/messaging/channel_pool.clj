@@ -25,7 +25,7 @@
 (defn create-object-pool-config [config]
   (let [standby-size       10
         total-thread-count (calc-total-thread-count)
-        merged-config      (merge {:max-wait-ms 5000 :min-idle standby-size :max-idle total-thread-count} config)]
+        merged-config      (merge {:max-wait-ms 5000 :min-idle standby-size :max-idle (* standby-size 2)} config)]
     (doto (GenericObjectPoolConfig.)
       (.setMaxWait (Duration/ofMillis (:max-wait-ms merged-config)))
       (.setMinIdle (:min-idle merged-config))
