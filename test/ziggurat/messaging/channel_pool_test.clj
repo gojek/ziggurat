@@ -18,7 +18,7 @@
 
 (deftest create-object-pool-config-test
   (testing "it should create a PoolConfig with default values"
-    (let [expected-config    {:min-idle 10 :max-idle 44 :max-total 54 :max-wait-ms 5000}
+    (let [expected-config    {:min-idle 10 :max-idle 20 :max-total 54 :max-wait-ms 5000}
           pool-config-object ^GenericObjectPoolConfig (cpool/create-object-pool-config {})
           min-idle           (.getMinIdle pool-config-object)
           max-idle           (.getMaxIdle pool-config-object)
