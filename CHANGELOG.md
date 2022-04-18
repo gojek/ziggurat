@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 3.22.1
+- Reduce the maximum number of idle objects in the channel pool
+
+## 3.22.0
+- Implements pool RabbitMQ channels
+
 ## 3.21.0
 - Update logic of the deadset delete API to just read and ack messages and ignore content
 
