@@ -26,9 +26,9 @@
 
 (defn create-address-resolver
   [rabbitmq-config]
-  (let [hosts            (util/list-of-hosts rabbitmq-config)
-        port             (:port rabbitmq-config)
+  (let [host (:hosts rabbitmq-config)
+        port (:port rabbitmq-config)
         address-resolver (get rabbitmq-config :address-resolver :dns)]
     (if (= address-resolver :dns)
-      (DnsRecordIpAddressResolver. ^String (:hosts rabbitmq-config) ^int port)
-      (ListAddressResolver. (map #(Address. %) hosts)))))
+      (DnsRecordIpAddressResolver. ^String host ^int port)
+      (ListAddressResolver. (map #(Address. %) (util/list-of-hosts rabbitmq-config))))))

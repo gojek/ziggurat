@@ -360,7 +360,9 @@ Ziggurat Config | Default Value | Description | Mandatory?
                                    :prefetch-count  [3 :int]
                                    :username        "guest"
                                    :password        "guest"
-                                   :channel-timeout [2000 :int]}}}}
+                                   :channel-timeout [2000 :int]
+                                   :address-resolver [:dns :keyword] ;;possible values [:dns :ip-list]. Default is :dns
+                                   }}}}
 ```
 
 - `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).

@@ -10,7 +10,7 @@
             [ziggurat.messaging.util :as util]
             [clojure.string :as str]
             [ziggurat.util.error :refer [report-error]])
-  (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver ConnectionFactory DnsRecordIpAddressResolver]
+  (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver ConnectionFactory DnsRecordIpAddressResolver AddressResolver]
            [java.util.concurrent Executors ExecutorService]
            [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
            [com.rabbitmq.client.impl DefaultCredentialsProvider]))
@@ -44,11 +44,9 @@
     (if (some? (:executor config))
       (.newConnection connection-factory
                       ^ExecutorService (:executor config)
-                      ^ListAddressResolver (ListAddressResolver. (map #(Address. %)
-                                                                      (util/list-of-hosts config))))
+                      ^AddressResolver (util/create-address-resolver config))
       (.newConnection connection-factory
-                      ^ListAddressResolver (ListAddressResolver. (map #(Address. %)
-                                                                      (util/list-of-hosts config)))))))
+                      ^AddressResolver (util/create-address-resolver config)))))
 
 (defn- get-tracer-config []
   (get-in (ziggurat-config) [:tracer :enabled]))
@@ -57,9 +55,7 @@
   (if tracer-enabled
     (create-traced-connection config)
     (let [connection-factory (ConnectionFactory.)]
-      (.newConnection connection-factory
-                      ^ListAddressResolver (ListAddressResolver. (map #(Address. %)
-                                                                      (util/list-of-hosts config)))))))
+      (.newConnection connection-factory ^AddressResolver (util/create-address-resolver config)))))
 
 (defn- get-connection-config
   [is-producer?]

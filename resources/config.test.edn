@@ -15,7 +15,8 @@
                                    :port            [5672 :int]
                                    :username        "guest"
                                    :password        "guest"
-                                   :channel-timeout [2000 :int]}
+                                   :channel-timeout [2000 :int]
+                                   :address-resolver [:dns :keyword]} ;;possible values [:dns :ip-list]
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
             :rabbit-mq            {:delay       {:queue-name           "application_name_delay_queue_test"
