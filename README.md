@@ -362,12 +362,16 @@ Ziggurat Config | Default Value | Description | Mandatory?
                                    :password        "guest"
                                    :channel-timeout [2000 :int]
                                    :address-resolver [:dns :keyword] ;;possible values [:dns :ip-list]. Default is :dns
-                                   }}}}
+                                   :channel-pool     {:max-wait-ms [5000 :int]
+                                                      :min-idle    [10 :int]
+                                                      :max-idle    [20 :int]}}}}}
 ```
 
 - `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
 - `:port` specifies the port number on which the RabbitMQ nodes are running.
-- By default, your queues and exchanges are replicated across (n+1)/2 nodes in the cluster
+- `:channel-pool` specifies the properties for the RabbitMQ channel pool used for publishing
+- `:address-resolver` specifies the strategy to figure out RabbitMQ hosts IP addresses. `:dns` is the default and shoud 
+    be used when `:hosts` specifies a DNS address. `:ip-list` should be used when comma separated IPs are provided.
 
 ## Exponential Backoff based Retries
 

@@ -38,24 +38,19 @@
             batch-routes-instant-workers
             stream-routes)))
 
-(defn- create-traced-connection [config]
-  (let [connection-factory (TracingConnectionFactory. tracer)]
-    (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username config) (:password config)))
-    (if (some? (:executor config))
-      (.newConnection connection-factory
-                      ^ExecutorService (:executor config)
-                      ^AddressResolver (util/create-address-resolver config))
-      (.newConnection connection-factory
-                      ^AddressResolver (util/create-address-resolver config)))))
-
-(defn- get-tracer-config []
-  (get-in (ziggurat-config) [:tracer :enabled]))
+(defn create-rmq-connection
+  [connection-factory rabbitmq-config]
+  (.setCredentialsProvider connection-factory (DefaultCredentialsProvider. (:username rabbitmq-config) (:password rabbitmq-config)))
+  (if (some? (:executor rabbitmq-config))
+    (.newConnection connection-factory
+                    ^ExecutorService (:executor rabbitmq-config)
+                    ^AddressResolver (util/create-address-resolver rabbitmq-config))
+    (.newConnection connection-factory ^AddressResolver (util/create-address-resolver rabbitmq-config))))
 
 (defn create-connection [config tracer-enabled]
   (if tracer-enabled
-    (create-traced-connection config)
-    (let [connection-factory (ConnectionFactory.)]
-      (.newConnection connection-factory ^AddressResolver (util/create-address-resolver config)))))
+    (create-rmq-connection (TracingConnectionFactory. tracer) config)
+    (create-rmq-connection (ConnectionFactory.) config)))
 
 (defn- get-connection-config
   [is-producer?]
@@ -74,7 +69,8 @@
   (when (is-connection-required?)
     (try
       (let
-       [connection (create-connection (get-connection-config is-producer?) (get-tracer-config))]
+       [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
+        connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
         (println "Connection created " connection)
         (doto connection
           (.addShutdownListener
