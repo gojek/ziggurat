@@ -37,9 +37,9 @@
           stream-routes     {:default {:handler-fn (constantly :channel-1)
                                        :channel-1  (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (when (some? (:executor provided-config))
-                                               (reset! executor-present? true))
-                                             (orig-rmq-connect cf provided-config))
+                                              (when (some? (:executor provided-config))
+                                                (reset! executor-present? true))
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -60,9 +60,9 @@
           stream-routes       {:default {:handler-fn (constantly :channel-1)
                                          :channel-1  (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! rmq-connect-called? true)
-                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! rmq-connect-called? true)
+                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -82,10 +82,10 @@
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (.getCorePoolSize (:executor provided-config))
-                                             (reset! rmq-connect-called? true)
-                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                             (orig-rmq-connect cf provided-config))
+                                              (.getCorePoolSize (:executor provided-config))
+                                              (reset! rmq-connect-called? true)
+                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -104,8 +104,8 @@
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! rmq-connect-called? true)
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! rmq-connect-called? true)
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled true}
                                                               :tracer {:enabled false}))]
@@ -121,8 +121,8 @@
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! rmq-connect-called? true)
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! rmq-connect-called? true)
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (-> ziggurat-config
                                                            (assoc :retry {:enabled false})
                                                            (dissoc :tracer)))]
@@ -138,8 +138,8 @@
           ziggurat-config     (config/ziggurat-config)
           stream-routes       {:default {:handler-fn (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! rmq-connect-called? true)
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! rmq-connect-called? true)
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (-> ziggurat-config
                                                            (assoc :retry {:enabled false})
                                                            (dissoc :tracer)))]
@@ -158,8 +158,8 @@
                                :default-1 {:handler-fn (constantly :channel-3)
                                            :channel-3  (constantly :success)}}]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! rmq-connect-called? true)
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! rmq-connect-called? true)
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}
                                                               :tracer {:enabled false}))]
@@ -174,8 +174,8 @@
           orig-rmq-connect create-rmq-connection
           ziggurat-config  (config/ziggurat-config)]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
@@ -190,8 +190,8 @@
           orig-rmq-connect create-rmq-connection
           ziggurat-config  (config/ziggurat-config)]
       (with-redefs [create-rmq-connection   (fn [cf provided-config]
-                                             (reset! thread-count (.getCorePoolSize (:executor provided-config)))
-                                             (orig-rmq-connect cf provided-config))
+                                              (reset! thread-count (.getCorePoolSize (:executor provided-config)))
+                                              (orig-rmq-connect cf provided-config))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :jobs {:instant {:worker-count 4}}
                                                               :retry {:enabled true}
