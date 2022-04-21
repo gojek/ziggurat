@@ -20,44 +20,6 @@
 (defn delay-queue-name [topic-entity queue-name]
   (util/prefixed-queue-name topic-entity queue-name))
 
-(defn get-replica-count [host-count]
-  (int (Math/ceil (/ host-count 2))))
-
-(defn get-default-ha-policy [rmq-config replica-count]
-  (let [ha-mode      (get rmq-config :ha-mode "exactly")
-        ha-params    (get rmq-config :ha-params replica-count)
-        ha-sync-mode (get rmq-config :ha-sync-mode "automatic")]
-    (if (= "all" ha-mode)
-      {:ha-mode "all" :ha-sync-mode ha-sync-mode}
-      {:ha-mode ha-mode :ha-sync-mode ha-sync-mode :ha-params ha-params})))
-
-(defn set-ha-policy-on-host [host-endpoint username password ha-policy-body exchange-name queue-name]
-  (try
-    (binding [lh/*endpoint* host-endpoint
-              lh/*username* username
-              lh/*password* password]
-      (log/info "applying HA policies to queue: " queue-name)
-      (log/info "applying HA policies to exchange: " exchange-name)
-      (lh/set-policy "/" (str queue-name "_ha_policy")
-                     {:apply-to   "all"
-                      :pattern    (str "^" queue-name "|" exchange-name "$")
-                      :definition ha-policy-body}))
-    (catch Exception e
-      (log/error "error setting ha-policies" (.getMessage e))
-      nil)))
-
-(defn set-ha-policy [queue-name exchange-name rmq-config]
-  (let [username       (:username rmq-config)
-        password       (:password rmq-config)
-        hosts-vec      (util/list-of-hosts rmq-config)
-        ha-policy-body (get-default-ha-policy rmq-config (get-replica-count (count hosts-vec)))]
-    (loop [hosts hosts-vec]
-      (let [host-endpoint   (str "http://" (first hosts) ":" (get rmq-config :admin-port 15672))
-            resp            (set-ha-policy-on-host host-endpoint username password ha-policy-body exchange-name queue-name)
-            remaining-hosts (rest hosts)]
-        (when (and (nil? resp) (pos? (count remaining-hosts)))
-          (recur remaining-hosts))))))
-
 (defn- declare-exchange [ch exchange]
   (le/declare ch exchange "fanout" {:durable true :auto-delete false})
   (log/info "Declared exchange - " exchange))
@@ -81,9 +43,7 @@
        (with-open [ch (lch/open producer-connection)]
          (create-queue queue-name props ch)
          (declare-exchange ch exchange-name)
-         (bind-queue-to-exchange ch queue-name exchange-name)
-         (set-ha-policy queue-name exchange-name (get-in config [:ziggurat :rabbit-mq-connection])) ;TODO remove this
-         ))
+         (bind-queue-to-exchange ch queue-name exchange-name)))
      (catch Exception e
        (log/error e "Error while declaring RabbitMQ queues")
        (throw e)))))
