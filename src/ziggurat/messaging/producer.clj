@@ -130,10 +130,9 @@
           false)
         (finally (return-to-pool cpool/channel-pool ch))))
     (catch Exception e
-      (log/error "Exception occurred while borrowing a channel from the pool")
+      (log/error e "Exception occurred while borrowing a channel from the pool")
       (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
-      true                                                  ;TODO Evaluate whether message needs to be retried in case of borrow exceptions
-      )))
+      false)))
 
 (defn publish
   ([exchange message-payload]
