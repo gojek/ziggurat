@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.6.2
+- Fixed a bug where publish code would keep on retrying despite getting an exception while borrowing 
+  a channel from the pool
+
 ## 4.6.1
 - Reduce the maximum number of idle objects in the channel pool
 
