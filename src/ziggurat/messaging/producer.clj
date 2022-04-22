@@ -132,7 +132,6 @@
                                             (recur exchange message-payload expiration (dec counter)))
                                           (log/error "Publishing the message has failed. It is being dropped")))))))
 
-
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))
 
