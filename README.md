@@ -364,14 +364,29 @@ Ziggurat Config | Default Value | Description | Mandatory?
                                    :address-resolver [:dns :keyword] ;;possible values [:dns :ip-list]. Default is :dns
                                    :channel-pool     {:max-wait-ms [5000 :int]
                                                       :min-idle    [10 :int]
-                                                      :max-idle    [20 :int]}}}}}
+                                                      :max-idle    [20 :int]}
+                                   :publish-retry   {:sleep 5000
+                                                     :non-recoverable-exception {:enabled true
+                                                                                 :sleep 1000
+                                                                                 :count 5}}}}}}
 ```
 
 - `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
 - `:port` specifies the port number on which the RabbitMQ nodes are running.
+<<<<<<< HEAD
 - `:channel-pool` specifies the properties for the RabbitMQ channel pool used for publishing
 - `:address-resolver` specifies the strategy to figure out RabbitMQ hosts IP addresses. `:dns` is the default and shoud 
     be used when `:hosts` specifies a DNS address. `:ip-list` should be used when comma separated IPs are provided.
+=======
+- By default, your queues and exchanges are replicated across (n+1)/2 nodes in the cluster
+- publish-retry defines the config for recoverable and non-recoverable exceptions. 
+  - Recoverable exceptions 
+    - `:sleep` - defines the time period after which a retry should happen
+  - Non-recoverable exceptions
+    - `:enabled` - defines whether retries should happen
+    - `:sleep` - defines the time period after which a retry should happen
+    - `:count` - defines the number of retries
+>>>>>>> c27fd46... Update ReadME
 
 ## Exponential Backoff based Retries
 
