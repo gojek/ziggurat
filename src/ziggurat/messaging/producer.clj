@@ -103,6 +103,7 @@
 (defn- non-recoverable-exception-config []
   (:non-recoverable-exception (publish-retry-config)))
 
+
 (defn publish
   "This is meant for publishing to rabbitmq.
   * Checks if the pool is alive - We do this so that publish does not happen after the channel pool state is stopped.
