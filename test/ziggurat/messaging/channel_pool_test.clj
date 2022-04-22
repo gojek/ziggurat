@@ -1,6 +1,6 @@
 (ns ziggurat.messaging.channel-pool-test
   (:require [clojure.test :refer :all]
-            [ziggurat.messaging.channel_pool :as cpool]
+            [ziggurat.messaging.channel_pool :as cpool :refer [channel-pool]]
             [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.fixtures :as fix])
   (:import (org.apache.commons.pool2.impl GenericObjectPoolConfig GenericObjectPool)
@@ -59,5 +59,21 @@
           rmq-chan-2   ^Channel (.borrowObject channel-pool)]
       (is (not (.equals rmq-chan-2 rmq-chan)))
       (is (.isOpen rmq-chan-2)))))
+
+(deftest is-pool-alive?
+  (testing "it should return true when channel-pool state has started"
+    (let [states {#'producer-connection #'channel-pool}]
+      (mount.core/start states)
+      (is (cpool/is-pool-alive? channel-pool))
+      (mount.core/stop states)))
+  (testing "it should return false when channel-pool state has not been started"
+    (is (false? (cpool/is-pool-alive? channel-pool))))
+  (testing "it should return false when channel-pool state has been stopped"
+    (let [states {#'producer-connection #'channel-pool}]
+      (mount.core/start states)
+      (mount.core/stop states)
+      (is (false? (cpool/is-pool-alive? channel-pool))))))
+
+
 
 

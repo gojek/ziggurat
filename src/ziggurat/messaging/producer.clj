@@ -5,7 +5,7 @@
             [langohr.exchange :as le]
             [langohr.http :as lh]
             [langohr.queue :as lq]
-            [ziggurat.messaging.channel_pool :as cpool]
+            [ziggurat.messaging.channel_pool :as cpool :refer [is-pool-alive?]]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [config ziggurat-config rabbitmq-config channel-retry-config]]
             [ziggurat.messaging.connection :refer [producer-connection is-connection-required?]]
@@ -109,14 +109,15 @@
   ([exchange message-payload expiration]
    (publish exchange message-payload expiration (:count (non-recoverable-exception-config))))
   ([exchange message-payload expiration counter]
-   (if (publish-internal exchange message-payload expiration)
-     (do
-       (Thread/sleep (:sleep (publish-retry-config)))
-       (log/info "Retrying publishing the message to " exchange)
-       (recur exchange message-payload expiration counter))
-     (when (and (:enabled (non-recoverable-exception-config)) (> counter 0))
-       (Thread/sleep (:sleep (non-recoverable-exception-config)))
-       (recur exchange message-payload expiration (dec counter))))))
+   (when (is-pool-alive? cpool/channel-pool)
+     (if (publish-internal exchange message-payload expiration)
+       (do
+         (Thread/sleep (:sleep (publish-retry-config)))
+         (log/info "Retrying publishing the message to " exchange)
+         (recur exchange message-payload expiration counter))
+       (when (and (:enabled (non-recoverable-exception-config)) (> counter 0))
+         (Thread/sleep (:sleep (non-recoverable-exception-config)))
+         (recur exchange message-payload expiration (dec counter)))))))
 
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))

@@ -7,6 +7,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]
@@ -563,6 +564,7 @@
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
         (is (= (inc count) @publish-called)))))
+
   (testing "producer/publish does not retry again if the exception thrown is non recoverable and if retry is disabled"
     (let [publish-called (atom 0)
           config (config/ziggurat-config)
@@ -578,7 +580,18 @@
                                                 (throw (Exception. "non-io exception"))))
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (is (= 1 @publish-called))))))
+        (is (= 1 @publish-called)))))
+  (testing "producer/publish does not publish even once if channel pool is not alive"
+    (let [publish-called (atom 0)]
+      (with-redefs [cpool/is-pool-alive?  (fn [_] false)
+                    lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 10)
+                                                (swap! publish-called inc)
+                                                (throw (Exception. "non-io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 0 @publish-called))))))
 
 (deftest publish-to-delay-queue-test
   (testing "creates a span when tracer is enabled"

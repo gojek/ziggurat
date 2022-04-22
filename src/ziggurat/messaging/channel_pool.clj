@@ -39,6 +39,9 @@
         rmq-chan-pool (GenericObjectPool. (RabbitMQChannelFactory. connection) pool-config)]
     rmq-chan-pool))
 
+(defn is-pool-alive? [channel-pool]
+  (= (type channel-pool) GenericObjectPool))
+
 (defn destroy-channel-pool [channel-pool]
   (.close channel-pool))
 
@@ -49,3 +52,5 @@
              (create-channel-pool c/producer-connection))
   :stop (do (log/info "Stopping channel pool")
             (destroy-channel-pool channel-pool)))
+
+
