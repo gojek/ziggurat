@@ -13,7 +13,8 @@
             [ziggurat.metrics :as metrics])
   (:import (com.rabbitmq.client AlreadyClosedException Channel)
            (java.io IOException)
-           (org.apache.commons.pool2.impl GenericObjectPool)))
+           (org.apache.commons.pool2.impl GenericObjectPool)
+           (java.util.concurrent TimeoutException)))
 
 (def MAX_EXPONENTIAL_RETRIES 25)
 
@@ -65,7 +66,7 @@
 
 (defn- handle-network-exception
   [e message-payload]
-  (log/error e "Exception was encountered while publishing to RabbitMQ")
+  (log/error e "Network exception was encountered while publishing to RabbitMQ")
   (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
   true)
 
@@ -84,15 +85,17 @@
           (handle-network-exception e message-payload))
         (catch IOException e
           (handle-network-exception e message-payload))
+        (catch TimeoutException e
+          (handle-network-exception e message-payload))
         (catch Exception e
           (log/error e "Exception was encountered while publishing to RabbitMQ")
           (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})
           false)
         (finally (return-to-pool cpool/channel-pool ch))))
     (catch Exception e
-      (log/error e "Exception occurred while borrowing a channel from the pool")
+      (log/error e "Exception was encountered while borrowing a channel from the pool")
       (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
-      false)))
+      true)))
 
 (defn publish
   ([exchange message-payload]
