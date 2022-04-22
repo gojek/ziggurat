@@ -73,7 +73,3 @@
       (mount.core/start states)
       (mount.core/stop states)
       (is (false? (cpool/is-pool-alive? channel-pool))))))
-
-
-
-
