@@ -1,5 +1,6 @@
 (ns ziggurat.messaging.util
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [ziggurat.config :refer [config ziggurat-config rabbitmq-config channel-retry-config]])
   (:import (com.rabbitmq.client DnsRecordIpAddressResolver ListAddressResolver Address)))
 
 (defn prefixed-queue-name [topic-entity value]
@@ -33,3 +34,18 @@
     (if (= address-resolver :dns)
       (DnsRecordIpAddressResolver. ^String host ^int port)
       (ListAddressResolver. (map #(Address. %) (list-of-hosts rabbitmq-config))))))
+
+(defn retry-type []
+  (-> (ziggurat-config) :retry :type))
+
+(defn channel-retries-enabled [topic-entity channel]
+  (:enabled (channel-retry-config topic-entity channel)))
+
+(defn channel-retry-type [topic-entity channel]
+  (:type (channel-retry-config topic-entity channel)))
+
+(defn get-channel-retry-count [topic-entity channel]
+  (:count (channel-retry-config topic-entity channel)))
+
+(defn delay-queue-name [topic-entity queue-name]
+  (prefixed-queue-name topic-entity queue-name))

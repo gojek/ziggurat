@@ -6,10 +6,9 @@
             [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.messaging.consumer :as consumer]
             [ziggurat.messaging.util :refer [prefixed-channel-name]]
-            [ziggurat.messaging.producer :refer [delay-queue-name]]
-            [ziggurat.messaging.util :as rutil]
-            [ziggurat.tracer :refer [tracer]]
-            [clojure.tools.logging :as log])
+            [ziggurat.messaging.producer]
+            [ziggurat.messaging.util :as rutil :refer :all]
+            [ziggurat.tracer :refer [tracer]])
   (:import (com.rabbitmq.client AlreadyClosedException Channel)))
 
 (defn- get-msg-from-rabbitmq [queue-name topic-name]

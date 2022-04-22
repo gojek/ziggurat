@@ -8,8 +8,8 @@
             [ziggurat.kafka-consumer.executor-service :refer [thread-pool]]
             [ziggurat.messaging.connection :refer [producer-connection consumer-connection]]
             [ziggurat.messaging.channel_pool :refer [channel-pool]]
-            [ziggurat.messaging.producer :as pr]
-            [ziggurat.messaging.util :as util]
+            [ziggurat.messaging.queues :refer [queues make-queues]]
+            [ziggurat.messaging.util :as util :refer :all]
             [ziggurat.metrics :as metrics]
             [ziggurat.producer :as producer]
             [ziggurat.server :refer [server]]
@@ -94,7 +94,7 @@
             channels         (util/get-channel-names stream-routes topic-entity)]
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :instant)))
         (lq/delete ch (util/prefixed-queue-name topic-identifier (get-queue-name :dead-letter)))
-        (lq/delete ch (pr/delay-queue-name topic-identifier (get-queue-name :delay)))
+        (lq/delete ch (delay-queue-name topic-identifier (get-queue-name :delay)))
         (doseq [channel channels]
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :instant)))
           (lq/delete ch (util/prefixed-channel-name topic-identifier channel (get-queue-name :dead-letter)))
@@ -140,7 +140,7 @@
 
 (defmacro with-queues [stream-routes body]
   `(try
-     (pr/make-queues ~stream-routes)
+     (make-queues ~stream-routes)
      ~body
      (finally
        (delete-queues ~stream-routes)
