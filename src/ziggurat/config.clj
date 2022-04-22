@@ -24,7 +24,11 @@
                                 :rabbit-mq-connection {:port            5672
                                                        :username        "guest"
                                                        :password        "guest"
-                                                       :channel-timeout 2000}
+                                                       :channel-timeout 2000
+                                                       :publish-retry {:sleep 5000
+                                                                       :non-recoverable-exception {:enabled true
+                                                                                                   :sleep 1000
+                                                                                                   :count 5}}}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}
                                 :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"

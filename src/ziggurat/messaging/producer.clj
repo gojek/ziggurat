@@ -95,16 +95,28 @@
     (catch Exception e
       (log/error e "Exception was encountered while borrowing a channel from the pool")
       (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
-      true)))
+      false)))
+
+(defn- publish-retry-config []
+  (-> (ziggurat-config) :rabbit-mq-connection :publish-retry))
+
+(defn- non-recoverable-exception-config []
+  (:non-recoverable-exception (publish-retry-config)))
 
 (defn publish
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-   (when (publish-internal exchange message-payload expiration)
-     (Thread/sleep 5000)
-     (log/info "Retrying publishing the message to " exchange)
-     (recur exchange message-payload expiration))))
+   (publish exchange message-payload expiration (:count (non-recoverable-exception-config))))
+  ([exchange message-payload expiration counter]
+   (if (publish-internal exchange message-payload expiration)
+     (do
+       (Thread/sleep (:sleep (publish-retry-config)))
+       (log/info "Retrying publishing the message to " exchange)
+       (recur exchange message-payload expiration counter))
+     (when (and (:enabled (non-recoverable-exception-config)) (> counter 0))
+       (Thread/sleep (:sleep (non-recoverable-exception-config)))
+       (recur exchange message-payload expiration (dec counter))))))
 
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))

@@ -16,7 +16,8 @@
             [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]
            (com.rabbitmq.client Channel Connection ShutdownSignalException AlreadyClosedException)
-           (java.io IOException)))
+           (java.io IOException)
+           (java.util.concurrent TimeoutException)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -520,27 +521,59 @@
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [_] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
-                                              (when (< @publish-called 2)
+                                              (when (< @publish-called 10)
                                                 (swap! publish-called inc)
                                                 (throw (IOException. "io exception"))))
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (is (= 2 @publish-called)))))
+        (is (= 10 @publish-called)))))
   (testing "publish/producer tries to publish again if already closed exception is received"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
-                                              (when (< @publish-called 2)
+                                              (when (< @publish-called 10)
                                                 (swap! publish-called inc)
                                                 (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil)))))
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (is (= 2 @publish-called)))))
-  (testing "producer/publish does not try again if the exception thrown is neither IOException nor AlreadyClosedException"
+        (is (= 10 @publish-called)))))
+  (testing "publish/producer tries to publish again if TimeoutException is received"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
-                                              (when (< @publish-called 2)
+                                              (when (< @publish-called 10)
+                                                (swap! publish-called inc)
+                                                (throw (TimeoutException. "timeout"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @publish-called)))))
+  (testing "producer/publish tries again the number of times defined in the config if the exception thrown is non recoverable and if retry is enabled"
+    (let [publish-called (atom 0)
+          config (config/ziggurat-config)
+          count 3
+          config (update-in config [:rabbit-mq-connection :publish-retry :non-recoverable-exception] (constantly {:enabled true
+                                                                                                                  :sleep   1
+                                                                                                                  :count   count}))]
+      (with-redefs [config/ziggurat-config  (fn [] config)
+                    lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 10)
+                                                (swap! publish-called inc)
+                                                (throw (Exception. "non-io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= (inc count) @publish-called)))))
+  (testing "producer/publish does not retry again if the exception thrown is non recoverable and if retry is disabled"
+    (let [publish-called (atom 0)
+          config (config/ziggurat-config)
+          count 3
+          config (update-in config [:rabbit-mq-connection :publish-retry :non-recoverable-exception] (constantly {:enabled false
+                                                                                                                  :sleep   1
+                                                                                                                  :count   count}))]
+      (with-redefs [config/ziggurat-config  (fn [] config)
+                    lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 10)
                                                 (swap! publish-called inc)
                                                 (throw (Exception. "non-io exception"))))
                     metrics/increment-count (fn [_ _ _] nil)]
