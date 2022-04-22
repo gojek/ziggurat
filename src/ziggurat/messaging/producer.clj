@@ -97,6 +97,7 @@
       (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
       :retry-with-counter)))
 
+
 (defn- publish-retry-config []
   (-> (ziggurat-config) :rabbit-mq-connection :publish-retry))
 
@@ -130,6 +131,7 @@
                                             (Thread/sleep (:sleep (non-recoverable-exception-config)))
                                             (recur exchange message-payload expiration (dec counter)))
                                           (log/error "Publishing the message has failed. It is being dropped")))))))
+
 
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))
