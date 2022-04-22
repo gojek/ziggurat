@@ -1,5 +1,6 @@
 (ns ziggurat.messaging.util
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str])
+  (:import (com.rabbitmq.client DnsRecordIpAddressResolver ListAddressResolver Address)))
 
 (defn prefixed-queue-name [topic-entity value]
   (str (name topic-entity) "_" value))
@@ -18,7 +19,17 @@
       keys))
 
 (defn list-of-hosts [config]
-  (let [{:keys [host hosts]} config]
-    (if hosts
-      (str/split hosts #",")
-      [host])))
+  (let [{:keys [host hosts]} config
+        rabbitmq-hosts       (if (some? hosts)
+                               hosts
+                               host)]
+    (str/split rabbitmq-hosts #",")))
+
+(defn create-address-resolver
+  [rabbitmq-config]
+  (let [host (:hosts rabbitmq-config)
+        port (:port rabbitmq-config)
+        address-resolver (get rabbitmq-config :address-resolver :dns)]
+    (if (= address-resolver :dns)
+      (DnsRecordIpAddressResolver. ^String host ^int port)
+      (ListAddressResolver. (map #(Address. %) (list-of-hosts rabbitmq-config))))))
