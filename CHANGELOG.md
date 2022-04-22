@@ -1,115 +1,158 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
+All notable changes to this project will be documented in this file. This change log follows the conventions
+of [keepachangelog.com](http://keepachangelog.com/).
+
+## 4.7.0 (unreleased)
+
+- RabbitMQ's connections use a DNS IP resolver to resolve DNS based hosts
+- Setting of HA policies from within ziggurat have been removed
 
 ## 4.6.2
-- Fixed a bug where publish code would keep on retrying despite getting an exception while borrowing 
+
+- Fixed a bug where publish code would keep on retrying despite getting an exception while borrowing
   a channel from the pool
 
 ## 4.6.1
+
 - Reduce the maximum number of idle objects in the channel pool
 
 ## 4.6.0
+
 - Implements pool RabbitMQ channels
 
 ## 4.5.3
+
 - Update logic of the deadset delete API to just read and ack messages and ignore content
 
 ## 4.5.2
+
 - Add deprecation warnings to sentry usage
 
 ## 4.5.1
+
 - Updates logback-classic version to 1.2.9
 
 ## 4.5.0
+
 - All Kafka [SSL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SslConfigs.html)
-  and [SASL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SaslConfigs.html) 
-  can be provided as kebab case keywords. These configs are automatically applied to all kafka stream, kafka producer and kafka consumer objects created in Ziggurat. Please refer to README for examples.  
+  and [SASL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SaslConfigs.html)
+  can be provided as kebab case keywords. These configs are automatically applied to all kafka stream, kafka producer
+  and kafka consumer objects created in Ziggurat. Please refer to README for examples.
 
 ## 4.4.0
+
 - Allows channel mapper to push to dead letter queue
 
 ## 4.3.1
+
 - Fixes the stop order of components to facilitate graceful shutdown of business operations
 
 ## 4.3.0
+
 - Update on the UpgradeGuide document
 - Removed the flatland dependency
 - Allows handler function to push to dead letter queue (does not work if the handler acts on RabbitMQ channles too)
 
 ## 4.2.0
+
 - Enabled structured logging via [cambium](https://cambium-clojure.github.io/)
 - Replaced log4j with logback as the default slf4j implementation.
 - Added structured logs in ziggurat codebase as well.
 
 ## 4.1.0
-- Changed the code for consuming from RabbitMQ - on exception during de-serialization, message is sent to the dead-set 
-queues and NOT re-queued back in the queue like previous versions.
+
+- Changed the code for consuming from RabbitMQ - on exception during de-serialization, message is sent to the dead-set
+  queues and NOT re-queued back in the queue like previous versions.
 
 ## 4.0.0
-- The kafka-metadata is now exposed to the stream handler function along with the message itself`{:topic <string> :partition <int> :timestamp <long>}`
+
+- The kafka-metadata is now exposed to the stream handler function along with the message
+  itself`{:topic <string> :partition <int> :timestamp <long>}`
 - The stream handler receives a map containing two keys `:message` and `:metadata`
 
 ## 3.15.0
-- Includes a `StreamsUncaughtExceptionHandler` which shuts down the client in case of an uncaught exception. 
-- Introduces a new stream-route config `:stream-thread-exception-response` which lets user control the behaviour of `StreamsUncaughtExceptionHandler`.
+
+- Includes a `StreamsUncaughtExceptionHandler` which shuts down the client in case of an uncaught exception.
+- Introduces a new stream-route config `:stream-thread-exception-response` which lets user control the behaviour
+  of `StreamsUncaughtExceptionHandler`.
 - Restores AoT compilation for various namespaces
 
 ## 3.14.0
+
 - Upgrade kafka-streams library to 2.8.0
 - Replaced `:ziggurat :datadog` configuration in favour of `:ziggurat :statsd`
 - Removed the default state-store which was created at the time of Kafka Streams initialization
 
 ## 3.13.0
-- Supports all of the official Kafka configurations for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html), [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html) and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html)
+
+- Supports all of the official Kafka configurations
+  for [Streams API](https://docs.confluent.io/platform/current/installation/configuration/streams-configs.html)
+  , [Consumer API](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html)
+  and [Producer API](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html)
 
 ## 3.12.0
+
 - Uses Kafka Streams client 2.7.0
 - Introduces default.api.timeout.ms for Kafka Consumer API
 
 ## 3.11.0
+
 - Uses Kafka Streams client 2.5.0
 
 ## 3.10.0
+
 - Uses Kafka Streams client 2.4.1
 
 ## 3.9.0
+
 - Added support for handling uncaught exceptions in Kafka Streams using `:enable-stream-restart-on-uncaught-exception`
 
 ## 3.8.1
-- Added support for Kafka Consumer config [default.api.timeout.ms](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#consumerconfigs_default.api.timeout.ms) for Kafka Streams
+
+- Added support for Kafka Consumer
+  config [default.api.timeout.ms](https://docs.confluent.io/platform/current/installation/configuration/consumer-configs.html#consumerconfigs_default.api.timeout.ms)
+  for Kafka Streams
 
 ## 3.7.1
-- Strict type checking for batch handler return type. Application is stopped if the type does not match the expected.   
+
+- Strict type checking for batch handler return type. Application is stopped if the type does not match the expected.
 
 ## 3.7.0
+
 - Added support to flatten protobuf-struct during deserialization
 
 ## 3.6.2
+
 - Validation of stream and batch route arguments against the configuration, when starting the application.
 
 ## 3.6.1
-- Changed the logic for committing offsets to only commit only when non-zero records are polled while 
-consuming via Kafka Consumer API
+
+- Changed the logic for committing offsets to only commit only when non-zero records are polled while
+  consuming via Kafka Consumer API
 
 ## 3.6.0
+
 - Error reporting done to newrelic along with sentry.
 
 ## 3.5.3
+
 - Refactored and simplified the code for retrying, publishing and consuming using RabbitMQ.
 - The config `{:messaging {:constructor` has been removed from `:ziggurat` config space
-- Both, `{:ziggurat :rabbit-mq-connection {:hosts`  and `{:ziggurat :rabbit-mq-connection {:host` configs 
-are accepted for connecting to RabbitMQ. But, `:hosts` is preferred over `:host`. `:hosts` should be used
-to define cluster hosts.
+- Both, `{:ziggurat :rabbit-mq-connection {:hosts`  and `{:ziggurat :rabbit-mq-connection {:host` configs
+  are accepted for connecting to RabbitMQ. But, `:hosts` is preferred over `:host`. `:hosts` should be used
+  to define cluster hosts.
 - defrecord `ziggurat.mapper.MessagePayload` has been added back to preserve backward compatibility
-- Fixed a bug in calculation of exponential backoff timeout where casting the timeout to integer 
-was throwing an IllegalArgumentException  
+- Fixed a bug in calculation of exponential backoff timeout where casting the timeout to integer
+  was throwing an IllegalArgumentException
 
 ## 3.5.2
-- If there's an exception in the batch handler function, the failure metrics is published with a count of "total batch 
-size" (which was being processed by the function) instead of just 1 as was being done before this change. 
+
+- If there's an exception in the batch handler function, the failure metrics is published with a count of "total batch
+  size" (which was being processed by the function) instead of just 1 as was being done before this change.
 
 ## 3.5.1
+
 - Fixed publishing of metrics for batch consumption
 - Fixed the startup logic for batch consumption - only routes provided in Ziggurat init-args will be started
 - Standardized naming for Kafka Consumer API configs
@@ -117,9 +160,9 @@ size" (which was being processed by the function) instead of just 1 as was being
 ## 3.5.0
 
 - Adds support for consuming Kafka messages in batches using Kafka Consumer API
-- Fixes the logic during RabbitMQ disconnection - Ziggurat now retries (publishing a message) 
-infinitely till RMQ recovers. This changes the present behaviour where Kafka Streams were being stopped
-during disconnection with RabbitMQ.
+- Fixes the logic during RabbitMQ disconnection - Ziggurat now retries (publishing a message)
+  infinitely till RMQ recovers. This changes the present behaviour where Kafka Streams were being stopped
+  during disconnection with RabbitMQ.
 
 ## 3.4.2-alpha.4
 
@@ -265,19 +308,22 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 ## 3.2.0 - 2020-01-09
 
 - Changes Exponential backoff config contract.
-  - Adds a `:type` key to retry-config
-  - Adds a limit on the number of retries possible in exponential backoff
-  - Releasing exponential backoff as an alpha feature
-- Fixes [issue](https://github.com/gojek/ziggurat/issues/136) where dead-set replay doesn't send the message to the retry-flow
+    - Adds a `:type` key to retry-config
+    - Adds a limit on the number of retries possible in exponential backoff
+    - Releasing exponential backoff as an alpha feature
+- Fixes [issue](https://github.com/gojek/ziggurat/issues/136) where dead-set replay doesn't send the message to the
+  retry-flow
 - Fixes [issue](https://github.com/gojek/ziggurat/issues/129) by updating tools.nrepl dependency to nrepl/nrepl
-- Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from 2.x to 3.x .
+- Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from
+  2.x to 3.x .
 - Fixes [this bug](https://github.com/gojek/ziggurat/issues/115) in RabbitMQ message processing flow
 - Adds support for exponential backoffs in channels and normal retry flow
 - exponential backoffs can be enabled from the config
 
 ## 3.2.0-alpha.5 - 2019-12-17
 
-- Fixes [issue](https://github.com/gojek/ziggurat/issues/136) where dead-set replay doesn't send the message to the retry-flow
+- Fixes [issue](https://github.com/gojek/ziggurat/issues/136) where dead-set replay doesn't send the message to the
+  retry-flow
 
 ## 3.2.0-alpha.4 - 2019-12-17
 
@@ -285,7 +331,8 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 
 ## 3.2.0-alpha.3 - 2019-12-16
 
-- Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from 2.x to 3.x .
+- Fixes [this bug](https://github.com/gojek/ziggurat/issues/133) where dead set replay broke on Ziggurat upgrade from
+  2.x to 3.x .
 
 ## 3.2.0-alpha.2 - 2019-12-12
 
@@ -301,19 +348,22 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 - Adds tracing support. With [Jaeger](https://www.jaegertracing.io/) as the default tracer
 - Adds a JSON middleware to parse JSON serialized functions
 - Renames report-time to report-histogram and adds deprecation notice on report-time
-- Makes metrics backward compatible with 2.x and 3.0.0 . Ziggurat now publishes metrics in 2 formats similar to version 2.12.0 and above.
+- Makes metrics backward compatible with 2.x and 3.0.0 . Ziggurat now publishes metrics in 2 formats similar to version
+  2.12.0 and above.
 
 ## 3.1.0-alpha.5 - 2019-12-5
 
 - Fixes metrics publishing for custom metrics (i.e. string metric namespaces): In 2.x ziggurat appended the service_name
   to a string metrics namespace (e.g. "metric" -> "service_name.metric"), we changed the contract in 3.0 by
-  removing the service_name from the metric name and instead adding a tag for it. To have backward compatibility with both
+  removing the service_name from the metric name and instead adding a tag for it. To have backward compatibility with
+  both
   2.x and 3.0 we now send metrics in both formats
 
 ## 3.1.0-alpha.4 - 2019-12-4
 
 - Reintroduces old metrics format (statsd). Ziggurat now pushes metrics in both formats (statsd and prometheus like).
-- Reverts the changes for exponential backoff, the current implementation was broken and a new PR is being raised with the correct approach.
+- Reverts the changes for exponential backoff, the current implementation was broken and a new PR is being raised with
+  the correct approach.
 
 ## 3.1.0-alpha.3 - 2019-11-11
 
@@ -334,16 +384,16 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 
 - Updates kafka streams - 1.1.1 -> 2.1.0
 - Changes metrics format
-  - Instead of having service name and topic in the metric name, everything is now added to tags
+    - Instead of having service name and topic in the metric name, everything is now added to tags
 - Middleware
-  - Handler-fn will now receive the message as a byte array
-  - Channel-fns will now receive the message as a byte array
-  - We have provided middlewares, that can be used to deserialize the messages
-  - Deadset-get api will now get serialized messages
+    - Handler-fn will now receive the message as a byte array
+    - Channel-fns will now receive the message as a byte array
+    - We have provided middlewares, that can be used to deserialize the messages
+    - Deadset-get api will now get serialized messages
 - Java functions
-  - Java functions are now exposed for all public functions in namespaces
+    - Java functions are now exposed for all public functions in namespaces
 - Dependency simplification
-  - Removes dependency overrides.
+    - Removes dependency overrides.
 
 ## 3.0.0-alpha.7 - 2019-10-04
 
@@ -418,7 +468,8 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 
 ## 2.10.1 - 2019-05-02
 
-- dont close the channel on shutdown listener. it is already closed when connection is broken. this prevents topology recovery
+- dont close the channel on shutdown listener. it is already closed when connection is broken. this prevents topology
+  recovery
 - catch message production exception in rabbitmq publisher
 - Adds nippy as dependency instead of carmine
 
@@ -491,13 +542,16 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 
 ## 2.6.1 - 2018-11-26
 
-- Changed the order of starting up of ziggurat and actor. First config will be initialized, then actor function will start up and ziggurat start function will start up.
-- Apps with (mount/start) in their `start-fn` will no longer work correctly. Users should start using `mount/only` instead.
+- Changed the order of starting up of ziggurat and actor. First config will be initialized, then actor function will
+  start up and ziggurat start function will start up.
+- Apps with (mount/start) in their `start-fn` will no longer work correctly. Users should start using `mount/only`
+  instead.
 
 ## 2.6.0 - 2018-11-23
 
 - Removes Yggdrasil, bulwark and ESB log entities dependency
-- Removes the `make-config` function from `ziggurat.config` namespace. Users should now use `config-from-env` function instead.
+- Removes the `make-config` function from `ziggurat.config` namespace. Users should now use `config-from-env` function
+  instead.
 
 ## 2.5.9 - 2018-11-16
 
@@ -505,7 +559,8 @@ _(for a more details list of changes look at the changelogs of 3.3.0-alpha. entr
 
 ## 2.5.8 - 2018-11-15
 
-- Fixes bug where rabbitmq connection is established even when retry is disabled and channels are absent in consumer/start-subscribers
+- Fixes bug where rabbitmq connection is established even when retry is disabled and channels are absent in
+  consumer/start-subscribers
 
 ## 2.5.7 - 2018-11-14
 
