@@ -376,7 +376,7 @@ Ziggurat Config | Default Value | Description | Mandatory?
 - `:channel-pool` specifies the properties for the RabbitMQ channel pool used for publishing
 - `:address-resolver` specifies the strategy to figure out RabbitMQ hosts IP addresses. `:dns` is the default and shoud 
     be used when `:hosts` specifies a DNS address. `:ip-list` should be used when comma separated IPs are provided.
-- `:publish-retry` defines the config for recoverable and non-recoverable exceptions. 
+- `:publish-retry` defines the config for recoverable and non-recoverable exceptions.
   - Recoverable exceptions 
     - `:sleep` - defines the time period after which a retry should happen
   - Non-recoverable exceptions
