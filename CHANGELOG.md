@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
-## 4.7.0 (unreleased)
+## 4.6.3
 
 - RabbitMQ's connections use a DNS IP resolver to resolve DNS based hosts
 - Setting of HA policies from within ziggurat have been removed
