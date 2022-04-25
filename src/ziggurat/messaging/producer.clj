@@ -96,7 +96,10 @@
       (log/error e "Exception was encountered while borrowing a channel from the pool")
       (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
       :retry-with-counter)))
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6a8eb91... Add retry states for publish
 
 (defn- publish-retry-config []
   (-> (ziggurat-config) :rabbit-mq-connection :publish-retry))
