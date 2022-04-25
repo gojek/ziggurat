@@ -2,36 +2,21 @@
 
 All notable changes to this project will be documented in this file. This change log follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 
-## 3.22.1
-- Reduce the maximum number of idle objects in the channel pool
-
-## 3.22.0
+## 3.16.0
+### Below fixes have been back-ported from master branch
 - Implements pool RabbitMQ channels
-
-## 3.21.0
+- Reduce the maximum number of idle objects in the channel pool
 - Update logic of the deadset delete API to just read and ack messages and ignore content
-
-## 3.20.2
 - Add deprecation warnings to sentry usage
-
-## 3.20.1
-- Updates logback-classic version to 1.2.9
-
-## 3.20.0
 - All Kafka [SSL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SslConfigs.html)
   and [SASL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SaslConfigs.html) 
-  can be provided as kebab case keywords. These configs are automatically applied to all kafka stream, kafka producer and kafka consumer objects created in Ziggurat. Please refer to README for examples.  
-
-## 3.19.0
-- Allows channel mapper to push to dead letter queue
-
-## 3.18.0
+  can be provided as kebab case keywords. These configs are automatically applied to all kafka stream, kafka producer and kafka consumer objects created in Ziggurat. Please refer to README for examples.
 - Fixes the stop order of components to facilitate graceful shutdown of business operations
-
-## 3.17.0
-- Update on the UpgradeGuide document
 - Removed the flatland dependency
-- Allows handler function to push to dead letter queue (does not work if the handler acts on RabbitMQ channles too)
+- Allows handler function and channel mapper function to push to dead letter queue
+
+## 3.15.1
+- Update log4j version to avoid security vulnerability
 
 ## 3.15.0
 - Includes a `StreamsUncaughtExceptionHandler` which shuts down the client in case of an uncaught exception. 
