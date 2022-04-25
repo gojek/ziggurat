@@ -104,6 +104,13 @@
   (:non-recoverable-exception (publish-retry-config)))
 
 (defn publish
+  "This is meant for publishing to rabbitmq.
+  * Checks if the pool is alive - We do this so that publish does not happen after the channel pool state is stopped.
+  * publish-internal returns multiple states
+    * :success - Message has been successfully produced to rabbitmq
+    * :retry - A retryable exception was encountered and message will be retried until it is successfully published.
+    * :retry-with-counter - A non recoverable exception is encountered, but the message will be retried for a few times. defined by the counter
+      { :rabbit-mq-connection { :publish-retry { :non-recoverable-exception {:count}}}}}"
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
