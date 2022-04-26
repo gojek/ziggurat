@@ -124,9 +124,11 @@
                              (Thread/sleep (:sleep (publish-retry-config)))
                              (log/info "Retrying publishing the message to " exchange)
                              (recur exchange message-payload expiration counter))
-         (= result :retry-with-counter) (when (and (:enabled (non-recoverable-exception-config)) (pos? counter))
-                                          (Thread/sleep (:sleep (non-recoverable-exception-config)))
-                                          (recur exchange message-payload expiration (dec counter))))))))
+         (= result :retry-with-counter) (if (and (:enabled (non-recoverable-exception-config)) (pos? counter))
+                                          (do
+                                            (Thread/sleep (:sleep (non-recoverable-exception-config)))
+                                            (recur exchange message-payload expiration (dec counter)))
+                                          (log/error "Publishing the message has failed. It is being dropped")))))))
 
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))
