@@ -142,11 +142,12 @@
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
-        (start-subscriber* (lch/open consumer-connection)
-                           1
-                           (util/prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
-                           (mpr/channel-mapper-func channel-handler-fn channel-key)
-                           topic-entity)))))
+        (let [channel-prefetch-count (get-in-config [:stream-router topic-entity :channels channel-key :prefetch-count])]
+          (start-subscriber* (lch/open consumer-connection)
+                             channel-prefetch-count
+                             (util/prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
+                             (mpr/channel-mapper-func channel-handler-fn channel-key)
+                             topic-entity))))))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
