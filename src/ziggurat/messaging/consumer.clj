@@ -14,6 +14,8 @@
             [ziggurat.util.error :refer [report-error]]
             [cambium.core :as clog]))
 
+(def DEFAULT_CHANNEL_PREFETCH_COUNT 20)
+
 (defn- reject-message
   [ch delivery-tag]
   (lb/reject ch delivery-tag))
@@ -142,7 +144,7 @@
     (let [channel-key        (first channel)
           channel-handler-fn (second channel)]
       (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
-        (let [channel-prefetch-count (get-in-config [:stream-router topic-entity :channels channel-key :prefetch-count])]
+        (let [channel-prefetch-count (get-in-config [:stream-router topic-entity :channels channel-key :prefetch-count] DEFAULT_CHANNEL_PREFETCH_COUNT)]
           (start-subscriber* (lch/open consumer-connection)
                              channel-prefetch-count
                              (util/prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
