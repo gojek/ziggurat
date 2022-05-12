@@ -11,7 +11,8 @@
             [ziggurat.messaging.util :refer [prefixed-queue-name]]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.error :refer [report-error]]
-            [ziggurat.util.rabbitmq :as util]))
+            [ziggurat.util.rabbitmq :as util])
+  (:import (com.rabbitmq.client Channel)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
@@ -215,6 +216,38 @@
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (util/close rmq-ch))))))
+
+(deftest channel-prefetch-count-test
+  (testing "Default prefetch-count is used while creating channel subscribers if prefetch-count is not configured explicitly"
+    (let [prefetch-count-used (atom 0)
+          channel             :channel-1
+          channel-fn          (fn [_])
+          original-zig-config (ziggurat-config)
+          original-lb-qos     lb/qos]
+      (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
+                                      channel     channel-fn}}
+                       (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                                                (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))
+                                     lb/qos (fn [^Channel _ ^long prefetch-count]
+                                              (reset! prefetch-count-used prefetch-count))]
+                         (consumer/start-channels-subscriber {:channel-1 (fn [_])} topic-entity)
+                         (is (= consumer/DEFAULT_CHANNEL_PREFETCH_COUNT @prefetch-count-used))))))
+
+  (testing "prefetch-count provided in configuration is used while creating channel subscribers"
+    (let [prefetch-count-used (atom 0)
+          expected-prefetch-count 50
+          channel             :channel-1
+          channel-fn          (fn [_])
+          original-zig-config (ziggurat-config)]
+      (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
+                                      channel     channel-fn}}
+                       (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                                                (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))
+                                                                (update-in [:stream-router topic-entity :channels channel :prefetch-count] (constantly expected-prefetch-count))))
+                                     lb/qos (fn [^Channel _ ^long prefetch-count]
+                                              (reset! prefetch-count-used prefetch-count))]
+                         (consumer/start-channels-subscriber {channel channel-fn} topic-entity)
+                         (is (= expected-prefetch-count @prefetch-count-used)))))))
 
 (deftest start-retry-subscriber-test
   (testing "creates a span when tracer is enabled"
