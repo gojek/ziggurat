@@ -3,8 +3,12 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
-## 4.6.3
+## 4.6.4
+- user can provide `:prefetch-count` for RabbitMQ channel threads in `[:stream-router :channels :<channel_key>]` 
+  section of the config
+- Fixed a bug for overriding the default channel-pool configuration with the user provided config
 
+## 4.6.3
 - RabbitMQ's connections use a DNS IP resolver to resolve DNS based hosts
 - Setting of HA policies from within ziggurat have been removed
 
