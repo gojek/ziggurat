@@ -1,6 +1,6 @@
 (ns ziggurat.messaging.channel_pool
   (:require [mount.core :refer [defstate]]
-            [ziggurat.config :as zc]
+            [ziggurat.config :as zc :refer [ziggurat-config]]
             [ziggurat.messaging.connection :as c]
             [cambium.core :as clog]
             [clojure.tools.logging :as log])
@@ -35,7 +35,7 @@
       (.setJmxNamePrefix "zig-rabbitmq-ch-pool"))))
 
 (defn create-channel-pool [^Connection connection]
-  (let [pool-config   (create-object-pool-config (get-in zc/ziggurat-config [:rabbit-mq-connection :channel-pool]))
+  (let [pool-config   (create-object-pool-config (get-in (ziggurat-config) [:rabbit-mq-connection :channel-pool]))
         rmq-chan-pool (GenericObjectPool. (RabbitMQChannelFactory. connection) pool-config)]
     rmq-chan-pool))
 

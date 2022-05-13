@@ -31,8 +31,8 @@
       (is (= (Duration/ofMillis (:max-wait-ms expected-config)) max-wait-ms))
       (is (= (:max-total expected-config) max-total))))
   (testing "it should override the default config with the user provided config"
-    (let [expected-config    {:min-idle 5 :max-idle 15 :max-total 49 :max-wait-ms 1000}
-          user-config        {:min-idle 5 :max-idle 15 :max-wait-ms 1000}
+    (let [expected-config    {:min-idle 5 :max-idle 200 :max-total 49 :max-wait-ms 1000}
+          user-config        {:min-idle 5 :max-idle 200 :max-wait-ms 1000}
           pool-config-object ^GenericObjectPoolConfig (cpool/create-object-pool-config user-config)
           min-idle           (.getMinIdle pool-config-object)
           max-idle           (.getMaxIdle pool-config-object)
