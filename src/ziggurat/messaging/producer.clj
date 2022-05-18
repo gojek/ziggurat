@@ -97,17 +97,12 @@
       (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))
                                                                    :retry-counter retry-counter})
       :retry-with-counter)))
-<<<<<<< HEAD
-
-=======
->>>>>>> 6a8eb91... Add retry states for publish
 
 (defn- publish-retry-config []
   (-> (ziggurat-config) :rabbit-mq-connection :publish-retry))
 
 (defn- non-recoverable-exception-config []
   (:non-recoverable-exception (publish-retry-config)))
-
 
 (defn publish
   "This is meant for publishing to rabbitmq.
@@ -125,9 +120,8 @@
    (when (is-pool-alive? cpool/channel-pool)
      (let [result (publish-internal exchange message-payload expiration retry-counter)]
        (when (pos? retry-counter)
-         (do
-           (log/info "Retrying publishing the message to " exchange)
-           (log/info "Retry attempt " retry-counter)))
+         (log/info "Retrying publishing the message to " exchange)
+         (log/info "Retry attempt " retry-counter))
        (log/info "Publish result " result)
        (cond
          (= result :success) nil
