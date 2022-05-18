@@ -18,9 +18,9 @@
                                    :channel-timeout [2000 :int]
 
                                    :address-resolver [:dns :keyword] ;;possible values [:dns :ip-list]
-                                   :publish-retry   {:sleep                     [1 :int]
+                                   :publish-retry   {:back-off-ms                     [1 :int]
                                                      :non-recoverable-exception {:enabled [true :bool]
-                                                                                 :sleep   [1 :int]
+                                                                                 :back-off-ms   [1 :int]
                                                                                  :count   [5 :int]}}}
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}

@@ -25,9 +25,9 @@
                                                        :username        "guest"
                                                        :password        "guest"
                                                        :channel-timeout 2000
-                                                       :publish-retry {:sleep 5000
+                                                       :publish-retry {:back-off-ms 5000
                                                                        :non-recoverable-exception {:enabled true
-                                                                                                   :sleep 1000
+                                                                                                   :back-off-ms 5000
                                                                                                    :count 5}}}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}

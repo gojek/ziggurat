@@ -65,36 +65,37 @@
       props)))
 
 (defn- handle-network-exception
-  [e message-payload]
+  [e message-payload retry-counter]
   (log/error e "Network exception was encountered while publishing to RabbitMQ")
-  (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))})
+  (metrics/increment-count ["rabbitmq" "publish" "network"] "exception" {:topic-entity (name (:topic-entity message-payload))
+                                                                         :retry-attempt retry-counter})
   :retry)
 
 (defn return-to-pool [^GenericObjectPool pool ^Channel ch]
   (.returnObject pool ch))
 
+(defn borrow-from-pool [^GenericObjectPool pool]
+  (.borrowObject pool))
+
 (defn- publish-internal
-  [exchange message-payload expiration]
+  [exchange message-payload expiration retry-counter]
   (try
-    (let [ch (.borrowObject cpool/channel-pool)]
+    (let [ch (borrow-from-pool cpool/channel-pool)]
       (try
         (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
                     (properties-for-publish expiration (:headers message-payload)))
         :success
-        (catch AlreadyClosedException e
-          (handle-network-exception e message-payload))
-        (catch IOException e
-          (handle-network-exception e message-payload))
-        (catch TimeoutException e
-          (handle-network-exception e message-payload))
-        (catch Exception e
-          (log/error e "Exception was encountered while publishing to RabbitMQ")
-          (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))})
-          :retry-with-counter)
         (finally (return-to-pool cpool/channel-pool ch))))
+    (catch AlreadyClosedException e
+      (handle-network-exception e message-payload retry-counter))
+    (catch IOException e
+      (handle-network-exception e message-payload retry-counter))
+    (catch TimeoutException e
+      (handle-network-exception e message-payload retry-counter))
     (catch Exception e
-      (log/error e "Exception was encountered while borrowing a channel from the pool")
-      (metrics/increment-count ["rabbitmq" "publish" "channel_borrow"] {:topic-entity (name (:topic-entity message-payload))})
+      (log/error e "Exception was encountered while publishing to RabbitMQ")
+      (metrics/increment-count ["rabbitmq" "publish"] "exception" {:topic-entity (name (:topic-entity message-payload))
+                                                                   :retry-counter retry-counter})
       :retry-with-counter)))
 <<<<<<< HEAD
 
@@ -119,21 +120,30 @@
   ([exchange message-payload]
    (publish exchange message-payload nil))
   ([exchange message-payload expiration]
-   (publish exchange message-payload expiration (:count (non-recoverable-exception-config))))
-  ([exchange message-payload expiration counter]
+   (publish exchange message-payload expiration 0))
+  ([exchange message-payload expiration retry-counter]
    (when (is-pool-alive? cpool/channel-pool)
-     (let [result (publish-internal exchange message-payload expiration)]
+     (let [result (publish-internal exchange message-payload expiration retry-counter)]
+       (when (pos? retry-counter)
+         (do
+           (log/info "Retrying publishing the message to " exchange)
+           (log/info "Retry attempt " retry-counter)))
+       (log/info "Publish result " result)
        (cond
          (= result :success) nil
          (= result :retry) (do
-                             (Thread/sleep (:sleep (publish-retry-config)))
-                             (log/info "Retrying publishing the message to " exchange)
-                             (recur exchange message-payload expiration counter))
-         (= result :retry-with-counter) (if (and (:enabled (non-recoverable-exception-config)) (pos? counter))
+                             (Thread/sleep (:back-off-ms (publish-retry-config)))
+                             (recur exchange message-payload expiration (inc retry-counter)))
+         (= result :retry-with-counter) (if (and (:enabled (non-recoverable-exception-config))
+                                                 (< retry-counter (:count (non-recoverable-exception-config))))
                                           (do
-                                            (Thread/sleep (:sleep (non-recoverable-exception-config)))
-                                            (recur exchange message-payload expiration (dec counter)))
-                                          (log/error "Publishing the message has failed. It is being dropped")))))))
+                                            (log/info "Backing off")
+                                            (Thread/sleep (:back-off-ms (non-recoverable-exception-config)))
+                                            (recur exchange message-payload expiration (inc retry-counter)))
+                                          (do
+                                            (log/error "Publishing the message has failed. It is being dropped")
+                                            (metrics/increment-count ["rabbitmq" "publish"] "message_loss" {:topic-entity (name (:topic-entity message-payload))
+                                                                                                            :retry-counter retry-counter}))))))))
 
 (defn- retry-type []
   (-> (ziggurat-config) :retry :type))

@@ -518,7 +518,7 @@
         (is (true? @publish-called?))))))
 
 (deftest publish-behaviour-on-rabbitmq-disconnection-test
-  (testing "producer/publish tries to publish again if IOException is thrown"
+  (testing "producer/publish tries to publish again if IOException is thrown via lb/publish"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [_] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
@@ -528,7 +528,7 @@
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
         (is (= 10 @publish-called)))))
-  (testing "publish/producer tries to publish again if already closed exception is received"
+  (testing "publish/producer tries to publish again if already closed exception is received via lb/publish"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
@@ -538,7 +538,7 @@
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
         (is (= 10 @publish-called)))))
-  (testing "publish/producer tries to publish again if TimeoutException is received"
+  (testing "publish/producer tries to publish again if TimeoutException is received via lb/publish"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
@@ -548,12 +548,42 @@
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
         (is (= 10 @publish-called)))))
-  (testing "producer/publish tries again the number of times defined in the config if the exception thrown is non recoverable and if retry is enabled"
+  (testing "producer/publish tries to publish again if IOException is thrown while borrowing from channel"
+    (let [borrow-from-pool-called (atom 0)]
+      (with-redefs [lch/open                (fn [_] (reify Channel (close [_] nil)))
+                    producer/borrow-from-pool             (fn [_]
+                                                            (when (< @borrow-from-pool-called 10)
+                                                              (swap! borrow-from-pool-called inc)
+                                                              (throw (IOException. "io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @borrow-from-pool-called)))))
+  (testing "publish/producer tries to publish again if already closed exception is received while borrowing from channel"
+    (let [borrow-from-pool-called (atom 0)]
+      (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    producer/borrow-from-pool             (fn [_]
+                                                            (when (< @borrow-from-pool-called 10)
+                                                              (swap! borrow-from-pool-called inc)
+                                                              (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil)))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @borrow-from-pool-called)))))
+  (testing "publish/producer tries to publish again if TimeoutException is received while borrowing from channel"
+    (let [borrow-from-pool-called (atom 0)]
+      (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    producer/borrow-from-pool             (fn [_]
+                                                            (when (< @borrow-from-pool-called 10)
+                                                              (swap! borrow-from-pool-called inc)
+                                                              (throw (TimeoutException. "timeout"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @borrow-from-pool-called)))))
+  (testing "producer/publish retries publishing for a certain number of times (configurable) when a non-recoverable exception is thrown"
     (let [publish-called (atom 0)
           config (config/ziggurat-config)
           count 3
           config (update-in config [:rabbit-mq-connection :publish-retry :non-recoverable-exception] (constantly {:enabled true
-                                                                                                                  :sleep   1
+                                                                                                                  :back-off-ms   1
                                                                                                                   :count   count}))]
       (with-redefs [config/ziggurat-config  (fn [] config)
                     lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
@@ -570,7 +600,7 @@
           config (config/ziggurat-config)
           count 3
           config (update-in config [:rabbit-mq-connection :publish-retry :non-recoverable-exception] (constantly {:enabled false
-                                                                                                                  :sleep   1
+                                                                                                                  :back-off-ms   1
                                                                                                                   :count   count}))]
       (with-redefs [config/ziggurat-config  (fn [] config)
                     lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
