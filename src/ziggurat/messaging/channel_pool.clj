@@ -25,7 +25,7 @@
 (defn create-object-pool-config [config]
   (let [standby-size       10
         total-thread-count (calc-total-thread-count)
-        merged-config      (merge {:max-wait-ms 5000 :min-idle standby-size :max-idle (* standby-size 2)} config)]
+        merged-config      (merge {:max-wait-ms 5000 :min-idle standby-size :max-idle total-thread-count} config)]
     (doto (GenericObjectPoolConfig.)
       (.setMaxWait (Duration/ofMillis (:max-wait-ms merged-config)))
       (.setMinIdle (:min-idle merged-config))
@@ -35,9 +35,14 @@
       (.setJmxNamePrefix "zig-rabbitmq-ch-pool"))))
 
 (defn create-channel-pool [^Connection connection]
-  (let [pool-config   (create-object-pool-config (get-in (ziggurat-config) [:rabbit-mq-connection :channel-pool]))
+  (let [pool-config   (create-object-pool-config
+                       (get-in (ziggurat-config)
+                               [:rabbit-mq-connection :channel-pool]))
         rmq-chan-pool (GenericObjectPool. (RabbitMQChannelFactory. connection) pool-config)]
     rmq-chan-pool))
+
+(defn is-pool-alive? [channel-pool]
+  (= (type channel-pool) GenericObjectPool))
 
 (defn destroy-channel-pool [channel-pool]
   (.close channel-pool))
@@ -49,3 +54,5 @@
              (create-channel-pool c/producer-connection))
   :stop (do (log/info "Stopping channel pool")
             (destroy-channel-pool channel-pool)))
+
+

@@ -7,6 +7,7 @@
             [ziggurat.fixtures :as fix]
             [ziggurat.messaging.connection :refer [producer-connection]]
             [ziggurat.messaging.producer :as producer]
+            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]
@@ -16,7 +17,8 @@
             [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]
            (com.rabbitmq.client Channel Connection ShutdownSignalException AlreadyClosedException)
-           (java.io IOException)))
+           (java.io IOException)
+           (java.util.concurrent TimeoutException)))
 
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging]))
@@ -516,36 +518,110 @@
         (is (true? @publish-called?))))))
 
 (deftest publish-behaviour-on-rabbitmq-disconnection-test
-  (testing "producer/publish tries to publish again if IOException is thrown"
+  (testing "producer/publish tries to publish again if IOException is thrown via lb/publish"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [_] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
-                                              (when (< @publish-called 2)
+                                              (when (< @publish-called 10)
                                                 (swap! publish-called inc)
                                                 (throw (IOException. "io exception"))))
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (is (= 2 @publish-called)))))
-  (testing "publish/producer tries to publish again if already closed exception is received"
+        (is (= 10 @publish-called)))))
+  (testing "publish/producer tries to publish again if already closed exception is received via lb/publish"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
-                                              (when (< @publish-called 2)
+                                              (when (< @publish-called 10)
                                                 (swap! publish-called inc)
                                                 (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil)))))
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (is (= 2 @publish-called)))))
-  (testing "producer/publish does not try again if the exception thrown is neither IOException nor AlreadyClosedException"
+        (is (= 10 @publish-called)))))
+  (testing "publish/producer tries to publish again if TimeoutException is received via lb/publish"
     (let [publish-called (atom 0)]
       (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
                     lb/publish              (fn [_ _ _ _ _]
-                                              (when (< @publish-called 2)
+                                              (when (< @publish-called 10)
+                                                (swap! publish-called inc)
+                                                (throw (TimeoutException. "timeout"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @publish-called)))))
+  (testing "producer/publish tries to publish again if IOException is thrown while borrowing from channel"
+    (let [borrow-from-pool-called (atom 0)]
+      (with-redefs [lch/open                (fn [_] (reify Channel (close [_] nil)))
+                    producer/borrow-from-pool             (fn [_]
+                                                            (when (< @borrow-from-pool-called 10)
+                                                              (swap! borrow-from-pool-called inc)
+                                                              (throw (IOException. "io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @borrow-from-pool-called)))))
+  (testing "publish/producer tries to publish again if already closed exception is received while borrowing from channel"
+    (let [borrow-from-pool-called (atom 0)]
+      (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    producer/borrow-from-pool             (fn [_]
+                                                            (when (< @borrow-from-pool-called 10)
+                                                              (swap! borrow-from-pool-called inc)
+                                                              (throw (AlreadyClosedException. (ShutdownSignalException. true true nil nil)))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @borrow-from-pool-called)))))
+  (testing "publish/producer tries to publish again if TimeoutException is received while borrowing from channel"
+    (let [borrow-from-pool-called (atom 0)]
+      (with-redefs [lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    producer/borrow-from-pool             (fn [_]
+                                                            (when (< @borrow-from-pool-called 10)
+                                                              (swap! borrow-from-pool-called inc)
+                                                              (throw (TimeoutException. "timeout"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 10 @borrow-from-pool-called)))))
+  (testing "producer/publish retries publishing for a certain number of times (configurable) when a non-recoverable exception is thrown"
+    (let [publish-called (atom 0)
+          config (config/ziggurat-config)
+          count 3
+          config (update-in config [:rabbit-mq-connection :publish-retry :non-recoverable-exception] (constantly {:enabled true
+                                                                                                                  :back-off-ms   1
+                                                                                                                  :count   count}))]
+      (with-redefs [config/ziggurat-config  (fn [] config)
+                    lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 10)
                                                 (swap! publish-called inc)
                                                 (throw (Exception. "non-io exception"))))
                     metrics/increment-count (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
-        (is (= 1 @publish-called))))))
+        (is (= (inc count) @publish-called)))))
+
+  (testing "producer/publish does not retry again if the exception thrown is non recoverable and if retry is disabled"
+    (let [publish-called (atom 0)
+          config (config/ziggurat-config)
+          count 3
+          config (update-in config [:rabbit-mq-connection :publish-retry :non-recoverable-exception] (constantly {:enabled false
+                                                                                                                  :back-off-ms   1
+                                                                                                                  :count   count}))]
+      (with-redefs [config/ziggurat-config  (fn [] config)
+                    lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 10)
+                                                (swap! publish-called inc)
+                                                (throw (Exception. "non-io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 1 @publish-called)))))
+  (testing "producer/publish does not publish even once if channel pool is not alive"
+    (let [publish-called (atom 0)]
+      (with-redefs [cpool/is-pool-alive?  (fn [_] false)
+                    lch/open                (fn [^Connection _] (reify Channel (close [_] nil)))
+                    lb/publish              (fn [_ _ _ _ _]
+                                              (when (< @publish-called 10)
+                                                (swap! publish-called inc)
+                                                (throw (Exception. "non-io exception"))))
+                    metrics/increment-count (fn [_ _ _] nil)]
+        (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
+        (is (= 0 @publish-called))))))
 
 (deftest publish-to-delay-queue-test
   (testing "creates a span when tracer is enabled"
