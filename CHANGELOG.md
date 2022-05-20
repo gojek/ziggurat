@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.7.0
+- Added a feature to retry non-recoverable exceptions during publishing messages on rabbitmq
+
 ## 4.6.4
 - user can provide `:prefetch-count` for RabbitMQ channel threads in `[:stream-router :channels :<channel_key>]` 
   section of the config
