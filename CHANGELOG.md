@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.7.1
+- Releasing a new tag because the version 4.7.0 was already present in clojars.
+
 ## 4.7.0
 - Added a feature to retry non-recoverable exceptions during publishing messages on rabbitmq
 
