@@ -14,9 +14,9 @@
         stream-router-config        (get (zc/ziggurat-config) :stream-router)
         batch-routes-config         (get (zc/ziggurat-config) :batch-routes)
         batch-consumer-thread-count (reduce (fn [sum config]
-                                              (+ sum (:thread-count config))) 0 (vals batch-routes-config))
+                                              (+ sum (get config :thread-count 0))) 0 (vals batch-routes-config))
         stream-thread-count         (reduce (fn [sum config]
-                                              (+ sum (:stream-threads-count config))) 0 (vals stream-router-config))]
+                                              (+ sum (get config :stream-threads-count 0))) 0 (vals stream-router-config))]
     (clog/info {:channel-threads        rmq-thread-count
                 :batch-consumer-threads batch-consumer-thread-count
                 :stream-threads         stream-thread-count} "Thread counts")
