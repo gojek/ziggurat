@@ -43,6 +43,20 @@
       (is (= (:max-idle expected-config) max-idle))
       (is (= (Duration/ofMillis (:max-wait-ms expected-config)) max-wait-ms))
       (is test-on-borrow)
+      (is (= (:max-total expected-config) max-total))))
+  (testing "if min idle is greater than max idle it replaces max idle with min idle"
+    (let [expected-config    {:min-idle 15 :max-idle 15 :max-total 59 :max-wait-ms 1000}
+          user-config        {:min-idle 15 :max-idle 2 :max-wait-ms 1000}
+          pool-config-object ^GenericObjectPoolConfig (cpool/create-object-pool-config user-config)
+          min-idle           (.getMinIdle pool-config-object)
+          max-idle           (.getMaxIdle pool-config-object)
+          test-on-borrow     (.getTestOnBorrow pool-config-object)
+          max-total          (.getMaxTotal pool-config-object)
+          max-wait-ms        (.getMaxWaitDuration pool-config-object)]
+      (is (= (:min-idle expected-config) min-idle))
+      (is (= (:max-idle expected-config) max-idle))
+      (is (= (Duration/ofMillis (:max-wait-ms expected-config)) max-wait-ms))
+      (is test-on-borrow)
       (is (= (:max-total expected-config) max-total)))))
 
 (deftest pool-borrow-return-test
