@@ -9,6 +9,13 @@
            (java.time Duration)
            (gojek.rabbitmq.channel_pool RabbitMQChannelFactory)))
 
+(defn- validate-and-update-config
+  "If min-idle for some reason is greater than max-idle then max-idle is replaced with min-idle"
+  [config]
+  (if (> (:min-idle config) (:max-idle config))
+    (assoc config :max-idle (:min-idle config))
+    config))
+
 (defn calc-total-thread-count []
   (let [rmq-thread-count            (c/total-thread-count)
         stream-router-config        (get (zc/ziggurat-config) :stream-router)
@@ -25,7 +32,10 @@
 (defn create-object-pool-config [config]
   (let [standby-size       10
         total-thread-count (calc-total-thread-count)
-        merged-config      (merge {:max-wait-ms 5000 :min-idle standby-size :max-idle total-thread-count} config)]
+        default-config     {:max-wait-ms 5000 :min-idle standby-size :max-idle total-thread-count}
+        merged-config      (->> config
+                                (merge default-config)
+                                validate-and-update-config)]
     (doto (GenericObjectPoolConfig.)
       (.setMaxWait (Duration/ofMillis (:max-wait-ms merged-config)))
       (.setMinIdle (:min-idle merged-config))
