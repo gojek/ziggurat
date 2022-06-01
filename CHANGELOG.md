@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.7.3
+- Fixed a bug where instantiation of channel pool leads to null pointer exception when stream route does not have
+  :stream-threads-count defined
+
 ## 4.7.2
 - Releasing a new tag because the version 4.7.0 was already present in clojars.
 
