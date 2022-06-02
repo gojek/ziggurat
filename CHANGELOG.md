@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.7.4
+- Updated dead-set APIs to replay and delete dead-set messages asynchronously
+
 ## 4.7.3
 - Fixed a bug where instantiation of channel pool leads to null pointer exception when stream route does not have
   :stream-threads-count defined
