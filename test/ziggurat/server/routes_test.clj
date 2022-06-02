@@ -192,8 +192,7 @@
                                                    true
                                                    {}
                                                    params)]
-              (is (= 200 status))
-              (is (= (:message body) "Deleted messages successfully")))))
+              (is (= 200 status)))))
 
         (testing "should return 400 when delete /v1/dead_set is called with invalid count val"
           (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]

@@ -50,9 +50,10 @@
         (if (retry-allowed? topic-entity channel)
           (if (validate-channel-or-topic-entity topic-entity routes channel)
             (if (validate-count parsed-count)
-              (do (r/replay parsed-count topic-entity channel)
-                  {:status 200
-                   :body   {:message "Requeued messages on the queue for retrying"}})
+              (do
+                (future (r/replay parsed-count topic-entity channel))
+                {:status 200
+                 :body   {:message "Replay has been triggered. Please check after some time"}})
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
@@ -82,9 +83,10 @@
         (if (retry-allowed? topic-entity channel)
           (if (validate-channel-or-topic-entity topic-entity routes channel)
             (if (validate-count parsed-count)
-              (do (r/delete parsed-count topic-entity channel)
-                  {:status 200
-                   :body   {:message "Deleted messages successfully"}})
+              (do
+                (future (r/delete parsed-count topic-entity channel))
+                {:status 200
+                 :body   {:message "Delete has been triggered. Please check after some time"}})
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
