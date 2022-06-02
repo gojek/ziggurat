@@ -53,7 +53,7 @@
               (do
                 (future (r/replay parsed-count topic-entity channel))
                 {:status 200
-                   :body   {:message "Replay has been triggered. Please check after some time"}})
+                 :body   {:message "Replay has been triggered. Please check after some time"}})
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
@@ -85,8 +85,8 @@
             (if (validate-count parsed-count)
               (do
                 (future (r/delete parsed-count topic-entity channel))
-                  {:status 200
-                   :body   {:message "Delete has been triggered. Please check after some time"}})
+                {:status 200
+                 :body   {:message "Delete has been triggered. Please check after some time"}})
               {:status 400
                :body   {:error "Count should be positive integer"}})
             {:status 400
