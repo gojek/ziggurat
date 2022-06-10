@@ -118,7 +118,13 @@
    (publish exchange message-payload expiration 0))
   ([exchange message-payload expiration retry-counter]
    (when (is-pool-alive? cpool/channel-pool)
-     (let [result (publish-internal exchange message-payload expiration retry-counter)]
+     (let [start-time                     (.toEpochMilli (Instant/now))
+           result (publish-internal exchange message-payload expiration retry-counter)
+           end-time                       (.toEpochMilli (Instant/now))
+           time-val                       (- end-time start-time)
+           _                              (metrics/multi-ns-report-histogram ["rabbitmq" "publish" "time"] time-val {:topic-entity (name (:topic-entity message-payload))
+                                                                                                                     :retry-counter retry-counter
+                                                                                                                     :exchange-name exchange})]
        (when (pos? retry-counter)
          (log/info "Retrying publishing the message to " exchange)
          (log/info "Retry attempt " retry-counter))
