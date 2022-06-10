@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.7.5
+- Publishes metric to gauge time taken to send messages to rabbitmq
+
 ## 4.7.4
 - Updated dead-set APIs to replay and delete dead-set messages asynchronously
 
