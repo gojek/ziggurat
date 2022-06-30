@@ -18,6 +18,33 @@
                                     fix/mount-metrics]))
 
 (deftest ^:integration mapper-func-test
+  (let [stream-routes                   {:default {:handler-fn #(constantly nil)}}
+        topic-entity                    (name (first (keys stream-routes)))
+        message-payload                 {:message {:foo "bar"}
+                                         :topic-entity (keyword topic-entity)
+                                         :headers {:hello "world"}
+                                         :metadata {:meta "data"}}
+        expected-message-payload        {:message {:foo "bar"}
+                                         :metadata {:meta "data" :rabbitmq-retry-count 0}}
+        actual-paylaod                  (atom {})
+        user-handler-called             (atom false)
+        my-user-handler                 (fn [this-message-payload]
+                                          (reset! user-handler-called true)
+                                          (reset! actual-paylaod this-message-payload))]
+    (testing "mapper-func should call the user handler-fn and process the result"
+        (with-redefs [metrics/increment-count  (constantly nil)
+                      metrics/report-histogram (constantly nil)]
+          ((mapper-func my-user-handler []) message-payload)
+          (is (= expected-message-payload @actual-paylaod))
+          (is (true? @user-handler-called))))))
+
+(deftest mapper-func-provides-retry-count-in-message-payload-metadata-test
+  (testing "mapper-func should make rabbitmq-retry-count available in message-payload to the user-handler-fn")
+  (testing "mapper-func adds {:rabbitmq-retry-count 0} to the message payload metadata if this payload is being processed for the first time")
+  (testing "mapper-func adds {:rabbitmq-retry-count 0} to the message payload metadata for the first retry")
+  (testing "mapper-func adds {:rabbitmq-retry-count <configured-value>} to the message payload metadata for the last retry"))
+
+(deftest ^:integration mapper-func-message-processing-test
   (let [service-name                    (:app-name (ziggurat-config))
         stream-routes                   {:default {:handler-fn #(constantly nil)}}
         topic-entity                    (name (first (keys stream-routes)))
@@ -28,7 +55,7 @@
         report-time-namespace           "handler-fn-execution-time"
         expected-metric-namespaces      [topic-entity expected-metric-namespace]
         expected-report-time-namespaces [topic-entity report-time-namespace]]
-    (testing "message process should be successful"
+    (testing "mapper-func should increment 'success' metrics count if user handler-fn returns :success"
       (let [successfully-processed?     (atom false)
             successfully-reported-time? (atom false)
             expected-metric             "success"]
