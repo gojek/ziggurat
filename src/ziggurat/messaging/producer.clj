@@ -51,7 +51,7 @@
 
 (defn- record-headers->map [record-headers]
   (reduce (fn [header-map record-header]
-            (assoc header-map (.key record-header) (String. (.value record-header))))
+            (assoc header-map (.key record-header) (String. (or (.value record-header) ""))))
           {}
           record-headers))
 
