@@ -185,11 +185,12 @@
   (testing "publish to delay queue publishes with parsed record headers"
     (fix/with-queues
       {:default {:handler-fn #(constantly nil)}}
-      (let [test-message-payload (assoc message-payload :headers (RecordHeaders. (list (RecordHeader. "key" (byte-array (map byte "value"))))))
+      (let [test-message-payload (assoc message-payload :headers (RecordHeaders. (list (RecordHeader. "key" (byte-array (map byte "value")))
+                                                                                       (RecordHeader. "nil" nil))))
             expected-props       {:content-type "application/octet-stream"
                                   :persistent   true
                                   :expiration   (str (get-in (rabbitmq-config) [:delay :queue-timeout-ms]))
-                                  :headers      {"key" "value"}}]
+                                  :headers      {"key" "value" "nil" ""}}]
         (with-redefs [lb/publish                        (fn [_ _ _ _ props]
                                                           (is (= expected-props props)))
                       metrics/multi-ns-report-histogram (fn [_ _ _] nil)]
