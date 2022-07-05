@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.7.6
+- Fixed a bug where kafka header with null values, throws Null Pointer Exception upon publishing to rabbitmq
+
 ## 4.7.5
 - Publishes metric to gauge time taken to send messages to rabbitmq
 
