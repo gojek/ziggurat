@@ -73,7 +73,7 @@ Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this
 
 Add this to your project.clj
 
-`[tech.gojek/ziggurat "3.1.0"]`
+`[tech.gojek/ziggurat "4.8.0"]`
 
 _Please refer [clojars](https://clojars.org/tech.gojek/ziggurat) for the latest stable version_
 
@@ -91,7 +91,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 )
 
 (defn main-fn
-    [message]
+  [{:keys [message metadata] :as message-payload}]
     (println message)
     :success)
 
@@ -108,6 +108,13 @@ _NOTE: this example assumes that the message is serialized in Protobuf format_
 Please refer the [Middleware section](#middleware-in-ziggurat) for understanding `handler-fn` here.
 
 - The main-fn is the function that will be applied to every message that is read from the Kafka stream.
+- The main-fn will take map as an argument that takes 2 keys i.e
+  - message - It is the byte[] array received from kafka.
+  - metadata
+    - topic - It is the topic from where kafka message is consumed.
+    - timestamp - It is ingestion timestamp in kafka.
+    - partition - The partition from message is consumed.
+    - rabbitmq-retry-count - The number of retries done by rabbitmq for given message.
 - The main-fn returns a keyword which can be any of the below words
   - :success - The message was successfully processed and the stream should continue to the next message
   - :retry - The message failed to be processed and it should be retried via RabbitMQ.
@@ -142,7 +149,7 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 (def routes [["v1/resources" {:get api-handler}]])
 
 (defn main-fn
-    [message]
+  [{:keys [message metadata] :as message-payload}]
     (println message)
     :success)
 
@@ -224,7 +231,7 @@ The default middleware `default/protobuf->hash` assumes that the message is seri
 )
 
 (defn main-fn
-    [message]
+  [{:keys [message metadata] :as message-payload}]
     (println message)
     :success)
 
