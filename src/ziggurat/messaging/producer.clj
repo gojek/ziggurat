@@ -154,9 +154,6 @@
 (defn get-channel-retry-count [topic-entity channel]
   (:count (channel-retry-config topic-entity channel)))
 
-(defn get-configured-retry-count []
-  (-> (ziggurat-config) :retry :count))
-
 (defn- get-channel-queue-timeout-or-default-timeout [topic-entity channel]
   (let [channel-queue-timeout-ms (:queue-timeout-ms (channel-retry-config topic-entity channel))
         queue-timeout-ms (get-in (rabbitmq-config) [:delay :queue-timeout-ms])]
