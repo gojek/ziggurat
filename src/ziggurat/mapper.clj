@@ -1,7 +1,7 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
             [sentry-clj.async :as sentry]
-            [ziggurat.config :refer [ziggurat-config get-configured-retry-count]]
+            [ziggurat.config :refer [ziggurat-config get-configured-retry-count get-channel-retry-count]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
@@ -83,7 +83,7 @@
           failure-metric "failure"
           dead-letter-metric "dead-letter"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
-          user-payload (create-user-payload message-payload (producer/get-channel-retry-count topic-entity channel))]
+          user-payload (create-user-payload message-payload (get-channel-retry-count topic-entity channel))]
       (clog/with-logging-context {:consumer-group topic-entity-name :channel channel-name}
         (nr/with-tracing "job" metric-namespace
           (try
