@@ -260,3 +260,6 @@
 
 (defn get-configured-retry-count []
   (-> (ziggurat-config) :retry :count))
+
+(defn get-channel-retry-count [topic-entity channel]
+  (:count (channel-retry-config topic-entity channel)))
