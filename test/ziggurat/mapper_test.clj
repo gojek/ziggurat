@@ -1,7 +1,7 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all]
             [schema.core :as s]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [ziggurat-config get-configured-retry-count]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
             [ziggurat.messaging.connection :refer [producer-connection]]

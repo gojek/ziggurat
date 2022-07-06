@@ -8,9 +8,9 @@
   (:import (java.util Properties)
            [org.apache.kafka.common.config SaslConfigs])
   (:gen-class
-   :methods [^{:static true} [get [String] Object]
-             ^{:static true} [getIn [java.lang.Iterable] Object]]
-   :name tech.gojek.ziggurat.internal.Config))
+    :methods [^{:static true} [get [String] Object]
+              ^{:static true} [getIn [java.lang.Iterable] Object]]
+    :name tech.gojek.ziggurat.internal.Config))
 
 (def config-file "config.edn")
 
@@ -25,10 +25,10 @@
                                                        :username        "guest"
                                                        :password        "guest"
                                                        :channel-timeout 2000
-                                                       :publish-retry {:back-off-ms 5000
-                                                                       :non-recoverable-exception {:enabled true
-                                                                                                   :back-off-ms 5000
-                                                                                                   :count 5}}}
+                                                       :publish-retry   {:back-off-ms               5000
+                                                                         :non-recoverable-exception {:enabled     true
+                                                                                                     :back-off-ms 5000
+                                                                                                     :count       5}}}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}
                                 :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"
@@ -77,9 +77,9 @@
 (declare config)
 
 (defstate config
-  :start (let [config-values-from-env (config-from-env config-file)
-               app-name               (-> config-values-from-env :ziggurat :app-name)]
-           (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
+          :start (let [config-values-from-env (config-from-env config-file)
+                       app-name (-> config-values-from-env :ziggurat :app-name)]
+                   (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
   (get config :ziggurat))
@@ -169,9 +169,9 @@
 (defn- normalize-value
   [v]
   (str/trim
-   (cond
-     (keyword? v) (name v)
-     :else (str v))))
+    (cond
+      (keyword? v) (name v)
+      :else (str v))))
 
 (defn set-property
   [mapping-table p k v]
@@ -195,8 +195,8 @@
 (defn- add-jaas-properties
   [properties jaas-config]
   (if (some? jaas-config)
-    (let [username  (get jaas-config :username)
-          password  (get jaas-config :password)
+    (let [username (get jaas-config :username)
+          password (get jaas-config :password)
           mechanism (get jaas-config :mechanism)]
       (doto properties
         (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties username password mechanism))))
@@ -222,11 +222,11 @@
             :mechanism <>}}}
   "
   (let [ssl-configs-enabled (:enabled ssl-config-map)
-        jaas-config         (get ssl-config-map :jaas)]
+        jaas-config (get ssl-config-map :jaas)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
-        (add-jaas-properties pr jaas-config)
-        (reduce-kv set-property-fn pr ssl-config-map))
+            (add-jaas-properties pr jaas-config)
+            (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
 (defn build-properties
@@ -249,11 +249,14 @@
    "
   [set-property-fn config-map]
   (as-> (Properties.) pr
-    (build-ssl-properties pr set-property-fn (ssl-config))
-    (reduce-kv set-property-fn pr config-map)))
+        (build-ssl-properties pr set-property-fn (ssl-config))
+        (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties (partial build-properties (partial set-property consumer-config-mapping-table)))
 
 (def build-producer-config-properties (partial build-properties (partial set-property producer-config-mapping-table)))
 
 (def build-streams-config-properties (partial build-properties (partial set-property streams-config-mapping-table)))
+
+(defn get-configured-retry-count []
+  (-> (ziggurat-config) :retry :count))
