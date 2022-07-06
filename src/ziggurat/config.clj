@@ -8,9 +8,9 @@
   (:import (java.util Properties)
            [org.apache.kafka.common.config SaslConfigs])
   (:gen-class
-    :methods [^{:static true} [get [String] Object]
-              ^{:static true} [getIn [java.lang.Iterable] Object]]
-    :name tech.gojek.ziggurat.internal.Config))
+   :methods [^{:static true} [get [String] Object]
+             ^{:static true} [getIn [java.lang.Iterable] Object]]
+   :name tech.gojek.ziggurat.internal.Config))
 
 (def config-file "config.edn")
 
@@ -77,9 +77,9 @@
 (declare config)
 
 (defstate config
-          :start (let [config-values-from-env (config-from-env config-file)
-                       app-name (-> config-values-from-env :ziggurat :app-name)]
-                   (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
+  :start (let [config-values-from-env (config-from-env config-file)
+               app-name (-> config-values-from-env :ziggurat :app-name)]
+           (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
   (get config :ziggurat))
@@ -169,9 +169,9 @@
 (defn- normalize-value
   [v]
   (str/trim
-    (cond
-      (keyword? v) (name v)
-      :else (str v))))
+   (cond
+     (keyword? v) (name v)
+     :else (str v))))
 
 (defn set-property
   [mapping-table p k v]
@@ -225,8 +225,8 @@
         jaas-config (get ssl-config-map :jaas)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
-            (add-jaas-properties pr jaas-config)
-            (reduce-kv set-property-fn pr ssl-config-map))
+        (add-jaas-properties pr jaas-config)
+        (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
 (defn build-properties
@@ -249,8 +249,8 @@
    "
   [set-property-fn config-map]
   (as-> (Properties.) pr
-        (build-ssl-properties pr set-property-fn (ssl-config))
-        (reduce-kv set-property-fn pr config-map)))
+    (build-ssl-properties pr set-property-fn (ssl-config))
+    (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties (partial build-properties (partial set-property consumer-config-mapping-table)))
 
