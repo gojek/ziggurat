@@ -1,7 +1,7 @@
 (ns ziggurat.mapper
   (:require [clojure.string :as str]
             [sentry-clj.async :as sentry]
-            [ziggurat.config :refer [ziggurat-config]]
+            [ziggurat.config :refer [ziggurat-config get-configured-retry-count get-channel-retry-count]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.new-relic :as nr]
@@ -16,36 +16,38 @@
   (producer/publish-to-channel-instant-queue return-code message-payload))
 
 (defn- create-user-payload
-  [message-payload]
-  (-> message-payload
-      (dissoc :headers)
-      (dissoc :retry-count)
-      (dissoc :topic-entity)))
+  [message-payload configured-retry-count]
+  (let [remaining-retry-count (get message-payload :retry-count configured-retry-count)]
+    (-> message-payload
+        (dissoc :headers)
+        (dissoc :retry-count)
+        (dissoc :topic-entity)
+        (assoc-in [:metadata :rabbitmq-retry-count] (- configured-retry-count remaining-retry-count)))))
 
 (defn mapper-func [user-handler-fn channels]
   (fn [{:keys [topic-entity] :as message-payload}]
-    (let [service-name                        (:app-name (ziggurat-config))
-          topic-entity-name                   (name topic-entity)
-          new-relic-transaction-name          (str topic-entity-name ".handler-fn")
-          message-processing-namespace        "message-processing"
-          base-metric-namespaces              [service-name topic-entity-name]
-          message-processing-namespaces       (conj base-metric-namespaces message-processing-namespace)
-          additional-tags                     {:topic_name topic-entity-name}
-          success-metric                      "success"
-          retry-metric                        "retry"
-          skip-metric                         "skip"
-          failure-metric                      "failure"
-          dead-letter-metric                  "dead-letter"
+    (let [service-name (:app-name (ziggurat-config))
+          topic-entity-name (name topic-entity)
+          new-relic-transaction-name (str topic-entity-name ".handler-fn")
+          message-processing-namespace "message-processing"
+          base-metric-namespaces [service-name topic-entity-name]
+          message-processing-namespaces (conj base-metric-namespaces message-processing-namespace)
+          additional-tags {:topic_name topic-entity-name}
+          success-metric "success"
+          retry-metric "retry"
+          skip-metric "skip"
+          failure-metric "failure"
+          dead-letter-metric "dead-letter"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
-          user-payload                        (create-user-payload message-payload)]
+          user-payload (create-user-payload message-payload (get-configured-retry-count))]
       (clog/with-logging-context {:consumer-group topic-entity-name}
         (nr/with-tracing "job" new-relic-transaction-name
           (try
-            (let [start-time                      (.toEpochMilli (Instant/now))
-                  return-code                     (user-handler-fn user-payload)
-                  end-time                        (.toEpochMilli (Instant/now))
-                  time-val                        (- end-time start-time)
-                  execution-time-namespace        "handler-fn-execution-time"
+            (let [start-time (.toEpochMilli (Instant/now))
+                  return-code (user-handler-fn user-payload)
+                  end-time (.toEpochMilli (Instant/now))
+                  time-val (- end-time start-time)
+                  execution-time-namespace "handler-fn-execution-time"
                   multi-execution-time-namespaces [(conj base-metric-namespaces execution-time-namespace)
                                                    [execution-time-namespace]]]
               (metrics/multi-ns-report-histogram multi-execution-time-namespaces time-val additional-tags)
@@ -67,29 +69,29 @@
 
 (defn channel-mapper-func [user-handler-fn channel]
   (fn [{:keys [topic-entity] :as message-payload}]
-    (let [service-name                        (:app-name (ziggurat-config))
-          topic-entity-name                   (name topic-entity)
-          channel-name                        (name channel)
-          message-processing-namespace        "message-processing"
-          base-metric-namespaces              [service-name topic-entity-name channel-name]
-          message-processing-namespaces       (conj base-metric-namespaces message-processing-namespace)
-          additional-tags                     {:topic_name topic-entity-name :channel_name channel-name}
-          metric-namespace                    (str/join "." message-processing-namespaces)
-          success-metric                      "success"
-          retry-metric                        "retry"
-          skip-metric                         "skip"
-          failure-metric                      "failure"
-          dead-letter-metric                  "dead-letter"
+    (let [service-name (:app-name (ziggurat-config))
+          topic-entity-name (name topic-entity)
+          channel-name (name channel)
+          message-processing-namespace "message-processing"
+          base-metric-namespaces [service-name topic-entity-name channel-name]
+          message-processing-namespaces (conj base-metric-namespaces message-processing-namespace)
+          additional-tags {:topic_name topic-entity-name :channel_name channel-name}
+          metric-namespace (str/join "." message-processing-namespaces)
+          success-metric "success"
+          retry-metric "retry"
+          skip-metric "skip"
+          failure-metric "failure"
+          dead-letter-metric "dead-letter"
           multi-message-processing-namespaces [message-processing-namespaces [message-processing-namespace]]
-          user-payload                        (create-user-payload message-payload)]
+          user-payload (create-user-payload message-payload (get-channel-retry-count topic-entity channel))]
       (clog/with-logging-context {:consumer-group topic-entity-name :channel channel-name}
         (nr/with-tracing "job" metric-namespace
           (try
-            (let [start-time                     (.toEpochMilli (Instant/now))
-                  return-code                    (user-handler-fn user-payload)
-                  end-time                       (.toEpochMilli (Instant/now))
-                  time-val                       (- end-time start-time)
-                  execution-time-namespace       "execution-time"
+            (let [start-time (.toEpochMilli (Instant/now))
+                  return-code (user-handler-fn user-payload)
+                  end-time (.toEpochMilli (Instant/now))
+                  time-val (- end-time start-time)
+                  execution-time-namespace "execution-time"
                   multi-execution-time-namespace [(conj base-metric-namespaces execution-time-namespace)
                                                   [execution-time-namespace]]]
               (metrics/multi-ns-report-histogram multi-execution-time-namespace time-val additional-tags)

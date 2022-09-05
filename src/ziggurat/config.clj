@@ -25,10 +25,10 @@
                                                        :username        "guest"
                                                        :password        "guest"
                                                        :channel-timeout 2000
-                                                       :publish-retry {:back-off-ms 5000
-                                                                       :non-recoverable-exception {:enabled true
-                                                                                                   :back-off-ms 5000
-                                                                                                   :count 5}}}
+                                                       :publish-retry   {:back-off-ms               5000
+                                                                         :non-recoverable-exception {:enabled     true
+                                                                                                     :back-off-ms 5000
+                                                                                                     :count       5}}}
                                 :jobs                 {:instant {:worker-count   4
                                                                  :prefetch-count 4}}
                                 :rabbit-mq            {:delay       {:queue-name           "%s_delay_queue"
@@ -78,7 +78,7 @@
 
 (defstate config
   :start (let [config-values-from-env (config-from-env config-file)
-               app-name               (-> config-values-from-env :ziggurat :app-name)]
+               app-name (-> config-values-from-env :ziggurat :app-name)]
            (deep-merge (interpolate-config default-config app-name) config-values-from-env)))
 
 (defn ziggurat-config []
@@ -195,8 +195,8 @@
 (defn- add-jaas-properties
   [properties jaas-config]
   (if (some? jaas-config)
-    (let [username  (get jaas-config :username)
-          password  (get jaas-config :password)
+    (let [username (get jaas-config :username)
+          password (get jaas-config :password)
           mechanism (get jaas-config :mechanism)]
       (doto properties
         (.put SaslConfigs/SASL_JAAS_CONFIG (create-jaas-properties username password mechanism))))
@@ -222,7 +222,7 @@
             :mechanism <>}}}
   "
   (let [ssl-configs-enabled (:enabled ssl-config-map)
-        jaas-config         (get ssl-config-map :jaas)]
+        jaas-config (get ssl-config-map :jaas)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
         (add-jaas-properties pr jaas-config)
@@ -257,3 +257,9 @@
 (def build-producer-config-properties (partial build-properties (partial set-property producer-config-mapping-table)))
 
 (def build-streams-config-properties (partial build-properties (partial set-property streams-config-mapping-table)))
+
+(defn get-configured-retry-count []
+  (-> (ziggurat-config) :retry :count))
+
+(defn get-channel-retry-count [topic-entity channel]
+  (:count (channel-retry-config topic-entity channel)))
