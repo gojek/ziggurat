@@ -8,6 +8,7 @@
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
+            [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.connection :refer [consumer-connection, producer-connection]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
@@ -20,22 +21,21 @@
   [ch delivery-tag]
   (lb/reject ch delivery-tag))
 
-(defn- publish-to-dead-set
-  [delivery-tag topic-entity payload]
-  (let [ch       (.borrowObject cpool/channel-pool)
-        {:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        exchange (util/prefixed-queue-name topic-entity exchange-name)]
-    (try
-      (lb/publish ch exchange "" payload)
-      (catch Exception e
-        (log/error e "Exception was encountered while publishing to RabbitMQ")
-        (reject-message ch delivery-tag))
-      (finally (.returnObject cpool/channel-pool ch)))))
+(defn- ack-message
+  [ch delivery-tag]
+  (lb/ack ch delivery-tag))
+
+(defn- publish-to-dead-set-and-ack
+  [ch delivery-tag payload ziggurat-channel-key]
+  (if (nil? ziggurat-channel-key)
+                    (producer/publish-to-dead-queue payload)
+                    (producer/publish-to-channel-dead-queue ziggurat-channel-key payload))
+  (ack-message ch delivery-tag))
 
 (defn convert-and-ack-message
   "De-serializes the message payload (`payload`) using `nippy/thaw` and converts it to `MessagePayload`. Acks the message
   if `ack?` is true."
-  [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity]
+  [ch {:keys [delivery-tag]} ^bytes payload ack? topic-entity ziggurat-channel-key]
   (try
     (let [message (nippy/thaw payload)]
       (when ack?
@@ -43,17 +43,15 @@
       message)
     (catch Exception e
       (report-error e "Error while decoding message, publishing to dead queue...")
-      (publish-to-dead-set delivery-tag topic-entity payload)
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
+      (publish-to-dead-set-and-ack ch delivery-tag payload ziggurat-channel-key)
       nil)))
 
-(defn- ack-message
-  [ch delivery-tag]
-  (lb/ack ch delivery-tag))
 
-(defn process-message-from-queue [ch meta payload topic-entity processing-fn]
+
+(defn process-message-from-queue [ch meta payload topic-entity processing-fn ziggurat-channel-key]
   (let [delivery-tag    (:delivery-tag meta)
-        message-payload (convert-and-ack-message ch meta payload false topic-entity)]
+        message-payload (convert-and-ack-message ch meta payload false topic-entity ziggurat-channel-key)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
       (try
@@ -61,15 +59,15 @@
         (processing-fn message-payload)
         (ack-message ch delivery-tag)
         (catch Exception e
-          (publish-to-dead-set delivery-tag topic-entity payload)
           (report-error e "Error while processing message-payload from RabbitMQ")
-          (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)}))))))
+          (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)})
+          (publish-to-dead-set-and-ack ch delivery-tag payload ziggurat-channel-key))))))
 
-(defn read-message-from-queue [ch queue-name topic-entity ack?]
+(defn read-message-from-queue [ch queue-name topic-entity ack? ziggurat-channel-key]
   (try
     (let [[meta payload] (lb/get ch queue-name false)]
       (when (some? payload)
-        (convert-and-ack-message ch meta payload ack? topic-entity)))
+        (convert-and-ack-message ch meta payload ack? topic-entity ziggurat-channel-key)))
     (catch Exception e
       (report-error e "Error while consuming the dead set message")
       (metrics/increment-count ["rabbitmq-message" "consumption"] "failure" {:topic_name (name topic-entity)}))))
@@ -92,7 +90,7 @@
    (remove nil?
            (with-open [ch (lch/open consumer-connection)]
              (doall (for [_ (range count)]
-                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity false)))))))
+                      (read-message-from-queue ch (construct-queue-name topic-entity channel) topic-entity false channel)))))))
 
 (defn process-dead-set-messages
   "This method reads and processes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and
@@ -105,7 +103,7 @@
               (let [queue-name (construct-queue-name topic-entity channel)
                     [meta payload] (lb/get ch queue-name false)]
                 (when (some? payload)
-                  (process-message-from-queue ch meta payload topic-entity processing-fn))))))))
+                  (process-message-from-queue ch meta payload topic-entity processing-fn channel))))))))
 
 (defn delete-dead-set-messages
   "This method deletes `count` number of messages from RabbitMQ dead-letter queue for topic `topic-entity` and channel
@@ -116,15 +114,15 @@
       (doall (for [_ (range count)]
                (lb/get ch queue-name true))))))
 
-(defn- message-handler [wrapped-mapper-fn topic-entity]
+(defn- message-handler [wrapped-mapper-fn topic-entity ziggurat-channel-key]
   (fn [ch meta ^bytes payload]
-    (clog/with-logging-context {:consumer-group topic-entity} (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn))))
+    (clog/with-logging-context {:consumer-group topic-entity} (process-message-from-queue ch meta payload topic-entity wrapped-mapper-fn ziggurat-channel-key))))
 
-(defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity]
+(defn- start-subscriber* [ch prefetch-count queue-name wrapped-mapper-fn topic-entity ziggurat-channel-key]
   (lb/qos ch prefetch-count)
   (lcons/subscribe ch
                    queue-name
-                   (message-handler wrapped-mapper-fn topic-entity)
+                   (message-handler wrapped-mapper-fn topic-entity ziggurat-channel-key)
                    {:handle-shutdown-signal-fn (fn [consumer_tag reason]
                                                  (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                     :handle-consume-ok-fn      (fn [consumer_tag]
@@ -137,7 +135,8 @@
                          (get-in-config [:jobs :instant :prefetch-count])
                          (util/prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
                          handler-fn
-                         topic-entity))))
+                         topic-entity
+                         nil))))
 
 (defn start-channels-subscriber [channels topic-entity]
   (doseq [channel channels]
@@ -149,7 +148,8 @@
                              channel-prefetch-count
                              (util/prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
                              (mpr/channel-mapper-func channel-handler-fn channel-key)
-                             topic-entity))))))
+                             topic-entity
+                             channel-key))))))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
