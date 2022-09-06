@@ -17,7 +17,7 @@
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
-          (consumer/convert-and-ack-message ch meta payload true (keyword topic-name))))
+          (consumer/convert-and-ack-message ch meta payload true (keyword topic-name) nil)))
       (catch NullPointerException e
         nil))))
 
@@ -26,7 +26,7 @@
     (try
       (let [[meta payload] (lb/get ch queue-name false)]
         (when (seq payload)
-          (consumer/convert-and-ack-message ch meta payload false (keyword topic-name))))
+          (consumer/convert-and-ack-message ch meta payload false (keyword topic-name) nil)))
       (catch NullPointerException e
         nil))))
 
