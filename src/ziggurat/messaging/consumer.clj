@@ -25,11 +25,11 @@
   [ch delivery-tag]
   (lb/ack ch delivery-tag))
 
-(defn- publish-to-dead-set-and-ack
-  [ch delivery-tag payload ziggurat-channel-key]
+(defn- publish-serialized-payload-to-dead-set-and-ack
+  [ch delivery-tag payload topic-entity ziggurat-channel-key]
   (if (nil? ziggurat-channel-key)
-    (producer/publish-to-dead-queue payload)
-    (producer/publish-to-channel-dead-queue ziggurat-channel-key payload))
+    (producer/publish-to-dead-queue payload topic-entity true)
+    (producer/publish-to-channel-dead-queue ziggurat-channel-key payload topic-entity true))
   (ack-message ch delivery-tag))
 
 (defn convert-and-ack-message
@@ -44,7 +44,7 @@
     (catch Exception e
       (report-error e "Error while decoding message, publishing to dead queue...")
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
-      (publish-to-dead-set-and-ack ch delivery-tag payload ziggurat-channel-key)
+      (publish-serialized-payload-to-dead-set-and-ack ch delivery-tag payload topic-entity ziggurat-channel-key)
       nil)))
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn ziggurat-channel-key]
@@ -59,7 +59,7 @@
         (catch Exception e
           (report-error e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)})
-          (publish-to-dead-set-and-ack ch delivery-tag payload ziggurat-channel-key))))))
+          (publish-serialized-payload-to-dead-set-and-ack ch delivery-tag payload topic-entity ziggurat-channel-key))))))
 
 (defn read-message-from-queue [ch queue-name topic-entity ack? ziggurat-channel-key]
   (try

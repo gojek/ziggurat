@@ -77,13 +77,14 @@
   (.borrowObject pool))
 
 (defn- publish-internal
-  [exchange message-payload expiration retry-counter]
+  [exchange message-payload is-payload-serialized? expiration retry-counter]
   (try
     (let [ch (borrow-from-pool cpool/channel-pool)]
       (try
-        (lb/publish ch exchange "" (nippy/freeze (dissoc message-payload :headers))
-                    (properties-for-publish expiration (:headers message-payload)))
-        :success
+        (let [serialized-payload (if is-payload-serialized? message-payload (nippy/freeze (dissoc message-payload :headers)))
+              publish-properties (if is-payload-serialized? {} (properties-for-publish expiration (:headers message-payload)))]
+          (lb/publish ch exchange "" serialized-payload publish-properties)
+          :success)
         (finally (return-to-pool cpool/channel-pool ch))))
     (catch AlreadyClosedException e
       (handle-network-exception e message-payload retry-counter))
@@ -115,12 +116,14 @@
   ([exchange message-payload expiration]
    (publish exchange message-payload expiration 0))
   ([exchange message-payload expiration retry-counter]
+   (publish exchange message-payload false expiration retry-counter (:topic-entity message-payload)))
+  ([exchange message-payload is-payload-serialized? expiration retry-counter topic-entity]
    (when (is-pool-alive? cpool/channel-pool)
      (let [start-time (.toEpochMilli (Instant/now))
-           result (publish-internal exchange message-payload expiration retry-counter)
+           result (publish-internal exchange message-payload is-payload-serialized?  expiration retry-counter)
            end-time (.toEpochMilli (Instant/now))
            time-val (- end-time start-time)
-           _ (metrics/multi-ns-report-histogram ["rabbitmq-publish-time"] time-val {:topic-entity  (name (:topic-entity message-payload))
+           _ (metrics/multi-ns-report-histogram ["rabbitmq-publish-time"] time-val {:topic-entity  (name topic-entity)
                                                                                     :exchange-name exchange})]
        (when (pos? retry-counter)
          (log/info "Retrying publishing the message to " exchange)
@@ -130,16 +133,16 @@
          (= result :success) nil
          (= result :retry) (do
                              (Thread/sleep (:back-off-ms (publish-retry-config)))
-                             (recur exchange message-payload expiration (inc retry-counter)))
+                             (recur exchange message-payload is-payload-serialized? expiration (inc retry-counter) topic-entity))
          (= result :retry-with-counter) (if (and (:enabled (non-recoverable-exception-config))
                                                  (< retry-counter (:count (non-recoverable-exception-config))))
                                           (do
                                             (log/info "Backing off")
                                             (Thread/sleep (:back-off-ms (non-recoverable-exception-config)))
-                                            (recur exchange message-payload expiration (inc retry-counter)))
+                                            (recur exchange message-payload is-payload-serialized? expiration (inc retry-counter) topic-entity))
                                           (do
                                             (log/error "Publishing the message has failed. It is being dropped")
-                                            (metrics/increment-count ["rabbitmq" "publish"] "message_loss" {:topic-entity  (name (:topic-entity message-payload))
+                                            (metrics/increment-count ["rabbitmq" "publish"] "message_loss" {:topic-entity  (name topic-entity)
                                                                                                             :retry-counter retry-counter}))))))))
 
 (defn- retry-type []
@@ -240,11 +243,12 @@
         queue-timeout-ms (get-queue-timeout-ms message-payload)]
     (publish exchange-name message-payload queue-timeout-ms)))
 
-(defn publish-to-dead-queue [message-payload]
-  (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        topic-entity (:topic-entity message-payload)
-        exchange-name (util/prefixed-queue-name topic-entity exchange-name)]
-    (publish exchange-name message-payload)))
+(defn publish-to-dead-queue
+  ([message-payload] (publish-to-dead-queue message-payload (:topic-entity message-payload) false))
+  ([message-payload topic-entity is-payload-serialized?]
+   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+         exchange-name (util/prefixed-queue-name topic-entity exchange-name)]
+     (publish exchange-name message-payload is-payload-serialized? nil 0 topic-entity))))
 
 (defn publish-to-instant-queue [message-payload]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))
@@ -258,11 +262,12 @@
         queue-timeout-ms (get-channel-queue-timeout-ms topic-entity channel message-payload)]
     (publish exchange-name message-payload queue-timeout-ms)))
 
-(defn publish-to-channel-dead-queue [channel message-payload]
-  (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
-        topic-entity (:topic-entity message-payload)
-        exchange-name (util/prefixed-channel-name topic-entity channel exchange-name)]
-    (publish exchange-name message-payload)))
+(defn publish-to-channel-dead-queue
+  ([channel message-payload] (publish-to-channel-dead-queue channel message-payload (:topic-entity message-payload) false))
+  ([channel message-payload topic-entity is-payload-serialized?]
+   (let [{:keys [exchange-name]} (:dead-letter (rabbitmq-config))
+         exchange-name (util/prefixed-channel-name topic-entity channel exchange-name)]
+     (publish exchange-name message-payload is-payload-serialized? nil 0 topic-entity))))
 
 (defn publish-to-channel-instant-queue [channel message-payload]
   (let [{:keys [exchange-name]} (:instant (rabbitmq-config))

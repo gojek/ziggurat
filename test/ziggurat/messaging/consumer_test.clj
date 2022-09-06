@@ -309,7 +309,7 @@
                                      (reset! processing-fn-called true)))
             topic-entity-name    (name topic-entity)]
         (producer/publish-to-dead-queue message)
-        (with-redefs [consumer/convert-and-ack-message (fn [_ _ _ _ _] nil)]
+        (with-redefs [consumer/convert-and-ack-message (fn [_ _ _ _ _ _] nil)]
           (with-open [ch (lch/open consumer-connection)]
             (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
                   prefixed-queue-name (str topic-entity-name "_" queue-name)
@@ -338,25 +338,17 @@
               (is @report-fn-called?))))))))
 
 (deftest convert-and-ack-message-test
-  (testing "should call publish to dead set when nippy/thaw throws an exception"
+  (testing "should call publish to dead set and ack the message when nippy/thaw throws an exception"
     (let [freezed-message    (nippy/freeze {:foo "bar"})
           is-publish-called? (atom false)
-          topic-entity       "default"
-          expected-exchange  (prefixed-queue-name topic-entity (:exchange-name (:dead-letter (rabbitmq-config))))]
+          is-message-acked? (atom false)
+          topic-entity       "default"]
       (with-redefs [nippy/thaw (fn [_] (throw (Exception. "nippy/thaw exception")))
-                    lb/publish (fn [_ exchange _ payload]
-                                 (is (= exchange expected-exchange))
-                                 (is (= freezed-message payload))
-                                 (reset! is-publish-called? true))]
+                    ziggurat.messaging.producer/publish-to-dead-queue (fn [payload _ _]
+                                                                        (is (= freezed-message payload))
+                                                                        (reset! is-publish-called? true))
+                    consumer/ack-message (fn [_ _]
+                                           (reset! is-message-acked? true))]
         (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false topic-entity nil))
-      (is (= @is-publish-called? true))))
-  (testing "should call reject when both nippy/thaw and lb/publish throws an exception"
-    (let [freezed-message   (nippy/freeze {:foo "bar"})
-          is-reject-called? (atom false)]
-      (with-redefs [nippy/thaw              (fn [_] (throw (Exception. "nippy/thaw exception")))
-                    lb/publish              (fn [_ _ _ _]
-                                              (throw (Exception. "lb/publish exception")))
-                    consumer/reject-message (fn [_ _]
-                                              (reset! is-reject-called? true))]
-        (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false "default" nil))
-      (is (= @is-reject-called? true)))))
+      (is (= @is-publish-called? true))
+      (is (= @is-message-acked? true)))))
