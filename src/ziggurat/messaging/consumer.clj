@@ -28,8 +28,8 @@
 (defn- publish-to-dead-set-and-ack
   [ch delivery-tag payload ziggurat-channel-key]
   (if (nil? ziggurat-channel-key)
-                    (producer/publish-to-dead-queue payload)
-                    (producer/publish-to-channel-dead-queue ziggurat-channel-key payload))
+    (producer/publish-to-dead-queue payload)
+    (producer/publish-to-channel-dead-queue ziggurat-channel-key payload))
   (ack-message ch delivery-tag))
 
 (defn convert-and-ack-message
@@ -46,8 +46,6 @@
       (metrics/increment-count ["rabbitmq-message" "conversion"] "failure" {:topic_name (name topic-entity)})
       (publish-to-dead-set-and-ack ch delivery-tag payload ziggurat-channel-key)
       nil)))
-
-
 
 (defn process-message-from-queue [ch meta payload topic-entity processing-fn ziggurat-channel-key]
   (let [delivery-tag    (:delivery-tag meta)
