@@ -535,6 +535,31 @@
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?))))))
 
+(deftest publish-to-dead-queue-test
+  (testing "if a message payload is already serialized (is-payload-serialized? is passed as true), it directly pushes
+            the message to dead-queue without freezing it"
+    (let [expected-exchange-name      "exchange"
+          expected-topic-entity       topic-entity
+          prefixed-queue-name-called? (atom false)
+          publish-called?             (atom false)
+          serialized-message-payload  "serialized-payload"]
+      (with-redefs [rabbitmq-config          (constantly {:dead-letter {:exchange-name expected-exchange-name}})
+                    util/prefixed-queue-name (fn [topic-entity exchange]
+                                               (if (and (= topic-entity expected-topic-entity)
+                                                        (= exchange expected-exchange-name))
+                                                 (reset! prefixed-queue-name-called? true))
+                                               expected-exchange-name)
+                    metrics/increment-count           (fn [_ _ _] nil)
+                    metrics/multi-ns-report-histogram (fn [_ _ _] nil)
+                    lch/open                          (fn [_] (reify Channel (close [_] nil)))
+                    lb/publish         (fn [_ exchange _ payload _]
+                                         (if (and (= exchange expected-exchange-name)
+                                                  (= payload serialized-message-payload))
+                                           (reset! publish-called? true)))]
+        (producer/publish-to-dead-queue serialized-message-payload topic-entity true)
+        (is (true? @prefixed-queue-name-called?))
+        (is (true? @publish-called?))))))
+
 (deftest publish-behaviour-on-rabbitmq-disconnection-test
   (testing "producer/publish tries to publish again if IOException is thrown via lb/publish"
     (let [publish-called (atom 0)]
