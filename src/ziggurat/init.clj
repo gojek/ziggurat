@@ -45,7 +45,11 @@
 
 (defn- start-rabbitmq-consumers [args]
   (start-rabbitmq-connection args)
-  (messaging-consumer/start-subscribers (get args :stream-routes) (get args :batch-routes)))
+  (start* #{#'messaging-consumer/consumers} args))
+
+(defn- stop-rabbitmq-consumers
+  (-> (mount/only #{#'messaging-consumer/consumers})
+      (mount/stop)))
 
 (defn- start-rabbitmq-producers [args]
   (start-rabbitmq-connection args)
@@ -81,8 +85,8 @@
 
 (defn- stop-rabbitmq-connection []
   (-> (mount/only #{#'producer-connection
-                    #'cpool/channel-pool
-                    #'consumer-connection})
+                    #'consumer-connection
+                    #'cpool/channel-pool})
       (mount/stop)))
 
 (defn stop-kafka-producers []
@@ -92,6 +96,7 @@
   (mount/stop #'streams/stream))
 
 (defn stop-workers []
+  (stop-rabbitmq-consumers)
   (stop-rabbitmq-connection)
   (stop-kafka-producers))
 

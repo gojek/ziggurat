@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is join-fixtures testing use-fixtures]])
   (:require [langohr.basic :as lb]
             [langohr.channel :as lch]
+            [mount.core :as mount]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [ziggurat-config rabbitmq-config]]
             [ziggurat.fixtures :as fix]
@@ -216,6 +217,25 @@
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
           (util/close rmq-ch))))))
+
+(deftest stop-consumers
+
+  (testing "when valid consumer-tags are passed, it stops the consumers"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [original-zig-config (ziggurat-config)]
+        (with-redefs [ziggurat-config (fn [] (-> original-zig-config
+                                                 (update-in [:retry :count] (constantly 1))
+                                                 (update-in [:retry :enabled] (constantly true))
+                                                 (update-in [:jobs :instant :worker-count] (constantly 1))))]
+
+          (-> (mount/only #{#'consumer/consumers})
+              (mount/with-args {:stream-routes {topic-entity {:handler-fn #(constantly nil)}}})
+              (mount/start))
+
+          (is (-> (:consumer-tags consumer/consumers) empty? not))
+          (-> (mount/only #{#'consumer/consumers})
+              (mount/stop))
+          (is (= (type consumer/consumers) mount.core.NotStartedState)))))))
 
 (deftest channel-prefetch-count-test
   (testing "Default prefetch-count is used while creating channel subscribers if prefetch-count is not configured explicitly"
