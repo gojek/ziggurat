@@ -71,7 +71,7 @@
       (let
        [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
         connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
-        (println "Connection created " connection)
+        (log/info "Connection created " connection)
         (doto connection
           (.addShutdownListener
            (reify ShutdownListener
