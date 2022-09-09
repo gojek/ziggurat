@@ -127,7 +127,7 @@
       (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
                                                                 (update-in [:retry :enabled] (constantly true))
                                                                 (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                    consumer/start-retry-subscriber* (fn [_ _] (swap! counter inc))]
+                    consumer/start-retry-subscriber* (fn [_ _ _] (swap! counter inc))]
         (consumer/start-subscribers stream-routes {})
         (is (= (count stream-routes) @counter))
         (util/close ch))))
@@ -142,7 +142,7 @@
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
                                                                   (update-in [:retry :enabled] (constantly true))
                                                                   (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                      consumer/start-retry-subscriber* (fn [_ topic-entity]
+                      consumer/start-retry-subscriber* (fn [_ _ topic-entity]
                                                          (swap! counter inc)
                                                          (is (= topic-entity :consumer-1)))]
           (consumer/start-subscribers nil {:consumer-1 {:handler-fn #()}})
@@ -159,7 +159,7 @@
         (with-redefs [ziggurat-config                  (fn [] (-> original-zig-config
                                                                   (update-in [:retry :enabled] (constantly true))
                                                                   (update-in [:jobs :instant :worker-count] (constantly no-of-workers))))
-                      consumer/start-retry-subscriber* (fn [_ topic-entity]
+                      consumer/start-retry-subscriber* (fn [_ _ topic-entity]
                                                          (swap! counter inc)
                                                          (is (or (= topic-entity :consumer-1) (= topic-entity :default))))]
           (consumer/start-subscribers {:default {:handler-fn #()}} {:consumer-1 {:handler-fn #()}})
@@ -187,7 +187,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly true))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
           (with-redefs [lch/open (fn [_] rmq-ch)]
-            (consumer/start-channels-subscriber {channel channel-fn} topic-entity))
+            (consumer/start-channels-subscriber (lch/open consumer-connection) {channel channel-fn} topic-entity))
           (producer/retry-for-channel message-payload channel)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]
             (is (not (= :timeout promise-success?)))
@@ -212,7 +212,7 @@
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
                                                  (update-in [:stream-router topic-entity :channels channel :retry :enabled] (constantly false))
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))]
-          (consumer/start-channels-subscriber {channel channel-fn} topic-entity)
+          (consumer/start-channels-subscriber (lch/open consumer-connection) {channel channel-fn} topic-entity)
           (producer/publish-to-channel-instant-queue channel message-payload)
           (deref success-promise 5000 :timeout)
           (is (= 1 @call-counter))
@@ -228,13 +228,11 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (-> (mount/only #{#'consumer/consumers})
-              (mount/with-args {:stream-routes {topic-entity {:handler-fn #(constantly nil)}}})
-              (mount/start))
+          (-> (mount/with-args {:stream-routes {topic-entity {:handler-fn #(constantly nil)}}})
+              (mount/start #'consumer/consumers))
 
           (is (-> (:consumer-tags consumer/consumers) empty? not))
-          (-> (mount/only #{#'consumer/consumers})
-              (mount/stop))
+          (mount/stop #'consumer/consumers)
           (is (= (type consumer/consumers) mount.core.NotStartedState)))))))
 
 (deftest channel-prefetch-count-test
@@ -250,7 +248,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :worker-count] (constantly 1))))
                       lb/qos (fn [^Channel _ ^long prefetch-count]
                                (reset! prefetch-count-used prefetch-count))]
-          (consumer/start-channels-subscriber {:channel-1 (fn [_])} topic-entity)
+          (consumer/start-channels-subscriber (lch/open consumer-connection) {:channel-1 (fn [_])} topic-entity)
           (is (= consumer/DEFAULT_CHANNEL_PREFETCH_COUNT @prefetch-count-used))))))
 
   (testing "prefetch-count provided in configuration is used while creating channel subscribers"
@@ -266,7 +264,7 @@
                                                  (update-in [:stream-router topic-entity :channels channel :prefetch-count] (constantly expected-prefetch-count))))
                       lb/qos (fn [^Channel _ ^long prefetch-count]
                                (reset! prefetch-count-used prefetch-count))]
-          (consumer/start-channels-subscriber {channel channel-fn} topic-entity)
+          (consumer/start-channels-subscriber (lch/open consumer-connection) {channel channel-fn} topic-entity)
           (is (= expected-prefetch-count @prefetch-count-used)))))))
 
 (deftest start-retry-subscriber-test
@@ -285,10 +283,10 @@
                                                  (update-in [:retry :enabled] (constantly true))
                                                  (update-in [:jobs :instant :worker-count] (constantly 1))))]
 
-          (consumer/start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                             :call-counter-atom  call-counter
-                                                             :retry-limit        0
-                                                             :success-promise    success-promise}) topic-entity)
+          (consumer/start-retry-subscriber* (lch/open consumer-connection) (mock-mapper-fn {:retry-counter-atom retry-counter
+                                                                                            :call-counter-atom  call-counter
+                                                                                            :retry-limit        0
+                                                                                            :success-promise    success-promise}) topic-entity)
 
           (producer/publish-to-delay-queue message-payload)
           (when-let [promise-success? (deref success-promise 5000 :timeout)]

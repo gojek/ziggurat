@@ -159,25 +159,26 @@
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes batch-routes]
-  (let [ch (lch/open consumer-connection)]
-    (doseq [stream-route stream-routes]
-      (let [topic-entity (first stream-route)
-            handler (-> stream-route second :handler-fn)
-            channels (-> stream-route second (dissoc :handler-fn))]
-        (start-channels-subscriber ch channels topic-entity)
-        (start-retry-subscriber* ch (mpr/mapper-func handler (keys channels)) topic-entity)))
-    (doseq [batch-route batch-routes]
-      (let [topic-entity (first batch-route)
-            handler (-> batch-route second :handler-fn)]
-        (start-retry-subscriber* ch (fn [message] (ch/process handler message)) topic-entity)))
-    (let [data {:rabbitmq-channel ch :consumer-tags @consumer-tags}]
-      (reset! consumer-tags [])
-      data)))
+  (if (not (nil? consumer-connection))
+    (let [ch (lch/open consumer-connection)]
+      (doseq [stream-route stream-routes]
+        (let [topic-entity (first stream-route)
+              handler (-> stream-route second :handler-fn)
+              channels (-> stream-route second (dissoc :handler-fn))]
+          (start-channels-subscriber ch channels topic-entity)
+          (start-retry-subscriber* ch (mpr/mapper-func handler (keys channels)) topic-entity)))
+      (doseq [batch-route batch-routes]
+        (let [topic-entity (first batch-route)
+              handler (-> batch-route second :handler-fn)]
+          (start-retry-subscriber* ch (fn [message] (ch/process handler message)) topic-entity)))
+      (let [data {:rabbitmq-channel ch :consumer-tags @consumer-tags}]
+        (reset! consumer-tags [])
+        data))))
 
 (defn stop-subscribers [ch consumer-tags]
-  (doseq [consumer-tag consumer-tags]
-    (println "Consumer tag to stop --> " consumer-tag)
-    (lb/cancel ch consumer-tag)))
+  (if (not (nil? ch))
+    (doseq [consumer-tag consumer-tags]
+      (lb/cancel ch consumer-tag))))
 
 (declare consumers)
 

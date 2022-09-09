@@ -44,12 +44,13 @@
             #'cpool/channel-pool} args))
 
 (defn- start-rabbitmq-consumers [args]
-  (start-rabbitmq-connection args)
-  (start* #{#'messaging-consumer/consumers} args))
+  (start* #{#'consumer-connection
+            #'producer-connection
+            #'cpool/channel-pool
+            #'messaging-consumer/consumers} args))
 
-(defn- stop-rabbitmq-consumers
-  (-> (mount/only #{#'messaging-consumer/consumers})
-      (mount/stop)))
+(defn- stop-rabbitmq-consumers []
+  (mount/stop #'messaging-consumer/consumers))
 
 (defn- start-rabbitmq-producers [args]
   (start-rabbitmq-connection args)
