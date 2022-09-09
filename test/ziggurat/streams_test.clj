@@ -24,6 +24,11 @@
                                     fix/silence-logging
                                     fix/mount-metrics]))
 
+(defn- start-mount
+  []
+  (-> (mount/except #{#'ziggurat.messaging.consumer/consumers})
+      (mount/start)))
+
 (defn- props []
   (doto (Properties.)
     (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG (get-in (ziggurat-config) [:stream-router :default :bootstrap-servers]))
@@ -122,7 +127,7 @@
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
+        _                      (start-mount)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
                                                          :stop  (fn [] (stop-streams #'ziggurat.streams/stream))}}))
@@ -134,7 +139,7 @@
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
+        _                      (start-mount)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
                                                          :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
@@ -149,7 +154,7 @@
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
+        _                      (start-mount)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
                                                          :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
@@ -166,7 +171,7 @@
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)
+        _                      (start-mount)
         stream-routes          {:default            {:handler-fn handler-fn}
                                 :using-string-serde {:handler-fn handler-fn}}]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams stream-routes
@@ -185,7 +190,7 @@
   (let [message-received-count (atom 0)
         mapped-fn              (get-mapped-fn message-received-count)
         handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _                      (mount/start)]
+        _                      (start-mount)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
                                                          :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
@@ -198,7 +203,7 @@
   (let [is-close-called (atom 0)
         mapped-fn       (get-mapped-fn is-close-called)
         handler-fn      (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _               (mount/start)]
+        _               (start-mount)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
                                                          :stop  (fn [] (stop-streams ziggurat.streams/stream))}})
@@ -211,7 +216,7 @@
   (let [is-close-called (atom 0)
         mapped-fn       (get-mapped-fn is-close-called)
         handler-fn      (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        _               (mount/start)]
+        _               (start-mount)]
     (mount/start-with-states {#'ziggurat.streams/stream {:start (fn [] (start-streams {:default {:handler-fn handler-fn}}
                                                                                       (ziggurat-config)))
                                                          :stop  (fn [] (stop-streams ziggurat.streams/stream))}}))
