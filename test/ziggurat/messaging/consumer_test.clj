@@ -240,8 +240,7 @@
     (let [prefetch-count-used (atom 0)
           channel             :channel-1
           channel-fn          (fn [_])
-          original-zig-config (ziggurat-config)
-          original-lb-qos     lb/qos]
+          original-zig-config (ziggurat-config)]
       (fix/with-queues {topic-entity {:handler-fn #(constantly nil)
                                       channel     channel-fn}}
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config

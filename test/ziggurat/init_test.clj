@@ -28,7 +28,7 @@
                     streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
                     cpool/create-channel-pool  (fn [_] (reset! result (* @result 3)))
-                    rmqc/start-connection      (fn [_] (reset! result (* @result 2)))
+                    rmqc/start-connection      (fn [_] (do (reset! result (* @result 2)) nil))
                     rmqc/stop-connection       (constantly nil)
                     cpool/destroy-channel-pool (constantly nil)
                     tracer/create-tracer       (fn [] (MockTracer.))]
