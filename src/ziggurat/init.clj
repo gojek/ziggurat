@@ -72,11 +72,9 @@
   (start-kafka-streams args))
 
 (defn start-management-apis [args]
-  (start-rabbitmq-connection args)
   (start* #{#'server/server} (dissoc args :actor-routes)))
 
 (defn start-server [args]
-  (start-rabbitmq-connection args)
   (start* #{#'server/server} args))
 
 (defn start-workers [args]
@@ -102,17 +100,14 @@
   (stop-kafka-producers))
 
 (defn stop-server []
-  (mount/stop #'server/server)
-  (stop-rabbitmq-connection))
+  (mount/stop #'server/server))
 
 (defn stop-stream []
   (stop-kafka-streams)
-  (stop-rabbitmq-connection)
   (stop-kafka-producers))
 
 (defn stop-management-apis []
-  (mount/stop #'server/server)
-  (stop-rabbitmq-connection))
+  (mount/stop #'server/server))
 
 (defn start-batch-consumer [args]
   (-> (mount/only #{#'executor-service/thread-pool

@@ -178,6 +178,7 @@
 (defn stop-subscribers [ch consumer-tags]
   (if (not (nil? ch))
     (doseq [consumer-tag consumer-tags]
+      (log/infof "Stopping consumer with tag %s", consumer-tag)
       (lb/cancel ch consumer-tag))))
 
 (declare consumers)
