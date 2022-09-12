@@ -26,8 +26,8 @@
 
 (defn- start-mount
   []
-  (-> (mount/except #{#'ziggurat.messaging.consumer/consumers})
-      (mount/start)))
+  (mount/start-with-states [[#'ziggurat.messaging.consumer/consumers {:start (constantly nil)
+                                                                      :stop  (constantly nil)}]]))
 
 (defn- props []
   (doto (Properties.)
