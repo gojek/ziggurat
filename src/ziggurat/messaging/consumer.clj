@@ -5,9 +5,7 @@
             [langohr.consumers :as lcons]
             [mount.core :refer [defstate]]
             [taoensso.nippy :as nippy]
-
             [ziggurat.config :refer [get-in-config rabbitmq-config]]
-            [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.producer :as producer]
@@ -18,12 +16,6 @@
             [cambium.core :as clog]))
 
 (def DEFAULT_CHANNEL_PREFETCH_COUNT 20)
-
-(def consumer-tags (atom []))
-
-(defn- reject-message
-  [ch delivery-tag]
-  (lb/reject ch delivery-tag))
 
 (defn- ack-message
   [ch delivery-tag]
@@ -129,63 +121,83 @@
                                                                     (log/infof "channel closed with consumer tag: %s, reason: %s " consumer_tag, reason))
                                        :handle-consume-ok-fn      (fn [consumer_tag]
                                                                     (log/infof "consumer started for %s with consumer tag %s " queue-name consumer_tag))})]
-
-    (reset! consumer-tags (conj @consumer-tags consumer-tag))
     consumer-tag))
 
 (defn start-retry-subscriber* [ch handler-fn topic-entity]
   (when (get-in-config [:retry :enabled])
-    (dotimes [_ (get-in-config [:jobs :instant :worker-count])]
-      (start-subscriber* ch
-                         (get-in-config [:jobs :instant :prefetch-count])
-                         (util/prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
-                         handler-fn
-                         topic-entity
-                         nil))))
+    (reduce (fn [consumer-tags _]
+              (let [consumer-tag (start-subscriber* ch (get-in-config [:jobs :instant :prefetch-count])
+                                                    (util/prefixed-queue-name topic-entity (get-in-config [:rabbit-mq :instant :queue-name]))
+                                                    handler-fn
+                                                    topic-entity
+                                                    nil)]
+                (conj consumer-tags consumer-tag))) [] (range (get-in-config [:jobs :instant :worker-count])))))
 
 (defn start-channels-subscriber [ch channels topic-entity]
-  (doseq [channel channels]
-    (let [channel-key        (first channel)
-          channel-handler-fn (second channel)]
-      (dotimes [_ (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])]
-        (let [channel-prefetch-count (get-in-config [:stream-router topic-entity :channels channel-key :prefetch-count] DEFAULT_CHANNEL_PREFETCH_COUNT)]
-          (start-subscriber* ch
-                             channel-prefetch-count
-                             (util/prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
-                             (mpr/channel-mapper-func channel-handler-fn channel-key)
-                             topic-entity
-                             channel-key))))))
+  (reduce (fn [channel-consumer-tags-map channel]
+            (let [channel-key (first channel)
+                  channel-handler-fn (second channel)
+                  consumer-tags-for-channel (reduce (fn [consumer-tags _]
+                                                      (let [channel-prefetch-count (get-in-config [:stream-router topic-entity :channels channel-key :prefetch-count] DEFAULT_CHANNEL_PREFETCH_COUNT)
+                                                            consumer-tag (start-subscriber* ch
+                                                                                            channel-prefetch-count
+                                                                                            (util/prefixed-channel-name topic-entity channel-key (get-in-config [:rabbit-mq :instant :queue-name]))
+                                                                                            (mpr/channel-mapper-func channel-handler-fn channel-key)
+                                                                                            topic-entity
+                                                                                            channel-key)]
+                                                        (conj consumer-tags consumer-tag))) [] (range (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])))]
+              (update channel-consumer-tags-map channel-key consumer-tags-for-channel)))
+          {} channels))
 
 (defn start-subscribers
   "Starts the subscriber to the instant queue of the rabbitmq"
   [stream-routes batch-routes]
   (if (not (nil? consumer-connection))
-    (let [ch (lch/open consumer-connection)]
-      (doseq [stream-route stream-routes]
-        (let [topic-entity (first stream-route)
-              handler (-> stream-route second :handler-fn)
-              channels (-> stream-route second (dissoc :handler-fn))]
-          (start-channels-subscriber ch channels topic-entity)
-          (start-retry-subscriber* ch (mpr/mapper-func handler (keys channels)) topic-entity)))
-      (doseq [batch-route batch-routes]
-        (let [topic-entity (first batch-route)
-              handler (-> batch-route second :handler-fn)]
-          (start-retry-subscriber* ch (fn [message] (ch/process handler message)) topic-entity)))
-      (let [data {:rabbitmq-channel ch :consumer-tags @consumer-tags}]
-        (reset! consumer-tags [])
-        data))))
+    (let [ch (lch/open consumer-connection)
+          stream-consumers (reduce (fn [subscriber-map stream-route]
+                                     (let [topic-entity (first stream-route)
+                                           handler (-> stream-route second :handler-fn)
+                                           channels (-> stream-route second (dissoc :handler-fn))
+                                           channel-consumer-tags-map (start-channels-subscriber ch channels topic-entity)
+                                           retry-consumer-tags (start-retry-subscriber* ch (mpr/mapper-func handler (keys channels)) topic-entity)]
 
-(defn stop-subscribers [ch consumer-tags]
+                                       (update subscriber-map topic-entity {:retry retry-consumer-tags :channels channel-consumer-tags-map})))
+                                   {} stream-routes)
+
+          batch-consumers (reduce (fn [subscriber-map batch-route]
+                                    (let [topic-entity (first batch-route)
+                                          handler (-> batch-route second :handler-fn)
+                                          consumer-tags (start-retry-subscriber* ch (fn [message] (ch/process handler message)) topic-entity)]
+
+                                      (update subscriber-map topic-entity {:retry consumer-tags}))) {} batch-routes)
+          data {:rabbitmq-channel ch :stream-consumers stream-consumers :batch-consumers batch-consumers}]
+      data)))
+
+(defn stop-subscribers [ch consumer-tags additional-message]
   (if (not (nil? ch))
     (doseq [consumer-tag consumer-tags]
-      (log/infof "Stopping consumer with tag %s", consumer-tag)
+      (log/infof "Stopping consumer with tag %s for %s", consumer-tag, additional-message)
       (lb/cancel ch consumer-tag))))
+
+(defn stop-subscribers-for-consumers [ch consumers]
+  (if (not (nil? ch))
+    (doseq [topic-entity-data consumers]
+      (let [topic-entity (first topic-entity-data)
+            consumer-map (second topic-entity-data)]
+        (when (contains? consumer-map :retry)
+          (stop-subscribers ch (:retry consumer-map) (format "topic-entity %s", topic-entity)))
+
+        (when (contains? consumer-map :channels)
+          (doseq [channel-consumer-data (:channels consumer-map)]
+            (let [channel (first channel-consumer-data)
+                  consumer-tags (second channel-consumer-data)]
+              (stop-subscribers ch consumer-tags (format "topic-entity %s, channel %s", topic-entity, channel)))))))))
 
 (declare consumers)
 
 (defstate consumers
   "
-          consumers is a map containing channel and the consumer-tags. One channel is used
+          consumers is a map containing channel and consumer tags for stream and batch routes. One channel is used
           for all the subscribers and is preserved until shutdown. We have to preserve the
           channel because for cancelling a subscription, rabbitmq requires the same channel
           that created the consumer tag for the subscription.
@@ -195,5 +207,8 @@
            (start-subscribers (:stream-routes (mount.core/args)) (:batch-routes (mount.core/args))))
   :stop (do
           (log/info "Stopping rabbitmq consumers")
-          (stop-subscribers (:rabbitmq-channel consumers) (:consumer-tags consumers))))
+          (when (contains? consumers :stream-consumers)
+            (stop-subscribers-for-consumers (:rabbitmq-channel consumers) (:stream-consumers consumers)))
+          (when (contains? consumers :batch-consumers)
+            (stop-subscribers-for-consumers (:rabbitmq-channel consumers) (:batch-consumers consumers)))))
 
