@@ -207,8 +207,9 @@
            (start-subscribers (:stream-routes (mount.core/args)) (:batch-routes (mount.core/args))))
   :stop (do
           (log/info "Stopping rabbitmq consumers")
-          (when (contains? consumers :stream-consumers)
-            (stop-subscribers-for-consumers (:rabbitmq-channel consumers) (:stream-consumers consumers)))
-          (when (contains? consumers :batch-consumers)
-            (stop-subscribers-for-consumers (:rabbitmq-channel consumers) (:batch-consumers consumers)))))
+          (when (map? consumers)
+            (when (contains? consumers :stream-consumers)
+              (stop-subscribers-for-consumers (:rabbitmq-channel consumers) (:stream-consumers consumers)))
+            (when (contains? consumers :batch-consumers)
+              (stop-subscribers-for-consumers (:rabbitmq-channel consumers) (:batch-consumers consumers))))))
 
