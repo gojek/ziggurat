@@ -146,7 +146,7 @@
                                                                                             topic-entity
                                                                                             channel-key)]
                                                         (conj consumer-tags consumer-tag))) [] (range (get-in-config [:stream-router topic-entity :channels channel-key :worker-count])))]
-              (update channel-consumer-tags-map channel-key consumer-tags-for-channel)))
+              (assoc channel-consumer-tags-map channel-key consumer-tags-for-channel)))
           {} channels))
 
 (defn start-subscribers
@@ -161,7 +161,7 @@
                                            channel-consumer-tags-map (start-channels-subscriber ch channels topic-entity)
                                            retry-consumer-tags (start-retry-subscriber* ch (mpr/mapper-func handler (keys channels)) topic-entity)]
 
-                                       (update subscriber-map topic-entity {:retry retry-consumer-tags :channels channel-consumer-tags-map})))
+                                       (assoc subscriber-map topic-entity {:retry retry-consumer-tags :channels channel-consumer-tags-map})))
                                    {} stream-routes)
 
           batch-consumers (reduce (fn [subscriber-map batch-route]
@@ -169,7 +169,7 @@
                                           handler (-> batch-route second :handler-fn)
                                           consumer-tags (start-retry-subscriber* ch (fn [message] (ch/process handler message)) topic-entity)]
 
-                                      (update subscriber-map topic-entity {:retry consumer-tags}))) {} batch-routes)
+                                      (assoc subscriber-map topic-entity {:retry consumer-tags}))) {} batch-routes)
           data {:rabbitmq-channel ch :stream-consumers stream-consumers :batch-consumers batch-consumers}]
       data)))
 

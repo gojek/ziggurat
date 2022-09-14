@@ -220,7 +220,7 @@
 
 (deftest stop-consumers
 
-  (testing "when valid consumer-tags are passed, it stops the consumers"
+  (testing "when consumer is valid, it stops the consumers"
     (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
       (let [original-zig-config (ziggurat-config)]
         (with-redefs [ziggurat-config (fn [] (-> original-zig-config
@@ -230,8 +230,7 @@
 
           (-> (mount/with-args {:stream-routes {topic-entity {:handler-fn #(constantly nil)}}})
               (mount/start #'consumer/consumers))
-
-          (is (-> (:consumer-tags consumer/consumers) empty? not))
+          (is (-> (get-in consumer/consumers [:stream-consumers topic-entity :retry]) empty? not))
           (mount/stop #'consumer/consumers)
           (is (= (type consumer/consumers) mount.core.NotStartedState)))))))
 
