@@ -9,11 +9,19 @@
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.messaging.connection :refer [consumer-connection, producer-connection]]
+            [ziggurat.messaging.connection :as zmc :refer [producer-connection]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.error :refer [report-error]]
             [cambium.core :as clog]))
+
+(declare consumer-connection)
+
+(defstate consumer-connection
+  :start (do (log/info "Creating consumer connection")
+             (zmc/start-connection false))
+  :stop (do (log/info "Stopping consume connection")
+            (zmc/stop-connection consumer-connection)))
 
 (def DEFAULT_CHANNEL_PREFETCH_COUNT 20)
 
