@@ -111,7 +111,6 @@
           (while (> @retry-count 0)
             (swap! retry-count dec)
             (let [message-from-mq (rmq/get-message-from-channel-delay-queue topic-entity channel)]
-              (println "Message from rmq " message-from-mq)
               (is (= (get message-from-mq :retry-count 0) @retry-count))
               (producer/retry-for-channel message-from-mq channel)))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
