@@ -4,7 +4,8 @@
             [langohr.core :as rmq]
             [mount.core :as mount]
             [ziggurat.config :as config]
-            [ziggurat.messaging.connection :as mc :refer [producer-connection, consumer-connection, create-connection create-rmq-connection]]
+            [ziggurat.messaging.connection :as mc :refer [producer-connection, create-connection create-rmq-connection]]
+            [ziggurat.messaging.consumer :refer [consumer-connection]]
             [ziggurat.util.error :refer [report-error]]))
 
 (use-fixtures :once fix/mount-config-with-tracer)

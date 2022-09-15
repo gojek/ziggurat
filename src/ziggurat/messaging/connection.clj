@@ -61,7 +61,7 @@
            :executor (Executors/newFixedThreadPool (total-thread-count))
            :connection-name "consumer")))
 
-(defn- start-connection
+(defn start-connection
   "is-producer? - defines whether the connection is being created for producers or consumers
   producer connections do not require the :executor option"
   [is-producer?]
@@ -82,16 +82,12 @@
         (report-error e "Error while starting RabbitMQ connection")
         (throw e)))))
 
-(defn- stop-connection [conn]
+(defn stop-connection [conn]
   (when (is-connection-required?)
     (log/info "Closing the RabbitMQ connection")
     (rmq/close conn)))
 
-(defstate consumer-connection
-  :start (do (log/info "Creating consumer connection")
-             (start-connection false))
-  :stop (do (log/info "Stopping consume connection")
-            (stop-connection consumer-connection)))
+(declare producer-connection)
 
 (defstate producer-connection
   :start (do (log/info "Creating producer connection")

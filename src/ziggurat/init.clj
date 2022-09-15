@@ -11,8 +11,8 @@
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.messaging.connection :as messaging-connection :refer [producer-connection, consumer-connection]]
-            [ziggurat.messaging.consumer :as messaging-consumer]
+            [ziggurat.messaging.connection :refer [producer-connection]]
+            [ziggurat.messaging.consumer :as messaging-consumer :refer [consumer-connection]]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.nrepl-server :as nrepl-server]
@@ -38,22 +38,20 @@
        (mount/with-args args)
        (mount/start))))
 
-(defn- start-rabbitmq-connection [args]
-  (start* #{#'consumer-connection
-            #'producer-connection
+(defn- start-rabbitmq-producer-dependencies [args]
+  (start* #{#'producer-connection
             #'cpool/channel-pool} args))
 
 (defn- start-rabbitmq-consumers [args]
   (start* #{#'consumer-connection
-            #'producer-connection
-            #'cpool/channel-pool
             #'messaging-consumer/consumers} args))
 
 (defn- stop-rabbitmq-consumers []
-  (mount/stop #'messaging-consumer/consumers))
+  (mount/stop #{#'consumer-connection
+                #'messaging-consumer/consumers}))
 
 (defn- start-rabbitmq-producers [args]
-  (start-rabbitmq-connection args)
+  (start-rabbitmq-producer-dependencies args)
   (messaging-producer/make-queues (event-routes args)))
 
 (defn- set-properties-for-structured-logging []
@@ -82,9 +80,8 @@
   (start-rabbitmq-producers args)
   (start-rabbitmq-consumers args))
 
-(defn- stop-rabbitmq-connection []
+(defn- stop-rabbitmq-producer-dependencies []
   (-> (mount/only #{#'producer-connection
-                    #'consumer-connection
                     #'cpool/channel-pool})
       (mount/stop)))
 
@@ -96,7 +93,7 @@
 
 (defn stop-workers []
   (stop-rabbitmq-consumers)
-  (stop-rabbitmq-connection)
+  (stop-rabbitmq-producer-dependencies)
   (stop-kafka-producers))
 
 (defn stop-server []
