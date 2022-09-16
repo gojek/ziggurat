@@ -85,6 +85,8 @@
       (log/info "Creating Noop tracer")
       (NoopTracerFactory/create))))
 
+(declare tracer)
+
 (defstate tracer
   :start (create-tracer)
   :stop #())

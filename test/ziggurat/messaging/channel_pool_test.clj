@@ -1,7 +1,7 @@
 (ns ziggurat.messaging.channel-pool-test
   (:require [clojure.test :refer :all]
             [ziggurat.messaging.channel_pool :as cpool :refer [channel-pool]]
-            [ziggurat.messaging.connection :refer [producer-connection]]
+            [ziggurat.messaging.producer_connection :refer [producer-connection]]
             [ziggurat.fixtures :as fix])
   (:import (org.apache.commons.pool2.impl GenericObjectPoolConfig GenericObjectPool)
            (java.time Duration)

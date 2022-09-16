@@ -3,7 +3,7 @@
             [mount.core :as mount]
             [ziggurat.config :as config]
             [ziggurat.init :as init]
-            [ziggurat.messaging.connection :as rmqc]
+            [ziggurat.messaging.connection-helper :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.messaging.channel_pool :as cpool]
@@ -14,8 +14,6 @@
             [cambium.logback.json.flat-layout :as flat]
             [cambium.codec :as codec])
   (:import (io.opentracing.mock MockTracer)))
-
-(def valid-modes-count 4)
 
 (defn exp [x n]
   (if (zero? n) 1

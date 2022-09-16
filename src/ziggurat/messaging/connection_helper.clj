@@ -1,16 +1,14 @@
-(ns ziggurat.messaging.connection
+(ns ziggurat.messaging.connection-helper
   (:require [clojure.tools.logging :as log]
             [langohr.core :as rmq]
             [mount.core :as mount :refer [defstate start]]
-            [sentry-clj.async :as sentry]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.channel :refer [get-keys-for-topic]]
             [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.util :as util]
-            [clojure.string :as str]
             [ziggurat.util.error :refer [report-error]])
-  (:import [com.rabbitmq.client ShutdownListener Address ListAddressResolver ConnectionFactory DnsRecordIpAddressResolver AddressResolver]
+  (:import [com.rabbitmq.client ShutdownListener ConnectionFactory AddressResolver]
            [java.util.concurrent Executors ExecutorService]
            [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
            [com.rabbitmq.client.impl DefaultCredentialsProvider]))
@@ -56,10 +54,10 @@
   [is-producer?]
   (if is-producer?
     (assoc (:rabbit-mq-connection (ziggurat-config))
-           :connection-name "producer")
+      :connection-name "producer")
     (assoc (:rabbit-mq-connection (ziggurat-config))
-           :executor (Executors/newFixedThreadPool (total-thread-count))
-           :connection-name "consumer")))
+      :executor (Executors/newFixedThreadPool (total-thread-count))
+      :connection-name "consumer")))
 
 (defn start-connection
   "is-producer? - defines whether the connection is being created for producers or consumers
@@ -69,15 +67,15 @@
   (when (is-connection-required?)
     (try
       (let
-       [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
-        connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
+        [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
+         connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
         (log/info "Connection created " connection)
         (doto connection
           (.addShutdownListener
-           (reify ShutdownListener
-             (shutdownCompleted [_ cause]
-               (when-not (.isInitiatedByApplication cause)
-                 (log/error cause "RabbitMQ connection shut down due to error")))))))
+            (reify ShutdownListener
+              (shutdownCompleted [_ cause]
+                (when-not (.isInitiatedByApplication cause)
+                  (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
         (report-error e "Error while starting RabbitMQ connection")
         (throw e)))))
@@ -86,11 +84,3 @@
   (when (is-connection-required?)
     (log/info "Closing the RabbitMQ connection")
     (rmq/close conn)))
-
-(declare producer-connection)
-
-(defstate producer-connection
-  :start (do (log/info "Creating producer connection")
-             (start-connection true))
-  :stop (do (log/info "Stopping producer connection")
-            (stop-connection producer-connection)))

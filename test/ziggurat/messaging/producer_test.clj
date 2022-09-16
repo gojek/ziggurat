@@ -5,7 +5,7 @@
             [langohr.queue :as lq]
             [ziggurat.config :refer [rabbitmq-config ziggurat-config channel-retry-config]]
             [ziggurat.fixtures :as fix]
-            [ziggurat.messaging.connection :refer [producer-connection]]
+            [ziggurat.messaging.producer_connection :refer [producer-connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.messaging.util :as util]

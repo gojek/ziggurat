@@ -4,7 +4,7 @@
             [ziggurat.config :refer [ziggurat-config get-configured-retry-count]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
-            [ziggurat.messaging.connection :refer [producer-connection]]
+            [ziggurat.messaging.producer_connection :refer [producer-connection]]
             [ziggurat.metrics :as metrics]
             [ziggurat.util.rabbitmq :as rmq]
             [ziggurat.message-payload :as mp]

@@ -7,7 +7,7 @@
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [channel-retry-config rabbitmq-config ziggurat-config]]
             [ziggurat.messaging.channel_pool :as cpool :refer [is-pool-alive?]]
-            [ziggurat.messaging.connection :refer [is-connection-required? producer-connection]]
+            [ziggurat.messaging.producer_connection :refer [is-connection-required? producer-connection]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics])
   (:import (com.rabbitmq.client AlreadyClosedException Channel)
