@@ -1,7 +1,7 @@
 (ns ziggurat.messaging.channel_pool
   (:require [mount.core :refer [defstate]]
             [ziggurat.config :as zc :refer [ziggurat-config]]
-            [ziggurat.messaging.connection :as c]
+            [ziggurat.messaging.producer_connection :as c]
             [cambium.core :as clog]
             [clojure.tools.logging :as log])
   (:import (com.rabbitmq.client Connection)

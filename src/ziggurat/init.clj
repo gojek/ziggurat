@@ -11,8 +11,9 @@
             [ziggurat.messaging.channel_pool :as cpool]
             [ziggurat.kafka-consumer.consumer-driver :as consumer-driver]
             [ziggurat.kafka-consumer.executor-service :as executor-service]
-            [ziggurat.messaging.connection :refer [producer-connection]]
-            [ziggurat.messaging.consumer :as messaging-consumer :refer [consumer-connection]]
+            [ziggurat.messaging.producer_connection :refer [producer-connection]]
+            [ziggurat.messaging.consumer :as messaging-consumer]
+            [ziggurat.messaging.consumer-connection :refer [consumer-connection]]
             [ziggurat.messaging.producer :as messaging-producer]
             [ziggurat.metrics :as metrics]
             [ziggurat.nrepl-server :as nrepl-server]
@@ -153,9 +154,8 @@
 
 (defn stop-common-states []
   (mount/stop #'config/config
+              #'sentry-reporter
               #'metrics/statsd-reporter
-              #'producer-connection
-              #'consumer-connection
               #'nrepl-server/server
               #'tracer/tracer))
 
