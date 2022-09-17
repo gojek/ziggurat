@@ -7,7 +7,8 @@
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
-  :dependencies [[bidi "2.1.6"]
+  :dependencies [[ns-graph "0.1.4"]
+                 [bidi "2.1.6"]
                  [camel-snake-kebab "0.4.2"]
                  [cheshire "5.10.0"]
                  [clonfig "0.2.0"]
@@ -63,7 +64,12 @@
                                     :username      :env/clojars_username
                                     :password      :env/clojars_password
                                     :sign-releases false}]]
-  :plugins [[lein-shell "0.5.0"]]
+  :plugins [[lein-shell "0.5.0"]
+            [ns-graph "0.1.4"]]
+  :ns-graph {:name "Ziggurat Projec"
+             :abbrev-ns true
+             :source-paths (get-env :source-paths)
+             :exclude ["com.gojek.*"]}
   :pedantic? :warn
   :java-source-paths ["src/com"]
   :aliases {"code-coverage" ["with-profile" "test" "cloverage" "--output" "coverage" "--lcov"]}
