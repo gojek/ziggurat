@@ -6,8 +6,8 @@
             [langohr.queue :as lq]
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [channel-retry-config rabbitmq-config ziggurat-config]]
-            [ziggurat.messaging.channel_pool :as cpool :refer [is-pool-alive?]]
-            [ziggurat.messaging.producer_connection :refer [producer-connection]]
+            [ziggurat.messaging.channel-pool :as cpool :refer [is-pool-alive?]]
+            [ziggurat.messaging.producer-connection :refer [producer-connection]]
             [ziggurat.messaging.connection-helper :as connection-helper]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics])

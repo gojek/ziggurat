@@ -3,7 +3,7 @@
             [ziggurat.fixtures :as fix]
             [mount.core :as mount]
             [ziggurat.config :as config]
-            [ziggurat.messaging.producer_connection :as mc :refer [producer-connection]]
+            [ziggurat.messaging.producer-connection :as mc :refer [producer-connection]]
             [ziggurat.messaging.connection-helper :as connection-helper :refer [create-connection create-rmq-connection]]
             [ziggurat.util.error :refer [report-error]]))
 

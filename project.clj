@@ -7,7 +7,8 @@
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
             :url  "https://www.apache.org/licenses/LICENSE-2.0"}
-  :dependencies [[ns-graph "0.1.4"]
+  :dependencies [[tolitius/mount-up "0.1.3"]
+                 [ns-graph "0.1.4"]
                  [bidi "2.1.6"]
                  [camel-snake-kebab "0.4.2"]
                  [cheshire "5.10.0"]

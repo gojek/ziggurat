@@ -5,5 +5,5 @@
 (declare my-cp)
 
 (defstate my-cp
-          :start (println "starting channel pool")
+          :start (do (println "starting channel pool") (Thread/sleep 2000))
           :stop (println "stopping channel pool"))

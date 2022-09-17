@@ -2,11 +2,11 @@
   (:require [mount.core :as mount :refer [defstate]]
             [ziggurat.dummy.producer-connection]
             [ziggurat.dummy.consumer-connection]
-            [ziggurat.dummy.channel-pool]))
+            [ziggurat.dummy.producer]))
 
 (declare my-consumers)
 
 (defstate my-consumers
-          :start (println "starting consumers")
+          :start (do (println "starting consumers") (Thread/sleep 3000))
           :stop (println "stopping consumers"))
 

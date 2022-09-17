@@ -1,7 +1,7 @@
-(ns ziggurat.messaging.channel_pool
+(ns ziggurat.messaging.channel-pool
   (:require [mount.core :refer [defstate]]
             [ziggurat.config :as zc :refer [ziggurat-config]]
-            [ziggurat.messaging.producer_connection :as c]
+            [ziggurat.messaging.producer-connection :as c]
             [ziggurat.messaging.connection-helper :as connection-helper]
             [cambium.core :as clog]
             [clojure.tools.logging :as log])

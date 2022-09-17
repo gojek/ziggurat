@@ -9,7 +9,7 @@
             [ziggurat.kafka-consumer.consumer-handler :as ch]
             [ziggurat.mapper :as mpr]
             [ziggurat.messaging.producer :as producer]
-            [ziggurat.messaging.producer_connection :refer [producer-connection]]
+            [ziggurat.messaging.producer-connection :refer [producer-connection]]
             [ziggurat.messaging.consumer-connection :refer [consumer-connection]]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
