@@ -2,6 +2,7 @@
   (:require [mount.core :refer [defstate]]
             [ziggurat.config :as zc :refer [ziggurat-config]]
             [ziggurat.messaging.producer_connection :as c]
+            [ziggurat.messaging.connection-helper :as connection-helper]
             [cambium.core :as clog]
             [clojure.tools.logging :as log])
   (:import (com.rabbitmq.client Connection)
@@ -17,7 +18,7 @@
     config))
 
 (defn calc-total-thread-count []
-  (let [rmq-thread-count            (c/total-thread-count)
+  (let [rmq-thread-count            (connection-helper/total-thread-count)
         stream-router-config        (get (zc/ziggurat-config) :stream-router)
         batch-routes-config         (get (zc/ziggurat-config) :batch-routes)
         batch-consumer-thread-count (reduce (fn [sum config]

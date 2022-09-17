@@ -7,7 +7,8 @@
             [taoensso.nippy :as nippy]
             [ziggurat.config :refer [channel-retry-config rabbitmq-config ziggurat-config]]
             [ziggurat.messaging.channel_pool :as cpool :refer [is-pool-alive?]]
-            [ziggurat.messaging.producer_connection :refer [is-connection-required? producer-connection]]
+            [ziggurat.messaging.producer_connection :refer [producer-connection]]
+            [ziggurat.messaging.connection-helper :as connection-helper]
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics])
   (:import (com.rabbitmq.client AlreadyClosedException Channel)
@@ -352,7 +353,7 @@
                   (make-channel-delay-queue topic-entity channel)))))))
 
 (defn make-queues [routes]
-  (when (is-connection-required?)
+  (when (connection-helper/is-connection-required?)
     (doseq [topic-entity (keys routes)]
       (let [channels (util/get-channel-names routes topic-entity)
             retry-type (retry-type)]
