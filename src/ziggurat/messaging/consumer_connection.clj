@@ -1,6 +1,7 @@
 (ns ziggurat.messaging.consumer-connection
   (:require [mount.core :refer [defstate]]
-            [ziggurat.messaging.connection-helper :as connection-helper]))
+            [ziggurat.messaging.connection-helper :as connection-helper]
+            [clojure.tools.logging :as log]))
 
 (declare consumer-connection)
 
