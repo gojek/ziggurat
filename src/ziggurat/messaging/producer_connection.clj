@@ -1,4 +1,4 @@
-(ns ziggurat.messaging.producer_connection
+(ns ziggurat.messaging.producer-connection
   (:require [mount.core :refer [defstate]]
             [ziggurat.messaging.connection-helper :as connection-helper]
             [clojure.tools.logging :as log]))

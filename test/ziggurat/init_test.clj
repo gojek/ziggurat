@@ -6,7 +6,7 @@
             [ziggurat.messaging.connection-helper :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
-            [ziggurat.messaging.channel_pool :as cpool]
+            [ziggurat.messaging.channel-pool :as cpool]
             [ziggurat.streams :as streams]
             [ziggurat.server.test-utils :as tu]
             [ziggurat.tracer :as tracer]
