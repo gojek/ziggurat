@@ -54,10 +54,10 @@
   [is-producer?]
   (if is-producer?
     (assoc (:rabbit-mq-connection (ziggurat-config))
-      :connection-name "producer")
+           :connection-name "producer")
     (assoc (:rabbit-mq-connection (ziggurat-config))
-      :executor (Executors/newFixedThreadPool (total-thread-count))
-      :connection-name "consumer")))
+           :executor (Executors/newFixedThreadPool (total-thread-count))
+           :connection-name "consumer")))
 
 (defn start-connection
   "is-producer? - defines whether the connection is being created for producers or consumers
@@ -67,15 +67,15 @@
   (when (is-connection-required?)
     (try
       (let
-        [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
-         connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
+       [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
+        connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
         (log/info "Connection created " connection)
         (doto connection
           (.addShutdownListener
-            (reify ShutdownListener
-              (shutdownCompleted [_ cause]
-                (when-not (.isInitiatedByApplication cause)
-                  (log/error cause "RabbitMQ connection shut down due to error")))))))
+           (reify ShutdownListener
+             (shutdownCompleted [_ cause]
+               (when-not (.isInitiatedByApplication cause)
+                 (log/error cause "RabbitMQ connection shut down due to error")))))))
       (catch Exception e
         (report-error e "Error while starting RabbitMQ connection")
         (throw e)))))
