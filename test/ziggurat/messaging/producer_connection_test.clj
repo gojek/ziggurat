@@ -66,8 +66,6 @@
         (mount/stop #'producer-connection)
         (is (not @rmq-connect-called?)))))
 
-
-
   (testing "if retry is disabled and channels are present it should create connection"
     (let [rmq-connect-called? (atom false)
           orig-rmq-connect    create-rmq-connection
@@ -94,8 +92,8 @@
           ziggurat-config        (config/ziggurat-config)
           stream-routes          {:default {:handler-fn (constantly :success)}}]
       (with-redefs [connection-helper/create-connection   (fn [provided-config tracer-enabled]
-                                             (reset! create-connect-called? true)
-                                             (orig-create-conn provided-config tracer-enabled))
+                                                            (reset! create-connect-called? true)
+                                                            (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled true}))]
         (-> (mount/only #{#'producer-connection})
@@ -110,8 +108,8 @@
           ziggurat-config        (config/ziggurat-config)
           stream-routes          {:default {:handler-fn (constantly :success)}}]
       (with-redefs [connection-helper/create-connection   (fn [provided-config tracer-enabled]
-                                             (reset! create-connect-called? true)
-                                             (orig-create-conn provided-config tracer-enabled))
+                                                            (reset! create-connect-called? true)
+                                                            (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}))]
         (-> (mount/only #{#'producer-connection})
@@ -129,8 +127,8 @@
                                   :default-1 {:handler-fn (constantly :channel-3)
                                               :channel-3  (constantly :success)}}]
       (with-redefs [connection-helper/create-connection   (fn [provided-config tracer-enabled]
-                                             (reset! create-connect-called? true)
-                                             (orig-create-conn provided-config tracer-enabled))
+                                                            (reset! create-connect-called? true)
+                                                            (orig-create-conn provided-config tracer-enabled))
                     config/ziggurat-config (constantly (assoc ziggurat-config
                                                               :retry {:enabled false}))]
         (-> (mount/only #{#'producer-connection})
