@@ -198,7 +198,7 @@
                                           retry-subscribers (start-retry-subscriber* (fn [message] (ch/process handler message)) topic-entity)]
                                       (assoc subscriber-map topic-entity {:retry retry-subscribers}))) {} batch-routes)
           data {:stream-consumers stream-consumers :batch-consumers batch-consumers}
-          _ (log/info "Subscriber info" data)]
+          _ (log/debug "Subscriber info" data)]
       data)))
 
 (defn stop-subscribers [subscribers additional-message]
