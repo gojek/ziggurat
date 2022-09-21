@@ -6,5 +6,4 @@
 
 (defn report-error [throwable message]
   (log/error throwable message)
-  (sentry/report-error sentry-reporter throwable message)
   (nr/report-error throwable message))
