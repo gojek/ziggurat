@@ -42,8 +42,11 @@
   (if (some? (:executor rabbitmq-config))
     (.newConnection connection-factory
                     ^ExecutorService (:executor rabbitmq-config)
-                    ^AddressResolver (util/create-address-resolver rabbitmq-config))
-    (.newConnection connection-factory ^AddressResolver (util/create-address-resolver rabbitmq-config))))
+                    ^AddressResolver (util/create-address-resolver rabbitmq-config)
+                    (:connection-name rabbitmq-config))
+    (.newConnection connection-factory nil ^AddressResolver
+                    (util/create-address-resolver rabbitmq-config)
+                    (:connection-name rabbitmq-config))))
 
 (defn create-connection [config tracer-enabled]
   (if tracer-enabled
@@ -54,10 +57,10 @@
   [is-producer?]
   (if is-producer?
     (assoc (:rabbit-mq-connection (ziggurat-config))
-           :connection-name "producer")
+           :connection-name (str "producer-" (:app-name (ziggurat-config))))
     (assoc (:rabbit-mq-connection (ziggurat-config))
            :executor (Executors/newFixedThreadPool (total-thread-count))
-           :connection-name "consumer")))
+           :connection-name (str "consumer-" (:app-name (ziggurat-config))))))
 
 (defn start-connection
   "is-producer? - defines whether the connection is being created for producers or consumers
