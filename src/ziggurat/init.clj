@@ -74,7 +74,7 @@
   (start* #{#'server/server} (dissoc args :actor-routes)))
 
 (defn start-server [args]
-  (start* #{#'server/server} args))
+  (start* #{#'server/server #'consumer-connection} args))
 
 (defn start-workers [args]
   (start-kafka-producers)
@@ -98,7 +98,8 @@
   (stop-kafka-producers))
 
 (defn stop-server []
-  (mount/stop #'server/server))
+  (-> (mount/only #{#'server/server #'consumer-connection})
+  (mount/stop)))
 
 (defn stop-stream []
   (stop-kafka-streams)
