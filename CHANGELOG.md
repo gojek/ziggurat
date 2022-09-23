@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.9.0
+- Improvises the publishing logic during consumption via subscribers.
+- Upgrades the state management for rabbitmq subscribers.
+
 ## 4.8.0
 - `rabbitmq-retry-count` is now available in `metadata` provided in user handler function.
 
