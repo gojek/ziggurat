@@ -8,8 +8,7 @@
   (testing "error gets reported to sentry and new-relic"
     (let [sentry-report-called? (atom false)
           newrelic-report-error-called? (atom false)]
-      (with-redefs [sentry-report (fn [_ _ _ & _] (reset! sentry-report-called? true))
-                    nr/report-error (fn [_ _] (reset! newrelic-report-error-called? true))]
+      (with-redefs [nr/report-error (fn [_ _] (reset! newrelic-report-error-called? true))]
         (report-error (Exception. "Error") "error")
-        (is @sentry-report-called?)
+        (is (= false @sentry-report-called?))
         (is @newrelic-report-error-called?)))))
