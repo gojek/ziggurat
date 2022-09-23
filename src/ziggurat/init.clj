@@ -99,7 +99,7 @@
 
 (defn stop-server []
   (-> (mount/only #{#'server/server #'consumer-connection})
-  (mount/stop)))
+      (mount/stop)))
 
 (defn stop-stream []
   (stop-kafka-streams)
