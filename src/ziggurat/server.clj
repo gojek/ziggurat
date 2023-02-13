@@ -5,10 +5,22 @@
             [ring.adapter.jetty :as ring]
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.server.routes :as routes])
-  (:import (org.eclipse.jetty.server Server)
-           (java.time Instant)))
+  (:import (java.util.concurrent TimeoutException)
+           (org.eclipse.jetty.server Server)
+           (java.time Instant)
+           (org.eclipse.jetty.server.handler StatisticsHandler)))
 
 (add-encoder Instant encode-str)
+
+(def default-stop-timeout-ms 30000)
+
+(defn configure-jetty [^Server server]
+  (let [stats-handler   (StatisticsHandler.)
+        default-handler (.getHandler server)]
+    (.setHandler stats-handler default-handler)
+    (.setHandler server stats-handler)
+    (.setStopTimeout server default-stop-timeout-ms)
+    (.setStopAtShutdown server true)))
 
 (defn- start [handler]
   (let [conf         (:http-server (ziggurat-config))
@@ -19,10 +31,13 @@
                              :min-threads          thread-count
                              :max-threads          thread-count
                              :join?                false
-                             :send-server-version? false})))
+                             :send-server-version? false
+                             :configurator         configure-jetty})))
 
 (defn- stop [^Server server]
-  (.stop server)
+  (try
+    (.stop server)
+    (catch TimeoutException _ (log/info "Server Stop timed out")))
   (log/info "Stopped server"))
 
 (defstate server

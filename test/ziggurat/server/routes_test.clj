@@ -13,13 +13,13 @@
 
 (deftest router-dead-set-channel-disabled-test
   (let [stream-routes {:default {:handler-fn (fn [])
-                                 :channel-1 (fn [])}}]
+                                 :channel-1  (fn [])}}]
     (with-redefs [retry-enabled? (fn [] false)]
       (fix/with-start-server
         stream-routes
         (testing "should return 404 when /v1/dead_set/replay for channel is called and channel retry is disabled"
           (with-redefs [channel-retry-enabled? (constantly false)]
-            (let [params {:count "10" :topic-entity "default" :channel "channel-1"}
+            (let [params        {:count "10" :topic-entity "default" :channel "channel-1"}
                   {:keys [status body]} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" params)
                   expected-body {:error "Retry is not enabled"}]
               (is (= 404 status))
@@ -27,7 +27,7 @@
 
         (testing "should return 404 when /v1/dead_set for channel is called and channel retry is disabled"
           (with-redefs [channel-retry-enabled? (constantly false)]
-            (let [params {:count "10" :topic-entity "default" :channel "channel-1"}
+            (let [params        {:count "10" :topic-entity "default" :channel "channel-1"}
                   {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port) "/v1/dead_set" true true {} params)
                   expected-body {:error "Retry is not enabled"}]
               (is (= 404 status))
@@ -35,7 +35,7 @@
 
         (testing "should return 404 when delete /v1/dead_set for channel is called and channel retry is disabled"
           (with-redefs [channel-retry-enabled? (constantly false)]
-            (let [params {:count "10" :topic-entity "default" :channel "channel-1"}
+            (let [params        {:count "10" :topic-entity "default" :channel "channel-1"}
                   {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port) "/v1/dead_set" true true {} params)
                   expected-body {:error "Retry is not enabled"}]
               (is (= 404 status))
@@ -77,15 +77,15 @@
 
         (testing "should return 200 when /v1/dead_set/replay is called with valid count val"
           (with-redefs [ds/replay (fn [_ _ _] nil)]
-            (let [count "10"
+            (let [count  "10"
                   params {:count count :topic-entity "default"}
                   {:keys [status _]} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" params)]
               (is (= 200 status)))))
 
         (testing "should return 400 when /v1/dead_set/replay is called with invalid count val"
           (with-redefs [ds/replay (fn [_ _ _] nil)]
-            (let [count "invalid-val"
-                  topic-entity "default"
+            (let [count         "invalid-val"
+                  topic-entity  "default"
                   expected-body {:error "Count should be positive integer"}
                   {:keys [status body]} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" {:count count :topic-entity topic-entity})]
               (is (= 400 status))
@@ -93,7 +93,7 @@
 
         (testing "should return 400 when /v1/dead_set/replay is called with no topic entity"
           (with-redefs [ds/replay (fn [_ _ _] nil)]
-            (let [count "10"
+            (let [count         "10"
                   expected-body {:error "Topic entity/channel should be provided and must be present in stream routes"}
                   {:keys [status body]} (tu/post (-> (ziggurat-config) :http-server :port) "/v1/dead_set/replay" {:count count})]
               (is (= 400 status))
@@ -101,9 +101,9 @@
 
         (testing "should return 400 when get /v1/dead_set is called with invalid count val"
           (with-redefs [ds/view (fn [_ _ _] nil)]
-            (let [count "avasdas"
+            (let [count        "avasdas"
                   topic-entity "default"
-                  params {:count count :topic-name topic-entity}
+                  params       {:count count :topic-name topic-entity}
                   {:keys [status _]} (tu/get (-> (ziggurat-config) :http-server :port)
                                              "/v1/dead_set"
                                              true
@@ -114,9 +114,9 @@
 
         (testing "should return 400 when get /v1/dead_set is called with negative count val"
           (with-redefs [ds/view (fn [_ _ _] nil)]
-            (let [count "-10"
+            (let [count        "-10"
                   topic-entity "default"
-                  params {:count count :topic-name topic-entity}
+                  params       {:count count :topic-name topic-entity}
                   {:keys [status _]} (tu/get (-> (ziggurat-config) :http-server :port)
                                              "/v1/dead_set"
                                              true
@@ -128,8 +128,8 @@
         (testing "should return 400 when get /v1/dead_set is called without topic entity"
           (with-redefs [ds/view (fn [_ _ _] nil)]
             (let [expected-body {:error "Topic entity/channel should be provided and must be present in stream routes"}
-                  count "10"
-                  params {:count count}
+                  count         "10"
+                  params        {:count count}
                   {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
                                                 "/v1/dead_set"
                                                 true
@@ -143,8 +143,8 @@
           (with-redefs [channel-retry-enabled? (constantly true)]
             (with-redefs [ds/view (fn [_ _ _] nil)]
               (let [expected-body {:error "Topic entity/channel should be provided and must be present in stream routes"}
-                    count "10"
-                    params {:count count :topic-entity "default" :channel "invalid"}
+                    count         "10"
+                    params        {:count count :topic-entity "default" :channel "invalid"}
                     {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
                                                   "/v1/dead_set"
                                                   true
@@ -158,8 +158,8 @@
           (with-redefs [channel-retry-enabled? (constantly true)]
             (with-redefs [ds/view (fn [_ _ _] nil)]
               (let [expected-body {:error "Count should be positive integer"}
-                    count "-10"
-                    params {:count count :topic-entity "default"}
+                    count         "-10"
+                    params        {:count count :topic-entity "default"}
                     {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
                                                   "/v1/dead_set"
                                                   true
@@ -171,7 +171,7 @@
 
         (testing "should return 200 when get /v1/dead_set is called with valid count val"
           (with-redefs [ds/view (fn [_ _ _] {:foo "bar"})]
-            (let [count "10"
+            (let [count  "10"
                   params {:count count :topic-entity "default"}
                   {:keys [status body]} (tu/get (-> (ziggurat-config) :http-server :port)
                                                 "/v1/dead_set"
@@ -184,7 +184,7 @@
 
         (testing "should return 200 when delete /v1/dead_set is called with valid parameters"
           (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]
-            (let [count "10"
+            (let [count  "10"
                   params {:count count :topic-entity "default"}
                   {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                    "/v1/dead_set"
@@ -196,7 +196,7 @@
 
         (testing "should return 400 when delete /v1/dead_set is called with invalid count val"
           (with-redefs [ds/delete (fn [_ _ _] {:foo "bar"})]
-            (let [count "-10"
+            (let [count  "-10"
                   params {:count count :topic-entity "default"}
                   {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                    "/v1/dead_set"
@@ -209,9 +209,9 @@
 
         (testing "should return 400 when delete /v1/dead_set is called with invalid count val"
           (with-redefs [ds/delete (fn [_ _ _] nil)]
-            (let [count "avasdas"
+            (let [count        "avasdas"
                   topic-entity "default"
-                  params {:count count :topic-name topic-entity}
+                  params       {:count count :topic-name topic-entity}
                   {:keys [status _]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                 "/v1/dead_set"
                                                 true
@@ -222,9 +222,9 @@
 
         (testing "should return 400 when delete /v1/dead_set is called with negative count val"
           (with-redefs [ds/delete (fn [_ _ _] nil)]
-            (let [count "-10"
+            (let [count        "-10"
                   topic-entity "default"
-                  params {:count count :topic-name topic-entity}
+                  params       {:count count :topic-name topic-entity}
                   {:keys [status _]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                 "/v1/dead_set"
                                                 true
@@ -236,8 +236,8 @@
         (testing "should return 400 when delete /v1/dead_set is called without topic entity"
           (with-redefs [ds/delete (fn [_ _ _] nil)]
             (let [expected-body {:error "Topic entity/channel should be provided and must be present in stream routes"}
-                  count "10"
-                  params {:count count}
+                  count         "10"
+                  params        {:count count}
                   {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                    "/v1/dead_set"
                                                    true
@@ -251,8 +251,8 @@
           (with-redefs [channel-retry-enabled? (constantly true)]
             (with-redefs [ds/view (fn [_ _ _] nil)]
               (let [expected-body {:error "Topic entity/channel should be provided and must be present in stream routes"}
-                    count "10"
-                    params {:count count :topic-entity "default" :channel "invalid"}
+                    count         "10"
+                    params        {:count count :topic-entity "default" :channel "invalid"}
                     {:keys [status body]} (tu/delete (-> (ziggurat-config) :http-server :port)
                                                      "/v1/dead_set"
                                                      true
