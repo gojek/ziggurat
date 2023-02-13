@@ -10,16 +10,18 @@
 
 (deftest http-server-graceful-shutdown-test
   (testing "server should process existing requests within 30000ms when it is stopped"
-    (with-redefs [ziggurat.server.routes/handler (fn [_] (fn [_] (Thread/sleep 3000) "pong"))]
+    (with-redefs [ziggurat.server.routes/handler (fn [_] (fn [_] (Thread/sleep 3000) {:body "pong"}))]
       (fix/mount-config)
       (mount/start [#'server])
       (let [http-fut (future (tu/get (-> (ziggurat-config) :http-server :port) "/ping" true false))]
         ;; 1000 is the minimum sleep required for the future to run
         (Thread/sleep 1000)
         (mount/stop [#'server])
-        @http-fut)))
-  (testing "server should discard new requests after the server is stopped"
-    (with-redefs [ziggurat.server.routes/handler (fn [_] (fn [_] (Thread/sleep 3000) "pong"))]
+        (is (:body @http-fut) "pong")
+        (is (:status @http-fut) 200))))
+
+  (testing "server should discard new requests after the server is stopped, but should process the old request"
+    (with-redefs [ziggurat.server.routes/handler (fn [_] (fn [_] (Thread/sleep 3000) {:body "pong"}))]
       (fix/mount-config)
       (mount/start [#'server])
       (let [http-fut (future (tu/get (-> (ziggurat-config) :http-server :port) "/ping" true false))]
@@ -27,9 +29,10 @@
         (Thread/sleep 1000)
         (mount/stop [#'server])
         (is (thrown? Exception (tu/get (-> (ziggurat-config) :http-server :port) "/ping" false false)))
-        @http-fut)))
+        (is (:body @http-fut) "pong")
+        (is (:status @http-fut) 200))))
   (testing "server should stop after the graceful shutdown timeout and discard requests in progress"
-    (with-redefs [ziggurat.server.routes/handler  (fn [_] (fn [_] (Thread/sleep 3000) "pong"))
+    (with-redefs [ziggurat.server.routes/handler  (fn [_] (fn [_] (Thread/sleep 4000) {:body "pong"}))
                   ziggurat.server/configure-jetty (fn [^Server server]
                                                     (let [stats-handler   (StatisticsHandler.)
                                                           default-handler (.getHandler server)]
