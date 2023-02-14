@@ -15,14 +15,14 @@
 (def default-stop-timeout-ms 30000)
 
 (defn configure-jetty [^Server server]
-  (let [stats-handler       (StatisticsHandler.)
-        graceful-timeout-ms (get-in (ziggurat-config)
-                                    [:http-server :graceful-shutdown-timeout-ms]
-                                    default-stop-timeout-ms)
-        default-handler     (.getHandler server)]
+  (let [stats-handler   (StatisticsHandler.)
+        timeout-ms      (get-in (ziggurat-config)
+                                [:http-server :graceful-shutdown-timeout-ms]
+                                default-stop-timeout-ms)
+        default-handler (.getHandler server)]
     (.setHandler stats-handler default-handler)
     (.setHandler server stats-handler)
-    (.setStopTimeout server graceful-timeout-ms)
+    (.setStopTimeout server timeout-ms)
     (.setStopAtShutdown server true)))
 
 (defn- start [handler]
@@ -40,8 +40,8 @@
 (defn- stop [^Server server]
   (try
     (.stop server)
-    (catch TimeoutException _ (log/info "Server Stop timed out")))
-  (log/info "Stopped server"))
+    (catch TimeoutException _ (log/info "Graceful shutdown timed out")))
+  (log/info "Stopped server gracefully"))
 
 (defstate server
   :start (start (routes/handler (:actor-routes (mount/args))))
