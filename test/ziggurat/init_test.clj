@@ -6,6 +6,7 @@
             [ziggurat.messaging.connection-helper :as rmqc]
             [ziggurat.messaging.consumer :as messaging-consumer]
             [ziggurat.messaging.producer :as messaging-producer]
+            [ziggurat.server :as server]
             [ziggurat.messaging.channel-pool :as cpool]
             [ziggurat.streams :as streams]
             [ziggurat.server.test-utils :as tu]
@@ -39,6 +40,8 @@
   (testing "The actor stop fn stops before the ziggurat state"
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
+                    server/start          (constantly nil)
+                    server/stop           (constantly nil)
                     streams/stop-streams  (fn [_] (reset! result (* @result 2)))
                     tracer/create-tracer  (fn [] (MockTracer.))]
         (with-config
