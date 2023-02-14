@@ -524,6 +524,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
             :http-server          {:port         [8010 :int]
+                                   :graceful-shutdown-timeout-ms [30000 :int]
             :new-relic            {:report-errors [false :bool]}}}}
 ```
 
@@ -556,7 +557,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 - rabbit-mq - The queues that are part of the retry mechanism
 - retry - The number of times the message should be retried and if retry flow should be enabled or not
 - jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
-- http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server.
+- http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server. It also controls the graceful shutdown timeout of the HTTP server. Default is `30000ms`
 - new-relic - If report-errors is true, whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing it, an error is reported to new-relic. You can skip this flow by disabling it.
 
 ## Contribution
