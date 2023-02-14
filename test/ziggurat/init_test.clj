@@ -9,6 +9,7 @@
             [ziggurat.server :as server]
             [ziggurat.messaging.channel-pool :as cpool]
             [ziggurat.streams :as streams]
+            [ziggurat.nrepl-server :as nrs]
             [ziggurat.server.test-utils :as tu]
             [ziggurat.tracer :as tracer]
             [ziggurat.fixtures :refer [with-config]]
@@ -27,6 +28,10 @@
                     streams/stop-streams       (constantly nil)
                     ;; will be called valid modes number of times
                     cpool/create-channel-pool  (fn [_] (reset! result (* @result 3)))
+                    server/start               (constantly nil)
+                    server/stop                (constantly nil)
+                    nrs/start                  (constantly nil)
+                    nrs/stop                   (constantly nil)
                     rmqc/start-connection      (fn [_] (do (reset! result (* @result 2)) nil))
                     rmqc/stop-connection       (constantly nil)
                     cpool/destroy-channel-pool (constantly nil)
@@ -42,6 +47,8 @@
       (with-redefs [streams/start-streams (constantly nil)
                     server/start          (constantly nil)
                     server/stop           (constantly nil)
+                    nrs/start             (constantly nil)
+                    nrs/stop              (constantly nil)
                     streams/stop-streams  (fn [_] (reset! result (* @result 2)))
                     tracer/create-tracer  (fn [] (MockTracer.))]
         (with-config
