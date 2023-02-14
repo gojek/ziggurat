@@ -3,38 +3,52 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.9.1
+
+- Adds Graceful shutdown to the http server
+
 ## 4.9.0
+
 - Improvises the publishing logic during consumption via subscribers.
 - Upgrades the state management for rabbitmq subscribers.
 
 ## 4.8.0
+
 - `rabbitmq-retry-count` is now available in `metadata` provided in user handler function.
 
 ## 4.7.6
+
 - Fixed a bug where kafka header with null values, throws Null Pointer Exception upon publishing to rabbitmq
 
 ## 4.7.5
+
 - Publishes metric to gauge time taken to send messages to rabbitmq
 
 ## 4.7.4
+
 - Updated dead-set APIs to replay and delete dead-set messages asynchronously
 
 ## 4.7.3
+
 - Fixed a bug where instantiation of channel pool leads to null pointer exception when stream route does not have
   :stream-threads-count defined
 
 ## 4.7.2
+
 - Releasing a new tag because the version 4.7.0 was already present in clojars.
 
 ## 4.7.0
+
 - Added a feature to retry non-recoverable exceptions during publishing messages on rabbitmq
 
 ## 4.6.4
-- user can provide `:prefetch-count` for RabbitMQ channel threads in `[:stream-router :channels :<channel_key>]` 
+
+- user can provide `:prefetch-count` for RabbitMQ channel threads in `[:stream-router :channels :<channel_key>]`
   section of the config
 - Fixed a bug for overriding the default channel-pool configuration with the user provided config
 
 ## 4.6.3
+
 - RabbitMQ's connections use a DNS IP resolver to resolve DNS based hosts
 - Setting of HA policies from within ziggurat have been removed
 
