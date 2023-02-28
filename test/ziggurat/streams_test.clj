@@ -21,7 +21,7 @@
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
-                                    fix/silence-logging
+                                    ;fix/silence-logging
                                     fix/mount-metrics]))
 
 (defn- start-mount
