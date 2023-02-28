@@ -132,11 +132,13 @@
               retry-message-payload    (assoc message-payload :retry-count @retry-count)
               expected-message-payload (assoc message-payload :retry-count channel-retry-count)]
           (producer/retry-for-channel retry-message-payload channel)
+          (Thread/sleep 5000)
           (while (> @retry-count 0)
             (swap! retry-count dec)
             (let [message-from-mq (rmq/get-message-from-channel-retry-queue topic-entity channel (- 5 @retry-count))]
               (is (= (get message-from-mq :retry-count 0) @retry-count))
-              (producer/retry-for-channel message-from-mq channel)))
+              (producer/retry-for-channel message-from-mq channel))
+            (Thread/sleep 5000))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
             (is (= expected-message-payload message-from-mq))))))))
 
@@ -543,19 +545,19 @@
           prefixed-queue-name-called? (atom false)
           publish-called?             (atom false)
           serialized-message-payload  "serialized-payload"]
-      (with-redefs [rabbitmq-config          (constantly {:dead-letter {:exchange-name expected-exchange-name}})
-                    util/prefixed-queue-name (fn [topic-entity exchange]
-                                               (if (and (= topic-entity expected-topic-entity)
-                                                        (= exchange expected-exchange-name))
-                                                 (reset! prefixed-queue-name-called? true))
-                                               expected-exchange-name)
+      (with-redefs [rabbitmq-config                   (constantly {:dead-letter {:exchange-name expected-exchange-name}})
+                    util/prefixed-queue-name          (fn [topic-entity exchange]
+                                                        (if (and (= topic-entity expected-topic-entity)
+                                                                 (= exchange expected-exchange-name))
+                                                          (reset! prefixed-queue-name-called? true))
+                                                        expected-exchange-name)
                     metrics/increment-count           (fn [_ _ _] nil)
                     metrics/multi-ns-report-histogram (fn [_ _ _] nil)
                     lch/open                          (fn [_] (reify Channel (close [_] nil)))
-                    lb/publish         (fn [_ exchange _ payload _]
-                                         (if (and (= exchange expected-exchange-name)
-                                                  (= payload serialized-message-payload))
-                                           (reset! publish-called? true)))]
+                    lb/publish                        (fn [_ exchange _ payload _]
+                                                        (if (and (= exchange expected-exchange-name)
+                                                                 (= payload serialized-message-payload))
+                                                          (reset! publish-called? true)))]
         (producer/publish-to-dead-queue serialized-message-payload topic-entity true)
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?))))))
