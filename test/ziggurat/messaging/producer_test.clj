@@ -132,13 +132,11 @@
               retry-message-payload    (assoc message-payload :retry-count @retry-count)
               expected-message-payload (assoc message-payload :retry-count channel-retry-count)]
           (producer/retry-for-channel retry-message-payload channel)
-          (Thread/sleep 5000)
           (while (> @retry-count 0)
             (swap! retry-count dec)
             (let [message-from-mq (rmq/get-message-from-channel-retry-queue topic-entity channel (- 5 @retry-count))]
               (is (= (get message-from-mq :retry-count 0) @retry-count))
-              (producer/retry-for-channel message-from-mq channel))
-            (Thread/sleep 5000))
+              (producer/retry-for-channel message-from-mq channel)))
           (let [message-from-mq (rmq/get-msg-from-channel-dead-queue topic-entity channel)]
             (is (= expected-message-payload message-from-mq))))))))
 

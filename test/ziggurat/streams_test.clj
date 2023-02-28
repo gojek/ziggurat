@@ -100,7 +100,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime. 0 (- (System/currentTimeMillis) (* 1000 oldest-processed-message-in-s)) (System/nanoTime)))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= 0 @message-received-count))))
 
@@ -119,7 +119,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 
@@ -251,7 +251,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 10000)                              ;;wating for streams to consume messages
+          (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
@@ -281,7 +281,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 10000)                              ;;wating for streams to consume messages
+          (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
@@ -311,7 +311,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 10000)                              ;;wating for streams to consume messages
+          (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
@@ -345,7 +345,7 @@
                                                         kvs
                                                         (props-with-string-serializer)
                                                         (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 
@@ -393,7 +393,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 
@@ -419,7 +419,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 
@@ -441,7 +441,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 
@@ -463,7 +463,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
+    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
 
