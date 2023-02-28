@@ -62,11 +62,11 @@
    (get-mapped-fn message-received-count message))
   ([message-received-count expected-message]
    (fn [message-from-kafka]
-     (when (and (= expected-message   (:message message-from-kafka))
-                (some?  (:metadata message-from-kafka))
-                (nil?   (:retry-count message-from-kafka))
-                (nil?   (:topic-entity message-from-kafka))
-                (nil?   (:headers message-from-kafka)))
+     (when (and (= expected-message (:message message-from-kafka))
+                (some? (:metadata message-from-kafka))
+                (nil? (:retry-count message-from-kafka))
+                (nil? (:topic-entity message-from-kafka))
+                (nil? (:headers message-from-kafka)))
        (swap! message-received-count inc)
        :success))))
 
@@ -95,7 +95,7 @@
                                                          (assoc-in [:stream-router :default :application-id] (rand-application-id))
                                                          (assoc-in [:stream-router :default :oldest-processed-message-in-s] oldest-processed-message-in-s)
                                                          (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 5000)                                    ;;waiting for streams to start
+    (Thread/sleep 5000)                                     ;;waiting for streams to start
     (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
                                                         kvs
                                                         (props)
@@ -251,7 +251,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 10000)                               ;;wating for streams to consume messages
+          (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
@@ -281,7 +281,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 10000)                               ;;wating for streams to consume messages
+          (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
@@ -311,7 +311,7 @@
                                                               kvs
                                                               (props)
                                                               (MockTime.))
-          (Thread/sleep 10000)                               ;;wating for streams to consume messages
+          (Thread/sleep 5000)                               ;;wating for streams to consume messages
           (stop-streams streams)
           (is (= times @message-received-count)))))))
 
@@ -364,7 +364,7 @@
                                                         kvs
                                                         (props)
                                                         (MockTime.))
-    (Thread/sleep 5000)                                     ;;wating for streams to consume messages
+    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))
     (let [finished-spans (.finishedSpans tracer)

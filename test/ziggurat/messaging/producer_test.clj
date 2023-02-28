@@ -543,19 +543,19 @@
           prefixed-queue-name-called? (atom false)
           publish-called?             (atom false)
           serialized-message-payload  "serialized-payload"]
-      (with-redefs [rabbitmq-config          (constantly {:dead-letter {:exchange-name expected-exchange-name}})
-                    util/prefixed-queue-name (fn [topic-entity exchange]
-                                               (if (and (= topic-entity expected-topic-entity)
-                                                        (= exchange expected-exchange-name))
-                                                 (reset! prefixed-queue-name-called? true))
-                                               expected-exchange-name)
+      (with-redefs [rabbitmq-config                   (constantly {:dead-letter {:exchange-name expected-exchange-name}})
+                    util/prefixed-queue-name          (fn [topic-entity exchange]
+                                                        (if (and (= topic-entity expected-topic-entity)
+                                                                 (= exchange expected-exchange-name))
+                                                          (reset! prefixed-queue-name-called? true))
+                                                        expected-exchange-name)
                     metrics/increment-count           (fn [_ _ _] nil)
                     metrics/multi-ns-report-histogram (fn [_ _ _] nil)
                     lch/open                          (fn [_] (reify Channel (close [_] nil)))
-                    lb/publish         (fn [_ exchange _ payload _]
-                                         (if (and (= exchange expected-exchange-name)
-                                                  (= payload serialized-message-payload))
-                                           (reset! publish-called? true)))]
+                    lb/publish                        (fn [_ exchange _ payload _]
+                                                        (if (and (= exchange expected-exchange-name)
+                                                                 (= payload serialized-message-payload))
+                                                          (reset! publish-called? true)))]
         (producer/publish-to-dead-queue serialized-message-payload topic-entity true)
         (is (true? @prefixed-queue-name-called?))
         (is (true? @publish-called?))))))
