@@ -136,8 +136,6 @@
    :default-api-timeout-ms-config   :default-api-timeout-ms
    :key-deserializer-class-config   :key-deserializer
    :session-timeout-ms-config       :session-timeout-ms
-   :max-poll-interval-ms            :max-poll-interval-ms
-   :max-poll-records                :max-poll-recrords
    :value-deserializer-class-config :value-deserializer})
 
 (def producer-config-mapping-table
