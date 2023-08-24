@@ -8,6 +8,7 @@
 (def default-consumer-config
   {:commit-interval-ms              15000
    :session-timeout-ms-config       60000
+   :max-poll-interval-ms            300000
    :default-api-timeout-ms-config   60000
    :key-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"
    :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"})
@@ -16,7 +17,8 @@
   [topic-entity consumer-group-config]
   (try
     (let [merged-consumer-group-config (umap/deep-merge consumer-group-config default-consumer-config)
-          consumer                     (KafkaConsumer. (cfg/build-consumer-config-properties merged-consumer-group-config))
+          consumer                     (KafkaConsumer.
+                                        (cfg/build-consumer-config-properties merged-consumer-group-config))
           topic-pattern                (Pattern/compile (:origin-topic merged-consumer-group-config))]
       (.subscribe consumer topic-pattern)
       consumer)

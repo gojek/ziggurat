@@ -11,17 +11,18 @@
                                    :worker-count              [10 :int]
                                    :queue-size                [10 :int]
                                    :thread-termination-wait-s [1 :int]}
-            :rabbit-mq-connection {:host            "127.0.0.1"
-                                   :port            [5672 :int]
-                                   :username        "guest"
-                                   :password        "guest"
-                                   :channel-timeout [2000 :int]
+            :rabbit-mq-connection {:host             "127.0.0.1"
+                                   :port             [5672 :int]
+                                   :username         "guest"
+                                   :password         "guest"
+                                   :channel-timeout  [2000 :int]
 
-                                   :address-resolver [:dns :keyword] ;;possible values [:dns :ip-list]
-                                   :publish-retry   {:back-off-ms                     [1 :int]
-                                                     :non-recoverable-exception {:enabled [true :bool]
-                                                                                 :back-off-ms   [1 :int]
-                                                                                 :count   [5 :int]}}}
+                                   :address-resolver [:dns :keyword]
+                                   ;;possible values [:dns :ip-list]
+                                   :publish-retry    {:back-off-ms               [1 :int]
+                                                      :non-recoverable-exception {:enabled     [true :bool]
+                                                                                  :back-off-ms [1 :int]
+                                                                                  :count       [5 :int]}}}
             :jobs                 {:instant {:worker-count   [4 :int]
                                              :prefetch-count [4 :int]}}
             :rabbit-mq            {:delay       {:queue-name           "application_name_delay_queue_test"
@@ -73,6 +74,7 @@
                                                 :max-poll-records                [1000 :int]
                                                 :origin-topic                    "topic"
                                                 :commit-interval-ms              [5000 :int]
+                                                :max-poll-interval-ms            [300000 :int]
                                                 :poll-timeout-ms-config          [1000 :int]
                                                 :thread-count                    [2 :int]
                                                 :session-timeout-ms-config       [60000 :int]
