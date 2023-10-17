@@ -124,12 +124,11 @@
 
 (defn- mapped-handler-fn [handler-fn channels message topic-entity]
   (try
-    ((mapper-func handler-fn channels) 
+    ((mapper-func handler-fn channels)
      (-> (->MessagePayload (:value message) topic-entity)
          (assoc :headers (:headers message))
          (assoc :metadata (:metadata message))))
     (finally)))
-
 
 (defn- join-streams
   [oldest-processed-message-in-s topic-entity stream-1 stream-2]

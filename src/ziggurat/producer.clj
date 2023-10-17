@@ -84,7 +84,6 @@
                           (seq kafka-producers))))
           (log/info "No producers found. Can not initiate stop.")))
 
-
 (defn send
   "A wrapper around `org.apache.kafka.clients.producer.KafkaProducer#send` which enables
   the users of Ziggurat to produce data to a Kafka topic using a Kafka producer

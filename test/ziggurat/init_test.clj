@@ -223,8 +223,7 @@
 
   (testing "The routes not added by actor should return 404"
     (with-redefs [streams/start-streams (constantly nil)
-                  streams/stop-streams  (constantly nil)
-                  ]
+                  streams/stop-streams  (constantly nil)]
       (with-config
         (do (init/start #() {} {} [] nil)
             (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)]
@@ -233,8 +232,7 @@
 
   (testing "The ziggurat routes should work fine when actor routes are not provided"
     (with-redefs [streams/start-streams (constantly nil)
-                  streams/stop-streams  (constantly nil)
-                  ]
+                  streams/stop-streams  (constantly nil)]
       (with-config
         (do (init/start #() {} {} [] nil)
             (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
