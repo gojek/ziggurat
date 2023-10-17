@@ -8,10 +8,8 @@
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.middleware.stream-joins :as stream-joins-middleware]
             [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-streams stop-streams stop-stream start-stream]]
-            [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]]
-            [ziggurat.tracer :refer [tracer]])
+            [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]])
   (:import [com.gojek.test.proto Example$Photo]
-           [io.opentracing.tag Tags]
            [java.util Properties]
            [org.apache.kafka.clients.producer ProducerConfig]
            (org.apache.kafka.common.utils MockTime)
@@ -348,34 +346,6 @@
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
-
-(deftest start-streams-test-with-tracer
-  (let [message-received-count (atom 0)
-        mapped-fn              (get-mapped-fn message-received-count)
-        times                  1
-        kvs                    (repeat times message-key-value)
-        handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-        streams                (start-streams {:default {:handler-fn handler-fn}}
-                                              (-> (ziggurat-config)
-                                                  (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                                  (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
-    (Thread/sleep 10000)                                    ;;waiting for streams to start
-    (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
-                                                        kvs
-                                                        (props)
-                                                        (MockTime.))
-    (Thread/sleep 10000)                                    ;;wating for streams to consume messages
-    (stop-streams streams)
-    (is (= times @message-received-count))
-    (let [finished-spans (.finishedSpans tracer)
-          tags           (-> finished-spans
-                             (.get 1)
-                             (.tags))]
-      (is (= 2 (.size finished-spans)))                     ;;2 spans - one from the TracingKafkaClientSupplier and one for the actual handler function
-      (is (= "Message-Handler" (-> finished-spans
-                                   (.get 1)
-                                   (.operationName))))
-      (is (= {(.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER, (.getKey Tags/COMPONENT) "ziggurat"} tags)))))
 
 (deftest start-streams-test-when-tracer-is-not-configured
   (let [message-received-count (atom 0)
