@@ -12,7 +12,6 @@
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]
             [ziggurat.config :as config]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.message-payload :refer [->MessagePayload]]
             [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]

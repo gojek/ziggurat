@@ -10,7 +10,6 @@
             [ziggurat.messaging.consumer-connection :refer [consumer-connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :refer [prefixed-queue-name]]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.error :refer [report-error]]
             [ziggurat.util.rabbitmq :as util])
   (:import (com.rabbitmq.client Channel)))
