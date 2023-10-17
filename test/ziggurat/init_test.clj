@@ -11,11 +11,9 @@
             [ziggurat.streams :as streams]
             [ziggurat.nrepl-server :as nrs]
             [ziggurat.server.test-utils :as tu]
-            [ziggurat.tracer :as tracer]
             [ziggurat.fixtures :refer [with-config]]
             [cambium.logback.json.flat-layout :as flat]
-            [cambium.codec :as codec])
-  (:import (io.opentracing.mock MockTracer)))
+            [cambium.codec :as codec]))
 
 (defn exp [x n]
   (if (zero? n) 1
@@ -34,8 +32,7 @@
                     nrs/stop                   (constantly nil)
                     rmqc/start-connection      (fn [_] (do (reset! result (* @result 2)) nil))
                     rmqc/stop-connection       (constantly nil)
-                    cpool/destroy-channel-pool (constantly nil)
-                    tracer/create-tracer       (fn [] (MockTracer.))]
+                    cpool/destroy-channel-pool (constantly nil)]
         (with-config
           (do (init/start #(reset! result (+ @result 3)) {} {} [] nil)
               (init/stop #() nil)
@@ -49,8 +46,7 @@
                     server/stop           (constantly nil)
                     nrs/start             (constantly nil)
                     nrs/stop              (constantly nil)
-                    streams/stop-streams  (fn [_] (reset! result (* @result 2)))
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+                    streams/stop-streams  (fn [_] (reset! result (* @result 2)))]
         (with-config
           (do (init/start #() {} {} [] nil)
               (init/stop #(reset! result (+ @result 3)) nil)
@@ -61,8 +57,7 @@
     (let [result (atom 1)]
       (with-redefs [streams/start-streams (constantly nil)
                     streams/stop-streams  (constantly nil)
-                    rmqc/stop-connection  (fn [_] (reset! result (* @result 2)))
-                    tracer/create-tracer  (fn [] (MockTracer.))]
+                    rmqc/stop-connection  (fn [_] (reset! result (* @result 2)))]
         (with-config
           (do (init/start #() {} {} [] nil)
               (init/stop #(reset! result (+ @result 3)) nil)
@@ -79,8 +74,7 @@
                                                            (swap! make-queues-called + 1)
                                                            (is (= all-routes (merge expected-stream-routes expected-batch-routes))))
                     messaging-consumer/start-subscribers (constantly nil)
-                    config/config-file                   "config.test.edn"
-                    tracer/create-tracer                 (fn [] (MockTracer.))]
+                    config/config-file                   "config.test.edn"]
         (with-config
           (do (init/start #() expected-stream-routes expected-batch-routes [] nil)
               (init/stop #() nil)
@@ -98,8 +92,7 @@
                                                            (is (= stream-routes expected-stream-routes))
                                                            (is (= batch-routes expected-batch-routes)))
                     messaging-producer/make-queues       (constantly nil)
-                    config/config-file                   "config.test.edn"
-                    tracer/create-tracer                 (fn [] (MockTracer.))]
+                    config/config-file                   "config.test.edn"]
         (with-config
           (do
             (init/start #() expected-stream-routes expected-batch-routes [] nil)
@@ -204,8 +197,7 @@
 (deftest ziggurat-routes-serve-actor-routes-test
   (testing "The routes added by actor should be served along with ziggurat-routes"
     (with-redefs [streams/start-streams (constantly nil)
-                  streams/stop-streams  (constantly nil)
-                  tracer/create-tracer  (fn [] (MockTracer.))]
+                  streams/stop-streams  (constantly nil)]
       (with-config
         (do (init/start #() {} {} [["test-ping" (fn [_request] {:status 200
                                                                 :body   "pong"})]] nil)
@@ -218,8 +210,7 @@
 
   (testing "Deadset management and server api modes should run both actor and deadset management routes"
     (with-redefs [streams/start-streams (constantly nil)
-                  streams/stop-streams  (constantly nil)
-                  tracer/create-tracer  (fn [] (MockTracer.))]
+                  streams/stop-streams  (constantly nil)]
       (with-config
         (do (init/start #() {} {} [["test-ping" (fn [_request] {:status 200
                                                                 :body   "pong"})]] [:management-api :api-server])
@@ -233,7 +224,7 @@
   (testing "The routes not added by actor should return 404"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
-                  tracer/create-tracer  (fn [] (MockTracer.))]
+                  ]
       (with-config
         (do (init/start #() {} {} [] nil)
             (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/test-ping" true false)]
@@ -243,7 +234,7 @@
   (testing "The ziggurat routes should work fine when actor routes are not provided"
     (with-redefs [streams/start-streams (constantly nil)
                   streams/stop-streams  (constantly nil)
-                  tracer/create-tracer  (fn [] (MockTracer.))]
+                  ]
       (with-config
         (do (init/start #() {} {} [] nil)
             (let [{:keys [status]} (tu/get (-> (config/ziggurat-config) :http-server :port) "/ping" true false)]
