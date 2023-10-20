@@ -5,12 +5,10 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.sentry :refer [sentry-reporter]]
             [ziggurat.channel :refer [get-keys-for-topic]]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.messaging.util :as util]
             [ziggurat.util.error :refer [report-error]])
   (:import [com.rabbitmq.client ShutdownListener ConnectionFactory AddressResolver]
            [java.util.concurrent Executors ExecutorService]
-           [io.opentracing.contrib.rabbitmq TracingConnectionFactory]
            [com.rabbitmq.client.impl DefaultCredentialsProvider]))
 
 (defn is-connection-required? []
@@ -48,10 +46,8 @@
                     (util/create-address-resolver rabbitmq-config)
                     (:connection-name rabbitmq-config))))
 
-(defn create-connection [config tracer-enabled]
-  (if tracer-enabled
-    (create-rmq-connection (TracingConnectionFactory. tracer) config)
-    (create-rmq-connection (ConnectionFactory.) config)))
+(defn create-connection [config]
+  (create-rmq-connection (ConnectionFactory.) config))
 
 (defn- get-connection-config
   [is-producer?]
@@ -70,8 +66,7 @@
   (when (is-connection-required?)
     (try
       (let
-       [is-tracer-enabled? (get-in (ziggurat-config) [:tracer :enabled])
-        connection         (create-connection (get-connection-config is-producer?) is-tracer-enabled?)]
+       [connection (create-connection (get-connection-config is-producer?))]
         (log/info "Connection created " connection)
         (doto connection
           (.addShutdownListener

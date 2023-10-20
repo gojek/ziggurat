@@ -10,7 +10,6 @@
             [ziggurat.messaging.consumer-connection :refer [consumer-connection]]
             [ziggurat.messaging.producer :as producer]
             [ziggurat.messaging.util :refer [prefixed-queue-name]]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.error :refer [report-error]]
             [ziggurat.util.rabbitmq :as util])
   (:import (com.rabbitmq.client Channel)))
@@ -264,42 +263,6 @@
                                (reset! prefetch-count-used prefetch-count))]
           (consumer/start-channels-subscriber {channel channel-fn} topic-entity)
           (is (= expected-prefetch-count @prefetch-count-used)))))))
-
-(deftest start-retry-subscriber-test
-  (testing "creates a span when tracer is enabled"
-    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
-      (let [retry-counter       (atom 0)
-            call-counter        (atom 0)
-            success-promise     (promise)
-            retry-count         3
-            message-payload     (assoc (gen-message-payload topic-entity) :retry-count 3)
-            original-zig-config (ziggurat-config)
-            rmq-ch              (lch/open consumer-connection)]
-        (.reset tracer)
-        (with-redefs [ziggurat-config (fn [] (-> original-zig-config
-                                                 (update-in [:retry :count] (constantly retry-count))
-                                                 (update-in [:retry :enabled] (constantly true))
-                                                 (update-in [:jobs :instant :worker-count] (constantly 1))))]
-
-          (consumer/start-retry-subscriber* (mock-mapper-fn {:retry-counter-atom retry-counter
-                                                             :call-counter-atom  call-counter
-                                                             :retry-limit        0
-                                                             :success-promise    success-promise}) topic-entity)
-
-          (producer/publish-to-delay-queue message-payload)
-          (when-let [promise-success? (deref success-promise 5000 :timeout)]
-            (is (not (= :timeout promise-success?)))
-            (is (= true promise-success?)))
-          (util/close rmq-ch)
-          (Thread/sleep 500)
-          (let [finished-spans (.finishedSpans tracer)]
-            (is (= 2 (.size finished-spans)))
-            (is (= "send" (-> finished-spans
-                              (.get 0)
-                              (.operationName))))
-            (is (= "receive" (-> finished-spans
-                                 (.get 1)
-                                 (.operationName))))))))))
 
 (deftest process-message-test
   (testing "process-message function should ack message after once processing finishes"

@@ -45,10 +45,8 @@
   (:require [clojure.tools.logging :as log]
             [mount.core :refer [defstate]]
             [ziggurat.config :refer [build-producer-config-properties ziggurat-config]]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.java-util :refer [get-key]])
-  (:import (io.opentracing.contrib.kafka TracingKafkaProducer)
-           (org.apache.kafka.clients.producer KafkaProducer ProducerRecord))
+  (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord))
   (:gen-class
    :methods [^{:static true} [send [String String Object Object] java.util.concurrent.Future]
              ^{:static true} [send [String String int Object Object] java.util.concurrent.Future]]
@@ -70,9 +68,8 @@
            (do (log/info "Starting Kafka producers ...")
                (reduce (fn [producers [stream-config-key properties]]
                          (log/debug "Constructing Kafka producer associated with [" stream-config-key "] ")
-                         (let [kp  (KafkaProducer. properties)
-                               tkp (TracingKafkaProducer. kp tracer)]
-                           (assoc producers stream-config-key tkp)))
+                         (let [kp (KafkaProducer. properties)]
+                           (assoc producers stream-config-key kp)))
                        {}
                        (seq (producer-properties-map))))
            (log/info "No producers found. Can not initiate start."))
@@ -85,7 +82,7 @@
                               (.flush)
                               (.close)))
                           (seq kafka-producers))))
-          (log/info "No producers found.n Can not initiate stop.")))
+          (log/info "No producers found. Can not initiate stop.")))
 
 (defn send
   "A wrapper around `org.apache.kafka.clients.producer.KafkaProducer#send` which enables

@@ -12,7 +12,6 @@
             [ziggurat.util.rabbitmq :as rmq]
             [langohr.basic :as lb]
             [ziggurat.config :as config]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.message-payload :refer [->MessagePayload]]
             [ziggurat.metrics :as metrics])
   (:import [org.apache.kafka.common.header.internals RecordHeaders RecordHeader]
@@ -675,38 +674,6 @@
                     metrics/multi-ns-report-histogram (fn [_ _ _] nil)]
         (producer/publish "random-exchange" {:topic-entity "hello"} 12345)
         (is (= 0 @publish-called))))))
-
-(deftest publish-to-delay-queue-test
-  (testing "creates a span when tracer is enabled"
-    (let [stream-routes {:default {:handler-fn #(constantly nil)
-                                   :channel-1  #(constantly nil)}}]
-      (with-redefs [metrics/multi-ns-report-histogram (fn [_ _ _] nil)]
-        (.reset tracer)
-        (fix/with-queues
-          stream-routes
-          (do
-            (producer/retry message-payload)
-            (let [finished-spans (.finishedSpans tracer)]
-              (is (= 1 (.size finished-spans)))
-              (is (= "send" (-> finished-spans
-                                (.get 0)
-                                (.operationName)))))))))))
-
-(deftest publish-to-channel-instant-queue-test
-  (testing "creates a span when tracer is enabled"
-    (let [stream-routes {:default {:handler-fn #(constantly nil)
-                                   :channel-1  #(constantly nil)}}]
-      (with-redefs [metrics/multi-ns-report-histogram (fn [_ _ _] nil)]
-        (.reset tracer)
-        (fix/with-queues
-          stream-routes
-          (do
-            (producer/publish-to-channel-instant-queue :channel-1 message-payload)
-            (let [finished-spans (.finishedSpans tracer)]
-              (is (= 1 (.size finished-spans)))
-              (is (= "send" (-> finished-spans
-                                (.get 0)
-                                (.operationName)))))))))))
 
 (deftest get-channel-queue-timeout-ms-test
   (let [message (assoc message-payload :retry-count 2)]

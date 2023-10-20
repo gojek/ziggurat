@@ -14,10 +14,8 @@
             [ziggurat.messaging.util :as util]
             [ziggurat.metrics :as metrics]
             [ziggurat.producer :as producer]
-            [ziggurat.server :refer [server]]
-            [ziggurat.tracer :as tracer])
-  (:import (io.opentracing.mock MockTracer)
-           (java.util Properties)
+            [ziggurat.server :refer [server]])
+  (:import (java.util Properties)
            (org.apache.kafka.clients.consumer ConsumerConfig)
            (org.apache.kafka.clients.producer ProducerConfig))
   (:gen-class
@@ -67,14 +65,8 @@
   (f)
   (mount/stop #'metrics/statsd-reporter))
 
-(defn mount-tracer []
-  (with-redefs [tracer/create-tracer (fn [] (MockTracer.))]
-    (-> (mount/only [#'tracer/tracer])
-        (mount/start))))
-
 (defn mount-config-with-tracer [f]
   (mount-config)
-  (mount-tracer)
   (f)
   (mount/stop))
 
@@ -119,8 +111,6 @@
   (let [stream-routes {:default {:handler-fn #(constantly nil)
                                  :channel-1  #(constantly nil)}}]
     (mount-config)
-    (mount-tracer)
-
     (->
      (mount/only [#'producer-connection #'consumer-connection #'channel-pool])
      (mount/with-args {:stream-routes stream-routes})
@@ -163,7 +153,6 @@
 
 (defn mount-producer-with-config-and-tracer [f]
   (mount-config)
-  (mount-tracer)
   (mount-producer)
   (binding [*bootstrap-servers* (get-in (config/ziggurat-config) [:stream-router :default :bootstrap-servers])]
     (binding [*consumer-properties* (doto (Properties.)

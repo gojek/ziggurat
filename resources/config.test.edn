@@ -91,7 +91,7 @@
                                                 :default-api-timeout-ms-config   [60000 :int]
                                                 :key-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"
                                                 :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"}}
-            :tracer               {:enabled         [true :bool]
+            :tracer               {:enabled         [false :bool]
                                    :custom-provider ""}
             :new-relic            {:report-errors false}
             :log-format           "text"}}

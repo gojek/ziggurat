@@ -8,13 +8,9 @@
             [ziggurat.message-payload :refer [->MessagePayload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
-            [ziggurat.tracer :refer [tracer]]
             [ziggurat.util.map :as umap]
             [cambium.core :as clog])
-  (:import [io.opentracing.contrib.kafka TracingKafkaUtils]
-           [io.opentracing.contrib.kafka.streams TracingKafkaClientSupplier]
-           [io.opentracing.tag Tags]
-           [java.time Duration]
+  (:import [java.time Duration]
            [java.util Properties]
            [java.util.regex Pattern]
            [org.apache.kafka.common.errors TimeoutException]
@@ -126,22 +122,13 @@
   (doseq [[topic-entity stream] streams]
     (close-stream topic-entity stream)))
 
-(defn- traced-handler-fn [handler-fn channels message topic-entity]
-  (let [parent-ctx (TracingKafkaUtils/extractSpanContext (:headers message) tracer)
-        span       (as-> tracer t
-                     (.buildSpan t "Message-Handler")
-                     (.withTag t (.getKey Tags/SPAN_KIND) Tags/SPAN_KIND_CONSUMER)
-                     (.withTag t (.getKey Tags/COMPONENT) "ziggurat")
-                     (if (nil? parent-ctx)
-                       t
-                       (.asChildOf t parent-ctx))
-                     (.start t))]
-    (try
-      ((mapper-func handler-fn channels) (-> (->MessagePayload (:value message) topic-entity)
-                                             (assoc :headers (:headers message))
-                                             (assoc :metadata (:metadata message))))
-      (finally
-        (.finish span)))))
+(defn- mapped-handler-fn [handler-fn channels message topic-entity]
+  (try
+    ((mapper-func handler-fn channels)
+     (-> (->MessagePayload (:value message) topic-entity)
+         (assoc :headers (:headers message))
+         (assoc :metadata (:metadata message))))
+    (finally)))
 
 (defn- join-streams
   [oldest-processed-message-in-s topic-entity stream-1 stream-2]
@@ -187,7 +174,7 @@
           {stream :stream} (reduce (partial join-streams oldest-processed-message-in-s topic-entity) stream-map)]
       (->> stream
            (header-transform-values)
-           (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
+           (map-values #(mapped-handler-fn handler-fn channels % topic-entity)))
       (.build builder))))
 
 (defn- topology [handler-fn {:keys [origin-topic oldest-processed-message-in-s]} topic-entity channels]
@@ -198,7 +185,7 @@
          (timestamp-transform-values topic-entity-name oldest-processed-message-in-s)
          (header-transform-values)
          (map-values #(log-and-report-metrics topic-entity-name %))
-         (map-values #(traced-handler-fn handler-fn channels % topic-entity)))
+         (map-values #(mapped-handler-fn handler-fn channels % topic-entity)))
     (.build builder)))
 
 (defn- start-stream* [handler-fn stream-config topic-entity channels]
@@ -209,8 +196,7 @@
 
     (when-not (nil? top)
       (KafkaStreams. ^Topology top
-                     ^Properties (properties stream-config)
-                     (new TracingKafkaClientSupplier tracer)))))
+                     ^Properties (properties stream-config)))))
 
 (defn- merge-consumer-type-config
   [config]
