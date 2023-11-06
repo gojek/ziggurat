@@ -17,3 +17,6 @@ pom.xml
 .factorypath
 .project
 .settings
+.clj-kondo/*
+.calva/*
+.lsp/*
