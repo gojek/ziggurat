@@ -20,3 +20,4 @@ pom.xml
 .clj-kondo/*
 .calva/*
 .lsp/*
+.vscode
