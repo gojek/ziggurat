@@ -13,8 +13,7 @@
 
 (defn register-collecter-if-not-exist [collector label]
   (let [counter (@registry label)]
-    (if counter
-      nil
+    (when-not counter
       (let [new-counter (collector label)
             new-registry (prometheus/register @registry new-counter)]
         (reset! registry new-registry)
