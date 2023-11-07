@@ -6,23 +6,28 @@
 (def registry
   (atom (prometheus/collector-registry)))
 
-(defn get-metric-value [metric-name]
-  (.getSampleValue (reg/raw @registry) metric-name))
+(defn get-metric-value [kw-metric]
+  (-> @registry kw-metric (prometheus/value)))
 
-(defn register-counter-if-not-exist [label]
+(defn register-collecter-if-not-exist [collector label]
   (let [counter (@registry label)]
     (if counter
       nil
-      (let [new-counter (prometheus/gauge label)
+      (let [new-counter (collector label)
             new-registry (prometheus/register @registry new-counter)]
         (reset! registry new-registry)
         new-counter))))
 
-(defn update-counter [namespace metric value tags]
+(defn update-counter [namespace metric tags value]
   (let [label (assoc tags :name metric :namespace namespace)]
-    (register-counter-if-not-exist label)
+    (register-collecter-if-not-exist prometheus/gauge label)
     (prometheus/inc (@registry label) value)
     label))
+
+(defn report-histogram [namespace metric tags integer-value]
+  (let [label (assoc tags :name metric :namespace namespace)]
+    (register-collecter-if-not-exist prometheus/histogram label)
+    (prometheus/observe (@registry label) integer-value)))
 
 (defonce httpd
   (standalone/metrics-server @registry {:port 8990}))
