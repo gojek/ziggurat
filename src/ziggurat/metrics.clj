@@ -4,6 +4,7 @@
             [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
+            [mount.core :as mount]
             [ziggurat.prometheus-exporter :as prometheus-exporter]
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
@@ -36,9 +37,11 @@
 
 (defstate statsd-reporter
   :start (do (log/info "Initializing Metrics")
+             (prometheus-exporter/start-http-server)
              (initialise-metrics-library)
              (metrics-interface/initialize @metric-impl (statsd-config)))
   :stop (do (log/info "Terminating Metrics")
+            (prometheus-exporter/stop-http-server)
             (metrics-interface/terminate @metric-impl)))
 
 (defn intercalate-dot
@@ -114,6 +117,7 @@
          integer-value                  (get-int val)
          metric                          "all"]
      (doseq [metric-ns intercalated-metric-namespaces]
+       (prometheus-exporter/report-histogram metric-ns metric tags integer-value)
        (metrics-interface/update-timing @metric-impl metric-ns metric tags integer-value)))))
 
 (defn report-time

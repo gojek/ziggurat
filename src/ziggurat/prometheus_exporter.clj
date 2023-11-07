@@ -1,7 +1,9 @@
 (ns ziggurat.prometheus-exporter
   (:require [iapetos.core :as prometheus]
             [iapetos.standalone :as standalone]
-            [iapetos.registry :as reg]))
+            [iapetos.registry :as reg]
+            [clojure.tools.logging :as log]
+            [ziggurat.config :refer [prometheus-config]]))
 
 (def registry
   (atom (prometheus/collector-registry)))
@@ -29,5 +31,16 @@
     (register-collecter-if-not-exist prometheus/histogram label)
     (prometheus/observe (@registry label) integer-value)))
 
-(defonce httpd
-  (standalone/metrics-server @registry {:port 8990}))
+(defonce httpd (atom nil))
+
+(defn start-http-server []
+  (when-not @httpd
+    (reset! httpd (standalone/metrics-server @registry
+                                             {:port
+                                              (get (prometheus-config)
+                                                   :port 8002)}))))
+
+(defn stop-http-server []
+  (when-let [server @httpd]
+    (.close server)
+    (reset! httpd nil)))

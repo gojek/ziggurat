@@ -51,7 +51,6 @@
       (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)))]
         (is (= new-value gauge-value) "Gauge value should be incremented")))))
 
-
 (deftest test-report-histogram
   (testing "should register histogram when it does not exist"
     (clear-prometheus-registry)
@@ -78,5 +77,3 @@
       (prometheus-exporter/report-histogram namespace metric tags value)
       (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)))]
         (is (= (gauge-value :count) 2.0))))))
-
-  
