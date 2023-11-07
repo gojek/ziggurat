@@ -4,6 +4,7 @@
             [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
+            [ziggurat.prometheus-exporter :as prometheus-exporter]
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
@@ -93,6 +94,7 @@
          tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
          signed-int-value  (sign (get-int n))]
      (doseq [metric-ns metric-namespaces]
+       (prometheus-exporter/update-counter metric-ns metric tags signed-int-value)
        (metrics-interface/update-counter @metric-impl metric-ns metric tags signed-int-value)))))
 
 (def increment-count (partial inc-or-dec-count +))
