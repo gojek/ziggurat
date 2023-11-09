@@ -9,16 +9,20 @@
 (deftest test-register-collecter-if-not-exist
   (testing "Should register gauge if it does not exist"
     (clear-prometheus-registry)
-    (let [label {:name "test-gauge" :namespace "bar"}]
-      (is (nil? (@prometheus-exporter/registry label)) "Gauge should not exist initially")
-      (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge label)
-      (is (not (nil? (@prometheus-exporter/registry label))) "Gauge should be registered in the registry"))
+    (let [tags {:actor-topic "food" :app_name "delivery"}
+          metric-name {:name "test-gauge" :namespace "bar"}
+          label-vec (vec (keys tags))]
+      (is (nil? (@prometheus-exporter/registry metric-name)) "Gauge should not exist initially")
+      (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge metric-name label-vec)
+      (is (not (nil? (@prometheus-exporter/registry metric-name))) "Gauge should be registered in the registry"))
 
     (testing "Gauge not registered if it exists"
       (clear-prometheus-registry)
-      (let [label "test-cauge"
-            existing-cauge (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge label)]
-        (let [expected-nil (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge label)]
+      (let [tags {:actor-topic "food" :app_name "delivery"}
+            metric-name "test-cauge"
+            label-vec (vec (keys tags))
+            existing-cauge (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge metric-name label-vec)]
+        (let [expected-nil (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge metric-name label-vec)]
           (is (not (nil? existing-cauge)))
           (is (nil? expected-nil) "Should retrieve the existing cauge"))))))
 
@@ -34,7 +38,7 @@
           _ (prometheus-exporter/update-counter namespace metric tags old_value)]
       (prometheus-exporter/update-counter namespace metric tags increment)
       (@prometheus-exporter/registry (assoc tags :name metric :namespace namespace))
-      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)))]
+      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)) tags)]
         (is (= new-value gauge-value) "Gauge value should be incremented"))))
 
   (testing "Updating counter can decrement its value"
@@ -48,7 +52,7 @@
           _ (prometheus-exporter/update-counter namespace metric tags old_value)]
       (prometheus-exporter/update-counter namespace metric tags decrement)
       (@prometheus-exporter/registry (assoc tags :name metric :namespace namespace))
-      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)))]
+      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)) tags)]
         (is (= new-value gauge-value) "Gauge value should be incremented")))))
 
 (deftest test-report-histogram
@@ -62,7 +66,7 @@
       (is (nil? (@prometheus-exporter/registry label)))
       (prometheus-exporter/report-histogram namespace metric tags value)
       (is (not (nil? (@prometheus-exporter/registry label))))
-      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)))]
+      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)) tags)]
         (is (= (gauge-value :sum) 5.0))
         (is (= (gauge-value :count) 1.0)))))
   (testing "should update histogram when it exist and increment the count"
@@ -75,5 +79,5 @@
           _ (prometheus-exporter/report-histogram namespace metric tags value)]
       (is (not (nil? (@prometheus-exporter/registry label))))
       (prometheus-exporter/report-histogram namespace metric tags value)
-      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)))]
+      (let [gauge-value (prometheus-exporter/get-metric-value (keyword (str namespace "/" metric)) tags)]
         (is (= (gauge-value :count) 2.0))))))

@@ -8,27 +8,29 @@
 (def registry
   (atom (prometheus/collector-registry)))
 
-(defn get-metric-value [kw-metric]
-  (-> @registry kw-metric (prometheus/value)))
+(defn get-metric-value [kw-metric labels]
+  (-> (@registry kw-metric labels) (prometheus/value)))
 
-(defn register-collecter-if-not-exist [collector label]
-  (let [counter (@registry label)]
+(defn register-collecter-if-not-exist [collector metric-name label-vec]
+  (let [counter (@registry metric-name {:labels label-vec})]
     (when-not counter
-      (let [new-counter (collector label)
+      (let [new-counter (collector metric-name {:labels label-vec})
             new-registry (prometheus/register @registry new-counter)]
         (reset! registry new-registry)
         new-counter))))
 
 (defn update-counter [namespace metric tags value]
-  (let [label (assoc tags :name metric :namespace namespace)]
-    (register-collecter-if-not-exist prometheus/gauge label)
-    (prometheus/inc (@registry label) value)
-    label))
+  (let [metric-name {:name metric :namespace namespace}
+        label-vec (vec (keys tags))]
+    (register-collecter-if-not-exist prometheus/gauge metric-name label-vec)
+    (prometheus/inc (@registry metric-name tags) value)
+    metric-name))
 
 (defn report-histogram [namespace metric tags integer-value]
-  (let [label (assoc tags :name metric :namespace namespace)]
-    (register-collecter-if-not-exist prometheus/histogram label)
-    (prometheus/observe (@registry label) integer-value)))
+  (let [metric-name {:name metric :namespace namespace}
+        label-vec (vec (keys tags))]
+    (register-collecter-if-not-exist prometheus/histogram metric-name label-vec)
+    (prometheus/observe (@registry metric-name tags) integer-value)))
 
 (defonce httpd (atom nil))
 
