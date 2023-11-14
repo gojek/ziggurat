@@ -9,7 +9,7 @@
   (atom (prometheus/collector-registry)))
 
 (defn get-metric-value [kw-metric labels]
-  (-> (@registry kw-metric labels) (prometheus/value)))
+  (prometheus/value (@registry kw-metric labels)))
 
 (defn register-collecter-if-not-exist [collector metric-name label-vec]
   (let [counter (@registry metric-name {:labels label-vec})]
