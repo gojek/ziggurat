@@ -4,7 +4,6 @@
             [ziggurat.config :refer [statsd-config ziggurat-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
-            [mount.core :as mount]
             [ziggurat.prometheus-exporter :as prometheus-exporter]
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])

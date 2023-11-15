@@ -19,12 +19,12 @@
     (testing "Gauge not registered if it exists"
       (clear-prometheus-registry)
       (let [tags {:actor-topic "food" :app_name "delivery"}
-            metric-name "test-cauge"
+            metric-name "test-gauge"
             label-vec (vec (keys tags))
-            existing-cauge (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge metric-name label-vec)]
+            existing-gauge (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge metric-name label-vec)]
         (let [expected-nil (prometheus-exporter/register-collecter-if-not-exist prometheus/gauge metric-name label-vec)]
-          (is (not (nil? existing-cauge)))
-          (is (nil? expected-nil) "Should retrieve the existing cauge"))))))
+          (is (not (nil? existing-gauge)))
+          (is (nil? expected-nil) "Should retrieve the existing gauge"))))))
 
 (deftest test-update-counter
   (testing "Updating counter can increments its value"

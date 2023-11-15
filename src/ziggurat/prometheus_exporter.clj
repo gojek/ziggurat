@@ -1,8 +1,6 @@
 (ns ziggurat.prometheus-exporter
   (:require [iapetos.core :as prometheus]
             [iapetos.standalone :as standalone]
-            [iapetos.registry :as reg]
-            [clojure.tools.logging :as log]
             [ziggurat.config :refer [prometheus-config]]))
 
 (def registry
