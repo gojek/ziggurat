@@ -99,7 +99,7 @@
   (get (ziggurat-config) :rabbit-mq))
 
 (defn prometheus-config []
-  (get config :prometheus))
+  (get (ziggurat-config) :prometheus))
 
 (defn statsd-config []
   (let [cfg (ziggurat-config)]

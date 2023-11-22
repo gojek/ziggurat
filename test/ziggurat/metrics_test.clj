@@ -19,7 +19,7 @@
 
 (deftest increment-count-test
   (with-redefs [config (assoc-in config [:ziggurat :metrics :constructor] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
-    (mount/start (mount/only [#'metrics/statsd-reporter]))
+    (mount/start (mount/only [#'metrics/metrics-reporter]))
     (let [passed-metric-name         "metric3"
           expected-topic-entity-name "expected-topic-entity-name"
           input-tags                 {:topic_name expected-topic-entity-name}
@@ -114,11 +114,11 @@
                                                     (reset! increment-count-called? true)))]
             (metrics/-incrementCount metric-namespace passed-metric-name tags)
             (is (true? @increment-count-called?))))))
-    (mount/stop #'metrics/statsd-reporter)))
+    (mount/stop #'metrics/metrics-reporter)))
 
 (deftest decrement-count-test
   (with-redefs [config (assoc-in config [:ziggurat :metrics :constructor] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
-    (mount/start (mount/only [#'metrics/statsd-reporter]))
+    (mount/start (mount/only [#'metrics/metrics-reporter]))
     (let [expected-topic-name "expected-topic-name"
           passed-metric-name  "metric3"
           input-tags          {:topic_name expected-topic-name}
@@ -195,11 +195,11 @@
                                                     (reset! decrement-count-called? true)))]
             (metrics/-decrementCount metric-namespace passed-metric-name tags)
             (is (true? @decrement-count-called?))))))
-    (mount/stop #'metrics/statsd-reporter)))
+    (mount/stop #'metrics/metrics-reporter)))
 
 (deftest report-histogram-test
   (with-redefs [config (assoc-in config [:ziggurat :metrics :constructor] "ziggurat.util.mock-metrics-implementation/->MockImpl")]
-    (mount/start (mount/only [#'metrics/statsd-reporter]))
+    (mount/start (mount/only [#'metrics/metrics-reporter]))
     (let [topic-entity-name "expected-topic-entity-name"
           input-tags        {:topic_name topic-entity-name}
           time-val          10
@@ -265,7 +265,7 @@
                                                      (reset! report-histogram-called? true)))]
             (metrics/-reportTime metric-namespace time-val tags)
             (is (true? @report-histogram-called?))))))
-    (mount/stop #'metrics/statsd-reporter)))
+    (mount/stop #'metrics/metrics-reporter)))
 
 (deftest report-time-test
   (let [metric-namespace "metric-namespace"
