@@ -46,6 +46,8 @@
               :http-server          {:middlewares  {:swagger {:enabled false}}
                                      :port         8080
                                      :thread-count 100}
+              :prometheus           {:port 8002
+                                     :enabled true}
               :new-relic            {:report-errors false}
               :log-format           "text"}})
 
@@ -95,6 +97,9 @@
 
 (defn rabbitmq-config []
   (get (ziggurat-config) :rabbit-mq))
+
+(defn prometheus-config []
+  (get (ziggurat-config) :prometheus))
 
 (defn statsd-config []
   (let [cfg (ziggurat-config)]

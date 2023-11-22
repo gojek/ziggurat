@@ -147,14 +147,14 @@
   (set-properties-for-structured-logging))
 
 (defn start-common-states []
-  (start* #{#'metrics/statsd-reporter
+  (start* #{#'metrics/metrics-reporter
             #'sentry-reporter
             #'nrepl-server/server}))
 
 (defn stop-common-states []
   (mount/stop #'config/config
               #'sentry-reporter
-              #'metrics/statsd-reporter
+              #'metrics/metrics-reporter
               #'nrepl-server/server))
 
 (defn start

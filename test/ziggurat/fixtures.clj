@@ -61,9 +61,9 @@
       (mount/stop)))
 
 (defn mount-metrics [f]
-  (mount/start (mount/only [#'metrics/statsd-reporter]))
+  (mount/start (mount/only [#'metrics/metrics-reporter]))
   (f)
-  (mount/stop #'metrics/statsd-reporter))
+  (mount/stop #'metrics/metrics-reporter))
 
 (defn mount-config-with-tracer [f]
   (mount-config)

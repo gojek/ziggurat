@@ -1,9 +1,10 @@
 (ns ziggurat.metrics
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
-            [ziggurat.config :refer [statsd-config ziggurat-config]]
+            [ziggurat.config :refer [statsd-config ziggurat-config prometheus-config]]
             [ziggurat.util.java-util :as util]
             [mount.core :refer [defstate]]
+            [ziggurat.prometheus-exporter :as prometheus-exporter]
             [ziggurat.metrics-interface :as metrics-interface]
             [ziggurat.dropwizard-metrics-wrapper :refer [->DropwizardMetrics]])
   (:gen-class
@@ -33,12 +34,20 @@
   (let [metrics-impl-constructor (get-metrics-implementor-constructor)]
     (reset! metric-impl (metrics-impl-constructor))))
 
-(defstate statsd-reporter
+(def prometheus-enabled?
+  (:enabled (prometheus-config)))
+
+(defstate metrics-reporter
   :start (do (log/info "Initializing Metrics")
-             (initialise-metrics-library)
-             (metrics-interface/initialize @metric-impl (statsd-config)))
+             (if prometheus-enabled?
+               (prometheus-exporter/start-http-server)
+               (do
+                 (initialise-metrics-library)
+                 (metrics-interface/initialize @metric-impl (statsd-config)))))
   :stop (do (log/info "Terminating Metrics")
-            (metrics-interface/terminate @metric-impl)))
+            (if prometheus-enabled?
+              (prometheus-exporter/stop-http-server)
+              (metrics-interface/terminate @metric-impl))))
 
 (defn intercalate-dot
   [names]
@@ -93,7 +102,9 @@
          tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
          signed-int-value  (sign (get-int n))]
      (doseq [metric-ns metric-namespaces]
-       (metrics-interface/update-counter @metric-impl metric-ns metric tags signed-int-value)))))
+       (if prometheus-enabled?
+         (prometheus-exporter/update-counter metric-ns metric tags signed-int-value)
+         (metrics-interface/update-counter @metric-impl metric-ns metric tags signed-int-value))))))
 
 (def increment-count (partial inc-or-dec-count +))
 
@@ -112,7 +123,9 @@
          integer-value                  (get-int val)
          metric                          "all"]
      (doseq [metric-ns intercalated-metric-namespaces]
-       (metrics-interface/update-timing @metric-impl metric-ns metric tags integer-value)))))
+       (if prometheus-enabled?
+         (prometheus-exporter/report-histogram metric-ns metric tags integer-value)
+         (metrics-interface/update-timing @metric-impl metric-ns metric tags integer-value))))))
 
 (defn report-time
   "This function is an alias for `report-histogram`.
