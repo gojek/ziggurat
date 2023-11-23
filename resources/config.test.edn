@@ -95,5 +95,5 @@
                                    :custom-provider ""}
             :new-relic            {:report-errors false}
             :prometheus           {:port 8002
-                                   :enabled true}
+                                   :enabled false}
             :log-format           "text"}}

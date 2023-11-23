@@ -34,18 +34,18 @@
   (let [metrics-impl-constructor (get-metrics-implementor-constructor)]
     (reset! metric-impl (metrics-impl-constructor))))
 
-(def prometheus-enabled?
+(defn prometheus-enabled? []
   (:enabled (prometheus-config)))
 
 (defstate metrics-reporter
   :start (do (log/info "Initializing Metrics")
-             (if prometheus-enabled?
+             (if (prometheus-enabled?)
                (prometheus-exporter/start-http-server)
                (do
                  (initialise-metrics-library)
                  (metrics-interface/initialize @metric-impl (statsd-config)))))
   :stop (do (log/info "Terminating Metrics")
-            (if prometheus-enabled?
+            (if (prometheus-enabled?)
               (prometheus-exporter/stop-http-server)
               (metrics-interface/terminate @metric-impl))))
 
@@ -102,7 +102,7 @@
          tags              (remove-topic-tag-for-old-namespace (get-all-tags (get-map additional-tags) metric-namespaces) metric-namespace)
          signed-int-value  (sign (get-int n))]
      (doseq [metric-ns metric-namespaces]
-       (if prometheus-enabled?
+       (if (prometheus-enabled?)
          (prometheus-exporter/update-counter metric-ns metric tags signed-int-value)
          (metrics-interface/update-counter @metric-impl metric-ns metric tags signed-int-value))))))
 
@@ -123,7 +123,7 @@
          integer-value                  (get-int val)
          metric                          "all"]
      (doseq [metric-ns intercalated-metric-namespaces]
-       (if prometheus-enabled?
+       (if (prometheus-enabled?)
          (prometheus-exporter/report-histogram metric-ns metric tags integer-value)
          (metrics-interface/update-timing @metric-impl metric-ns metric tags integer-value))))))
 
