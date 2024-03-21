@@ -16,7 +16,7 @@
            [org.apache.kafka.common.errors TimeoutException]
            [org.apache.kafka.streams KafkaStreams KafkaStreams$State StreamsConfig StreamsBuilder Topology]
            [org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse]
-           [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerSupplier]
+           [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerWithKeySupplier]
            [ziggurat.timestamp_transformer IngestionTimeExtractor]))
 
 (def default-config-for-stream
@@ -77,7 +77,7 @@
 
 (defn- header-transformer-supplier
   []
-  (reify ValueTransformerSupplier
+  (reify ValueTransformerWithKeySupplier
     (get [_] (header-transformer/create))))
 
 (defn- timestamp-transform-values [topic-entity-name oldest-processed-message-in-s stream-builder]
@@ -126,6 +126,7 @@
   (try
     ((mapper-func handler-fn channels)
      (-> (->MessagePayload (:value message) topic-entity)
+         (assoc :key (:key message))
          (assoc :headers (:headers message))
          (assoc :metadata (:metadata message))))
     (finally)))

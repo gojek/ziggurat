@@ -17,8 +17,8 @@
                             (partition [_] partition))
           transformer     (create)
           _               (.init transformer context)
-          transformed-val (.transform transformer "val")]
-      (is (= {:value "val" :headers headers :metadata {:topic topic :timestamp timestamp :partition partition}} transformed-val))))
+          transformed-val (.transform transformer "key" "val")]
+      (is (= {:key "key" :value "val" :headers headers :metadata {:topic topic :timestamp timestamp :partition partition}} transformed-val))))
 
   (testing "transforms value with nil headers when not passed"
     (let [topic           "topic"
@@ -31,5 +31,5 @@
                             (partition [_] partition))
           transformer     (create)
           _               (.init transformer context)
-          transformed-val (.transform transformer "val")]
-      (is (= {:value "val" :headers nil :metadata {:topic topic :timestamp timestamp :partition partition}} transformed-val)))))
+          transformed-val (.transform transformer "key" "val")]
+      (is (= {:key "key" :value "val" :headers nil :metadata {:topic topic :timestamp timestamp :partition partition}} transformed-val)))))
