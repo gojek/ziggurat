@@ -17,7 +17,8 @@
 
 (defn- create-user-payload
   [message-payload configured-retry-count]
-  (let [remaining-retry-count (get message-payload :retry-count configured-retry-count)]
+  (let [configured-retry-count (or configured-retry-count 0)
+        remaining-retry-count (get message-payload :retry-count configured-retry-count)]
     (-> message-payload
         (dissoc :headers)
         (dissoc :retry-count)
