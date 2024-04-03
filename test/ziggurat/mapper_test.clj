@@ -1,7 +1,7 @@
 (ns ziggurat.mapper-test
   (:require [clojure.test :refer :all]
             [schema.core :as s]
-            [ziggurat.config :refer [ziggurat-config get-configured-retry-count]]
+            [ziggurat.config :refer [ziggurat-config get-configured-retry-count get-channel-retry-count]]
             [ziggurat.fixtures :as fix]
             [ziggurat.mapper :refer :all]
             [ziggurat.messaging.producer-connection :refer [producer-connection]]
@@ -320,5 +320,18 @@
                               (is (nil? (:topic-entity user-msg-payload))))]
         (with-redefs [metrics/increment-count (constantly nil)
                       metrics/report-histogram (constantly nil)]
-          ((channel-mapper-func user-handler-fn channel) message-payload)
-          (is @user-handler-called))))))
+          ((channel-mapper-func user-handler-fn channel)  message-payload)
+          (is @user-handler-called))))
+    (testing "retry-count set to nil returns rabbitmq-retry-count 0"
+         (let [user-handler-called (atom false)
+               message-payload {:retry-count 0
+                                :topic-entity topic
+                                :metadata     metadata}
+               user-handler-fn (fn [user-msg-payload]
+                                 (reset! user-handler-called true)
+                                 (is (= ((get user-msg-payload :metadata) :rabbitmq-retry-count ) 0)))]
+           (with-redefs [metrics/increment-count (constantly nil)
+                         get-channel-retry-count (constantly nil) ]
+             ((channel-mapper-func user-handler-fn channel) message-payload)
+             (is @user-handler-called))))))
+
