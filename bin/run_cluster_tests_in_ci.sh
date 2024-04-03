@@ -3,4 +3,4 @@
 set -ex
 
 lein clean
-make test-cluster
+sudo make test-cluster
