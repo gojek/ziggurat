@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.10.2
+- Fix retry-count returning nil if empty. Returns 0 by default now.
 ## 4.10.0
 - Adds Native Prometheus client integration
 
