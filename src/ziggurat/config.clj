@@ -6,7 +6,8 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:import (java.util Properties)
-           [org.apache.kafka.common.config SaslConfigs])
+           [org.apache.kafka.common.config SaslConfigs]
+           [org.apache.kafka.clients CommonClientConfigs])
   (:gen-class
    :methods
    [^{:static true} [get [String] Object]
@@ -199,7 +200,8 @@
 
 (def jaas-template
   {"PLAIN"         "org.apache.kafka.common.security.plain.PlainLoginModule"
-   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"})
+   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"
+   "SCRAM-SHA-256" "org.apache.kafka.common.security.scram.ScramLoginModule"})
 
 (defn create-jaas-properties
   [user-name password mechanism]
@@ -211,10 +213,13 @@
   (if (some? jaas-config)
     (let [username  (get jaas-config :username)
           password  (get jaas-config :password)
-          mechanism (get jaas-config :mechanism)]
+          mechanism (get jaas-config :mechanism)
+          protocol  (get jaas-config :protocol)
+          jaas_props (create-jaas-properties username password mechanism)]
       (doto properties
-        (.put SaslConfigs/SASL_JAAS_CONFIG
-              (create-jaas-properties username password mechanism))))
+        (.put SaslConfigs/SASL_JAAS_CONFIG jaas_props)
+        (.put SaslConfigs/SASL_MECHANISM mechanism)
+        (.put CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol)))
     properties))
 
 (defn build-ssl-properties
