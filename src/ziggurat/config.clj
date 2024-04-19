@@ -239,7 +239,8 @@
    :ssl-keystore-password <>
     {:jaas {:username <>
             :password <>
-            :mechanism <>}}}
+            :mechanism <>
+            :protocol <>}}}
   "
   (let [ssl-configs-enabled (:enabled ssl-config-map)
         jaas-config         (get ssl-config-map :jaas)]
