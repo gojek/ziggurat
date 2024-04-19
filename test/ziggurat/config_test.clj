@@ -323,7 +323,8 @@
                                             :ssl-keystore-password "some-password"
                                             :jaas {:username "myuser"
                                                    :password "mypassword"
-                                                   :mechanism "SCRAM-SHA-512"}})]
+                                                   :mechanism "SCRAM-SHA-512"
+                                                   :protocol "PLAINTEXT"}})]
         (let [streams-config-map {:auto-offset-reset  :latest}
               props              (build-streams-config-properties streams-config-map)
               auto-offset-reset  (.getProperty props "auto.offset.reset")
