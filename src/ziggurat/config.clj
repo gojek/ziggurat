@@ -96,6 +96,9 @@
 (defn ssl-config []
   (get-in config [:ziggurat :ssl]))
 
+(defn sasl-config []
+  (get-in config [:ziggurat :sasl]))
+
 (defn rabbitmq-config []
   (get (ziggurat-config) :rabbit-mq))
 
@@ -214,12 +217,17 @@
     (let [username  (get jaas-config :username)
           password  (get jaas-config :password)
           mechanism (get jaas-config :mechanism)
-          protocol  (get jaas-config :protocol)
           jaas_props (create-jaas-properties username password mechanism)]
       (doto properties
-        (.put SaslConfigs/SASL_JAAS_CONFIG jaas_props)
-        (.put SaslConfigs/SASL_MECHANISM mechanism)
-        (.put CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol)))
+        (.put SaslConfigs/SASL_JAAS_CONFIG jaas_props)))
+    properties))
+
+(defn- add-sasl-properties
+  [properties mechanism protocol]
+  (if (and (some? mechanism) (some? protocol))
+    (doto properties
+      (.put SaslConfigs/SASL_MECHANISM mechanism)
+      (.put CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol))
     properties))
 
 (defn build-ssl-properties
@@ -250,6 +258,35 @@
         (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
+(defn build-sasl-properties
+  [properties set-property-fn sasl-config-map]
+  "Builds SASL properties from sasl-config-map which is a map where keys are
+    Clojure keywords in kebab case. These keys are converted to Kafka properties by set-property-fn.
+
+    SASL properties are only set if [:ziggurat :sasl :enabled] returns true.
+
+    Creates JAAS template if values are provided in the map provided agains this key sequence
+      [:ziggurat :ssl :jaas].
+
+    Example of sasl-config-map
+    {:enabled true
+     :protocol <>
+      {:jaas
+        {:username <>
+         :password <>
+         :mechanism}}}
+  "
+  (let [sasl-configs-enabled (:enabled sasl-config-map)
+        jaas-config         (get sasl-config-map :jaas)
+        mechanism           (get jaas-config :mechanism)
+        protocol            (get sasl-config-map :protocol)]
+    (if (true? sasl-configs-enabled)
+      (as-> properties pr
+            (add-jaas-properties pr jaas-config)
+            (add-sasl-properties pr mechanism protocol)
+            (reduce-kv set-property-fn pr sasl-config-map))
+      properties)))
+
 (defn build-properties
   "Builds Properties object from the provided config-map which is a map where keys are
    Clojure keywords in kebab case. These keys are converted to Kafka properties by set-property-fn.
@@ -270,8 +307,9 @@
    "
   [set-property-fn config-map]
   (as-> (Properties.) pr
-    (build-ssl-properties pr set-property-fn (ssl-config))
-    (reduce-kv set-property-fn pr config-map)))
+        (build-ssl-properties pr set-property-fn (ssl-config))
+        (build-sasl-properties pr set-property-fn (sasl-config))
+        (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties
   (partial build-properties (partial set-property consumer-config-mapping-table)))
