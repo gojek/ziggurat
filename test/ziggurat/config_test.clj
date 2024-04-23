@@ -21,6 +21,7 @@
                                      statsd-config
                                      ziggurat-config
                                      ssl-config
+                                     sasl-config
                                      create-jaas-properties]]
             [ziggurat.fixtures :as f])
   (:import (java.util ArrayList Properties)))
@@ -323,8 +324,7 @@
                                             :ssl-keystore-password "some-password"
                                             :jaas {:username "myuser"
                                                    :password "mypassword"
-                                                   :mechanism "SCRAM-SHA-512"
-                                                   :protocol "PLAINTEXT"}})]
+                                                   :mechanism "SCRAM-SHA-512"}})]
         (let [streams-config-map {:auto-offset-reset  :latest}
               props              (build-streams-config-properties streams-config-map)
               auto-offset-reset  (.getProperty props "auto.offset.reset")
@@ -348,7 +348,22 @@
           (is (= auto-offset-reset "latest"))
           (is (= ssl-ks-location  "/some/location"))
           (is (= ssl-ks-password  "some-password"))
-          (is (nil? sasl-jaas-config)))))))
+          (is (nil? sasl-jaas-config)))))
+    (testing "sasl properties create jaas template from the map provided in [:ziggurat :sasl :jaas]"
+      (with-redefs [sasl-config (constantly {:enabled true
+                                             :protocol "SASL_PLAINTEXT"
+                                            :jaas {:username "myuser"
+                                                   :password "mypassword"
+                                                   :mechanism "SCRAM-SHA-256"}})]
+        (let [streams-config-map {:auto-offset-reset  :latest}
+              props              (build-streams-config-properties streams-config-map)
+              auto-offset-reset  (.getProperty props "auto.offset.reset")
+              sasl-jaas-config   (.getProperty props "sasl.jaas.config")
+              sasl-protocol      (.getProperty props "security.protocol")
+              sasl-mechanism     (.getProperty props "sasl.mechanism")]
+          (is (= auto-offset-reset "latest"))
+          (is (= sasl-protocol "SASL_PLAINTEXT"))
+          (is (= sasl-jaas-config (create-jaas-properties "myuser" "mypassword" "SCRAM-SHA-256"))))))))
 
 (deftest test-set-property
   (testing "set-property with empty (with spaces) value"
