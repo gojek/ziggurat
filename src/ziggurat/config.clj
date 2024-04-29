@@ -239,16 +239,20 @@
   {:enabled true
    :ssl-keystore-location <>
    :ssl-keystore-password <>
+   :mechanism <>
+   :protocol <>
     {:jaas {:username <>
             :password <>
-            :mechanism <>
-            :protocol <>}}}
+            :login-module <>}}}
   "
   (let [ssl-configs-enabled (:enabled ssl-config-map)
-        jaas-config         (get ssl-config-map :jaas)]
+        jaas-config         (get ssl-config-map :jaas)
+        mechanism           (get ssl-config-map :mechanism)
+        protocol            (get ssl-config-map :protocol)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
         (add-jaas-properties pr jaas-config)
+        (add-sasl-properties pr mechanism protocol)
         (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
