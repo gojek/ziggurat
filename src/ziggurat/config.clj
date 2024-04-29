@@ -277,9 +277,9 @@
         protocol            (get sasl-config-map :protocol)]
     (if (true? sasl-configs-enabled)
       (as-> properties pr
-            (add-jaas-properties pr jaas-config)
-            (add-sasl-properties pr mechanism protocol)
-            (reduce-kv set-property-fn pr sasl-config-map))
+        (add-jaas-properties pr jaas-config)
+        (add-sasl-properties pr mechanism protocol)
+        (reduce-kv set-property-fn pr sasl-config-map))
       properties)))
 
 (defn build-properties
@@ -302,9 +302,9 @@
    "
   [set-property-fn config-map]
   (as-> (Properties.) pr
-        (build-ssl-properties pr set-property-fn (ssl-config))
-        (build-sasl-properties pr set-property-fn (sasl-config))
-        (reduce-kv set-property-fn pr config-map)))
+    (build-ssl-properties pr set-property-fn (ssl-config))
+    (build-sasl-properties pr set-property-fn (sasl-config))
+    (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties
   (partial build-properties (partial set-property consumer-config-mapping-table)))
