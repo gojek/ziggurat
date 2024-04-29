@@ -201,23 +201,17 @@
         (.setProperty p sk nv))))
   p)
 
-(def jaas-template
-  {"PLAIN"         "org.apache.kafka.common.security.plain.PlainLoginModule"
-   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"
-   "SCRAM-SHA-256" "org.apache.kafka.common.security.scram.ScramLoginModule"})
-
 (defn create-jaas-properties
-  [user-name password mechanism]
-  (let [jaas-template (get jaas-template mechanism)]
-    (format "%s required username=\"%s\" password=\"%s\";" jaas-template user-name password)))
+  [user-name password login-module]
+  (format "%s required username=\"%s\" password=\"%s\";" login-module user-name password))
 
 (defn- add-jaas-properties
   [properties jaas-config]
   (if (some? jaas-config)
     (let [username  (get jaas-config :username)
           password  (get jaas-config :password)
-          mechanism (get jaas-config :mechanism)
-          jaas_props (create-jaas-properties username password mechanism)]
+          login-module (get jaas-config :login-module)
+          jaas_props (create-jaas-properties username password login-module)]
       (doto properties
         (.put SaslConfigs/SASL_JAAS_CONFIG jaas_props)))
     properties))
@@ -265,20 +259,21 @@
 
     SASL properties are only set if [:ziggurat :sasl :enabled] returns true.
 
-    Creates JAAS template if values are provided in the map provided agains this key sequence
-      [:ziggurat :ssl :jaas].
+    Creates JAAS template if values are provided in the map provided against this key sequence
+      [:ziggurat :sasl :jaas].
 
     Example of sasl-config-map
     {:enabled true
      :protocol <>
+     :mechanism <>
       {:jaas
         {:username <>
          :password <>
-         :mechanism}}}
+         :login-module <>}}}
   "
   (let [sasl-configs-enabled (:enabled sasl-config-map)
         jaas-config         (get sasl-config-map :jaas)
-        mechanism           (get jaas-config :mechanism)
+        mechanism           (get sasl-config-map :mechanism)
         protocol            (get sasl-config-map :protocol)]
     (if (true? sasl-configs-enabled)
       (as-> properties pr
