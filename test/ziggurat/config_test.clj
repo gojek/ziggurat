@@ -354,9 +354,9 @@
       (with-redefs [sasl-config (constantly {:enabled true
                                              :protocol "SASL_PLAINTEXT"
                                              :mechanism "SCRAM-SHA-256"
-                                            :jaas {:username "myuser"
-                                                   :password "mypassword"
-                                                   :login-module "org.apache.kafka.common.security.scram.ScramLoginModule"}})]
+                                             :jaas {:username "myuser"
+                                                    :password "mypassword"
+                                                    :login-module "org.apache.kafka.common.security.scram.ScramLoginModule"}})]
         (let [streams-config-map {:auto-offset-reset  :latest}
               props              (build-streams-config-properties streams-config-map)
               auto-offset-reset  (.getProperty props "auto.offset.reset")
