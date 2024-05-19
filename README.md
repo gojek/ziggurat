@@ -425,6 +425,31 @@ and different timeout values.
                                                                                       :enable [true :bool]}}}}}
 ```
 
+## Channels
+
+Channels enable you to increase the number of parallel processors more than the number of partitions of your topic.
+Messages consumed from topics are directly sent to rabbitmq channels and the mapper function handler processes messages from this channel.
+You can set the worker count as per your parallel processing requirement. The channel configs are described below in configuration section.
+
+```$xslt
+:ziggurat {:stream-router {:stream-id {:application-id "application_name"...
+                                     :channels {:channel-1 {:worker-count [10 :int]
+                                                            :retry        {:type    [:linear :keyword]
+                                                                           :count   [5 :int]
+                                                                           :enabled [true :bool]}}}
+```
+
+How to send messages directly to channel after consuming. 
+```clojure
+:stream-routes {:stream-id {:handler-fn   (fn [_] :channel-1)
+                               :channel-1 (my-protobuf-hash handler-fn)}}
+
+```
+
+The above method creates an anonymous function that passes the consumed messages to channel and the channel route is then handled by the handler-fn
+you have created.
+
+
 ## Deprecation Notice
 * Sentry has been deprecated. 
 
@@ -444,6 +469,10 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                                           :oldest-processed-message-in-s  [604800 :int]
                                                           :changelog-topic-replication-factor [3 :int]
                                                           :stream-thread-exception-response [:shutdown-client :keyword]
+                                                          :channels                           {:channel-1 {:worker-count [10 :int]
+                                                                                                         :retry        {:type    [:linear :keyword]
+                                                                                                                        :count   [5 :int]
+                                                                                                                        :enabled [true :bool]}}}
                                                           :producer   {:bootstrap-servers                     "localhost:9092"
                                                                        :acks                                  "all"
                                                                        :retries-config                        5
@@ -509,6 +538,12 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
     - origin-topic - The topic that the stream should read from. This can be a regex that enables you to read from multiple streams and handle the messages in the same way. It is to be kept in mind that the messages from different streams will be passed to the same mapper-function.
     - oldest-processed-messages-in-s - The oldest message which will be processed by stream in second. By default the value is 604800 (1 week)
     - changelog-topic-replication-factor - the internal changelog topic replication factor. By default the value is 3
+    - channels - Configure rabbitmq channels for increasing parallelism to more than the number of partitions. 
+      - worker-count - Each channel name can have multiple workers. This defines how many messages you want to process parallely. 
+      - retry - This defines the channel retries. Used specifically for retrying messages processed from channels.
+        - type - defines the type of retry (linear,exponential)
+        - count - number of retries before message is sent to channel DLQ.
+        - enabled - if channel retries are enabled or not.
     - producer - Configuration for KafkaProducer. All properties supported by [Kafka Producer Config](https://kafka.apache.org/28/javadoc/org/apache/kafka/clients/producer/ProducerConfig.html) can be provided as kebab case keywords
       - bootstrap.servers - A list of host/port pairs to use for establishing the initial connection to the Kafka cluster.
       - acks - The number of acknowledgments the producer requires the leader to have received before considering a request complete. Valid values are [all, -1, 0, 1].
@@ -523,7 +558,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 - sentry - Whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing the mapper-function, an event is sent to sentry. You can skip this flow by disabling it.
 - rabbit-mq-connection - The details required to make a connection to rabbitmq. We use rabbitmq for the retry mechanism.
 - rabbit-mq - The queues that are part of the retry mechanism
-- retry - The number of times the message should be retried and if retry flow should be enabled or not
+- retry - The number of times the message should be retried and if retry flow should be enabled or not. If retry is disabled, and :retry is returned from mapper function, messages will be lost.
 - jobs - The number of consumers that should be reading from the retry queues and the prefetch count of each consumer
 - http-server - Ziggurat starts an http server by default and gives apis for ping health-check and deadset management. This defines the port and the number of threads of the http server. It also controls the graceful shutdown timeout of the HTTP server. Default is `30000ms`
 - new-relic - If report-errors is true, whenever a :failure keyword is returned from the mapper-function or an exception is raised while executing it, an error is reported to new-relic. You can skip this flow by disabling it.
