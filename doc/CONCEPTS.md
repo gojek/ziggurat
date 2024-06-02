@@ -41,3 +41,51 @@ To keep the consumer lag from getting out of hand our mapper-function can take a
 to 500 ms. Thus we can consume only 4 messages/sec now. To fix this the consumers can read messages from Kafka and directly put
 them into Rabbitmq. Then we can have 5 or 6 consumers on Rabbitmq that read the messages and process them. That is all that
 channels do. 
+
+## Http Server
+Ziggurat also sets up a HTTP server by default and you can pass in your own routes that it will serve. The above example demonstrates
+how you can pass in your own route.
+
+or
+
+```clojure
+(ziggurat/main {:start-fn start-fn
+                :stop-fn stop-fn
+                :stream-routes {:stream-id {:handler-fn main-fn}}
+                :actor-routes routes
+                :modes [:api-server :stream-worker]})
+```
+
+This will start both api-server and stream-worker modes
+
+There are four modes supported by ziggurat
+
+```
+ :api-server - Mode by which only server will be started with actor routes and management routes(Dead set management)
+ :stream-worker - Only start the server plus rabbitmq for only producing the messages for retry and channels
+ :worker - Starts the rabbitmq consumer for retry and channel
+ :management-api - Servers only routes which used for deadset management
+```
+
+You can pass in multiple modes and it will start accordingly
+If nothing passed to modes then it will start all the modes.
+
+
+## Toggle streams in running actor
+
+Feature implementation of [issue #56](https://github.com/gojek/ziggurat/issues/56). Stop and start streams on a running process using nREPL. A nREPL server starts at `port 7011`(default) when an actor using ziggurat starts. Check `ZIGGURAT_NREPL_SERVER_PORT` in your config.
+
+Connect to the shell using
+
+```shell
+lein repl :connect <host>:<port>
+```
+
+The functions can be accessed via the following commands to stop and start streams using their `topic-entity`
+
+```shell
+> (ziggurat.streams/stop-stream :booking)
+> (ziggurat.streams/start-stream :booking)
+```
+
+where `booking` is the `topic-entity`
