@@ -25,7 +25,7 @@
 - [Description](#description)
 - [Dev Setup](#dev-setup)
 - [Usage](#usage)
-- [Configuration](#configuration)
+- [Configuration](doc/configuration.md)
 - [Contribution Guidelines](#contribution)
 - [License](#license)
 
@@ -42,6 +42,19 @@ Ziggurat is built with the intent to abstract out the following features
 
 
 Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
+
+## Important concepts and usage docs
+
+* [Ziggurat HTTP server](doc/CONCEPTS.md#Http-Server)
+
+* [Toggle streams on a running actor](doc/CONCEPTS.md#toggle-streams-in-running-actor)
+
+* [Middlewares in Ziggurat](doc/middleware.md)
+
+* [Consuming and publishing messages to kafka/RMQ](doc/kafka_rmq.md)
+
+* [Configuration and config description](doc/configuration.md)
+
 
 ## Dev Setup
 
@@ -162,19 +175,6 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
 ```
 
 _NOTE: this example assumes that the message is serialized in Protobuf format_
-
-
-## Important concepts and usage docs
-
-* [Ziggurat HTTP server](doc/CONCEPTS.md#Http-Server)
-
-* [Toggle streams on a running actor](doc/CONCEPTS.md#toggle-streams-in-running-actor)
-
-* [Middlewares in Ziggurat](doc/middleware.md)
-
-* [Consuming and publishing messages to kafka/RMQ](doc/kafka_rmq.md)
-
-* [Configuration and config description](doc/configuration.md)
 
 
 ## Deprecation Notice
