@@ -16,12 +16,11 @@
   </a>
 </p>
 
+## Table of Contents
+
 - [Wiki](https://github.com/gojek/ziggurat/wiki)
 - [Release Notes](https://github.com/gojek/ziggurat/wiki/Release-Notes)
 - [Upgrade Guide](https://github.com/gojek/ziggurat/wiki/Upgrade-guide)
-
----
-
 - [Description](#description)
 - [Dev Setup](#dev-setup)
 - [Usage](#usage)
@@ -31,62 +30,52 @@
 
 ## Description
 
-Ziggurat is a framework built to simplify Stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka.
-Ziggurat is built with the intent to abstract out the following features
+Ziggurat is a framework built to simplify stream processing on Kafka. It can be used to create a full-fledged Clojure app that reads and processes messages from Kafka. Ziggurat abstracts the following features:
 
-```
-- reading messages from Kafka
-- retrying failed messages via RabbitMQ
-- setting up an HTTP server
-```
+- Reading messages from Kafka
+- Retrying failed messages via RabbitMQ
+- Setting up an HTTP server
 
+Refer to [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
 
-Refer [concepts](doc/CONCEPTS.md) to understand the concepts referred to in this document.
+### Important Concepts and Usage Docs
 
-## Important concepts and usage docs
-
-* [Ziggurat HTTP server](doc/CONCEPTS.md#Http-Server)
-
-* [Toggle streams on a running actor](doc/CONCEPTS.md#toggle-streams-in-running-actor)
-
-* [Middlewares in Ziggurat](doc/middleware.md)
-
-* [Consuming and publishing messages to kafka/RMQ](doc/kafka_rmq.md)
-
-* [Configuration and config description](doc/configuration.md)
-
+- [Ziggurat HTTP Server](doc/CONCEPTS.md#Http-Server)
+- [Toggle Streams on a Running Actor](doc/CONCEPTS.md#toggle-streams-in-running-actor)
+- [Middlewares in Ziggurat](doc/middleware.md)
+- [Consuming and Publishing Messages to Kafka/RMQ](doc/kafka_rmq.md)
+- [Configuration and Config Description](doc/configuration.md)
 
 ## Dev Setup
 
-(For mac users only)
+### For Mac Users Only
 
-- Install Clojure: `brew install clojure`
-
-- Install leiningen: `brew install leiningen`
-
-- Run docker-compose: `docker-compose up`. This starts
-
+1. Install Clojure: `brew install clojure`
+2. Install Leiningen: `brew install leiningen`
+3. Run Docker Compose: `docker-compose up`. This starts:
   - Kafka on localhost:9092
   - ZooKeeper on localhost:2181
   - RabbitMQ on localhost:5672
-- Run tests: `make test`
+4. Run tests: `make test`
 
-#### Running a cluster set up locally
+### Running a Cluster Setup Locally
 
-- `make setup-cluster` This clears up the volume and starts
-  - 3 Kafka brokers on localhost:9091, localhost:9092 and localhost:9093
+- Run `make setup-cluster`. This clears up the volume and starts:
+  - 3 Kafka brokers on localhost:9091, localhost:9092, and localhost:9093
   - Zookeeper on localhost:2181
   - RabbitMQ on localhost:5672
 
-#### Running tests via a cluster
-- `make test-cluster`
-  - This uses `config.test.cluster.edn` instead of `config.test.edn`
+### Running Tests via a Cluster
+
+- Run `make test-cluster`. This uses `config.test.cluster.edn` instead of `config.test.edn`.
 
 ## Usage
 
-Add this to your project.clj
+Add this to your `project.clj`:
 
-`[tech.gojek/ziggurat "4.8.0"]`
+```clojure
+[tech.gojek/ziggurat "4.8.0"]
+
 
 _Please refer [clojars](https://clojars.org/tech.gojek/ziggurat) for the latest stable version_
 
