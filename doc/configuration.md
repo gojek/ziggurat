@@ -20,6 +20,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 10. [Jobs](#jobs)
 11. [HTTP Server](#http-server)
 12. [New Relic](#new-relic)
+13. 
 
 ```clojure
 {:ziggurat  {:app-name            "application_name"
@@ -87,7 +88,9 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                              :prefetch-count [4 :int]}}
             :http-server          {:port         [8010 :int]
                                    :graceful-shutdown-timeout-ms [30000 :int]
-            :new-relic            {:report-errors [false :bool]}}}}
+            :new-relic            {:report-errors [false :bool]}}
+            :prometheus           {:port 8002
+                                   :enabled [true :bool]}}}
 ```
 
 
@@ -204,3 +207,11 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 | Configuration                      | Data Type  | Mandatory | Description                                                                                 |
 |------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
 | **new-relic**                      | `Object`   | No        | If `report-errors` is true, reports an error to New Relic whenever a `:failure` keyword is returned from the mapper-function or an exception is raised. Can be disabled. |
+
+
+## Prometheus
+
+| Configuration  | Data Type  | Mandatory | Description                                                                                                   |
+|----------------|------------|-----------|---------------------------------------------------------------------------------------------------------------|
+| **prometheus** | `Object`   | No        | Prometheus configuration. By default set to ON. Set the port that prometheus server runs on and enabled flag. |
+
