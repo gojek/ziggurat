@@ -74,7 +74,7 @@ Refer to [concepts](doc/CONCEPTS.md) to understand the concepts referred to in t
 Add this to your `project.clj`:
 
 ```clojure
-[tech.gojek/ziggurat "4.8.0"]
+[tech.gojek/ziggurat "4.11.1"]
 
 
 _Please refer [clojars](https://clojars.org/tech.gojek/ziggurat) for the latest stable version_
@@ -167,7 +167,7 @@ _NOTE: this example assumes that the message is serialized in Protobuf format_
 
 
 ## Deprecation Notice
-* Sentry has been deprecated. 
+* Sentry has been deprecated from version 4.6.3. 
 
 ## Contribution
 

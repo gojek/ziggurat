@@ -113,6 +113,9 @@ Ziggurat Config | Default Value | Description | Mandatory?
 
 - `:hosts` is a comma separated values of RabbitMQ hostnames (dns-names OR IPs).
 - `:port` specifies the port number on which the RabbitMQ nodes are running.
+- `:prefetch-count` Sets the prefetch count for RabbitMQ, determining the number of messages that can be consumed from a channel before an acknowledgment is received. 
+  - The value 3 means up to 3 messages can be prefetched.
+  - The prefetch count is per worker. so, the prefetch-count mentioned here is for each worker in worker-count.
 - `:channel-pool` specifies the properties for the RabbitMQ channel pool used for publishing
 - `:address-resolver` specifies the strategy to figure out RabbitMQ hosts IP addresses. `:dns` is the default and shoud
   be used when `:hosts` specifies a DNS address. `:ip-list` should be used when comma separated IPs are provided.
