@@ -11,6 +11,11 @@ of [keepachangelog.com](http://keepachangelog.com/).
 
 ## 4.10.0
 - Adds Native Prometheus client integration
+  - Prometheus is enabled by default. To set it to false, add the below lines in config under :ziggurat section
+    ```clojure
+    :prometheus           {:port 8002
+                          :enabled [true :bool]}
+    ```
 
 ## 4.9.1
 
