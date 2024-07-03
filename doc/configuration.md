@@ -121,7 +121,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 | **oldest-processed-messages-in-s** | `Integer`  | No        | Oldest message processed by the stream in seconds. Default value is 604800 (1 week).        |
 | **changelog-topic-replication-factor** | `Integer`  | No        | Internal changelog topic replication factor. Default value is 3.                            |
 
-### Channels
+## Channels
 
 | Property                           | Data Type  | Mandatory | Description                                                                                 |
 |------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
@@ -136,7 +136,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 | **count**                          | `Integer`  | Yes       | Number of retries before message is sent to channel DLQ.                                    |
 | **enabled**                        | `Boolean`  | Yes       | If channel retries are enabled or not.                                                      |
 
-### Producer
+## Producer
 
 | Property                           | Data Type  | Mandatory | Description                                                                                 |
 |------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
@@ -150,39 +150,75 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 ## Batch Routes
 
-| Configuration                      | Data Type  | Mandatory | Description                                                                                 |
-|------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
-| **batch-routes**                   | `Object`   | No        | Properties provided with [Kafka Consumer Config](https://kafka.apache.org/28/javadoc/org/apache/kafka/clients/consumer/ConsumerConfig.html) are accepted as kebab case keywords. |
+| Key                                 | Data Type | Mandatory | Description                                     |
+|-------------------------------------|-----------|-----------|-------------------------------------------------|
+| `:batch-routes`                     | Object    | Yes       | Configures batch routes for Kafka consumer API. |
+| `:restaurants-updates-to-non-personalized-es` | Object    | Yes       | Batch route name, customize as per application  |
+| `:consumer-group-id`                | String    | Yes       | Consumer group ID for the batch route.          |
+| `:bootstrap-servers`                | String    | Yes       | Kafka bootstrap servers for the batch route.    |
+| `:origin-topic`                     | String    | Yes       | Origin topic for the batch route.               |
 
 ## SSL
 
-| Configuration                      | Data Type  | Mandatory | Description                                                                                 |
-|------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
-| **ssl**                            | `Object`   | No        | All Kafka [SSL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SslConfigs.html) and [SASL configs](https://kafka.apache.org/28/javadoc/org/apache/kafka/common/config/SaslConfigs.html) can be provided as kebab case keywords. Automatically applied to all Kafka stream, Kafka producer, and Kafka consumer objects created in Ziggurat. |
+| Key                                 | Data Type | Mandatory | Description                                                 |
+|-------------------------------------|-----------|-----------|-------------------------------------------------------------|
+| `:ssl`                              | Object    | Yes       | SSL configuration for Kafka.                                |
+| `:enabled`                          | Boolean   | Yes       | Flag to enable SSL.                                         |
+| `:ssl-keystore-location`            | String    | Yes       | Location of the SSL keystore.                               |
+| `:ssl-keystore-password`            | String    | Yes       | Password for the SSL keystore.                              |
+| `:jaas`                             | Object    | Yes       | JAAS configuration for SASL.                                |
+| `:username`                         | String    | Yes       | Username for SASL authentication.                           |
+| `:password`                         | String    | Yes       | Password for SASL authentication.                           |
+| `:mechanism`                        | String    | Yes       | SASL mechanism (e.g., SCRAM-SHA-512).                       |
 
 ## StatsD
 
-| Configuration                      | Data Type  | Mandatory | Description                                                                                 |
-|------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
-| **statsd**                         | `Object`   | No        | Formerly known as Datadog, the StatsD host and port that metrics should be sent to.         |
+| Key            | Data Type | Mandatory | Description                     |
+|----------------|-----------|-----------|---------------------------------|
+| `:statsd`      | Object    | Yes       | Configuration for StatsD.       |
+| `:host`        | String    | Yes       | Host for StatsD.                |
+| `:port`        | Integer   | Yes       | Port for StatsD.                |
+| `:enabled`     | Boolean   | Yes       | Flag to enable StatsD.          |
 
 ## Sentry
 
-| Configuration                      | Data Type  | Mandatory | Description                                                                                 |
-|------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
-| **sentry**                         | `Object`   | No        | Sends an event to Sentry when a `:failure` keyword is returned from the mapper-function or an exception is raised. Can be disabled. |
+| Key                                  | Data Type | Mandatory | Description                                       |
+|--------------------------------------|-----------|-----------|---------------------------------------------------|
+| `:sentry`                            | Object    | Yes       | Configuration for Sentry.                         |
+| `:enabled`                           | Boolean   | Yes       | Flag to enable Sentry.                            |
+| `:dsn`                               | String    | Yes       | Data Source Name for Sentry.                      |
+| `:worker-count`                      | Integer   | Yes       | Number of Sentry workers.                         |
+| `:queue-size`                        | Integer   | Yes       | Size of the Sentry queue.                         |
+| `:thread-termination-wait-s`         | Integer   | Yes       | Wait time for thread termination in seconds.      |
 
 ## RabbitMQ Connection
 
-| Configuration                      | Data Type  | Mandatory | Description                                                                                 |
-|------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
-| **rabbit-mq-connection**           | `Object`   | Yes       | Details required to make a connection to RabbitMQ. Used for the retry mechanism.            |
+| Key                                  | Data Type | Mandatory | Description                                    |
+|--------------------------------------|-----------|-----------|------------------------------------------------|
+| `:rabbit-mq-connection`              | Object    | Yes       | RabbitMQ connection configuration.             |
+| `:host`                              | String    | Yes       | Host for RabbitMQ.                             |
+| `:port`                              | Integer   | Yes       | Port for RabbitMQ.                             |
+| `:prefetch-count`                    | Integer   | No        | Number of messages to prefetch.                |
+| `:username`                          | String    | Yes       | Username for RabbitMQ.                         |
+| `:password`                          | String    | Yes       | Password for RabbitMQ.                         |
+| `:channel-timeout`                   | Integer   | NO        | Channel timeout in milliseconds.  <br/>Default 2000 |
 
 ## RabbitMQ
 
-| Configuration                      | Data Type  | Mandatory | Description                                                                                 |
-|------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
-| **rabbit-mq**                      | `Object`   | Yes       | The queues that are part of the retry mechanism.                                            |
+| Key                                  | Data Type | Mandatory | Description                                       |
+|--------------------------------------|-----------|-----------|---------------------------------------------------|
+| `:rabbit-mq`                         | Object    | Yes       | Configuration for RabbitMQ queues.                |
+| `:delay`                             | Object    | Yes       | Delay queue configuration.                        |
+| `:queue-name`                        | String    | Yes       | Name of the delay queue.                          |
+| `:exchange-name`                     | String    | Yes       | Name of the delay exchange.                       |
+| `:dead-letter-exchange`              | String    | Yes       | Dead letter exchange for the delay queue.         |
+| `:queue-timeout-ms`                  | Integer   | Yes       | Queue timeout in milliseconds.                    |
+| `:instant`                           | Object    | Yes       | Instant queue configuration.                      |
+| `:queue-name`                        | String    | Yes       | Name of the instant queue.                        |
+| `:exchange-name`                     | String    | Yes       | Name of the instant exchange.                     |
+| `:dead-letter`                       | Object    | Yes       | Dead letter queue configuration.                  |
+| `:queue-name`                        | String    | Yes       | Name of the dead letter queue.                    |
+| `:exchange-name`                     | String    | Yes       | Name of the dead letter exchange.                 |
 
 ## Retry
 
@@ -211,7 +247,9 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 
 ## Prometheus
 
-| Configuration  | Data Type  | Mandatory | Description                                                                                                   |
-|----------------|------------|-----------|---------------------------------------------------------------------------------------------------------------|
-| **prometheus** | `Object`   | No        | Prometheus configuration. By default set to ON. Set the port that prometheus server runs on and enabled flag. |
+| Configuration  | Data Type | Mandatory | Description                                                                                                                      |
+|----------------|-----------|-----------|----------------------------------------------------------------------------------------------------------------------------------|
+| **prometheus** | `Object`  | No        | Prometheus configuration. By default set to ON. Set the port that prometheus server runs on and enabled flag.                    |
+| **enabled**    | `bool`    | yes       | Prometheus configuration. By default set to ON. Enables the startup of prometheus server (statsD is not used if this is enabled) |
+| **port**       | `int`     | yes       | Prometheus configuration. Default 8002. Specifies the port that prometheus server runs on.                                       |
 

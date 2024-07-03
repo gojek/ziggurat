@@ -27,6 +27,7 @@
 - [Configuration](doc/configuration.md)
 - [Contribution Guidelines](#contribution)
 - [License](#license)
+- [Changelog](CHANGELOG.md)
 
 ## Description
 
@@ -43,8 +44,10 @@ Refer to [concepts](doc/CONCEPTS.md) to understand the concepts referred to in t
 - [Ziggurat HTTP Server](doc/CONCEPTS.md#Http-Server)
 - [Toggle Streams on a Running Actor](doc/CONCEPTS.md#toggle-streams-in-running-actor)
 - [Middlewares in Ziggurat](doc/middleware.md)
-- [Consuming and Publishing Messages to Kafka/RMQ](doc/kafka_rmq.md)
+- [Consuming and Publishing Messages to Kafka](doc/kafka_produce_consume.md)
+- [Connecting RabbitMQ and using channels](doc/rmq_channels.md)
 - [Configuration and Config Description](doc/configuration.md)
+- To read about all concepts, please refer the [Concepts file](doc/CONCEPTS.md)
 
 ## Dev Setup
 
@@ -107,7 +110,7 @@ To start a stream (a thread that reads messages from Kafka), add this to your co
 
 _NOTE: this example assumes that the message is serialized in Protobuf format_
 
-Please refer the [Middleware section](#middleware-in-ziggurat) for understanding `handler-fn` here.
+Please refer the [Middleware section](doc/middleware.md) for understanding `handler-fn` here.
 
 - The main-fn is the function that will be applied to every message that is read from the Kafka stream.
 - The main-fn will take map as an argument that takes 2 keys i.e
@@ -124,7 +127,12 @@ Please refer the [Middleware section](#middleware-in-ziggurat) for understanding
   - :skip - The message should be skipped without reporting its failure or retrying the message. Same as :success except that a different metric is published to track skipped messages
 - The start-fn is run at the application startup and can be used to initialize connection to databases, http clients, thread-pools, etc.
 - The stop-fn is run at shutdown and facilitates graceful shutdown, for example, releasing db connections, shutting down http servers etc.
-- Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream. All configs, queues and metrics will be namespaced under this id.
+
+
+
+## Multiple stream routes
+- Ziggurat enables reading from multiple streams and applying same/different functions to the messages. `:stream-id` is a unique identifier per stream which needs to be included in config.edn file
+- All configs, queues and metrics will be namespaced under this id.
 
 ```clojure
 (ziggurat/main start-fn stop-fn {:stream-id-1 {:handler-fn handler-fn-1}

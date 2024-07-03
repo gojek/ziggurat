@@ -89,3 +89,9 @@ The functions can be accessed via the following commands to stop and start strea
 ```
 
 where `booking` is the `topic-entity`
+
+
+### Stop all streams
+```shell
+(mount.core/stop #'ziggurat.streams/stream) #run this on all pods/VMs
+```
