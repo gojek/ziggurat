@@ -20,7 +20,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 10. [Jobs](#jobs)
 11. [HTTP Server](#http-server)
 12. [New Relic](#new-relic)
-13. 
+13. [Prometheus](#prometheus)
 
 ```clojure
 {:ziggurat  {:app-name            "application_name"
