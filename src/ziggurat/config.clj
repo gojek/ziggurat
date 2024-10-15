@@ -6,13 +6,15 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:import (java.util Properties)
-           [org.apache.kafka.common.config SaslConfigs]
+           [org.apache.kafka.common.config SaslConfigs SslConfigs]
            [org.apache.kafka.clients CommonClientConfigs])
   (:gen-class
    :methods
    [^{:static true} [get [String] Object]
     ^{:static true} [getIn [java.lang.Iterable] Object]]
    :name tech.gojek.ziggurat.internal.Config))
+
+(def DEFAULT-LOGIN-CALLBACK-HANDLER "io.gtflabs.kafka.security.oauthbearer.kubernetes.PodLoginCallbackHandler")
 
 (def config-file "config.edn")
 
@@ -201,9 +203,18 @@
         (.setProperty p sk nv))))
   p)
 
-(defn create-jaas-properties
-  [user-name password login-module]
-  (format "%s required username=\"%s\" password=\"%s\";" login-module user-name password))
+(defn create-jaas-properties [user-name password login-module]
+  (let [username-str (if user-name (format " username=\"%s\"" user-name) "")
+        password-str (if password (format " password=\"%s\"" password) "")
+        credentials  (str username-str password-str)]
+    (format "%s required%s;" login-module (if (empty? credentials) "" credentials))))
+
+(defn- add-ssl-properties
+  [properties ssl-config-map]
+  (doto properties
+    (.put SslConfigs/SSL_TRUSTSTORE_LOCATION_CONFIG (:ssl-truststore-location ssl-config-map "/etc/kafka/certs/truststore.p12"))
+    (.put SslConfigs/SSL_TRUSTSTORE_PASSWORD_CONFIG (:ssl-truststore-password ssl-config-map)))
+  properties)
 
 (defn- add-jaas-properties
   [properties jaas-config]
@@ -217,12 +228,11 @@
     properties))
 
 (defn- add-sasl-properties
-  [properties mechanism protocol]
-  (if (and (some? mechanism) (some? protocol))
-    (doto properties
-      (.put SaslConfigs/SASL_MECHANISM mechanism)
-      (.put CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol))
-    properties))
+  [properties mechanism protocol login-callback-handler]
+  (when (some? mechanism) (.put properties SaslConfigs/SASL_MECHANISM mechanism))
+  (when (some? protocol) (.put properties CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol))
+  (when (some? login-callback-handler) (.put properties SaslConfigs/SASL_LOGIN_CALLBACK_HANDLER_CLASS login-callback-handler))
+  properties)
 
 (defn build-ssl-properties
   [properties set-property-fn ssl-config-map]
@@ -251,8 +261,9 @@
         protocol            (get ssl-config-map :protocol)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
+        (add-ssl-properties pr ssl-config-map)
         (add-jaas-properties pr jaas-config)
-        (add-sasl-properties pr mechanism protocol)
+        (add-sasl-properties pr mechanism protocol nil)
         (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
@@ -275,14 +286,15 @@
          :password <>
          :login-module <>}}}
   "
-  (let [sasl-configs-enabled (:enabled sasl-config-map)
-        jaas-config         (get sasl-config-map :jaas)
-        mechanism           (get sasl-config-map :mechanism)
-        protocol            (get sasl-config-map :protocol)]
+  (let [sasl-configs-enabled   (:enabled sasl-config-map)
+        jaas-config            (get sasl-config-map :jaas)
+        mechanism              (get sasl-config-map :mechanism "OAUTHBEARER")
+        protocol               (get sasl-config-map :protocol "SASL_SSL")
+        login-callback-handler (get sasl-config-map :login-callback-handler DEFAULT-LOGIN-CALLBACK-HANDLER)]
     (if (true? sasl-configs-enabled)
       (as-> properties pr
         (add-jaas-properties pr jaas-config)
-        (add-sasl-properties pr mechanism protocol)
+        (add-sasl-properties pr mechanism protocol login-callback-handler)
         (reduce-kv set-property-fn pr sasl-config-map))
       properties)))
 
@@ -324,3 +336,10 @@
 
 (defn get-channel-retry-count [topic-entity channel]
   (:count (channel-retry-config topic-entity channel)))
+
+;; 1. Bump up kafka version to 3.7.0
+;; 2. Introduce changes for sasl and ssl properties:
+;;   2.1
+
+
+;;ZIGGURAT_
