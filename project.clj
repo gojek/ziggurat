@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject tech.gojek/ziggurat "4.11.1"
+(defproject tech.gojek/ziggurat "5.0.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -23,8 +23,8 @@
                  [io.jaegertracing/jaeger-core "1.6.0"]
                  [io.jaegertracing/jaeger-client "1.6.0"]
                  [org.apache.httpcomponents/fluent-hc "4.5.13"]
-                 [org.apache.kafka/kafka-clients "2.8.2" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                 [org.apache.kafka/kafka-streams "2.8.2" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-clients "3.7.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-streams "3.7.0" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
@@ -74,8 +74,8 @@
                        :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
                                            [junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]
-                                           [org.apache.kafka/kafka-streams "2.8.2" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
-                                           [org.apache.kafka/kafka-clients "2.8.2" :classifier "test"]
+                                           [org.apache.kafka/kafka-streams "3.7.0" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                           [org.apache.kafka/kafka-clients "3.7.0" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
                        :plugins           [[lein-cloverage "1.2.2" :exclusions [org.clojure/clojure]]]
                        :cloverage         {:exclude-call ['cambium.core/info
