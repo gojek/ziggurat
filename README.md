@@ -55,7 +55,7 @@ Refer to [concepts](doc/CONCEPTS.md) to understand the concepts referred to in t
 
 1. Install Clojure: `brew install clojure`
 2. Install Leiningen: `brew install leiningen`
-3. Run Docker Compose: `docker-compose up`. This starts:
+3. Run docker-compose: `docker-compose up`. This starts:
   - Kafka on localhost:9092
   - ZooKeeper on localhost:2181
   - RabbitMQ on localhost:5672
