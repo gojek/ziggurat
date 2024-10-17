@@ -172,6 +172,10 @@
    :enabled
    :jaas])
 
+(defn- not-blank?
+  [s]
+  (and (not (nil? s)) (not (str/blank? (str/trim s)))))
+
 (defn- to-list
   [s]
   (if (empty? s)
@@ -201,19 +205,11 @@
         (.setProperty p sk nv))))
   p)
 
-(defn create-jaas-properties [user-name password login-module]
-  (let [username-str (if user-name (format " username=\"%s\"" user-name) "")
-        password-str (if password (format " password=\"%s\"" password) "")
+(defn create-jaas-properties [username password login-module]
+  (let [username-str (when (not-blank? username) (format " username=\"%s\"" username))
+        password-str (when (not-blank? password) (format " password=\"%s\"" password))
         credentials  (str username-str password-str)]
     (format "%s required%s;" login-module (if (empty? credentials) "" credentials))))
-
-(defn- add-ssl-properties
-  [properties ssl-config-map]
-  (if (and (some? (:ssl-truststore-location ssl-config-map)) (some? (:ssl-truststore-password ssl-config-map)))
-    (doto properties
-      (.put SslConfigs/SSL_TRUSTSTORE_LOCATION_CONFIG (:ssl-truststore-location ssl-config-map))
-      (.put SslConfigs/SSL_TRUSTSTORE_PASSWORD_CONFIG (:ssl-truststore-password ssl-config-map))))
-  properties)
 
 (defn- add-jaas-properties
   [properties jaas-config]
@@ -262,7 +258,6 @@
         protocol            (get ssl-config-map :protocol)]
     (if (true? ssl-configs-enabled)
       (as-> properties pr
-        (add-ssl-properties pr ssl-config-map)
         (add-jaas-properties pr jaas-config)
         (add-sasl-properties pr mechanism protocol)
         (reduce-kv set-property-fn pr ssl-config-map))
