@@ -247,8 +247,7 @@
     (testing "should set ssl properties for streams if enabled is set to true"
       (with-redefs [ssl-config (constantly {:enabled                 true
                                             :ssl-keystore-location   "/some/location"
-                                            :ssl-keystore-password   "some-password"
-                                            :ssl-truststore-password "some-password-2"})]
+                                            :ssl-keystore-password   "some-password"})]
         (let [streams-config-map {:auto-offset-reset :latest
                                   :group-id          "foo"}
               props              (build-streams-config-properties streams-config-map)
@@ -263,8 +262,7 @@
     (testing "should set ssl properties for consumer API if enabled is set to true"
       (with-redefs [ssl-config (constantly {:enabled                 true
                                             :ssl-keystore-location   "/some/location"
-                                            :ssl-keystore-password   "some-password"
-                                            :ssl-truststore-password "some-password-2"})]
+                                            :ssl-keystore-password   "some-password"})]
         (let [streams-config-map {:max-poll-records   500
                                   :enable-auto-commit true}
               props              (build-consumer-config-properties streams-config-map)
@@ -279,8 +277,7 @@
     (testing "should set ssl properties for producer API if enabled is set to true"
       (with-redefs [ssl-config (constantly {:enabled                 true
                                             :ssl-keystore-location   "/some/location"
-                                            :ssl-keystore-password   "some-password"
-                                            :ssl-truststore-password "some-password-2"})]
+                                            :ssl-keystore-password   "some-password"})]
         (let [streams-config-map {:batch.size 500
                                   :acks       1}
               props              (build-producer-config-properties streams-config-map)
@@ -310,8 +307,7 @@
     (testing "ssl properties from streams config map overrides the ssl properties provided in [:ziggurat :ssl]"
       (with-redefs [ssl-config (constantly {:enabled                 true
                                             :ssl-keystore-location   "/some/location"
-                                            :ssl-keystore-password   "some-password"
-                                            :ssl-truststore-password "some-password-2"})]
+                                            :ssl-keystore-password   "some-password"})]
         (let [streams-config-map {:auto-offset-reset     :latest
                                   :ssl-keystore-location "/some/different/location"
                                   :ssl-keystore-password "different-password"}
@@ -326,7 +322,6 @@
       (with-redefs [ssl-config (constantly {:enabled                 true
                                             :ssl-keystore-location   "/some/location"
                                             :ssl-keystore-password   "some-password"
-                                            :ssl-truststore-password "some-password-2"
                                             :mechanism               "SCRAM-SHA-512"
                                             :jaas                    {:username     "myuser"
                                                                       :password     "mypassword"
@@ -344,8 +339,7 @@
     (testing "ssl properties DO NOT create jaas template if no value is provided for key sequence [:ziggurat :ssl :jaas]"
       (with-redefs [ssl-config (constantly {:enabled                 true
                                             :ssl-keystore-location   "/some/location"
-                                            :ssl-keystore-password   "some-password"
-                                            :ssl-truststore-password "some-password-2"})]
+                                            :ssl-keystore-password   "some-password"})]
         (let [streams-config-map {:auto-offset-reset :latest}
               props              (build-streams-config-properties streams-config-map)
               auto-offset-reset  (.getProperty props "auto.offset.reset")
