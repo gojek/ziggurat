@@ -6,8 +6,8 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:import (java.util Properties)
-           [org.apache.kafka.common.config SaslConfigs SslConfigs]
-           [org.apache.kafka.clients CommonClientConfigs])
+           (org.apache.kafka.clients CommonClientConfigs)
+           (org.apache.kafka.common.config SaslConfigs))
   (:gen-class
    :methods
    [^{:static true} [get [String] Object]
@@ -223,13 +223,11 @@
     properties))
 
 (defn- add-sasl-properties
-  ([properties mechanism protocol]
-   (add-sasl-properties properties mechanism protocol nil))
-  ([properties mechanism protocol login-callback-handler]
-   (when (some? mechanism) (.put properties SaslConfigs/SASL_MECHANISM mechanism))
-   (when (some? protocol) (.put properties CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol))
-   (when (some? login-callback-handler) (.put properties SaslConfigs/SASL_LOGIN_CALLBACK_HANDLER_CLASS login-callback-handler))
-   properties))
+  [properties mechanism protocol login-callback-handler]
+  (when (some? mechanism) (.putIfAbsent properties SaslConfigs/SASL_MECHANISM mechanism))
+  (when (some? protocol) (.putIfAbsent properties CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol))
+  (when (some? login-callback-handler) (.putIfAbsent properties SaslConfigs/SASL_LOGIN_CALLBACK_HANDLER_CLASS login-callback-handler))
+  properties)
 
 (defn build-ssl-properties
   [properties set-property-fn ssl-config-map]
@@ -255,11 +253,12 @@
   (let [ssl-configs-enabled (:enabled ssl-config-map)
         jaas-config         (get ssl-config-map :jaas)
         mechanism           (get ssl-config-map :mechanism)
-        protocol            (get ssl-config-map :protocol)]
-    (if (true? ssl-configs-enabled)
+        protocol            (get ssl-config-map :protocol)
+        login-callback-handler (get ssl-config-map :login-callback-handler)]
+    (if (or (true? ssl-configs-enabled) (= ssl-configs-enabled "true"))
       (as-> properties pr
         (add-jaas-properties pr jaas-config)
-        (add-sasl-properties pr mechanism protocol)
+        (add-sasl-properties pr mechanism protocol login-callback-handler)
         (reduce-kv set-property-fn pr ssl-config-map))
       properties)))
 
@@ -287,7 +286,7 @@
         mechanism              (get sasl-config-map :mechanism)
         protocol               (get sasl-config-map :protocol)
         login-callback-handler (get sasl-config-map :login-callback-handler)]
-    (if (true? sasl-configs-enabled)
+    (if (or (true? sasl-configs-enabled) (= sasl-configs-enabled "true"))
       (as-> properties pr
         (add-jaas-properties pr jaas-config)
         (add-sasl-properties pr mechanism protocol login-callback-handler)

@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject tech.gojek/ziggurat "5.0.0"
+(defproject tech.gojek/ziggurat "4.12.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -20,20 +20,11 @@
                  [io.dropwizard.metrics5/metrics-core "5.0.0" :scope "compile"]
                  [medley "1.3.0" :exclusions [org.clojure/clojure]]
                  [mount "0.1.16"]
-                 [io.jaegertracing/jaeger-core "1.6.0" :exclusions [org.slf4j/slf4j-api]]
-                 [io.jaegertracing/jaeger-client "1.6.0" :exclusions [org.jetbrains.kotlin/kotlin-stdlib-common
-                                                                      org.slf4j/slf4j-api]]
+                 [io.jaegertracing/jaeger-core "1.6.0"]
+                 [io.jaegertracing/jaeger-client "1.6.0"]
                  [org.apache.httpcomponents/fluent-hc "4.5.13"]
-                 [org.apache.kafka/kafka-clients "3.7.0" :exclusions [log4j
-                                                                      org.lz4/lz4-java
-                                                                      org.slf4j/slf4j-api
-                                                                      org.slf4j/slf4j-log4j12]]
-                 [org.apache.kafka/kafka-streams "3.7.0" :exclusions [log4j
-                                                                      org.lz4/lz4-java
-                                                                      org.slf4j/slf4j-api
-                                                                      org.slf4j/slf4j-log4j12
-                                                                      com.fasterxml.jackson.core/jackson-databind
-                                                                      com.fasterxml.jackson.core/jackson-annotations]]
+                 [org.apache.kafka/kafka-clients "2.8.2" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                 [org.apache.kafka/kafka-streams "2.8.2" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/tools.logging "1.1.0"]
                  [nrepl/nrepl "0.8.3"]
@@ -41,7 +32,7 @@
                  [prismatic/schema "1.1.12"]
                  [clj-statsd "0.4.0"]
                  [ring/ring "1.9.3"]
-                 [ring/ring-core "1.9.3" :exclusions [commons-codec]]
+                 [ring/ring-core "1.9.3"]
                  [ring/ring-defaults "0.3.2"]
                  [ring/ring-jetty-adapter "1.9.3"]
                  [ring/ring-json "0.5.1"]
@@ -52,13 +43,13 @@
                  [metosin/ring-swagger "0.26.2"
                   :exclusions [org.mozilla/rhino com.fasterxml.jackson.dataformat/jackson-dataformat-smile com.fasterxml.jackson.dataformat/jackson-dataformat-cbor cheshire com.google.code.findbugs/jsr305 com.fasterxml.jackson.core/jackson-core]]
                  [metosin/ring-swagger-ui "3.46.0"]
-                 [cambium/cambium.core "1.1.0" :exclusions [org.slf4j/slf4j-api]]
+                 [cambium/cambium.core "1.1.0"]
                  [cambium/cambium.codec-cheshire "1.0.0"]
-                 [cambium/cambium.logback.json "0.4.4" :exclusions [com.fasterxml.jackson.core/jackson-annotations com.fasterxml.jackson.core/jackson-databind]]
-                 [ch.qos.logback/logback-classic "1.2.9" :exclusions [org.slf4j/slf4j-api]]
+                 [cambium/cambium.logback.json "0.4.4"]
+                 [ch.qos.logback/logback-classic "1.2.9"]
                  [ch.qos.logback.contrib/logback-json-classic "0.1.5"]
                  [ch.qos.logback.contrib/logback-jackson "0.1.5"]
-                 [net.logstash.logback/logstash-logback-encoder "6.6" :exclusions [com.fasterxml.jackson.core/jackson-databind com.fasterxml.jackson.core/jackson-core]]
+                 [net.logstash.logback/logstash-logback-encoder "6.6"]
                  [clj-commons/iapetos "0.1.9"]
                  [org.apache.commons/commons-pool2 "2.11.1"]]
   :deploy-repositories [["clojars" {:url           "https://clojars.org/repo"
@@ -78,14 +69,8 @@
                        :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
                                            [junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]
-                                           [org.apache.kafka/kafka-streams "3.7.0" :classifier "test" :exclusions [log4j
-                                                                                                                   org.lz4/lz4-java
-                                                                                                                   org.slf4j/slf4j-api
-                                                                                                                   org.slf4j/slf4j-log4j12
-                                                                                                                   com.fasterxml.jackson.core/jackson-databind
-                                                                                                                   com.fasterxml.jackson.core/jackson-annotations]]
-                                           [org.apache.kafka/kafka-clients "3.7.0" :classifier "test" :exclusions [org.slf4j/slf4j-api]]
-                                           [org.apache.kafka/kafka-streams-test-utils "3.7.0" :classifier "test" :exclusions [org.lz4/lz4-java log4j org.slf4j/slf4j-log4j12 org.slf4j/slf4j-api]]
+                                           [org.apache.kafka/kafka-streams "2.8.2" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
+                                           [org.apache.kafka/kafka-clients "2.8.2" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
                        :plugins           [[lein-cloverage "1.2.2" :exclusions [org.clojure/clojure]]]
                        :cloverage         {:exclude-call ['cambium.core/info

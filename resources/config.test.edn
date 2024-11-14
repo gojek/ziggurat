@@ -96,4 +96,5 @@
             :new-relic            {:report-errors false}
             :prometheus           {:port 8002
                                    :enabled false}
+            :ssl                  {:enabled false}
             :log-format           "text"}}
