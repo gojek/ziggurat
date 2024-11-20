@@ -69,8 +69,10 @@
                        :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
                                            [junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]
+                                           [org.apache.kafka/kafka_2.12 "2.8.0"]
                                            [org.apache.kafka/kafka-streams "2.8.2" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                            [org.apache.kafka/kafka-clients "2.8.2" :classifier "test"]
+                                           [org.apache.kafka/kafka-streams-test-utils "2.8.2" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
                        :plugins           [[lein-cloverage "1.2.2" :exclusions [org.clojure/clojure]]]
                        :cloverage         {:exclude-call ['cambium.core/info
