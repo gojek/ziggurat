@@ -18,18 +18,21 @@ test: setup
 
 setup-cluster:
 	rm -rf /tmp/ziggurat_kafka_cluster_data
-	docker-compose -f docker-compose-cluster.yml -p ziggurat down
+	rm -rf secrets
+	docker-compose -f docker-compose-cluster.yml -p ziggurat down --remove-orphans
 	lein deps
+	chmod +x scripts/create-certs.sh
+	./scripts/create-certs.sh
 	docker-compose -f docker-compose-cluster.yml -p ziggurat up -d
-	sleep 30
-# 	Sleeping for 30s to allow the cluster to come up
-	docker exec ziggurat_kafka1_1 kafka-topics --create --topic $(topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat_zookeeper_1
-	docker exec ziggurat_kafka1_1 kafka-topics --create --topic $(another_test_topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat_zookeeper_1
+	sleep 60
+	docker exec ziggurat-kafka1-1 kafka-topics --create --topic $(topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat-zookeeper-1
+	docker exec ziggurat-kafka1-1 kafka-topics --create --topic $(another_test_topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat-zookeeper-1
 
 test-cluster: setup-cluster
 	TESTING_TYPE=cluster lein test
 	docker-compose -f docker-compose-cluster.yml down
 	rm -rf /tmp/ziggurat_kafka_cluster_data
+	rm -rf secrets
 
 coverage: setup
 	lein code-coverage

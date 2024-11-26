@@ -487,3 +487,35 @@
     (testing "should return REPLACE_THREAD"
       (let [r (handle-uncaught-exception :replace-thread t)]
         (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD))))))
+
+(deftest start-streams-test-with-sasl-ssl-config
+  (testing "streams should start successfully with valid SASL/SSL configs"
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count)
+          times                  6
+          kvs                    (repeat times message-key-value)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          orig-config            (ziggurat-config)
+          certs-dir             (.getAbsolutePath (clojure.java.io/file "secrets"))]
+      (with-redefs [ziggurat.config/ssl-config  (fn [] {:enabled true
+                                                       :protocol "SASL_SSL"
+                                                       :mechanism "PLAIN"
+                                                       :username "client"
+                                                       :password "client-secret"
+                                                       :ssl-truststore-location (str certs-dir "/kafka.broker.truststore.jks")
+                                                       :ssl-truststore-password "confluent"})]
+        (let [streams (start-streams {:default {:handler-fn handler-fn}}
+                                    (-> orig-config
+                                        (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                        (assoc-in [:stream-router :default :bootstrap-servers] "localhost:9095")
+                                        (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+          (Thread/sleep 10000)
+          (let [producer-props (doto (props)
+                                (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG "localhost:9094"))]
+            (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                               kvs
+                                                               producer-props
+                                                               (MockTime.)))
+          (Thread/sleep 10000)
+          (stop-streams streams)
+          (is (= times @message-received-count)))))))

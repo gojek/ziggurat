@@ -8,42 +8,67 @@ services:
     container_name: 'ziggurat_rabbitmq'
 
   zookeeper:
-    image: zookeeper:3.4.9
+    image: confluentinc/cp-zookeeper:5.5.0
+    platform: linux/amd64
     hostname: zookeeper
     ports:
       - "2181:2181"
     environment:
-      ZOO_MY_ID: 1
-      ZOO_PORT: 2181
-      ZOO_SERVERS: server.1=zookeeper:2888:3888
-      ZOO_TICK_TIME: 2000
+      ZOOKEEPER_CLIENT_PORT: 2181
+      KAFKA_OPTS: -Djava.security.auth.login.config=/etc/kafka/zookeeper_server_jaas.conf
+                -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+                -Dzookeeper.allowSaslFailedClients=false
+                -Dzookeeper.requireClientAuthScheme=sasl
     volumes:
       - /tmp/ziggurat_kafka_cluster_data/zookeeper/data:/data
       - /tmp/ziggurat_kafka_cluster_data/zookeeper/datalog:/datalog
+      - ./zookeeper_server_jaas.conf:/etc/kafka/zookeeper_server_jaas.conf
 
   kafka1:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'
+    platform: linux/amd64
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
     hostname: kafka1
     ports:
-      - "9091:9091"
+      - "9094:9094"
+      - "9095:9095"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19091,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9091
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19094,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,SASL_SSL://${DOCKER_HOST_IP:-127.0.0.1}:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT,SASL_SSL:SASL_SSL
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 1
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_NUM_PARTITIONS: 3
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\" user_admin=\"admin-secret\" user_client=\"client-secret\";"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.auth.SimpleAclAuthorizer
+      KAFKA_SUPER_USERS: User:admin
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
+      KAFKA_SECURITY_PROTOCOL: SASL_SSL
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka_server_jaas.conf"
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.broker.keystore.jks
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: broker_sslkey_creds
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.broker.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker_truststore_creds
+      KAFKA_SSL_CLIENT_AUTH: "required"
     volumes:
       - /tmp/ziggurat_kafka_cluster_data/kafka1/data:/var/lib/kafka/data
+      - ./kafka_server_jaas.conf:/etc/kafka/secrets/kafka_server_jaas.conf
+      - ./secrets/kafka.broker.keystore.jks:/etc/kafka/secrets/kafka.broker.keystore.jks
+      - ./secrets/kafka.broker.truststore.jks:/etc/kafka/secrets/kafka.broker.truststore.jks
+      - ./secrets/broker_keystore_creds:/etc/kafka/secrets/broker_keystore_creds
+      - ./secrets/broker_sslkey_creds:/etc/kafka/secrets/broker_sslkey_creds
+      - ./secrets/broker_truststore_creds:/etc/kafka/secrets/broker_truststore_creds
     depends_on:
       - zookeeper
 
   kafka2:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'
+    platform: linux/amd64
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -54,7 +79,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka2:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 2
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_NUM_PARTITIONS: 3
@@ -65,6 +90,7 @@ services:
 
   kafka3:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'
+    platform: linux/amd64
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
