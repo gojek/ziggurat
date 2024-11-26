@@ -35,8 +35,8 @@ services:
       - "9094:9094"
       - "9095:9095"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19094,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,SASL_SSL://${DOCKER_HOST_IP:-127.0.0.1}:9095
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT,SASL_SSL:SASL_SSL
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19094,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9094,SASL_PLAINTEXT://${DOCKER_HOST_IP:-127.0.0.1}:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_BROKER_ID: 1
@@ -47,22 +47,11 @@ services:
       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.auth.SimpleAclAuthorizer
       KAFKA_SUPER_USERS: User:admin
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "false"
-      KAFKA_SECURITY_PROTOCOL: SASL_SSL
+      KAFKA_SECURITY_PROTOCOL: SASL_PLAINTEXT
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka_server_jaas.conf"
-      KAFKA_SSL_KEYSTORE_FILENAME: kafka.broker.keystore.jks
-      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker_keystore_creds
-      KAFKA_SSL_KEY_CREDENTIALS: broker_sslkey_creds
-      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.broker.truststore.jks
-      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker_truststore_creds
-      KAFKA_SSL_CLIENT_AUTH: "required"
     volumes:
       - /tmp/ziggurat_kafka_cluster_data/kafka1/data:/var/lib/kafka/data
       - ./kafka_server_jaas.conf:/etc/kafka/secrets/kafka_server_jaas.conf
-      - ./secrets/kafka.broker.keystore.jks:/etc/kafka/secrets/kafka.broker.keystore.jks
-      - ./secrets/kafka.broker.truststore.jks:/etc/kafka/secrets/kafka.broker.truststore.jks
-      - ./secrets/broker_keystore_creds:/etc/kafka/secrets/broker_keystore_creds
-      - ./secrets/broker_sslkey_creds:/etc/kafka/secrets/broker_sslkey_creds
-      - ./secrets/broker_truststore_creds:/etc/kafka/secrets/broker_truststore_creds
     depends_on:
       - zookeeper
 
