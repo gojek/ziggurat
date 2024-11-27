@@ -16,7 +16,6 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
   kafka:
     image: 'bitnami/kafka:${KAFKA_VERSION}'
-    platform: linux/amd64
     ports:
       - '9092:9092'
     container_name: 'ziggurat_kafka'

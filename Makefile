@@ -1,4 +1,4 @@
-KAFKA_TOPICS = topic1 topic2
+KAFKA_TOPICS = topic another-test-topic
 KAFKA_BROKERS = kafka1:9095 kafka2:9096 kafka3:9097
 ADMIN_CONFIG = /etc/kafka/secrets/config-admin.properties
 KAFKA_CONTAINER = ziggurat-kafka1-1

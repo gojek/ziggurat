@@ -9,7 +9,6 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:5.5.0
-    platform: linux/amd64
     hostname: zookeeper
     ports:
       - "2181:2181"
@@ -24,7 +23,6 @@ services:
 
   kafka1:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'
-    platform: linux/amd64
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -61,7 +59,6 @@ services:
 
   kafka2:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'
-    platform: linux/amd64
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -96,7 +93,6 @@ services:
 
   kafka3:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'
-    platform: linux/amd64
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
