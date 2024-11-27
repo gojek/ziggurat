@@ -488,22 +488,23 @@
       (let [r (handle-uncaught-exception :replace-thread t)]
         (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD))))))
 
-(deftest start-streams-test-with-sasl-ssl-config
-  (testing "streams should start successfully with valid SASL/SSL configs"
+(deftest start-streams-test-with-sasl-config
+  (testing "streams should start successfully with valid SASL config"
     (let [message-received-count (atom 0)
           mapped-fn              (get-mapped-fn message-received-count)
           times                  6
           kvs                    (repeat times message-key-value)
           handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
-          orig-config            (ziggurat-config)
-          certs-dir             (.getAbsolutePath (clojure.java.io/file "secrets"))]
-      (with-redefs [ziggurat.config/ssl-config  (fn [] {:enabled true
-                                                       :protocol "SASL_SSL"
-                                                       :mechanism "PLAIN"
-                                                       :username "client"
-                                                       :password "client-secret"
-                                                       :ssl-truststore-location (str certs-dir "/kafka.broker.truststore.jks")
-                                                       :ssl-truststore-password "confluent"})]
+          orig-config            (ziggurat-config)]
+      (with-redefs [ziggurat.config/sasl-config (fn [] {:enabled   true
+                                                        :protocol  "SASL_PLAINTEXT"
+                                                        :mechanism "SCRAM-SHA-256"
+                                                        :jaas      {
+                                                                    :login-module "org.apache.kafka.common.security.scram.ScramLoginModule"
+                                                                    :username     "admin"
+                                                                    :password     "admin"
+                                                                    }
+                                                        })]
         (let [streams (start-streams {:default {:handler-fn handler-fn}}
                                     (-> orig-config
                                         (assoc-in [:stream-router :default :application-id] (rand-application-id))

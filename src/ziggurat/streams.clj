@@ -193,11 +193,13 @@
   (let [topology-fn (case (:consumer-type stream-config)
                       :stream-joins stream-joins-topology
                       topology)
-        top         (topology-fn handler-fn stream-config topic-entity channels)]
+        top         (topology-fn handler-fn stream-config topic-entity channels)
+        properties-x (properties stream-config)
+        _ (println (str "PROPS X -->>" properties-x))]
 
     (when-not (nil? top)
       (KafkaStreams. ^Topology top
-                     ^Properties (properties stream-config)))))
+                     ^Properties properties-x))))
 
 (defn- merge-consumer-type-config
   [config]

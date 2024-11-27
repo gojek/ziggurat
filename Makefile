@@ -1,43 +1,72 @@
-.PHONY: all
-all: test
+KAFKA_TOPICS = topic1 topic2
+KAFKA_BROKERS = kafka1:9095 kafka2:9096 kafka3:9097
+ADMIN_CONFIG = /etc/kafka/secrets/config-admin.properties
+KAFKA_CONTAINER = ziggurat-kafka1-1
 
-topic="topic"
-another_test_topic="another-test-topic"
+.PHONY: setup-cluster create-scram-credentials create-topics setup-acls down up clean restart
 
-setup:
-	docker-compose down
-	lein deps
-	docker-compose up -d
-	sleep 10
-	docker exec ziggurat_kafka /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $(topic) --partitions 3 --replication-factor 1 --zookeeper ziggurat_zookeeper
-	docker exec ziggurat_kafka /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $(another_test_topic) --partitions 3 --replication-factor 1 --zookeeper ziggurat_zookeeper
+# Main target to setup the entire cluster
+setup-cluster: down up wait-for-kafka create-scram-credentials create-topics setup-acls
 
-test: setup
-	TESTING_TYPE=local lein test
-	docker-compose down
+# Bring down all containers and clean volumes
+down:
+	@echo "Bringing down all containers..."
+	docker-compose -f docker-compose-cluster.yml down -v
 
-setup-cluster:
-	rm -rf /tmp/ziggurat_kafka_cluster_data
-	rm -rf secrets
-	docker-compose -f docker-compose-cluster.yml -p ziggurat down --remove-orphans
-	lein deps
-	chmod +x scripts/create-certs.sh
-	./scripts/create-certs.sh
-	docker-compose -f docker-compose-cluster.yml -p ziggurat up -d
-	sleep 60
-	docker exec ziggurat-kafka1-1 kafka-topics --create --topic $(topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat-zookeeper-1
-	docker exec ziggurat-kafka1-1 kafka-topics --create --topic $(another_test_topic) --partitions 3 --replication-factor 3 --if-not-exists --zookeeper ziggurat-zookeeper-1
+# Start all containers
+up:
+	@echo "Starting all containers..."
+	docker-compose -f docker-compose-cluster.yml up -d
 
-test-cluster: setup-cluster
-	TESTING_TYPE=cluster lein test
-	docker-compose -f docker-compose-cluster.yml down
-	rm -rf /tmp/ziggurat_kafka_cluster_data
-	rm -rf secrets
+# Wait for Kafka to be ready
+wait-for-kafka:
+	@echo "Waiting for Kafka to be ready..."
+	@sleep 30
 
-coverage: setup
-	lein code-coverage
-	docker-compose down
+# Restart everything
+restart: down up wait-for-kafka
 
-proto:
-	protoc -I=resources --java_out=test/ resources/proto/example.proto
-	protoc -I=resources --java_out=test/ resources/proto/person.proto
+# Create SCRAM credentials for admin user
+create-scram-credentials:
+	@echo "Creating SCRAM credentials for admin user..."
+	@docker exec $(KAFKA_CONTAINER) kafka-configs --bootstrap-server kafka1:9095 \
+		--alter \
+		--add-config 'SCRAM-SHA-256=[password=admin]' \
+		--entity-type users \
+		--entity-name admin
+
+# Create all required topics
+create-topics:
+	@for topic in $(KAFKA_TOPICS); do \
+		echo "Creating topic: $$topic"; \
+		docker exec $(KAFKA_CONTAINER) kafka-topics --bootstrap-server kafka1:9095 \
+			--create \
+			--if-not-exists \
+			--topic $$topic \
+			--partitions 3 \
+			--replication-factor 3; \
+	done
+
+# Setup ACLs for admin user
+setup-acls:
+	@for topic in $(KAFKA_TOPICS); do \
+		echo "Setting up ACLs for topic: $$topic"; \
+		docker exec $(KAFKA_CONTAINER) kafka-acls --bootstrap-server kafka1:9095 \
+			--add \
+			--allow-principal User:admin \
+			--operation All \
+			--topic $$topic; \
+	done
+
+# Clean up topics (can be used during development)
+clean-topics:
+	@for topic in $(KAFKA_TOPICS); do \
+		echo "Deleting topic: $$topic"; \
+		docker exec $(KAFKA_CONTAINER) kafka-topics --bootstrap-server kafka1:9095 \
+			--delete \
+			--topic $$topic; \
+	done
+
+# Show logs
+logs:
+	docker-compose -f docker-compose-cluster.yml logs -f
