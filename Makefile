@@ -3,7 +3,7 @@ KAFKA_BROKERS = kafka1:9095 kafka2:9096 kafka3:9097
 ADMIN_CONFIG = /etc/kafka/secrets/config-admin.properties
 KAFKA_CONTAINER = ziggurat-kafka1-1
 
-.PHONY: setup-cluster create-scram-credentials create-topics setup-acls down up clean restart
+.PHONY: all
 
 # Main target to setup the entire cluster
 setup-cluster: down up wait-for-kafka create-scram-credentials create-topics setup-acls
@@ -84,3 +84,16 @@ clean-topics:
 # Show logs
 logs:
 	docker-compose -f docker-compose-cluster.yml logs -f
+
+test-cluster: setup-cluster
+	TESTING_TYPE=cluster lein test
+	docker-compose -f docker-compose-cluster.yml down
+	rm -rf /tmp/ziggurat_kafka_cluster_data
+
+coverage: setup-cluster
+	lein code-coverage
+	docker-compose down
+
+proto:
+	protoc -I=resources --java_out=test/ resources/proto/example.proto
+	protoc -I=resources --java_out=test/ resources/proto/person.proto
