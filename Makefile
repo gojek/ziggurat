@@ -1,7 +1,7 @@
 KAFKA_TOPICS = topic another-test-topic
 KAFKA_BROKERS = kafka1:9095 kafka2:9096 kafka3:9097
 ADMIN_CONFIG = /etc/kafka/secrets/config-admin.properties
-KAFKA_CONTAINER = ziggurat-kafka1-1
+KAFKA_CONTAINER = ziggurat_kafka1_1
 
 .PHONY: all
 
@@ -54,11 +54,11 @@ setup-acls:
 	@for broker in $(KAFKA_BROKERS); do \
 		case $$broker in \
 			kafka1:9095) \
-				container="ziggurat-kafka1-1" ;; \
+				container="ziggurat_kafka1_1" ;; \
 			kafka2:9096) \
-				container="ziggurat-kafka2-1" ;; \
+				container="ziggurat_kafka2_1" ;; \
 			kafka3:9097) \
-				container="ziggurat-kafka3-1" ;; \
+				container="ziggurat_kafka3_1" ;; \
 		esac; \
 		for topic in $(KAFKA_TOPICS); do \
 			echo "Setting up ACLs for topic: $$topic on broker: $$broker using container: $$container"; \
