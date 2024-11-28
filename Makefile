@@ -92,7 +92,9 @@ test-cluster: setup-cluster
 
 coverage: setup-cluster
 	lein code-coverage
-	docker-compose down
+	docker-compose -f docker-compose-cluster.yml down
+	rm -rf /tmp/ziggurat_kafka_cluster_data
+
 
 proto:
 	protoc -I=resources --java_out=test/ resources/proto/example.proto
