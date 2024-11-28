@@ -499,24 +499,22 @@
       (with-redefs [ziggurat.config/sasl-config (fn [] {:enabled   true
                                                         :protocol  "SASL_PLAINTEXT"
                                                         :mechanism "SCRAM-SHA-256"
-                                                        :jaas      {
-                                                                    :login-module "org.apache.kafka.common.security.scram.ScramLoginModule"
+                                                        :jaas      {:login-module "org.apache.kafka.common.security.scram.ScramLoginModule"
                                                                     :username     "admin"
-                                                                    :password     "admin"
-                                                                    }
-                                                        })]
+                                                                    :password     "admin"}})]
+
         (let [streams (start-streams {:default {:handler-fn handler-fn}}
-                                    (-> orig-config
-                                        (assoc-in [:stream-router :default :application-id] (rand-application-id))
-                                        (assoc-in [:stream-router :default :bootstrap-servers] "localhost:9095")
-                                        (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+                                     (-> orig-config
+                                         (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                         (assoc-in [:stream-router :default :bootstrap-servers] "localhost:9095")
+                                         (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
           (Thread/sleep 10000)
           (let [producer-props (doto (props)
-                                (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG "localhost:9094"))]
+                                 (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG "localhost:9094"))]
             (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
-                                                               kvs
-                                                               producer-props
-                                                               (MockTime.)))
+                                                                kvs
+                                                                producer-props
+                                                                (MockTime.)))
           (Thread/sleep 10000)
           (stop-streams streams)
           (is (= times @message-received-count)))))))

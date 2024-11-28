@@ -29,8 +29,9 @@ restart: down up wait-for-kafka
 # Create SCRAM credentials for admin user
 create-scram-credentials:
 	@echo "Creating SCRAM credentials for admin user..."
-	@docker exec $(KAFKA_CONTAINER) kafka-configs --bootstrap-server kafka1:9095 \
+	@docker exec $(KAFKA_CONTAINER) kafka-configs \
 		--alter \
+		--zookeeper zookeeper:2181 \
 		--add-config 'SCRAM-SHA-256=[password=admin]' \
 		--entity-type users \
 		--entity-name admin
@@ -39,23 +40,36 @@ create-scram-credentials:
 create-topics:
 	@for topic in $(KAFKA_TOPICS); do \
 		echo "Creating topic: $$topic"; \
-		docker exec $(KAFKA_CONTAINER) kafka-topics --bootstrap-server kafka1:9095 \
+		docker exec $(KAFKA_CONTAINER) kafka-topics \
 			--create \
+			--zookeeper zookeeper:2181 \
 			--if-not-exists \
 			--topic $$topic \
 			--partitions 3 \
 			--replication-factor 3; \
 	done
 
-# Setup ACLs for admin user
+# Setup ACLs for admin user on all brokers
 setup-acls:
-	@for topic in $(KAFKA_TOPICS); do \
-		echo "Setting up ACLs for topic: $$topic"; \
-		docker exec $(KAFKA_CONTAINER) kafka-acls --bootstrap-server kafka1:9095 \
-			--add \
-			--allow-principal User:admin \
-			--operation All \
-			--topic $$topic; \
+	@for broker in $(KAFKA_BROKERS); do \
+		case $$broker in \
+			kafka1:9095) \
+				container="ziggurat-kafka1-1" ;; \
+			kafka2:9096) \
+				container="ziggurat-kafka2-1" ;; \
+			kafka3:9097) \
+				container="ziggurat-kafka3-1" ;; \
+		esac; \
+		for topic in $(KAFKA_TOPICS); do \
+			echo "Setting up ACLs for topic: $$topic on broker: $$broker using container: $$container"; \
+			docker exec $$container kafka-acls \
+				--bootstrap-server $$broker \
+				--command-config $(ADMIN_CONFIG) \
+				--add \
+				--allow-principal User:admin \
+				--operation All \
+				--topic $$topic; \
+		done \
 	done
 
 # Clean up topics (can be used during development)
