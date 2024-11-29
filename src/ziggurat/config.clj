@@ -217,8 +217,7 @@
     (let [username  (get jaas-config :username)
           password  (get jaas-config :password)
           login-module (get jaas-config :login-module)
-          jaas_props (create-jaas-properties username password login-module)
-          _ (println (str "JAAS CONFIGS -->> " jaas_props))]
+          jaas_props (create-jaas-properties username password login-module)]
       (doto properties
         (.put SaslConfigs/SASL_JAAS_CONFIG jaas_props)))
     properties))
