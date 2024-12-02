@@ -20,6 +20,8 @@ services:
                 -Dzookeeper.requireClientAuthScheme=sasl"
     volumes:
       - ./zookeeper_server_jaas.conf:/etc/kafka/zookeeper_server_jaas.conf
+      - /tmp/ziggurat_kafka_cluster_data/zookeeper/data:/data
+      - /tmp/ziggurat_kafka_cluster_data/zookeeper/datalog:/datalog
 
   kafka1:
     image: 'confluentinc/cp-kafka:${CONFLUENT_VERSION}'

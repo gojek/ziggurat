@@ -246,9 +246,12 @@
    :ssl-keystore-password <>
    :mechanism <>
    :protocol <>
+   :login-callback-handler <>
     {:jaas {:username <>
             :password <>
             :login-module <>}}}
+  Note - In the event you need to utilize OAUTHBEARER SASL mechanism, the :login-callback-handler
+  will be utilized for handling the initiated callbacks from the broker and returning appropriate tokens.
   "
   (let [ssl-configs-enabled (:enabled ssl-config-map)
         jaas-config         (get ssl-config-map :jaas)
