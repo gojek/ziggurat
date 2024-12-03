@@ -7,16 +7,16 @@
             [ziggurat.middleware.default :as default-middleware]
             [ziggurat.middleware.json :as json-middleware]
             [ziggurat.middleware.stream-joins :as stream-joins-middleware]
-            [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-streams stop-streams stop-stream start-stream]]
+            [ziggurat.streams :refer [add-stream-thread get-stream-thread-count remove-stream-thread start-stream start-streams stop-stream stop-streams]]
             [ziggurat.streams :refer [handle-uncaught-exception start-stream start-streams stop-stream stop-streams]])
-  (:import [com.gojek.test.proto Example$Photo]
-           [java.util Properties]
-           [org.apache.kafka.clients.producer ProducerConfig]
+  (:import (com.gojek.test.proto Example$Photo)
+           (java.util Properties)
+           (org.apache.kafka.clients.producer ProducerConfig)
            (org.apache.kafka.common.utils MockTime)
-           [org.apache.kafka.streams KeyValue]
-           [org.apache.kafka.streams KafkaStreams$State]
-           [org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse]
-           [org.apache.kafka.streams.integration.utils IntegrationTestUtils]))
+           (org.apache.kafka.streams KafkaStreams$State)
+           (org.apache.kafka.streams KeyValue)
+           (org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse)
+           (org.apache.kafka.streams.integration.utils IntegrationTestUtils)))
 
 (use-fixtures :once (join-fixtures [fix/mount-config-with-tracer
                                     fix/silence-logging
@@ -120,6 +120,45 @@
     (Thread/sleep 5000)                                     ;;wating for streams to consume messages
     (stop-streams streams)
     (is (= times @message-received-count))))
+
+(deftest start-streams-test-when-sasl-configs-are-not-provided
+  (with-redefs [ziggurat.config/ssl-config  (constantly {})
+                ziggurat.config/sasl-config (constantly {})]
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count)
+          times                  6
+          kvs                    (repeat times message-key-value)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          streams                (start-streams {:default {:handler-fn handler-fn}}
+                                                (-> (ziggurat-config)
+                                                    (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                    (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+      (Thread/sleep 10000)                                  ;;waiting for streams to start
+      (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                          kvs
+                                                          (props)
+                                                          (MockTime.))
+      (Thread/sleep 5000)                                   ;;wating for streams to consume messages
+      (stop-streams streams)
+      (is (= times @message-received-count)))))
+
+(deftest start-streams-test-should-fail-with-invalid-sasl-configs
+  (with-redefs [ziggurat.config/ssl-config (fn [] {:enabled                 true
+                                                   :protocol                "SASL_SSL"
+                                                   :mechanism               "OAUTHBEARER"
+                                                   :ssl-truststore-location "/path/to/truststore.jks"
+                                                   :ssl-truststore-password "some-password"
+                                                   :login-callback-handler  "com.example.oauthbearer.OAuthBearerLoginCallbackHandler"
+                                                   :jaas                    {:login-module "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule"}})]
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          streams                (try (start-streams {:default {:handler-fn handler-fn}}
+                                                     (-> (ziggurat-config)
+                                                         (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                                         (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))
+                                      (catch Exception e (.getMessage e)))]
+      (is (= streams "Invalid value com.example.oauthbearer.OAuthBearerLoginCallbackHandler for configuration sasl.login.callback.handler.class: Class com.example.oauthbearer.OAuthBearerLoginCallbackHandler could not be found.")))))
 
 (deftest stop-stream-test
   (let [message-received-count (atom 0)
@@ -448,3 +487,34 @@
     (testing "should return REPLACE_THREAD"
       (let [r (handle-uncaught-exception :replace-thread t)]
         (is (= r StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse/REPLACE_THREAD))))))
+
+(deftest start-streams-test-with-sasl-config
+  (testing "streams should start successfully with valid SASL config"
+    (let [message-received-count (atom 0)
+          mapped-fn              (get-mapped-fn message-received-count)
+          times                  6
+          kvs                    (repeat times message-key-value)
+          handler-fn             (default-middleware/protobuf->hash mapped-fn proto-class :default)
+          orig-config            (ziggurat-config)]
+      (with-redefs [ziggurat.config/sasl-config (fn [] {:enabled   true
+                                                        :protocol  "SASL_PLAINTEXT"
+                                                        :mechanism "SCRAM-SHA-256"
+                                                        :jaas      {:login-module "org.apache.kafka.common.security.scram.ScramLoginModule"
+                                                                    :username     "admin"
+                                                                    :password     "admin"}})]
+
+        (let [streams (start-streams {:default {:handler-fn handler-fn}}
+                                     (-> orig-config
+                                         (assoc-in [:stream-router :default :application-id] (rand-application-id))
+                                         (assoc-in [:stream-router :default :bootstrap-servers] "localhost:9095")
+                                         (assoc-in [:stream-router :default :changelog-topic-replication-factor] changelog-topic-replication-factor)))]
+          (Thread/sleep 10000)
+          (let [producer-props (doto (props)
+                                 (.put ProducerConfig/BOOTSTRAP_SERVERS_CONFIG "localhost:9094"))]
+            (IntegrationTestUtils/produceKeyValuesSynchronously (get-in (ziggurat-config) [:stream-router :default :origin-topic])
+                                                                kvs
+                                                                producer-props
+                                                                (MockTime.)))
+          (Thread/sleep 10000)
+          (stop-streams streams)
+          (is (= times @message-received-count)))))))

@@ -5,7 +5,8 @@
             [ziggurat.config :refer [ziggurat-config]]
             [ziggurat.fixtures :as fix :refer [*producer-properties* *consumer-properties*]]
             [ziggurat.producer :refer [producer-properties-map send kafka-producers -send]])
-  (:import [org.apache.kafka.clients.producer KafkaProducer]
+  (:import (java.util Properties)
+           [org.apache.kafka.clients.producer KafkaProducer]
            [org.apache.kafka.streams.integration.utils IntegrationTestUtils]))
 
 (use-fixtures :once fix/mount-producer-with-config-and-tracer)
@@ -20,13 +21,13 @@
                                                                              :enabled [true :bool]}}}}})
 
 (deftest send-data-with-topic-and-value-test
-  (with-redefs [kafka-producers (hash-map :default (KafkaProducer. *producer-properties*))]
+  (with-redefs [kafka-producers (hash-map :default (KafkaProducer. ^Properties *producer-properties*))]
     (let [alphanum-gen (gen/such-that #(not (blank? %)) gen/string-alphanumeric)
           topic        (gen/generate alphanum-gen 10)
           key          "message"
           value        "Hello World!!"]
       (send :default topic key value)
-      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived *consumer-properties* topic 1 8000)]
+      (let [result (IntegrationTestUtils/waitUntilMinKeyValueRecordsReceived ^Properties *consumer-properties* topic 1 8000)]
         (is (= value (.value (first result))))))))
 
 (deftest send-data-with-topic-key-partition-and-value-test

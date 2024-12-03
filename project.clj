@@ -2,7 +2,7 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
-(defproject tech.gojek/ziggurat "4.11.1"
+(defproject tech.gojek/ziggurat "4.12.0"
   :description "A stream processing framework to build stateless applications on kafka"
   :url "https://github.com/gojektech/ziggurat"
   :license {:name "Apache License, Version 2.0"
@@ -15,7 +15,7 @@
                  [com.cemerick/url "0.1.1"]
                  [com.datadoghq/java-dogstatsd-client "2.4"]
                  [com.fasterxml.jackson.core/jackson-databind "2.9.9"]
-                 [com.novemberain/langohr "5.2.0" :exclusions [org.clojure/clojure]]
+                 [com.novemberain/langohr "5.2.0" :exclusions [org.clojure/clojure org.slf4j/slf4j-api]]
                  [com.taoensso/nippy "3.1.1"]
                  [io.dropwizard.metrics5/metrics-core "5.0.0" :scope "compile"]
                  [medley "1.3.0" :exclusions [org.clojure/clojure]]
@@ -41,10 +41,7 @@
                  [com.newrelic.agent.java/newrelic-api "6.5.0"]
                  [yleisradio/new-reliquary "1.1.0" :exclusions [org.clojure/clojure]]
                  [metosin/ring-swagger "0.26.2"
-                  :exclusions [cheshire
-                               com.fasterxml.jackson.core/jackson-core
-                               com.fasterxml.jackson.dataformat/jackson-dataformat-smile
-                               com.fasterxml.jackson.dataformat/jackson-dataformat-cbor]]
+                  :exclusions [org.mozilla/rhino com.fasterxml.jackson.dataformat/jackson-dataformat-smile com.fasterxml.jackson.dataformat/jackson-dataformat-cbor cheshire com.google.code.findbugs/jsr305 com.fasterxml.jackson.core/jackson-core]]
                  [metosin/ring-swagger-ui "3.46.0"]
                  [cambium/cambium.core "1.1.0"]
                  [cambium/cambium.codec-cheshire "1.0.0"]
@@ -72,8 +69,10 @@
                        :dependencies      [[com.google.protobuf/protobuf-java "3.17.0"]
                                            [junit/junit "4.13.2"]
                                            [org.hamcrest/hamcrest-core "2.2"]
+                                           [org.apache.kafka/kafka_2.12 "2.8.0"]
                                            [org.apache.kafka/kafka-streams "2.8.2" :classifier "test" :exclusions [org.slf4j/slf4j-log4j12 log4j]]
                                            [org.apache.kafka/kafka-clients "2.8.2" :classifier "test"]
+                                           [org.apache.kafka/kafka-streams-test-utils "2.8.2" :classifier "test"]
                                            [org.clojure/test.check "1.1.0"]]
                        :plugins           [[lein-cloverage "1.2.2" :exclusions [org.clojure/clojure]]]
                        :cloverage         {:exclude-call ['cambium.core/info

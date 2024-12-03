@@ -6,7 +6,8 @@
             [mount.core :refer [defstate]]
             [ziggurat.util.java-util :as util])
   (:import (java.util Properties)
-           [org.apache.kafka.common.config SaslConfigs])
+           (org.apache.kafka.clients CommonClientConfigs)
+           (org.apache.kafka.common.config SaslConfigs))
   (:gen-class
    :methods
    [^{:static true} [get [String] Object]
@@ -95,6 +96,9 @@
 (defn ssl-config []
   (get-in config [:ziggurat :ssl]))
 
+(defn sasl-config []
+  (get-in config [:ziggurat :sasl]))
+
 (defn rabbitmq-config []
   (get (ziggurat-config) :rabbit-mq))
 
@@ -168,6 +172,10 @@
    :enabled
    :jaas])
 
+(defn- not-blank?
+  [s]
+  (and (not (nil? s)) (not (str/blank? (str/trim s)))))
+
 (defn- to-list
   [s]
   (if (empty? s)
@@ -197,25 +205,29 @@
         (.setProperty p sk nv))))
   p)
 
-(def jaas-template
-  {"PLAIN"         "org.apache.kafka.common.security.plain.PlainLoginModule"
-   "SCRAM-SHA-512" "org.apache.kafka.common.security.scram.ScramLoginModule"})
-
-(defn create-jaas-properties
-  [user-name password mechanism]
-  (let [jaas-template (get jaas-template mechanism)]
-    (format "%s required username=\"%s\" password=\"%s\";" jaas-template user-name password)))
+(defn create-jaas-properties [username password login-module]
+  (let [username-str (when (not-blank? username) (format " username=\"%s\"" username))
+        password-str (when (not-blank? password) (format " password=\"%s\"" password))
+        credentials  (str username-str password-str)]
+    (format "%s required%s;" login-module (if (empty? credentials) "" credentials))))
 
 (defn- add-jaas-properties
   [properties jaas-config]
   (if (some? jaas-config)
     (let [username  (get jaas-config :username)
           password  (get jaas-config :password)
-          mechanism (get jaas-config :mechanism)]
+          login-module (get jaas-config :login-module)
+          jaas_props (create-jaas-properties username password login-module)]
       (doto properties
-        (.put SaslConfigs/SASL_JAAS_CONFIG
-              (create-jaas-properties username password mechanism))))
+        (.put SaslConfigs/SASL_JAAS_CONFIG jaas_props)))
     properties))
+
+(defn- add-sasl-properties
+  [properties mechanism protocol login-callback-handler]
+  (when (some? mechanism) (.putIfAbsent properties SaslConfigs/SASL_MECHANISM mechanism))
+  (when (some? protocol) (.putIfAbsent properties CommonClientConfigs/SECURITY_PROTOCOL_CONFIG protocol))
+  (when (some? login-callback-handler) (.putIfAbsent properties SaslConfigs/SASL_LOGIN_CALLBACK_HANDLER_CLASS login-callback-handler))
+  properties)
 
 (defn build-ssl-properties
   [properties set-property-fn ssl-config-map]
@@ -232,16 +244,56 @@
   {:enabled true
    :ssl-keystore-location <>
    :ssl-keystore-password <>
+   :mechanism <>
+   :protocol <>
+   :login-callback-handler <>
     {:jaas {:username <>
             :password <>
-            :mechanism <>}}}
+            :login-module <>}}}
+  Note - In the event you need to utilize OAUTHBEARER SASL mechanism, the :login-callback-handler
+  will be utilized for handling the initiated callbacks from the broker and returning appropriate tokens.
   "
   (let [ssl-configs-enabled (:enabled ssl-config-map)
-        jaas-config         (get ssl-config-map :jaas)]
-    (if (true? ssl-configs-enabled)
+        jaas-config         (get ssl-config-map :jaas)
+        mechanism           (get ssl-config-map :mechanism)
+        protocol            (get ssl-config-map :protocol)
+        login-callback-handler (get ssl-config-map :login-callback-handler)]
+    (if (or (true? ssl-configs-enabled) (= ssl-configs-enabled "true"))
       (as-> properties pr
         (add-jaas-properties pr jaas-config)
+        (add-sasl-properties pr mechanism protocol login-callback-handler)
         (reduce-kv set-property-fn pr ssl-config-map))
+      properties)))
+
+(defn build-sasl-properties
+  [properties set-property-fn sasl-config-map]
+  "Builds SASL properties from sasl-config-map which is a map where keys are
+    Clojure keywords in kebab case. These keys are converted to Kafka properties by set-property-fn.
+
+    SASL properties are only set if [:ziggurat :sasl :enabled] returns true.
+
+    Creates JAAS template if values are provided in the map provided against this key sequence
+      [:ziggurat :sasl :jaas].
+
+    Example of sasl-config-map
+    {:enabled true
+     :protocol <>
+     :mechanism <>
+      {:jaas
+        {:username <>
+         :password <>
+         :login-module <>}}}
+  "
+  (let [sasl-configs-enabled   (:enabled sasl-config-map)
+        jaas-config            (get sasl-config-map :jaas)
+        mechanism              (get sasl-config-map :mechanism)
+        protocol               (get sasl-config-map :protocol)
+        login-callback-handler (get sasl-config-map :login-callback-handler)]
+    (if (or (true? sasl-configs-enabled) (= sasl-configs-enabled "true"))
+      (as-> properties pr
+        (add-jaas-properties pr jaas-config)
+        (add-sasl-properties pr mechanism protocol login-callback-handler)
+        (reduce-kv set-property-fn pr sasl-config-map))
       properties)))
 
 (defn build-properties
@@ -265,6 +317,7 @@
   [set-property-fn config-map]
   (as-> (Properties.) pr
     (build-ssl-properties pr set-property-fn (ssl-config))
+    (build-sasl-properties pr set-property-fn (sasl-config))
     (reduce-kv set-property-fn pr config-map)))
 
 (def build-consumer-config-properties

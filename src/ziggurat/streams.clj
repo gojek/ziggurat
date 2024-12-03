@@ -1,5 +1,6 @@
 (ns ziggurat.streams
-  (:require [clojure.tools.logging :as log]
+  (:require [cambium.core :as clog]
+            [clojure.tools.logging :as log]
             [mount.core :as mount :refer [defstate]]
             [ziggurat.channel :as chl]
             [ziggurat.config :refer [build-streams-config-properties get-in-config ziggurat-config]]
@@ -8,16 +9,15 @@
             [ziggurat.message-payload :refer [->MessagePayload]]
             [ziggurat.metrics :as metrics]
             [ziggurat.timestamp-transformer :as timestamp-transformer]
-            [ziggurat.util.map :as umap]
-            [cambium.core :as clog])
-  (:import [java.time Duration]
-           [java.util Properties]
-           [java.util.regex Pattern]
-           [org.apache.kafka.common.errors TimeoutException]
-           [org.apache.kafka.streams KafkaStreams KafkaStreams$State StreamsConfig StreamsBuilder Topology]
-           [org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse]
-           [org.apache.kafka.streams.kstream JoinWindows ValueMapper TransformerSupplier ValueJoiner ValueTransformerWithKeySupplier]
-           [ziggurat.timestamp_transformer IngestionTimeExtractor]))
+            [ziggurat.util.map :as umap])
+  (:import (java.time Duration)
+           (java.util Properties)
+           (java.util.regex Pattern)
+           (org.apache.kafka.common.errors TimeoutException)
+           (org.apache.kafka.streams KafkaStreams KafkaStreams$State StreamsBuilder StreamsConfig Topology)
+           (org.apache.kafka.streams.errors StreamsUncaughtExceptionHandler StreamsUncaughtExceptionHandler$StreamThreadExceptionResponse)
+           (org.apache.kafka.streams.kstream JoinWindows TransformerSupplier ValueJoiner ValueMapper ValueTransformerWithKeySupplier)
+           (ziggurat.timestamp_transformer IngestionTimeExtractor)))
 
 (def default-config-for-stream
   {:buffered-records-per-partition     10000
