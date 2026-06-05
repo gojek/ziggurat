@@ -18,6 +18,9 @@
 
 (def DEFAULT_CHANNEL_PREFETCH_COUNT 20)
 
+(def ^:private in-flight-count (atom 0))
+(def DEFAULT_SHUTDOWN_DRAIN_TIMEOUT_MS 5000)
+
 (defn- ack-message
   [ch delivery-tag]
   (lb/ack ch delivery-tag))
@@ -49,6 +52,7 @@
         message-payload (convert-and-ack-message ch meta payload false topic-entity ziggurat-channel-key)]
     (when message-payload
       (log/infof "Processing message [%s] from RabbitMQ " message-payload)
+      (swap! in-flight-count inc)
       (try
         (log/debug "Calling processor-fn with the message-payload - " message-payload " with retry count - " (:retry-count message-payload))
         (processing-fn message-payload)
@@ -56,7 +60,9 @@
         (catch Exception e
           (report-error e "Error while processing message-payload from RabbitMQ")
           (metrics/increment-count ["rabbitmq-message" "process"] "failure" {:topic_name (name topic-entity)})
-          (publish-serialized-payload-to-dead-set-and-ack ch delivery-tag payload topic-entity ziggurat-channel-key))))))
+          (publish-serialized-payload-to-dead-set-and-ack ch delivery-tag payload topic-entity ziggurat-channel-key))
+        (finally
+          (swap! in-flight-count dec))))))
 
 (defn read-message-from-queue [ch queue-name topic-entity ack? ziggurat-channel-key]
   (try
@@ -201,6 +207,26 @@
           _ (log/debug "Subscriber info" data)]
       data)))
 
+(defn wait-for-in-flight-messages
+  "Waits until all in-flight messages finish processing, or until timeout-ms elapses.
+   This should be called after canceling subscriptions but before closing connections,
+   to ensure in-flight message handlers complete and can ack/publish before channels are torn down."
+  ([]
+   (wait-for-in-flight-messages (get-in-config [:shutdown :drain-timeout-ms] DEFAULT_SHUTDOWN_DRAIN_TIMEOUT_MS)))
+  ([timeout-ms]
+   (let [start-time (System/currentTimeMillis)]
+     (loop []
+       (let [current-count @in-flight-count
+             elapsed       (- (System/currentTimeMillis) start-time)]
+         (when (and (pos? current-count) (< elapsed timeout-ms))
+           (log/infof "Waiting for %d in-flight message(s) to complete (%dms elapsed)..." current-count elapsed)
+           (Thread/sleep (min 100 (- timeout-ms elapsed)))
+           (recur))))
+     (let [remaining @in-flight-count]
+       (if (pos? remaining)
+         (log/warnf "Timed out waiting for %d in-flight message(s) to complete after %dms" remaining timeout-ms)
+         (log/info "All in-flight messages completed"))))))
+
 (defn stop-subscribers [subscribers additional-message]
   (doseq [{:keys [rabbitmq-channel consumer-tag]} subscribers]
     (log/infof "Stopping consumer with tag %s for %s", consumer-tag, additional-message)
@@ -235,5 +261,6 @@
             (when (contains? consumers :stream-consumers)
               (stop-subscribers-for-consumers (:stream-consumers consumers)))
             (when (contains? consumers :batch-consumers)
-              (stop-subscribers-for-consumers (:batch-consumers consumers))))))
+              (stop-subscribers-for-consumers (:batch-consumers consumers))))
+          (wait-for-in-flight-messages)))
 
