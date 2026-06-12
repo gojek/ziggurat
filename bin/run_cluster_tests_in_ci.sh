@@ -3,8 +3,8 @@
 set -ex
 
 lein clean
-which lein
-lein --version
-sudo which lein || true
-sudo env | grep PATH
-sudo make test-cluster
+echo "PATH before sudo:"
+echo $PATH
+
+sudo PATH="$PATH" which lein
+sudo PATH="$PATH" make test-cluster
