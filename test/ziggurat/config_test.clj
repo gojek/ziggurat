@@ -210,6 +210,15 @@
             auto-commit-interval-ms (.getProperty props "auto.commit.interval.ms")]
         (is (= auto-commit-interval-ms "5000"))))
 
+    (testing "converts enable-auto-commit to enable.auto.commit and does not leak the manual-commit-enabled flag"
+      (let [config-map              {:enable-auto-commit    false
+                                     :manual-commit-enabled true}
+            props                   (build-consumer-config-properties config-map)
+            enable-auto-commit      (.getProperty props "enable.auto.commit")
+            manual-commit-enabled   (.getProperty props "manual.commit.enabled" "NOT FOUND")]
+        (is (= enable-auto-commit "false"))
+        (is (= manual-commit-enabled "NOT FOUND"))))
+
     (testing "valid kafka streams configs does not convert commit-interval-ms to auto-commit-interval-ms"
       (let [config-map              {:commit-interval-ms 5000}
             props                   (build-streams-config-properties config-map)

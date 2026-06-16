@@ -13,10 +13,21 @@
    :key-deserializer-class-config   "org.apache.kafka.common.serialization.ByteArrayDeserializer"
    :value-deserializer-class-config "org.apache.kafka.common.serialization.ByteArrayDeserializer"})
 
+(defn- with-manual-commit-config
+  "When `:manual-commit-enabled` is set on the batch route, Kafka's background auto-commit
+   is turned off so offsets are committed by the consumer-handler only after a batch has
+   been processed. Without the flag the config is returned unchanged, preserving the
+   existing auto-commit behaviour."
+  [consumer-config]
+  (cond-> consumer-config
+    (:manual-commit-enabled consumer-config) (assoc :enable-auto-commit false)))
+
 (defn create-consumer
   [topic-entity consumer-group-config]
   (try
-    (let [merged-consumer-group-config (umap/deep-merge consumer-group-config default-consumer-config)
+    (let [merged-consumer-group-config (-> consumer-group-config
+                                           (umap/deep-merge default-consumer-config)
+                                           (with-manual-commit-config))
           consumer                     (KafkaConsumer.
                                         (cfg/build-consumer-config-properties merged-consumer-group-config))
           topic-pattern                (Pattern/compile (:origin-topic merged-consumer-group-config))]
