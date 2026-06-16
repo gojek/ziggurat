@@ -3,4 +3,7 @@
 set -ex
 
 lein clean
-sudo make test-cluster
+
+
+sudo PATH="$PATH" which lein
+sudo PATH="$PATH" make test-cluster
