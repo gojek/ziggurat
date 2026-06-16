@@ -178,8 +178,8 @@
 (defn- add-shutdown-hook [actor-stop-fn modes]
   (.addShutdownHook
    (Runtime/getRuntime)
-   (Thread. ^Runnable #((stop actor-stop-fn modes)
-                        (shutdown-agents))
+   (Thread. ^Runnable #(do (stop actor-stop-fn modes)
+                           (shutdown-agents))
             "Shutdown-handler")))
 
 (declare StreamRoute)

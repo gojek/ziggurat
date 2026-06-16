@@ -17,6 +17,11 @@
 (use-fixtures :once (join-fixtures [fix/init-rabbit-mq
                                     fix/silence-logging
                                     fix/mount-metrics]))
+
+(use-fixtures :each (fn [f]
+                      (reset! @#'consumer/in-flight-count 0)
+                      (f)))
+
 (defn- gen-message-payload [topic-entity]
   {:message      {:gen-key (apply str (take 10 (repeatedly #(char (+ (rand 26) 65)))))}
    :topic-entity topic-entity})
@@ -331,3 +336,91 @@
         (consumer/convert-and-ack-message nil {:delivery-tag "delivery-tag"} freezed-message false topic-entity nil))
       (is (= @is-publish-called? true))
       (is (= @is-message-acked? true)))))
+
+(deftest in-flight-message-tracking-test
+  (testing "in-flight count should be zero before and after processing"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [message            (gen-message-payload topic-entity)
+            in-flight-during   (atom nil)
+            processing-fn      (fn [_]
+                                 (reset! in-flight-during @@#'consumer/in-flight-count))
+            topic-entity-name  (name topic-entity)]
+        (is (= 0 @@#'consumer/in-flight-count))
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open consumer-connection)]
+          (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                prefixed-queue-name (str topic-entity-name "_" queue-name)
+                [meta payload]      (lb/get ch prefixed-queue-name false)]
+            (consumer/process-message-from-queue ch meta payload topic-entity processing-fn nil)))
+        (is (= 1 @in-flight-during))
+        (is (= 0 @@#'consumer/in-flight-count)))))
+
+  (testing "in-flight count should return to zero even when processing throws"
+    (fix/with-queues {topic-entity {:handler-fn #(constantly nil)}}
+      (let [message            (gen-message-payload topic-entity)
+            failure-handled?   (atom false)
+            processing-fn      (fn [_] (throw (Exception. "processing error")))
+            topic-entity-name  (name topic-entity)]
+        (is (= 0 @@#'consumer/in-flight-count))
+        (producer/publish-to-dead-queue message)
+        (with-open [ch (lch/open consumer-connection)]
+          (let [queue-name          (get-in (rabbitmq-config) [:dead-letter :queue-name])
+                prefixed-queue-name (str topic-entity-name "_" queue-name)
+                [meta payload]      (lb/get ch prefixed-queue-name false)]
+            (with-redefs [report-error (fn [_ _] (reset! failure-handled? true))]
+              (consumer/process-message-from-queue ch meta payload topic-entity processing-fn nil))))
+        (is (true? @failure-handled?) "the processing-failure path should have executed")
+        (is (= 0 @@#'consumer/in-flight-count))))))
+
+(deftest wait-for-in-flight-messages-test
+  (testing "should return immediately when no messages are in-flight"
+    (reset! @#'consumer/in-flight-count 0)
+    (let [start-time (System/currentTimeMillis)]
+      (consumer/wait-for-in-flight-messages 1000)
+      (is (< (- (System/currentTimeMillis) start-time) 500))))
+
+  (testing "should wait until in-flight messages complete"
+    (reset! @#'consumer/in-flight-count 1)
+    (let [wait-future (future (consumer/wait-for-in-flight-messages 5000))]
+      (Thread/sleep 200)
+      (reset! @#'consumer/in-flight-count 0)
+      (let [result (deref wait-future 3000 :timeout)]
+        (is (not= :timeout result)))))
+
+  (testing "should time out if messages don't complete within timeout"
+    (reset! @#'consumer/in-flight-count 1)
+    (let [start-time (System/currentTimeMillis)]
+      (consumer/wait-for-in-flight-messages 500)
+      (let [elapsed (- (System/currentTimeMillis) start-time)]
+        (is (>= elapsed 400))
+        (is (< elapsed 2000))))
+    (reset! @#'consumer/in-flight-count 0))
+
+  (testing "the zero-arity version reads the drain timeout from config"
+    (reset! @#'consumer/in-flight-count 1)
+    (with-redefs [ziggurat.config/get-in-config (fn
+                                                  ([ks] (get-in (ziggurat-config) ks))
+                                                  ([ks _default]
+                                                   (if (= ks [:shutdown :drain-timeout-ms])
+                                                     250
+                                                     (get-in (ziggurat-config) ks))))]
+      (let [start-time (System/currentTimeMillis)]
+        (consumer/wait-for-in-flight-messages)
+        (let [elapsed (- (System/currentTimeMillis) start-time)]
+          (is (>= elapsed 200) "should honour the configured drain timeout")
+          (is (< elapsed 1500) "should not wait beyond the configured drain timeout"))))
+    (reset! @#'consumer/in-flight-count 0)))
+
+(deftest consumers-stop-drains-in-flight-messages-test
+  (testing "stopping the consumers state cancels subscribers and then drains in-flight messages"
+    (let [events (atom [])]
+      (with-redefs [consumer/start-subscribers              (fn [_ _] {:stream-consumers {} :batch-consumers {}})
+                    consumer/stop-subscribers-for-consumers (fn [_] (swap! events conj :stopped-subscribers))
+                    consumer/wait-for-in-flight-messages    (fn
+                                                              ([] (swap! events conj :drained))
+                                                              ([_] (swap! events conj :drained)))]
+        (mount/start #'consumer/consumers)
+        (mount/stop #'consumer/consumers)
+        (is (= :drained (last @events)) "draining must happen during stop")
+        (is (= [:stopped-subscribers :stopped-subscribers :drained] @events)
+            "subscribers must be cancelled before in-flight messages are drained")))))
