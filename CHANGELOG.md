@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
-## 4.13.0
+## 4.12.2
 - Adds `:manual-commit-enabled` config flag for batch routes. When enabled, Kafka auto-commit is disabled and offsets are committed only after a batch has been processed, guaranteeing at-least-once delivery and preventing message loss. Defaults to `false` (existing auto-commit behaviour).
 
 ## 4.12.1
