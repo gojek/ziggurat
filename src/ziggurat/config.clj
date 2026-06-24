@@ -170,6 +170,7 @@
    :producer
    :thread-count
    :enabled
+   :manual-commit-enabled
    :jaas])
 
 (defn- not-blank?

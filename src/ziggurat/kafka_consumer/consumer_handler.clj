@@ -12,6 +12,7 @@
 
 (def DEFAULT_POLL_TIMEOUT_MS_CONFIG 1000)
 (def batch-consumption-metric-ns ["ziggurat.batch.consumption" "message.processed"])
+(def commit-metric-ns ["ziggurat.batch.consumption" "offset.commit"])
 
 (defn- publish-batch-process-metrics
   [topic-entity batch-size success-count skip-count retry-count time-taken-in-millis]
@@ -71,6 +72,23 @@
           (log/errorf e "[Consumer Group: %s] Exception received while processing messages \n" topic-entity)
           (retry batch-payload))))))
 
+(defn commit-offsets
+  "Synchronously commits the current consumer offsets. Invoked only when a batch route is
+   configured with `:manual-commit-enabled`, so offsets are committed after a batch has been
+   processed (handler executed and any failures enqueued to the retry queue) rather than by
+   Kafka's background auto-commit.
+
+   A commit failure is logged and reported as a metric but does NOT halt the poll loop; the
+   offsets will be committed on the next successful commit, preserving at-least-once delivery."
+  [^Consumer consumer topic-entity]
+  (let [topic-entity-tag {:topic-entity (name topic-entity)}]
+    (try
+      (.commitSync consumer)
+      (metrics/increment-count commit-metric-ns "success" 1 topic-entity-tag)
+      (catch Exception e
+        (metrics/increment-count commit-metric-ns "failure" 1 topic-entity-tag)
+        (log/errorf e "[Consumer Group: %s] Failed to commit offsets after processing the batch" topic-entity)))))
+
 (defn- create-batch-payload
   [records topic-entity]
   (let [key-value-pairs (map (fn [^ConsumerRecord m]
@@ -80,16 +98,19 @@
 (defn poll-for-messages
   [^Consumer consumer handler-fn topic-entity consumer-config]
   (clog/with-logging-context {:consumer-group topic-entity}
-    (try
-      (loop [records []]
-        (when (not-empty records)
-          (let [batch-payload (create-batch-payload records topic-entity)]
-            (process handler-fn batch-payload)))
-        (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
-      (catch WakeupException e
-        (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
-      (catch Exception e
-        (log/errorf e "Exception while polling for messages for: %s" topic-entity))
-      (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
-                   (.close consumer))))))
+    (let [manual-commit-enabled? (boolean (:manual-commit-enabled consumer-config))]
+      (try
+        (loop [records []]
+          (when (not-empty records)
+            (let [batch-payload (create-batch-payload records topic-entity)]
+              (process handler-fn batch-payload)
+              (when manual-commit-enabled?
+                (commit-offsets consumer topic-entity))))
+          (recur (seq (.poll consumer (Duration/ofMillis (or (:poll-timeout-ms-config consumer-config) DEFAULT_POLL_TIMEOUT_MS_CONFIG))))))
+        (catch WakeupException e
+          (log/errorf e "WakeupException while polling for messages for: %s" topic-entity))
+        (catch Exception e
+          (log/errorf e "Exception while polling for messages for: %s" topic-entity))
+        (finally (do (log/info "Closing the Kafka Consumer for: " topic-entity)
+                     (.close consumer)))))))
 

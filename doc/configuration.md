@@ -157,6 +157,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 | `:consumer-group-id`                | String    | Yes       | Consumer group ID for the batch route.          |
 | `:bootstrap-servers`                | String    | Yes       | Kafka bootstrap servers for the batch route.    |
 | `:origin-topic`                     | String    | Yes       | Origin topic for the batch route.               |
+| `:manual-commit-enabled`            | Boolean   | No        | When `true`, disables Kafka auto-commit and commits offsets only after a batch is processed (at-least-once, prevents message loss). Defaults to `false` (auto-commit). |
 
 ## SSL
 

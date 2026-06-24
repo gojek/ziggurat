@@ -70,7 +70,55 @@
                                    (is (= (:value (first (:batch message))) "world"))
                                    (is (= (:topic-entity message) :random-consumer-id))
                                    (is (= (:retry-count message) nil))))]
-        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})))))
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000}))))
+  (testing "commits offsets after a batch is processed when manual-commit-enabled is true"
+    (let [commit-count (atom 0)
+          is-polled    (atom 0)
+          kafka-consumer (reify Consumer
+                           (^ConsumerRecords poll [_ ^Duration _]
+                             (if (< @is-polled 1)
+                               (do (swap! is-polled inc) dummy-consumer-records)
+                               (throw (WakeupException.))))
+                           (close [_]))]
+      (with-redefs [ch/process        (fn [_ _] nil)
+                    ch/commit-offsets (fn [_ _] (swap! commit-count inc))]
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000 :manual-commit-enabled true})
+        (is (= 1 @commit-count)))))
+  (testing "does not commit offsets when manual-commit-enabled is not set (auto-commit behaviour is preserved)"
+    (let [commit-count (atom 0)
+          is-polled    (atom 0)
+          kafka-consumer (reify Consumer
+                           (^ConsumerRecords poll [_ ^Duration _]
+                             (if (< @is-polled 1)
+                               (do (swap! is-polled inc) dummy-consumer-records)
+                               (throw (WakeupException.))))
+                           (close [_]))]
+      (with-redefs [ch/process        (fn [_ _] nil)
+                    ch/commit-offsets (fn [_ _] (swap! commit-count inc))]
+        (ch/poll-for-messages kafka-consumer nil :random-consumer-id {:consumer-group-id "some-id" :poll-timeout-ms-config 1000})
+        (is (= 0 @commit-count))))))
+
+(deftest commit-offsets-test
+  (testing "commits the consumer offsets synchronously and reports a success metric"
+    (let [committed (atom false)
+          metric    (atom nil)
+          kafka-consumer (reify Consumer
+                           (commitSync [_] (reset! committed true))
+                           (close [_]))]
+      (with-redefs [metrics/increment-count (fn [metric-ns metric-name _ _] (reset! metric [metric-ns metric-name]))]
+        (ch/commit-offsets kafka-consumer :consumer-1)
+        (is (true? @committed))
+        (is (= ch/commit-metric-ns (first @metric)))
+        (is (= "success" (second @metric))))))
+  (testing "does not throw and reports a failure metric when commitSync fails (loop keeps running)"
+    (let [metric (atom nil)
+          kafka-consumer (reify Consumer
+                           (commitSync [_] (throw (Exception. "commit failed")))
+                           (close [_]))]
+      (with-redefs [metrics/increment-count (fn [metric-ns metric-name _ _] (reset! metric [metric-ns metric-name]))]
+        (is (nil? (ch/commit-offsets kafka-consumer :consumer-1)))
+        (is (= ch/commit-metric-ns (first @metric)))
+        (is (= "failure" (second @metric)))))))
 
 (deftest process-function-test
   (testing "should publish metrics for batch size, success count, failure count, retry-count and execution time after processing is finished"

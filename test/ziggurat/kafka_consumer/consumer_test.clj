@@ -18,3 +18,11 @@
   (testing "returns nil when invalid configs are provided (KafkaConsumer throws Exception)"
     (let [consumer-config (get-in (ziggurat-config) [:batch-routes :consumer-1])]
       (is (= nil (create-consumer :consumer-1 (assoc-in consumer-config [:consumer-group-id] nil)))))))
+
+(deftest with-manual-commit-config-test
+  (let [with-manual-commit-config #'ziggurat.kafka-consumer.consumer/with-manual-commit-config]
+    (testing "disables kafka auto-commit when manual-commit-enabled is true"
+      (is (false? (:enable-auto-commit (with-manual-commit-config {:manual-commit-enabled true})))))
+    (testing "leaves auto-commit untouched when manual-commit-enabled is absent or false"
+      (is (nil? (:enable-auto-commit (with-manual-commit-config {}))))
+      (is (nil? (:enable-auto-commit (with-manual-commit-config {:manual-commit-enabled false})))))))

@@ -87,4 +87,18 @@ Ziggurat Config | Default Value | Description | Mandatory?
 :poll-timeout-ms-config | 1000 | [Timeout value used for polling with a Kafka Consumer](https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/consumer/KafkaConsumer.java#L1160) | No
 :thread-count | 2 | Number of Kafka Consumer threads for each batch-route | No
 :default-api-timeout-ms | 60000 | [https://cwiki.apache.org/confluence/display/KAFKA/KIP-266%3A+Fix+consumer+indefinite+blocking+behavior](https://cwiki.apache.org/confluence/display/KAFKA/KIP-266%3A+Fix+consumer+indefinite+blocking+behavior) | No
+:manual-commit-enabled | false | When `true`, Kafka's background auto-commit (`enable.auto.commit`) is disabled and offsets are committed (`commitSync`) only after a batch has been processed and any failures enqueued for retry. This guarantees at-least-once delivery and prevents message loss when a consumer dies mid-batch. When `false` (default), the existing auto-commit behaviour is preserved. | No
+
+#### Offset commit semantics for batch consumers
+
+By default (`:manual-commit-enabled false`) batch consumers rely on Kafka's auto-commit
+(`enable.auto.commit=true`), which commits offsets on a timer independently of batch
+processing. If a consumer dies after offsets are auto-committed but before a batch finishes
+processing, those messages can be lost.
+
+Setting `:manual-commit-enabled true` on a batch route turns off auto-commit and makes
+Ziggurat commit offsets with `commitSync` only after the batch handler has run and any
+messages needing retry have been enqueued to RabbitMQ. A failed commit is logged and reported
+via the `ziggurat.batch.consumption.offset.commit` metric but does not halt the poll loop —
+the offsets are committed on the next successful commit, preserving at-least-once delivery.
 
