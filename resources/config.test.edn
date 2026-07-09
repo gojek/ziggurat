@@ -38,7 +38,8 @@
                                    :enabled [true :bool]}
             :http-server          {:middlewares  {:swagger {:enabled false}}
                                    :port         [8010 :int]
-                                   :thread-count [100 :int]}
+                                   :thread-count [100 :int]
+                                   :max-request-header-size [8192 :int]}
             :stream-router        {:default            {:application-id                     "test"
                                                         :bootstrap-servers                  "localhost:9092"
                                                         :stream-threads-count               [1 :int]

@@ -88,6 +88,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
                                              :prefetch-count [4 :int]}}
             :http-server          {:port         [8010 :int]
                                    :graceful-shutdown-timeout-ms [30000 :int]
+                                   :max-request-header-size [8192 :int]
             :new-relic            {:report-errors [false :bool]}}
             :prometheus           {:port 8002
                                    :enabled [true :bool]}}}
@@ -238,6 +239,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 | Configuration                      | Data Type  | Mandatory | Description                                                                                 |
 |------------------------------------|------------|-----------|---------------------------------------------------------------------------------------------|
 | **http-server**                    | `Object`   | Yes       | Defines the port and number of threads for the HTTP server. Also controls the graceful shutdown timeout. Default is `30000ms`. |
+| **http-server.max-request-header-size** | `Integer` | No    | Maximum size (in bytes) of the request header that the Jetty HTTP server will accept. Requests with headers larger than this are rejected with `HTTP 431`. Default is `8192` (Jetty/Ring's default). |
 
 ## New Relic
 
