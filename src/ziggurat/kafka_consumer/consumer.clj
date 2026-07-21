@@ -28,10 +28,12 @@
   "Resolves a single strategy to a Kafka assignor class name. Accepts a known short name
    (keyword or string, e.g. :cooperative-sticky) or an already fully-qualified class name
    (any string containing a '.'), which is returned unchanged so assignors not listed in
-   `partition-assignment-strategy-classes` still work without a code change. Throws on an
+   `partition-assignment-strategy-classes` still work without a code change. Surrounding
+   whitespace is tolerated so comma separated lists can be written with spaces. Throws on an
    unrecognised short name so misconfiguration fails loudly at startup."
   [strategy]
-  (let [strategy-key (keyword strategy)]
+  (let [strategy     (if (string? strategy) (str/trim strategy) strategy)
+        strategy-key (keyword strategy)]
     (cond
       (contains? partition-assignment-strategy-classes strategy-key)
       (get partition-assignment-strategy-classes strategy-key)
@@ -46,13 +48,25 @@
 
 (defn- resolve-partition-assignment-strategy
   "Resolves the batch-route `:partition-assignment-strategy` value into the Kafka
-   `partition.assignment.strategy` property string. Accepts either a single strategy or an
-   ordered collection of strategies; a collection is joined with ',' to form Kafka's
-   preference list, which is required for the two-phase eager -> cooperative rolling
-   upgrade (phase 1: [:range :cooperative-sticky], phase 2: :cooperative-sticky).
-   See doc/kafka_produce_consume.md."
+   `partition.assignment.strategy` property string. Accepts a single strategy, a comma
+   separated string of strategies, or an ordered collection of strategies. Multiple
+   strategies form Kafka's preference list, which is required for the two-phase
+   eager -> cooperative rolling upgrade (phase 1: \"range,cooperative-sticky\",
+   phase 2: :cooperative-sticky).
+
+   NOTE: a comma separated string is the only way to express a preference list in
+   `config.edn`. clonfig destructures every vector as a [default-value post-processor] pair
+   and throws on an unknown post-processor, so a vector such as [:range :cooperative-sticky]
+   fails while the config is being read, before it ever reaches this function. Collections
+   are still supported here for programmatic callers. See doc/kafka_produce_consume.md."
   [strategy]
-  (let [strategies (if (sequential? strategy) strategy [strategy])]
+  (let [strategies (cond
+                     (sequential? strategy) strategy
+
+                     (and (string? strategy) (str/includes? strategy ","))
+                     (remove str/blank? (str/split strategy #","))
+
+                     :else [strategy])]
     (when (empty? strategies)
       (throw (ex-info "Empty :partition-assignment-strategy for batch route"
                       {:provided strategy})))

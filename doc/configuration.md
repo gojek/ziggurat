@@ -159,7 +159,7 @@ All Ziggurat configs should be in your `clonfig` `config.edn` under the `:ziggur
 | `:bootstrap-servers`                | String    | Yes       | Kafka bootstrap servers for the batch route.    |
 | `:origin-topic`                     | String    | Yes       | Origin topic for the batch route.               |
 | `:manual-commit-enabled`            | Boolean   | No        | When `true`, disables Kafka auto-commit and commits offsets only after a batch is processed (at-least-once, prevents message loss). Defaults to `false` (auto-commit). |
-| `:partition-assignment-strategy`    | Keyword/String or Vector | No | Selects the consumer partition assignment strategy. Accepts a short name (`:range`, `:round-robin`, `:sticky`, `:cooperative-sticky`), a fully-qualified assignor class name, or an ordered vector of these (joined into a Kafka preference list for the two-phase migration). Omit to keep the Kafka client default (`RangeAssignor`, eager rebalancing). See [Kafka Produce/Consume](kafka_produce_consume.md#partition-assignment-strategy). |
+| `:partition-assignment-strategy`    | Keyword or String | No | Selects the consumer partition assignment strategy. Accepts a short name (`:range`, `:round-robin`, `:sticky`, `:cooperative-sticky`), a fully-qualified assignor class name, or a comma separated string of these (a Kafka preference list, used for the two-phase migration — a vector cannot be used here, clonfig reads vectors as `[default-value post-processor]`). Omit to keep the Kafka client default (`RangeAssignor`, eager rebalancing). See [Kafka Produce/Consume](kafka_produce_consume.md#partition-assignment-strategy). |
 
 ## SSL
 

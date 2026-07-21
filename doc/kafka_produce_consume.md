@@ -120,12 +120,17 @@ Accepted values:
 ;; fully-qualified class name (for assignors not covered by a short name)
 :partition-assignment-strategy "org.apache.kafka.clients.consumer.CooperativeStickyAssignor"
 
-;; ordered list -> Kafka preference list (used for the migration below)
-:partition-assignment-strategy [:range :cooperative-sticky]
+;; comma separated string -> Kafka preference list (used for the migration below)
+:partition-assignment-strategy "range,cooperative-sticky"
 ```
 
 Short names: `:range`, `:round-robin`, `:sticky`, `:cooperative-sticky`. An unrecognised
 short name fails loudly at consumer startup rather than surfacing as an opaque Kafka error.
+
+> **Use a comma separated string, not a vector, for a preference list.** Ziggurat reads
+> `config.edn` with clonfig, which destructures every vector as a `[default-value post-processor]`
+> pair. A value such as `[:range :cooperative-sticky]` therefore fails while the config is being
+> read (`unknown post-processor: :cooperative-sticky`), before Ziggurat ever sees it.
 
 `CooperativeStickyAssignor` uses **incremental cooperative** rebalancing: consumers keep the
 partitions they own and only give up the ones that must move, so adding/removing consumer
@@ -138,7 +143,7 @@ is protocol-incompatible and **must** be done as a two-phase rolling upgrade —
 switch will break the group with an incompatible-assignor error:
 
 1. **Phase 1** — deploy with both assignors, old one first:
-   `:partition-assignment-strategy [:range :cooperative-sticky]`. The group keeps using the
+   `:partition-assignment-strategy "range,cooperative-sticky"`. The group keeps using the
    eager `range` protocol until every member supports cooperative. Wait for this rollout to
    fully complete (no old, range-only members left).
 2. **Phase 2** — deploy with cooperative only:
