@@ -12,6 +12,9 @@ of [keepachangelog.com](http://keepachangelog.com/).
 ## 4.13.0
 - Batch route handler execution is now wrapped in a New Relic transaction named `<topic-entity>.batch-handler-fn` (category `job`), matching stream-route instrumentation. Handler exceptions are additionally forwarded to New Relic via `report-error` so they surface in the Errors Inbox with transaction context. Emits transactions unconditionally — the NR API is a no-op when no agent is attached, so this is safe for users without New Relic.
 
+## 4.12.3
+- Adds `:partition-assignment-strategy` config flag for batch routes. Lets a route opt into a Kafka consumer partition assignment strategy (e.g. `:cooperative-sticky` for incremental cooperative rebalancing) via a short name, a fully-qualified assignor class name, or an ordered vector (for the two-phase eager -> cooperative migration). Omitted by default, preserving the Kafka client default (`RangeAssignor`, eager rebalancing) for existing consumers.
+
 ## 4.12.2
 - Adds `:manual-commit-enabled` config flag for batch routes. When enabled, Kafka auto-commit is disabled and offsets are committed only after a batch has been processed, guaranteeing at-least-once delivery and preventing message loss. Defaults to `false` (existing auto-commit behaviour).
 

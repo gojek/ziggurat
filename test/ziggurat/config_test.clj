@@ -219,6 +219,15 @@
         (is (= enable-auto-commit "false"))
         (is (= manual-commit-enabled "NOT FOUND"))))
 
+    (testing "converts partition-assignment-strategy-config to partition.assignment.strategy and does not leak the raw flag"
+      (let [config-map                    {:partition-assignment-strategy-config "org.apache.kafka.clients.consumer.CooperativeStickyAssignor"
+                                           :partition-assignment-strategy        "cooperative-sticky"}
+            props                         (build-consumer-config-properties config-map)
+            partition-assignment-strategy (.getProperty props "partition.assignment.strategy")
+            raw-flag                      (.getProperty props "partition.assignment.strategy.config" "NOT FOUND")]
+        (is (= partition-assignment-strategy "org.apache.kafka.clients.consumer.CooperativeStickyAssignor"))
+        (is (= raw-flag "NOT FOUND"))))
+
     (testing "valid kafka streams configs does not convert commit-interval-ms to auto-commit-interval-ms"
       (let [config-map              {:commit-interval-ms 5000}
             props                   (build-streams-config-properties config-map)

@@ -88,6 +88,7 @@ Ziggurat Config | Default Value | Description | Mandatory?
 :thread-count | 2 | Number of Kafka Consumer threads for each batch-route | No
 :default-api-timeout-ms | 60000 | [https://cwiki.apache.org/confluence/display/KAFKA/KIP-266%3A+Fix+consumer+indefinite+blocking+behavior](https://cwiki.apache.org/confluence/display/KAFKA/KIP-266%3A+Fix+consumer+indefinite+blocking+behavior) | No
 :manual-commit-enabled | false | When `true`, Kafka's background auto-commit (`enable.auto.commit`) is disabled and offsets are committed (`commitSync`) only after a batch has been processed and any failures enqueued for retry. This guarantees at-least-once delivery and prevents message loss when a consumer dies mid-batch. When `false` (default), the existing auto-commit behaviour is preserved. | No
+:partition-assignment-strategy | (Kafka default: `RangeAssignor`) | Selects the consumer partition assignment strategy for a batch route. Accepts a short name (`:range`, `:round-robin`, `:sticky`, `:cooperative-sticky`), a fully-qualified assignor class name, or an ordered vector of these. Omit to keep the Kafka client default (`RangeAssignor`, eager rebalancing). | No
 
 #### Offset commit semantics for batch consumers
 
@@ -101,4 +102,49 @@ Ziggurat commit offsets with `commitSync` only after the batch handler has run a
 messages needing retry have been enqueued to RabbitMQ. A failed commit is logged and reported
 via the `ziggurat.batch.consumption.offset.commit` metric but does not halt the poll loop —
 the offsets are committed on the next successful commit, preserving at-least-once delivery.
+
+#### Partition assignment strategy
+
+Each batch route uses the plain Kafka `KafkaConsumer`, whose default partition assignment
+strategy is `RangeAssignor` — an **eager** protocol where every rebalance revokes all
+partitions from all consumers ("stop-the-world") before reassigning. The
+`:partition-assignment-strategy` flag lets a route opt into a different strategy without any
+code change. It is opt-in per route: omit it and the existing default is preserved unchanged.
+
+Accepted values:
+
+```clojure
+;; single short name
+:partition-assignment-strategy :cooperative-sticky
+
+;; fully-qualified class name (for assignors not covered by a short name)
+:partition-assignment-strategy "org.apache.kafka.clients.consumer.CooperativeStickyAssignor"
+
+;; ordered list -> Kafka preference list (used for the migration below)
+:partition-assignment-strategy [:range :cooperative-sticky]
+```
+
+Short names: `:range`, `:round-robin`, `:sticky`, `:cooperative-sticky`. An unrecognised
+short name fails loudly at consumer startup rather than surfacing as an opaque Kafka error.
+
+`CooperativeStickyAssignor` uses **incremental cooperative** rebalancing: consumers keep the
+partitions they own and only give up the ones that must move, so adding/removing consumer
+threads or rolling a deploy no longer pauses the whole group.
+
+##### Migrating an existing group from eager to cooperative-sticky
+
+Switching a live consumer group from `RangeAssignor` (eager) to `CooperativeStickyAssignor`
+is protocol-incompatible and **must** be done as a two-phase rolling upgrade — a single-step
+switch will break the group with an incompatible-assignor error:
+
+1. **Phase 1** — deploy with both assignors, old one first:
+   `:partition-assignment-strategy [:range :cooperative-sticky]`. The group keeps using the
+   eager `range` protocol until every member supports cooperative. Wait for this rollout to
+   fully complete (no old, range-only members left).
+2. **Phase 2** — deploy with cooperative only:
+   `:partition-assignment-strategy :cooperative-sticky`. The group performs one clean switch
+   to the cooperative protocol.
+
+A brand-new consumer group has no eager members to migrate, so it can be created directly with
+`:partition-assignment-strategy :cooperative-sticky` in a single deploy.
 
