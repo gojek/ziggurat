@@ -46,7 +46,8 @@
                                      :enabled false}
               :http-server          {:middlewares  {:swagger {:enabled false}}
                                      :port         8080
-                                     :thread-count 100}
+                                     :thread-count 100
+                                     :max-request-header-size  8192}
               :prometheus           {:port 8002
                                      :enabled true}
               :new-relic            {:report-errors false}

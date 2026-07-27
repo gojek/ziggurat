@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
+## 4.13.2
+- Adds `:max-request-header-size` under `:http-server` to configure the maximum size (in bytes) of request headers accepted. Defaults to `8192` (Jetty/Ring's own default), so existing behaviour is unchanged unless overridden.
+
 ## 4.13.1
 - Stops all application states in dependency order on shutdown, so ingestion and RabbitMQ subscribers drain before the shared connections and producers they publish through are closed. This prevents double processing during shutdown. Adds test coverage for the per-mode stop functions.
 
