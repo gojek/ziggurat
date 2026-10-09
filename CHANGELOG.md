@@ -3,8 +3,10 @@
 All notable changes to this project will be documented in this file. This change log follows the conventions
 of [keepachangelog.com](http://keepachangelog.com/).
 
-## 4.13.2
+## 4.13.3
 - Adds `:partition-assignment-strategy` config flag for batch routes. Lets a route opt into a Kafka consumer partition assignment strategy (e.g. `:cooperative-sticky` for incremental cooperative rebalancing) via a short name, a fully-qualified assignor class name, or an ordered vector (for the two-phase eager -> cooperative migration). Omitted by default, preserving the Kafka client default (`RangeAssignor`, eager rebalancing) for existing consumers.
+
+## 4.13.2
 - Adds `:max-request-header-size` under `:http-server` to configure the maximum size (in bytes) of request headers accepted. Defaults to `8192` (Jetty/Ring's own default), so existing behaviour is unchanged unless overridden.
 
 ## 4.13.1
