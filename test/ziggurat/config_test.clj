@@ -219,6 +219,39 @@
         (is (= enable-auto-commit "false"))
         (is (= manual-commit-enabled "NOT FOUND"))))
 
+    (testing "converts partition-assignment-strategy-config to partition.assignment.strategy and does not leak the raw flag"
+      (let [config-map                    {:partition-assignment-strategy-config "org.apache.kafka.clients.consumer.CooperativeStickyAssignor"
+                                           :partition-assignment-strategy        "cooperative-sticky"}
+            props                         (build-consumer-config-properties config-map)
+            partition-assignment-strategy (.getProperty props "partition.assignment.strategy")
+            raw-flag                      (.getProperty props "partition.assignment.strategy.config" "NOT FOUND")]
+        (is (= partition-assignment-strategy "org.apache.kafka.clients.consumer.CooperativeStickyAssignor"))
+        (is (= raw-flag "NOT FOUND"))))
+
+    (testing "emits a comma separated preference list verbatim for the two-phase migration"
+      (let [preference-list "org.apache.kafka.clients.consumer.RangeAssignor,org.apache.kafka.clients.consumer.CooperativeStickyAssignor"
+            props           (build-consumer-config-properties {:partition-assignment-strategy-config preference-list})]
+        (is (= preference-list (.getProperty props "partition.assignment.strategy")))))
+
+    (testing "a consumer config without the flag emits no partition.assignment.strategy (kafka default preserved)"
+      (let [props (build-consumer-config-properties {:commit-interval-ms 5000})]
+        (is (= "NOT FOUND" (.getProperty props "partition.assignment.strategy" "NOT FOUND")))))
+
+    ;; :partition-assignment-strategy was added to the shared non-kafka-config-keys list, which is
+    ;; also applied to streams and producer properties. These guard against that suppression
+    ;; changing behaviour for the other two APIs.
+    (testing "streams properties are unaffected by the consumer-only strategy handling"
+      (let [props (build-streams-config-properties {:partition-assignment-strategy "cooperative-sticky"
+                                                    :commit-interval-ms            5000})]
+        (is (= "NOT FOUND" (.getProperty props "partition.assignment.strategy" "NOT FOUND")))
+        (is (= "5000" (.getProperty props "commit.interval.ms")))))
+
+    (testing "producer properties are unaffected by the consumer-only strategy handling"
+      (let [props (build-producer-config-properties {:partition-assignment-strategy "cooperative-sticky"
+                                                     :retries-config                3})]
+        (is (= "NOT FOUND" (.getProperty props "partition.assignment.strategy" "NOT FOUND")))
+        (is (= "3" (.getProperty props "retries")))))
+
     (testing "valid kafka streams configs does not convert commit-interval-ms to auto-commit-interval-ms"
       (let [config-map              {:commit-interval-ms 5000}
             props                   (build-streams-config-properties config-map)

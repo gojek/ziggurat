@@ -140,13 +140,14 @@
     (java-response config-vals)))
 
 (def consumer-config-mapping-table
-  {:auto-offset-reset-config        :auto-offset-reset
-   :commit-interval-ms              :auto-commit-interval-ms
-   :consumer-group-id               :group-id
-   :default-api-timeout-ms-config   :default-api-timeout-ms
-   :key-deserializer-class-config   :key-deserializer
-   :session-timeout-ms-config       :session-timeout-ms
-   :value-deserializer-class-config :value-deserializer})
+  {:auto-offset-reset-config             :auto-offset-reset
+   :commit-interval-ms                   :auto-commit-interval-ms
+   :consumer-group-id                    :group-id
+   :default-api-timeout-ms-config        :default-api-timeout-ms
+   :key-deserializer-class-config        :key-deserializer
+   :partition-assignment-strategy-config :partition-assignment-strategy
+   :session-timeout-ms-config            :session-timeout-ms
+   :value-deserializer-class-config      :value-deserializer})
 
 (def producer-config-mapping-table
   {:key-serializer-class   :key-serializer
@@ -172,6 +173,7 @@
    :thread-count
    :enabled
    :manual-commit-enabled
+   :partition-assignment-strategy
    :jaas])
 
 (defn- not-blank?
